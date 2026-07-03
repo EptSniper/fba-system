@@ -1,0 +1,33 @@
+{
+  "name": "amazon-fba-oa",
+  "id": "amazon-fba-oa",
+  "owner": {
+    "name": "Mehmet"
+  },
+  "metadata": {
+    "description": "Amazon FBA online-arbitrage expert team (24 fba- skills): sourcing & deal analysis, Keepa/SellerAmp/chart reading, market & data analysis, listing optimization, the project rituals (journal, brain, RAG, leads), and a full engineering crew (architect, coder, reviewer, debugger, database, design, QA, innovation) to build the system.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "amazon-fba-oa",
+      "source": "./",
+      "description": "24 fba- skills and roles for an Amazon FBA online-arbitrage operation: sourcing & deal analysis, Keepa/SellerAmp/chart reading, market & data analysis, listing optimization, project rituals (journal/brain/RAG/leads), and a full engineering crew. Encodes the single-source buy/no-buy gates, the allowed-vs-profitable split, and human-approval guardrails so every AI session follows them automatically.",
+      "version": "0.2.0",
+      "author": {
+        "name": "Mehmet"
+      },
+      "keywords": [
+        "amazon",
+        "fba",
+        "online-arbitrage",
+        "keepa",
+        "selleramp",
+        "sourcing",
+        "compliance"
+      ],
+      "category": "business",
+      "strict": false
+    }
+  ]
+}

@@ -1,0 +1,381 @@
+00:00 In this session, you will see how eight figureure Amazon sellers are building custom AI agents. From handling
+00:07 repetitive tasks to spotting trends and connecting with different databases, you will get the behindthescenes look at
+00:13 what's possible to do. Our guest today is Malp Spitzian. And before we go to his session, let's have Augustus
+00:19 introducing the sponsors of Cellfest online. Thank you, Lette. So, let me introduce
+00:24 the sponsors of this session. The first one is VAA Philippines provides trained
+00:30 e-commerce virtual assistants for Amazon, Walmart and other e-commerce sellers. Vatai is an international
+00:38 compliance for e-commerce sellers. They provide VAT compliance EPR services and
+00:43 much more. Ecomc, it's your global Amazon, Walmart and Tik Tok growth
+00:50 expert. Exit.io, IO. It's a platform for Amazon FBA buyers, sellers, and
+00:56 investors. Merch Jar is your AI copilot for Amazon
+01:02 advertising. Data hawk is an enterprisegrade analytics for Amazon and Walmart
+01:09 sellers. And last but not least, Optimo AI by Sellerlex, which is your Amazon
+01:16 advertising analyst. And now I'm excited to bring in Mihal here with me. Hi, how
+01:22 are you doing? Hi, I'm doing that well. Happy to be here. Glad to have you back on our channel.
+01:28 So, Miha, before we start with your presentation, which uh is definitely going to be a very interesting one. I
+01:33 wanted you to introduce yourself and give us a little bit uh of a background information. What are you doing in
+01:39 Amazon space and how do you usually work with Amazon sellers? Mhm. So I've been
+01:44 in the Amazon space for over nine years now and uh we scaled and sold an 8
+01:51 figureure brand with my business partner. We sold a brand in 20121 and since then I started working with
+01:58 sellers helping them systemize their businesses and build teams with my company called Scaleport. So over the
+02:03 years we worked with over 100 brands basically to help them streamline their operations, bring in new team members
+02:11 and overall being more more efficient. Okay, very good. And we're really excited to hear what do you have to
+02:17 teach us about AI agents today. But before we go to your presentation, I wanted to highlight that if you're
+02:23 watching us live and you have any questions about the presentation topic, then leave them to the chat because we're going to have Mihal to reply to
+02:30 your questions in the end of his presentation. If you like this video and learned something new, definitely hit
+02:35 the like button as well to show support to him and us. And if you're not yet a subscriber of Orange Click YouTube
+02:41 channel, definitely do that as well to see similar useful content in the future that will help you to run your Amazon's
+02:47 business more effective in a and in a better way. And without further ado, I think you're ready to present. So I'm
+02:54 going to bring in your slides and we're ready to go. All right, let's dive in. So, as I
+02:60 mentioned, I've been in this space for a long time and since I started systemizing brands, since we sold our
+03:07 business, basically I had a simple mission to help sellers get out of the weeds. That is why I started Scalport
+03:13 and that's also why I decided to really get excited about AI agents and AI
+03:19 automation. So, that is why I'm going to talk about AI agents and how to build them and how I how we build them for 8
+03:26 figureure Amazon sellers. So if you are like most sellers uh you probably want
+03:31 to use AI more but you don't really have a clue what's possible beyond basic chat
+03:37 bots because most people use simply you know chat GPT cloud but they don't really know how to take it step further.
+03:44 So if that's you you are in the right place because we are going to show you how AI agents really work where to use
+03:50 them and how to avoid wasting time on stuff that doesn't work. So I pretty much guarantee you that if you are going
+03:56 to spend the next 20 to 30 minutes with me, you will be ahead of 90% of people who use AI. And also I will show you a
+04:05 real AI agent we built for an 8 figure seller. So it's not just theoretical. I will show you literally what it looks
+04:11 like, how it works, and also how we build it. You don't have to be too concerned about the technical side.
+04:17 Don't worry about it. We're not going to, you know, over complicate it. Going to make it as easy and straightforward
+04:22 as possible. So let's talk about what it looks like beyond basic chat bots. So if
+04:29 you are like most people, you are using chat GPT cloud. If you're not, you definitely should. All of your team
+04:34 members should be using that. That's the easiest lever you can pull. But I'm sure if you used one of the large language
+04:40 models like chat GPT, you probably felt this, right? It's like what what if it actually knew my business, right? Using
+04:46 it, it's like what if it knew what's going on? What if it would go and do something for me, right? I had this
+04:53 feeling the moment I tried CH GPT for the very first time that it's like would be cool if it could actually like do the
+04:59 things it's telling me uh and advising me on right and what what if even could be proactive and do the things without
+05:04 me telling it to do right that is why we have AI agents it is essentially a large
+05:10 language model like check GPT or claw that has the power to take action it has the power to do things not just advise
+05:18 us right it is equipped with the right tools and the data uh to actually do the
+05:24 work and of course it's also guided by a clear job description almost like an employee. So we are talking you're using
+05:32 a lot of terms right and I see a lot of people are using these terms interchangeably and sometimes even
+05:37 incorrectly. So let's just clarify it before we dive further. First of all chatbot that would be your claude or
+05:43 chat GPT right that is very reactive. We send a message we get an answer you know we send a request to get an image it
+05:49 generates it's very reactive. Then we have automation, right? Automation is nothing new. We just call it AI
+05:55 automation because one or more of the steps in the automated workflow is performed by AI by the large language
+06:01 model. But then again, it is a predefined workflow when a multiple steps are executed in a specific uh
+06:08 sequence. And lastly, we have the agent. This is where we leverage the decision- making and reasoning and logic of the
+06:14 large language model so it can actually figure stuff out for us, right? Then I
+06:19 always say this is the difference between let's say like a low-level employee where you have to write down an SOP to do exactly press this button, go
+06:26 here, go there. That would be automation and the AI agent is someone who has some context, right? Who can make decisions
+06:33 and actually help us do the work. Now I want to stress out that leveraging AI is
+06:39 becoming an essential skill set for business owners. The same, you know, you need to understand finances, you need to understand marketing, you need to be a
+06:46 good manager. this is becoming an essential skill set for the future. And
+06:51 if it's not you, if you're like clueless about ANI, first of all, you should, you know, you're in the right spot to learn,
+06:57 but also there should be an AI guy in your business, you know, on your team. Likely you have someone who's the Excel
+07:03 guy, you know, the one who answers all the questions about spreadsheets. You should have someone who is trying to be
+07:09 ahead of the curve in terms of AI. Now, let's talk about ROI because all of
+07:16 this comes down to ROI, your return on investment. Let me explain. When you
+07:22 talk about automation, any automation, it always comes down to ROI, whether it's even worth it to automate
+07:29 something, right? Because we we we don't want to follow the hype, you know, people explaining, you know, how they
+07:34 replace their whole teams, like don't follow the hype. Don't the the cool things, they don't pay bills, right?
+07:40 follow evergreen business principles and this is a good one because we need to understand in terms of automations or
+07:46 pretty much anything we do in the business compare the value we get versus the cost of we have to incur to do that
+07:53 right so in this case in terms of agents and automations time saved you know money saved money made errors prevented
+08:00 but we have to consider the cost and not many people actually do that that there is a cost to build it there is the cost
+08:06 to use it and cost to maintain it right because it sounds beautiful to create an automation that saves you 10 minutes
+08:12 every week. But what if it took you 50 hours to build that automation and to even maintain it? Well, then it's not a
+08:19 good investment with your time. We have to be aware of that. And the way I look
+08:24 at this is that in terms of automation and AI, I like to consider this. I like
+08:30 to see things that anything we want to build is pretty much possible or will be in the future, but not everything is
+08:36 worth it, right? Not everything needs to be automated. Uh and it's the same like hiring a
+08:41 person, right? People always see the value, the time they save, but they have to spend some time hiring the person,
+08:47 finding him, managing him, paying him. There is some cost to it. And this is exactly the same thing.
+08:53 But what makes AI different is that it only gets better with time and easier.
+08:58 So the cost goes down and the value goes up. The AI is smarter. It's easier to set up the automations. It's easier to
+09:05 set up the agents. So it makes sense to automate more and more because we get good return on our investment, right?
+09:11 Plus the AI can handle things that were impossible to automate before, right?
+09:18 Tasks that require actual logic and reasoning. Before we had to use this like a decision tree if then. But now
+09:25 the AI it can make decisions with the data it has. So it really unlocks new opportunities, right? Because it's not
+09:32 just about uh saving time on things we already do. It's doing things that maybe we should know we know we should be
+09:39 doing but we never had the resources for. Right? And this is important. For example, analyzing thousands and of
+09:45 refunds and reviews to spot product issues and improvements. You could do it manually, but it would take so much time
+09:51 that it just wasn't worth it. Or tracking your competitors every move, like every single thing they change on
+09:56 their listing 247. Well, you could have a VA looking into it and monitoring them. again not worth the investment
+10:02 right so all of these hidden opportunities are unlocked thanks to AI
+10:09 and when I talked about the hype you might see this online whether it's LinkedIn whether it's YouTube you know
+10:14 how people fire their entire teams with one AI agent and replacing their teams firing 10 people with one GPT like what
+10:22 what are these people doing but it's all sounds amazing but let's let's not get into that hype right because the secret
+10:28 is that these people are trying to sell something, right? They are not really working that way. So, forget the gurus
+10:36 because knowing what to automate and having the right expectations is really half the battle because if you have
+10:41 expectations that you know I will have this AI agent plugged into my business and it will run it maybe in the future
+10:47 but definitely not now. The way I see it and how I believe you should see AI as
+10:53 well, it helps your team move faster, make better decisions and focus on the highlevel work. get you out of the
+10:60 weeds, right? You and your teammates because the AI agents, if you will see them as an extension of your team, not
+11:06 replacements, you can build some amazing things, right? Because there is this concept when it comes to AI and
+11:12 automation that there should be at least as of now a human in the loop, right? Just to make sure that the key decision
+11:19 or the approval is made by your teammate or yourself, right? So we don't get oursel completely out otherwise we are
+11:26 asking for trouble. But now we want to get uh a little bit
+11:31 more specific. We built an AI agent for an 8 figureure
+11:37 seller and I want to show you the specifics, right? What it looks like, how we build it. But I want to stress
+11:44 out that um we want to prioritize the
+11:49 use case first and the tools second, right? because people often get obsessed
+11:55 with the tools, but that's not necessarily what we want to do, right? The tools are changing super quickly.
+12:02 So, let's think in terms of the use case first. When we designed this uh AI agent, it
+12:09 was an AI agent created to improve customer experience.
+12:14 So it's not just about handling you know um customer tickets uh c buyer messages but it's also to surface the product
+12:21 issues you know to provide actionable insights to improve the product to
+12:26 improve the listings. So we needed to set up an agent that reads all of the signals from the customers which is not
+12:33 just buyer messages but it's also the refunds it's also the reviews and the
+12:38 overall sentiment right that is the highle use case what we wanted to build then we broke it down into specific
+12:44 capabilities we wanted to classify and prioritize and you know draft brand replies uh to buyer messages and emails
+12:52 in any language we wanted to monitor all of these signals from customers we get you know the customer feedback back the
+12:58 messages, the refunds, the reviews. So, it can detect the anomalies and flag
+13:04 product or batch issues, right? Because that is the stuff that we probably should be doing, but uh we never really
+13:10 do because it's just too time consuming. And the AI can do that. And once it does that, it can suggest not only product
+13:17 and packaging improvements, but also listing improvements like what are the people complaining about? Why are they returning the product? Why are they
+13:23 giving us negative reviews? Right? That's important. and also generate detailed reports to actually send us
+13:29 this proactively, right? And also we then also decided for this seller that
+13:34 we want to monitor reviews for community guideline violations and file removal cases, right? If you have negative
+13:40 reviews that violate that, we kind of wanted to automate part of that to identify these reviews. So those were
+13:46 the capabilities. And now let's talk about the tools. And I want to stress out that the tools change rapidly. Maybe
+13:54 tomorrow, two months from now, the tech stack for this would be very very
+13:59 different. But as of now, these are the tools we used. We used N8N, which is the workflow builder. That's the underlying
+14:06 logic behind everything is built in N8N. You've probably heard about this before. Then we have Amazon. That's where we get
+14:13 the G data from, right? We need to get the data into our database and kind of help the AI to see the data. So we used
+14:20 Amazon to get the data. Used Superbase. That's essentially think about it as your spreadsheet, you know, that's where
+14:25 you store the data and then lovable to create the dashboards because the visual
+14:32 you know the UI and the user experience overall seeing this it's important and lovable enables us to basically create
+14:39 custom apps and dashboards. So as you can see we have everything right here. And now the logic behind it. This is
+14:46 N8N. It it it is quite complicated when you look at it. But what's beautiful
+14:52 about this is when you describe these capabilities, Claude can help you build the N8N
+14:58 workflows essentially the backend logic right. So you can describe the capabilities go back and forth with
+15:04 claude and it knows N8N and it can help you build out the skeleton um in N8N
+15:11 where you can just copy paste it. It's not plug-and-play, don't get me wrong. You will have to spend some time
+15:16 learning it. But at the end of the day, it follows this logic, right? The flow. You need to understand I'm getting some
+15:23 data. I need to manipulate the data. I need to hand over the data to a large language model like Czech GPT. And you
+15:31 are learning right how to set this up. Now, um the AI agent itself we divided
+15:37 into three categories essentially three sections. Section number one is the intelligence. That's where the AI shares
+15:45 reports and tells us points us in the right direction, you know, in terms of the data. So the data we have returns,
+15:51 reviews, you know, buyer messages. So it gives us the nice summary and the insights because it reads the data and
+15:57 tells us what is changing, you know, some red flags, some anomalies. It will notify us about this, right?
+16:05 And then we have an advisor. That's a second category that is essentially a
+16:10 chatbot like your chat GPT that is connected to the data. So what it allows
+16:16 us to do is talk to the data, right? So we I will then give you an example how
+16:21 uh the seller used this where we can talk to our data to see like hey I noticed this with this product can you
+16:28 tell me more? Goes into the database pulls out the data and you can just talk to it like to another person who knows
+16:34 the data through and through right and of course here I cannot show you everything because it's from from a seller. Um and the third section would
+16:42 be tools and the tools here are serving specific purpose. In this case it's
+16:48 crafting the buyer messages right and we receive buyer messages and emails. So this should help us to craft uh great
+16:55 responses based on the issue we the the customer may have with the with the product and this is based on our you
+17:01 know kind of return policies return refund policies. So what it does it analyzes the bio message determines the
+17:08 frustration level right if the customer is angry we kind of want to be more generous to prevent negative reviews and
+17:13 all of that is trained on the back end. So it does the justification you know it tells us why is it doing going to do you
+17:20 know x y and z give him refund of replacement whatever and then it crafts a response which we can copy and send
+17:26 manually. Again remember human in the loop here is the person who actually sits down and uh copies it into the
+17:34 email or so it could be automated fully but we want to make sure that there is this actual person who who revises that
+17:41 and then for example the tool which I mentioned you know we had let the AI scan the reviews and if reviews you know
+17:47 are kind of negative reviews are violating the community guidelines we are sending and filing support cases to
+17:54 have them removed. this is not you know 100% effective there you know the the effectivity is you cannot remove all the
+18:01 reviews but again it's like a specific tool that serves specific purpose like so let's not think too much about what
+18:07 it's doing here but it's the idea to have a specific tool that will save me a lot of time or it allows me to do
+18:14 something that otherwise I just wouldn't do at all and all of that is under one dashboard remember lovable making the
+18:21 user experience uh better right so all of that is under one dashboard because
+18:27 now if you compare it to traditional spreadsheet you know I bet bad that most of your spreadsheets actually look like
+18:33 this there are numbers and filters and all of this and you're probably the only one who understands that so when you
+18:39 want to hand this over to someone else and explain like hey this is my spreadsheet you know like but it's like
+18:44 what is that right so the idea here is that the user experience is also helpful to optimize through let's say very nice
+18:51 dashboards because it's then easier to hand over to someone else, right? So, let me show you a quick example, right?
+18:58 We talked a lot about the theory. We showed you know what it looks like, but actually like how would you use it? What
+19:04 is the value, right? Because the cost here, we had to build it, you know, we have to set it up, but what is the
+19:10 value? So, let me show you an example. We can get this report, right? And this is an example from the seller that we
+19:16 saw an increase in returns labeled not as described. You know, unwanted item,
+19:22 ordered wrong item. That's that's you know Amazon people people buying stuff um and then returning it but not as
+19:28 described that's not good like what what does it mean so what do I do now go to seller center download refund reports
+19:35 well no I go to my advisor and ask like hey I saw there are products not as
+19:41 described can you look for the data and help me understand what customers said about the product which product is that
+19:47 and what we learned here that there was a common issue people mentioned the issue and identify that it's mainly one
+19:55 product, right? One one variation. And what's the issue? Well, I I cannot
+20:01 reveal that, but let's say u it was a color. People were complaining about the color of the product that it's not
+20:09 really as described on the listing. So, hm. Then I ask my advisor, can you tell
+20:14 me if we received any negative review that mentioned this problem that the color is not the same? Aha, we received
+20:21 some negative reviews. It tells us because it has access to the data. It scans it that the color is just off. So
+20:28 what we can do then is to look at the real product, look at our listing and see like, huh, actually the the color we
+20:33 have in our listing is a little bit off. Let's tweak it. And that is exactly the
+20:39 listing improvement that would prevent refunds, you know, prevent negative reviews and be more, you know, accurate
+20:46 description of our listing. And this is just customer experience, right? We are talking solely about the intelligence
+20:54 advisor and tools for customer experience,
+20:59 but this obviously takes a while to build and I understand that that it
+21:04 might seem a bit overwhelming. You want something you want to implement right away. You know, right after this video,
+21:10 right after, you know, this session, you want to go and within one hour, you want to start using AI better. you want to
+21:18 have your AI agents. Well, you can do that. You can do that with what is
+21:23 called MCPs because this is the future. We are going to get a little bit technical, but I will keep it simple.
+21:29 And if you understand the technical side, please don't hate me. I'm just doing my job trying to explain this to
+21:35 uh to everyone. So, MCP is there to give access to our
+21:41 tools to AI to the large language model, right? By our tools I mean you know
+21:47 maybe your spreadsheet maybe your Asana notion or even seller central right the tools the apps you use but if you think
+21:54 about it whenever you use an app like let's say asana you're in a task management use clickup asana Monday
+21:60 whatever you use the app is a code that's a code on the back end but you're not going to interact with the code
+22:06 every time you want to create task you're not going to write code for that you want to click buttons right that's what we like to do and that's what works
+22:14 very well for us we love it when it looks nice you click buttons and it does its job but when we would give access to
+22:21 our large language model they don't like it right they they hate pressing buttons
+22:26 they like text right so is there like a way the AI could communicate with the
+22:32 code of the app to actually perform the steps create task comments and do the things the tool uh is used for
+22:40 yes there are APIs right application programming interface you've probably heard about APIs. It's it's nothing new.
+22:46 That's something that was built so one program can use the tools and data of
+22:52 another program, right? You connect it likely, you know, APIs from you can download from Amazon. That's just the
+22:57 code on the back end that allows through API calls which are the requests to get
+23:03 access to data or get access to the functions of that particular tool. So problem solved, right? We use APIs to
+23:10 connect our large language model. you know I will connect my chat GPT to my Asana and I will control it through
+23:16 APIs. So the AI can then create task can create comments and do everything I need
+23:24 it to do in that particular tool. Well bad news because the APIs the
+23:31 documentation since it's a code is not unified across all tools. So your notion
+23:36 asana everything will be different and every single request is a piece of code and the AI the LLM cannot figure this
+23:43 out on its own that you would say like hey there you go there is like hundreds of pages of code and do your thing no
+23:49 it's too complicated for that so what we have to do is give the AI now we're
+23:55 looking at N8N give the AI the tools which means that we create the tool we give it the tool to create a task in
+24:03 Osana we insert the code. So it knows when it wants to create the task, it
+24:08 should use this piece of code use uh it can create the tool, you know, to leave
+24:13 a comment. It can we can create the tools for every single task or every
+24:18 single uh thing we wanted to do in every single tool. That's a lot of stuff, right? We don't
+24:25 have time to do that because and remember our equation, we remember the
+24:31 value it brings and the cost. And this cost is very high for every single thing to do the API. Don't get me wrong, it
+24:38 works and it works in automations when you have like one little thing you want to do. But if you have your large
+24:43 language model like your chat GPD or clot and you wanted to go to Asana, create task your notion and read your
+24:49 Gmails and calendar you would have to set this up for every single thing and
+24:54 that's just a waste of time at this point. But good news there are MCPS model
+25:02 context protocols which are standardized way to give tools to our large language
+25:08 model. So let me explain. Now our large language model is communicating with the
+25:13 MCP server which is taking care of the all of the API things all of the code
+25:19 you know the our AI comes to the MCB server and says hey I want to create a task and the MCB server ah and it does
+25:27 it on the back end right so this is very convenient for our large language model
+25:32 because they are just using texts communicating with the MCB server and it does the things on the back end through
+25:38 the API time. So we can see this the MCP as the user interface the same way we
+25:45 use graphical user interface clicking buttons. So this is the user interface for the large language model.
+25:53 And now the beautiful thing is that these MCPS are now popping up left and right because it's relatively new and
+26:01 there are even official ones. There are also unofficial ones but the official ones developed by that particular
+26:08 software right let's say notion or sana they have their own official MCPS and as
+26:15 you can see there is a section called tools so that is all of the actions our large language model can take if we just
+26:22 connect it to the server right and the server then takes care of the back end to control our notion or sana so what
+26:28 you can essentially do um is before without the MCP you would have to as I
+26:35 mentioned take all of your software you know Slack and Google Sheets and Asana and notion and seller central and for
+26:42 every single act action you want to actually give it into its toolkit have
+26:47 to create a separate API call in like software like NAT so it's like you know
+26:52 running around with different sets of keys for every door in your office is just like too much work but with MCP you
+26:59 know it's just like having one key that unlocks all the doors of that particular software. So instead of setting stuff up
+27:07 in a complicated way, what we can do is just connect our large language model
+27:13 with the MCB server of the tool we want to use and we are good to go. Now cloud
+27:20 for example uh they have this whole section of connectors and these are the MCP servers official ones. So you go to
+27:28 your cloud, download the desktop app, connect your Oana, your notion, your Gmail. You can connect all these
+27:34 official ones that are there and suddenly your cloud has access to the
+27:40 information in these, you know, different apps, but it can also take actions, right? So you can say I will
+27:48 have a few examples, right? And I want to stress out again here the cost goes down incredibly and the value is still
+27:56 high right suddenly it makes sense to do this. Uh so essentially here we are giving our
+28:04 AI all the tools right so for example in clot you can then go and tell it to do
+28:11 things and suddenly we are building an AI agent suddenly it's not just reactive telling us back and forth it can do
+28:18 things right and here if I give you a simple example I know it's it can be a bit complicated right how how many
+28:24 things you know give me some ideas so for example if you connect all of these things together. You can say, "Compare
+28:32 our review trends with this competitor and tell me what features we are winning on." So the AI can go scrape the
+28:38 competitor review. If we have the database for that, of course, analyzes them against yours and gives you
+28:44 insights. Then you can tell still in cloud, right? Draft a sideby-side comparison, you know, us versus them and
+28:51 mock up a simple graphic highlight that highlights these differences. AI creates a draft visual showing sideby-side
+28:57 features, customer sentiment. Good. Then we tell it create a task in the sana for a graphic designer to polish the
+29:04 comparison graphic and add a subtask for brand manager to prepare a split test against our current images. So the AI
+29:10 goes to Osana, creates a task, assigns it to the graphic designer, you know,
+29:16 moves the image there. Then we do the subtask uh creates for the for the brand manager
+29:22 as a reminder, right? And then you can follow up on that that say like, hey, you know, set up whatever, set up a
+29:28 reminder in my calendar to remind me to check up on them, right? You can do something like that or send me a message
+29:34 on Slack when it's once the task is ready, stuff like that, right? So really this unlocks all of these new
+29:40 opportunities. So you can say it, you know, summarize today's meetings. Again, we assume that we have the database in
+29:46 place, right? Um, summarize today's meetings. You know, let's say all of your meetings are in notion. Update the
+29:52 project plan in Asana and email me the three action items I need to focus on this week. Beautiful, right? It's almost
+29:58 like your assistant. It's it's doing things. Or you can say, you know, draft a weekly API report and send it to
+30:04 select here. It would probably need a little bit more context, but you get the idea.
+30:09 That's pretty much it from me for today. I have a YouTube channel where I talk about systems AI agents. So, you can go
+30:16 ahead and find me there. You know, I all down this rabbit hole of AI. So, you
+30:22 will see a lot of videos talking, you know, building stuff uh in real time, step by step. And also, I put together a
+30:30 resource pack to build AI agents, right? It took a lot of research and there's a
+30:35 lot of stuff out there, right? There's a lot of videos and information. So, I
+30:40 just took out the best ones to create a list of the best creators, the best videos to watch. So, you know, the 8020,
+30:46 you know, the 20% of the content out there that really gets you 80% there, that's in our resource pack. all of the
+30:53 tools we we are currently using. You know, the I mentioned N8 and Lovable, but there are many many more and there
+30:58 are like thousands of tools out there, but I we took the six or eight best ones we are actually using that I can
+31:04 guarantee that are working very well. And lastly, I also included AI agent
+31:10 architectures which basically is there to give you ideas
+31:15 what AI agents you can create, right? Because use case as I mentioned number one figure out the use cases and then
+31:22 number two is the actual tools right but the use cases that's important so you can scan this QR code or go to
+31:28 link.scalport.io-toolkit
+31:34 and that's it from me for today. Thank you so much. Um it was a very
+31:40 interesting presentation and definitely something that even I think sellers would need to go back and see a few
+31:46 details about. And now before we go to the questions, I wanted to take a moment to introduce the VIP package um which is
+31:54 something that is available for all Sellerfest online participants. This VIP
+31:60 package includes of 20 additional advanced expert sessions. Experts were
+32:05 recording just for you. These are not available anywhere else. They are only available for now and you will have a
+32:12 lifetime access to them. So you can learn more about the different topics that are important today in this moment
+32:18 to succeed on Amazon. And we also included two great bonus materials for you and I would like to introduce them.
+32:25 So the first bonus material you will receive are the recordings from the European sele uh 2024. It's the biggest
+32:32 event we organize every year in Prague and you're going to get the access to all of the speaker sessions. So, you're
+32:38 going to have a sneak peek into what's happened uh physically there in Prague.
+32:43 Also, we have another uh great material from Brendan Young. It's actually an exclusive masterass. So, it's about
+32:50 product discovery, validation, and AI design. It has 30 lessons inside of this
+32:56 master class. It's usually worth $500. And now you can get it just by purchasing the VIP package. And as I
+33:03 said, these two great bonuses are just an addition into the other 20 um
+33:08 sessions we included in the package. As you can see, uh there's one from Daniela. And now I want to introduce the
+33:15 session that Mihal was recording for the VIP as well. So Mihal, can you give us a
+33:21 short comment about what did you record for your VIP session?
+33:26 Yes, absolutely. So basically I created a video a guide on how to build this
+33:31 foundation for using AI these AI agents because as I mentioned the tools connecting your meetings and your this
+33:37 and that we need the foundation first. So first of all, we need the databases. We need to understand the structure of
+33:44 the Amazon business. And as I mentioned, I spent four years systemizing over 100 brands, seven figure, eight figure
+33:50 brands. So I can tell you how to structure the business, the internal operations and also design the
+33:55 workflows, right? So not only we prepare the foundation for AI, but we also figure out what needs to be automated,
+34:03 right? So this would be the first step before diving into something because really the foundation needs to be there
+34:10 before you can fully leverage AI agents. Sounds really good. Thank you very much
+34:15 for introducing your session and again the link to the VIP package is down in the video description. So I encourage
+34:21 everybody to go on that website and check out the additional sessions and materials we have put together for you
+34:27 because we really want you to succeed when building your Amazon business and scaling it further. And now Miha, let's
+34:34 go to uh some questions we have for you. So let me pull up the first question. So
+34:40 what are the first two or three processes uh sellers should automate in their Amazon business?
+34:47 Yeah, great question. That's one of the topics I I discuss in the VIP package in the VIP session. But uh when it comes to
+34:53 systemizing, automating uh your processes, the easiest job will be to do
+34:59 something that you do on a regular basis the exact same way every single time. So
+35:04 it can be placing POS, you know, booking shipments, you know, all of these things that you know every single time I follow
+35:12 the exact same steps. That will be an easy job to actually automate it. For every business it might be different
+35:17 like now I was talking to seller where they're creating hundreds and hundreds of creatives for their meta ads because
+35:24 they're running ads to their Shopify website right uh so for them that's the biggest leverage there but for others it
+35:31 might be supply chain for others it might be actually customer service okay very good answer thank you for that
+35:38 then let's take another question um can you recommend Amazon MCP server
+35:46 Yeah. So, Amazon MCP server official one unfortunately doesn't exist yet, but um
+35:53 there are ways to uh find unofficial ones. Of course, then we there are some
+35:59 issues with potential issues with security. Uh but I currently do not have
+36:04 a great recommendation for this. When it comes to interacting with data through Amazon, we do it through the API calls
+36:11 for now. But I saw some Amazon MCV servers already popping out. So we are
+36:16 testing them. But as I said, I would prefer an official one, but unfortunately it's not there yet.
+36:22 Mhm. Okay. Thank you very much for that. Um then we have one more question here.
+36:28 So uh this seems like a lot and indeed there were many details but I think it's very interesting topic. So uh the
+36:34 question is can I outsource this to be done for our specific needs? because I think you highlighted many times
+36:39 everything has to be kind of according to what's important for your business and for your needs.
+36:45 Yeah, that's a great question. If there are of course uh AI automation agencies or freelancers, but the issues that
+36:53 sellers often encounter is that these agencies and freelancers, they don't understand Amazon, right? So you have
+36:60 one person who understands automation and AI, another person who understands Amazon and they spend a lot of time
+37:05 actually figuring out what they would like to do because the Amazon person doesn't know what's possible and the AI
+37:10 person doesn't know what he needs. So that's actually why I got into this because I have very good understanding
+37:16 of Amazon businesses you know nine years there and on the other hand now I'm not
+37:22 you know spending time to actually learn this part and build it. So that kind of bridges the gap between those two. So
+37:29 yeah, reach out to me. Good. Very nice. Uh thank you for that.
+37:35 Um so uh there's one more question we just uh received. So let me pull that up
+37:40 as well. So Mas is asking, do you sell any agents in the N8N marketplace?
+37:46 Mhm. Yeah. So as you may like as you will see that on the N8N marketplace or
+37:52 even on LinkedIn when I was showing the the funny post these like plug-and-play
+37:57 workflows they are not the best the best stuff is really customuilt for your business and of course if you sell some
+38:03 kind of like skeleton well then person can go and as I mentioned they can use cloth and build out the skeleton because
+38:09 what's the tough part is to actually make the little tweaks to make it work for your business right so I don't sell
+38:17 them like this I we we build them custom based on the needs of the seller and
+38:22 that requires more than just like here is your template just plug and play and it will run your business. It it just
+38:27 doesn't work that way. Okay, very good. Thank you very much. Uh so Mihal again thank you so much for
+38:34 putting this pres presentation together for our community. And before we go, could you once more uh summarize what
+38:40 are you doing on a daily basis and how do you help Amazon sellers? Yeah. So with my company Scalport, uh
+38:47 you can go scalport.io or find me on YouTube channel to find out more. But when uh I help sellers, we help them
+38:54 systemize their operations, right? And uh that means their systems, processes and also team, right? The management
+39:01 meetings and all that stuff. The internal operations, the part that no one likes to talk about because it's not
+39:06 as exciting as listings and PPC. But for people that reached a certain level,
+39:12 seven figures and more and potentially eight figures, it becomes basically the number one topic. So I help them figure
+39:17 out how to streamline the business so things are not falling apart. And now on
+39:22 top of that, we are building and implementing the automations and AI agents to basically take it to the next
+39:29 level because it goes hand in hand and it is definitely uh the future.
+39:35 Yeah, for sure. All right. Thank you very much. Uh I hope to see you soon on
+39:40 our channel. Thank you. And now I would recommend to watch
+39:47 another video where you will learn how to build systems and teams for your Amazon business.

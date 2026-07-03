@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Gives SAS settings checklist (inbound + thresholds)",
+      "passed": true,
+      "evidence": "\u2026Why | |---|---|---| | **Inbound shipping** | **~$0.60/lb\u2026"
+    },
+    {
+      "text": "Catches the sales-tax double-count trap (bake into cost, not %)",
+      "passed": true,
+      "evidence": "\u2026a real cost. | | **Sales tax** | **Leave the % field\u2026"
+    },
+    {
+      "text": "Cites 30% ROI / $3 profit gates",
+      "passed": true,
+      "evidence": "\u2026ime. | | **Min ROI** | **30%** (\u224825% acceptable only\u2026"
+    },
+    {
+      "text": "Notes true landed cost must include shipping",
+      "passed": true,
+      "evidence": "\u2026---|---|---| | **Inbound shipping** | **~$0.60/lb** (range\u2026"
+    }
+  ]
+}

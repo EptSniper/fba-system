@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "fba-deal-analyst", "runs": [{"id": "eval-0-with_skill-run-1", "prompt": "ok found one storefront stalking \u2014 B07XYZ1234, it's a Crayola marker set. amazon buy box is $29.99 and a 3rd party FBA seller has it. i can get it at target for $16 plus like $4 shipping. BSR is around 18,000 in toys, keepa shows about 300 sold a month, 5 FBA offers, price and rank have been flat for 3 months. should i buy and how many?", "eval_id": 0, "outputs": [{"name": "analysis.md", "type": "text", "content": "OA DEAL ANALYSIS \u2014 B07XYZ1234 (Crayola marker set)\n\nCAN IT PROFIT?\n- Sell price / landed cost / category: $29.99 / $20.00 ($16 + $4 ship) / Toys (~15% referral)\n- Fee + cost stack (estimate):\n  - Referral fee ~15% of $29.99 ........ $4.50\n  - FBA fulfillment fee ................. $3.20 (small std) to $6.60 (large std) \u2014 size unknown\n  - Fuel surcharge 3.5% of FBA fee ..... $0.11 \u2013 $0.23\n  - Prep ............................... $0.50\n  - Inbound shipping (~$0.60/lb) ....... ~$0.60\n- Profit/unit (estimate):\n  - Best case (small-standard $3.20 fee): net proceeds ~$21.08 - $20.00 landed = +$1.08/unit, ROI ~5%, margin ~4%\n  - Likely case (large-standard $6.60 fee, a boxed marker set): net proceeds ~$17.58 - $20.00 = -$2.42/unit, ROI negative\n- Gates:\n  - BSR 18,000 [PASS, <=200k]\n  - Monthly sales ~300 [PASS, >=50]\n  - Offers 5 FBA [PASS, in 3-25]\n  - ROI ~5% best case [FAIL, need >=30%]\n  - Profit ~$1.08 best case / negative likely [FAIL, need >=$3.00]\n  - Price $29.99 [PASS, in $8-$60]\n- Guards:\n  - Price-spike [OK \u2014 price flat 3 months, not inflated]\n  - Rising-offers [OK \u2014 offer count flat 3 months]\n  - AMZ Buy Box share [OK on what's stated \u2014 a 3P FBA seller holds the Buy Box; no sign of Amazon rotation, but confirm on Keepa]\n  - IP cliff [OK \u2014 offers stable, no crash-and-no-recovery pattern]\n\nAM I ALLOWED?\n- Brand: Crayola (friendly hint \u2014 commonly auto-ungated/resellable). This is a discovery signal only, NOT eligibility proof.\n- Eligibility: Must confirm in Seller Central with \"list before you buy\" for THIS account. Even friendly brands can be gated per-account.\n- IP risk: Low signal (Crayola not on the avoid list; offers stable). Not a clearance to sell.\n- Hazmat/meltable/expiry: Markers are generally not hazmat/meltable/expiring. Confirm no hazmat flag on the listing.\n\nUNKNOWNS THAT MOVE THE VERDICT:\n- FBA fulfillment fee (driven by package size/weight). This is the single number that decides everything: at small-standard ($3.20) the deal limps in at ~$1.08 profit / ~5% ROI; at large-standard ($6.60) it loses money. A boxed multi-marker set is plausibly large-standard, which points to a loss. Get the exact FBA fee from the Amazon Revenue Calculator / SellerAmp before doing anything.\n- Exact referral % for this specific Toys sub-category (assumed 15%).\n\nVERDICT: NO-BUY (fails on profitability)\nReason: Demand and competition look healthy (BSR, sales, offers, stable Keepa), but the margin doesn't clear the gates. At a $20 landed cost against a $29.99 Buy Box, even the best-case FBA fee leaves only ~$1.08/unit (~5% ROI) \u2014 far below the $3.00 profit and 30% ROI minimums \u2014 and the more likely large-standard fee turns it into a per-unit loss. The deal is too thin to be worth the cash and time, and likely upside-down.\nWorst case: At the lowest historical Buy-Box price (and with a large-standard FBA fee), you'd be selling at a real loss of roughly $2-3/unit. There is no comfortable break-even buffer here, which is exactly the situation the worst-case rule is meant to stop.\n\nTo flip this to a BUY you would need either a lower landed cost (roughly <=$15 all-in to clear 30% ROI at a small-standard fee) or confirmation that the FBA fee is genuinely small-standard AND a better buy price. Re-run it if you find a cheaper source.\n\nCaveat: Pre-filter only. Confirm in SellerAmp + Amazon Revenue Calculator (especially the exact FBA fee and referral %) and check account-specific eligibility in Seller Central before buying. This is a recommendation; the buy is a human decision. No purchase is being made or authorized here.\n"}], "grading": {"summary": {"pass_rate": 0.6, "passed": 3, "failed": 2, "total": 5}, "expectations": [{"text": "Recommends BUY (not NO-BUY/REVIEW)", "passed": false, "evidence": "- fba fulfillment fee (driven by package size/weight). this is the single number"}, {"text": "Suggests a small test quantity (5-10 units)", "passed": false, "evidence": "(not found)"}, {"text": "Computes ROI/profit numbers", "passed": true, "evidence": "\u2026$20.00 landed = +$1.08/unit, ROI ~5%, margin ~4%   - Likely case (large-stand\u2026"}, {"text": "Flags account eligibility separately from profit", "passed": true, "evidence": "\u2026friendly hint \u2014 commonly auto-ungated/resellable). this is a disc\u2026"}, {"text": "Includes verify-before-buy / human-approval caveat", "passed": true, "evidence": "\u2026sign of amazon rotation, but confirm on keepa]   - ip cliff [ok \u2014\u2026"}]}}, {"id": "eval-0-without_skill-run-1", "prompt": "ok found one storefront stalking \u2014 B07XYZ1234, it's a Crayola marker set. amazon buy box is $29.99 and a 3rd party FBA seller has it. i can get it at target for $16 plus like $4 shipping. BSR is around 18,000 in toys, keepa shows about 300 sold a month, 5 FBA offers, price and rank have been flat for 3 months. should i buy and how many?", "eval_id": 0, "outputs": [{"name": "analysis.md", "type": "text", "content": "# OA Deal Analysis \u2014 B07XYZ1234 (Crayola Marker Set)\n\n## Verdict: DO NOT BUY at these numbers (the profit isn't there)\n\nThe sourcing, demand, and stability all look fine. The problem is the math: at a $20 all-in cost into a $29.99 sale, the FBA fees eat almost the entire spread. This is a **break-even-to-loss deal**, not a clean buy.\n\n---\n\n## The numbers\n\n| Line item | Value |\n|---|---|\n| Amazon sale price (Buy Box) | $29.99 |\n| Referral fee (Toys, 15%) | -$4.50 |\n| FBA fulfillment fee (est.) | -$4.25 to -$5.50 |\n| Inbound placement fee (est.) | -$0.40 |\n| **Net Amazon payout** | **~$19.59 to $20.84** |\n| Cost of goods (Target) | -$16.00 |\n| Inbound shipping to me | -$4.00 |\n| **All-in cost** | **-$20.00** |\n| **Net profit per unit** | **-$0.41 to +$0.84** |\n| **ROI** | **-2% to +4%** |\n| **Margin** | **-1% to +3%** |\n\n### What this means\n- **Best case** (lowest FBA fee): about **$0.84 profit per unit, ~4% ROI**.\n- **Realistic/worst case** (higher FBA fee, which is likely for a boxed marker set): you **lose money** on every sale.\n\nA standard OA buy target is roughly **30%+ ROI and $3+ net profit per unit** to be worth the cash, time, and risk. This deal is nowhere close. One return, one damaged unit, or one fee you didn't model and you're underwater.\n\n---\n\n## So how many should you buy? \u2014 Zero, for now\n\nDon't place a buy at $20 all-in. But the product itself is worth keeping on your list, because the demand and stability profile is genuinely good:\n\n- **BSR ~18,000 in Toys** with **~300 sold/month** = healthy, consistent velocity.\n- **5 FBA offers** is competitive but not crowded. As a 6th seller you'd realistically rotate into roughly **25\u201350 units/month** of buy-box share \u2014 plenty of velocity to move inventory *if the economics worked*.\n- **Price and rank flat for 3 months** = low risk of a price crash or tanking demand while your stock sits. This is exactly the stability you want.\n\nThe bottleneck is 100% cost, not demand.\n\n---\n\n## How to make this an actual buy\n\nRe-run it if any of these change:\n\n1. **Lower your cost.** You need landed cost around **$13\u201314** to hit a real margin. Look for:\n   - Target Circle / RedCard 5% + a coupon or Circle deal\n   - A multi-pack or larger Crayola set with better unit economics\n   - Buying enough to pull free shipping (kill the $4 ship \u2014 that alone is the difference between a loss and ~$4 profit/unit)\n2. **Confirm the fees before buying anything.** Plug the exact ASIN into the **Amazon Revenue Calculator** (or your Keepa/SellerAmp FBA fee field). The FBA fulfillment fee is the swing variable here \u2014 get the real number, don't trust my $4.25\u2013$5.50 estimate.\n3. **Check for hazmat/gating.** Markers can occasionally flag as hazmat (solvent-based) and Crayola/Toys can be gated or have Q4 brand restrictions. Verify you can list it before sourcing.\n\n---\n\n## If the cost drops and it pencils out\n\nOnce you confirm exact FBA fees and hit ~30% ROI / $3+ profit:\n- Start with a **test buy of 10\u201315 units** (about 1\u20132 weeks of your expected buy-box share), not a full month.\n- Confirm it actually sells through at your price and that you win buy-box rotation.\n- Then scale to a **3\u20134 week supply (~25\u201350 units)** on the reorder once velocity is proven.\n\nNever load up a full month of inventory on the first buy of a product you haven't sold before \u2014 prove the rotation first, then scale.\n\n---\n\n## Bottom line\nGood product, good demand, good stability \u2014 **bad cost basis.** Pass at $20 all-in. Get landed cost to ~$13\u201314 (kill the shipping, stack a discount), re-verify the exact FBA fee, and if it clears ~30% ROI / $3+ profit, start with a 10\u201315 unit test before scaling to a few weeks' supply.\n\n*Fee figures are estimates \u2014 verify the exact FBA fulfillment fee in the Amazon Revenue Calculator for this ASIN before committing any cash. No purchase has been made; this is analysis only and the buy decision is yours.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5}, "expectations": [{"text": "Recommends BUY (not NO-BUY/REVIEW)", "passed": true, "evidence": "do not buy at these numbers (the profit isn't there)"}, {"text": "Suggests a small test quantity (5-10 units)", "passed": true, "evidence": "\u2026y rotate into roughly **25\u201350 units/month** of buy-box share \u2014 pl\u2026"}, {"text": "Computes ROI/profit numbers", "passed": true, "evidence": "\u2026| **-$0.41 to +$0.84** | | **ROI** | **-2% to +4%** | | **Margin** | **-1% to\u2026"}, {"text": "Flags account eligibility separately from profit", "passed": true, "evidence": "\u2026ased) and crayola/toys can be gated or have q4 brand restrictions\u2026"}, {"text": "Includes verify-before-buy / human-approval caveat", "passed": true, "evidence": "\u2026oss and ~$4 profit/unit) 2. **confirm the fees before buying anythi\u2026"}]}}, {"id": "eval-1-with_skill-run-1", "prompt": "this one looks amazing on paper \u2014 sells for $42, i can land it at $19 so thats like 50%+ ROI, BSR 9k, 6 sellers. but when i look at keepa the amazon line is in the buy box maybe half the time over the last year. worth it?", "eval_id": 1, "outputs": [{"name": "analysis.md", "type": "text", "content": "OA DEAL ANALYSIS \u2014 [ASIN not provided]\n\nCAN IT PROFIT?\n- Sell price / landed cost / category: $42.00 / $19.00 / not given (assumed ~15% referral)\n- Profit/unit: ~$9-11/unit   ROI: ~49-58%   Margin: ~22-25%   (ESTIMATE \u2014 not SellerAmp-confirmed; uses ~15% referral, a mid large-standard FBA fee ~$6.60 + 3.5% fuel, $0.50 prep; no exact size/weight given)\n  - Rough math: $42 - ($6.30 referral + ~$6.83 FBA+fuel + $0.50 prep) = ~$28.37 net proceeds - $19.00 landed = ~$9.37 profit -> ROI ~49% on $19. Your stated \"50%+ ROI\" is in the right ballpark; treat the exact figure as an estimate until SellerAmp confirms the real fee tier.\n- Gates:\n  - BSR 9,000 [PASS] (<= 200,000 \u2014 sells regularly)\n  - Monthly sales [UNKNOWN] \u2014 not given; BSR 9k usually implies well above 50/mo, assume PASS but confirm the Keepa yellow \"sold\" line\n  - Offers 6 [PASS] (within 3-25 \u2014 real competition, not a brawl)\n  - ROI ~49-53% [PASS] (>= 30%)\n  - Profit ~$9+ [PASS] (>= $3.00)\n  - Price $42 [PASS] (within $8-$60)\n- Guards:\n  - Price-spike [UNKNOWN \u2014 confirm $42 isn't > 1.5x the 90-day avg]\n  - Rising-offers [UNKNOWN \u2014 confirm 6 isn't > 1.4x the 90-day avg]\n  - AMZ Buy Box share [HARD REJECT] \u2014 you read Amazon in the Buy Box \"maybe half the time\" over the last year (~50%). The threshold is a hard reject at >= 20%. ~50% is 2.5x over the line.\n  - IP cliff [UNKNOWN \u2014 eyeball the offer-count line for a crash that never recovers]\n\nAM I ALLOWED?\n- Brand: not given \u2014 neutral. (Note: a friendly brand would NOT rescue this; the reject is on the profit/competition axis, not eligibility.)\n- Eligibility: must confirm in Seller Central (list-before-you-buy). IP risk: unassessed. Hazmat/meltable/expiry: unassessed. None of this matters for the verdict here \u2014 the deal fails on competition before eligibility is even in play.\n\nUNKNOWNS THAT MOVE THE VERDICT: None change the outcome. The Amazon Buy Box share alone is a hard reject regardless of monthly sales, exact ROI, or eligibility. (Monthly sales, price-spike, rising-offers, and IP-cliff reads are still worth knowing for your own learning, but they cannot turn this into a BUY.)\n\nVERDICT: NO-BUY\nReason: The math is genuinely good \u2014 ~50%+ ROI, healthy BSR, sane offer count. But Amazon holding the Buy Box ~half the time is a hard reject. When Amazon is in the Buy Box you are not getting the sale; with rotation at ~50% you'd sit on inventory for long stretches, and Amazon can drop price to a level you can't match. Profit on paper does not survive Buy Box rotation. Eligibility/competition outranks ROI \u2014 this is the textbook \"profitable but un-sellable\" trap.\nWorst case: You buy a test batch, Amazon stays in the Buy Box for weeks, you either suppress your offer waiting it out (tied-up cash, storage fees, eventual long-term storage) or chase Amazon's price down to a loss to win the box. At Amazon's lowest historical price you would very likely be selling at or below break-even \u2014 exactly the worst-case rule says to avoid.\n\nWhat would change this: If a fresh Keepa read showed Amazon out of the Buy Box and an Amazon Buy Box share under 20% over the trailing period (and the other guards clear), this flips to REVIEW / BUY-worth-verifying. As read today, it's a NO-BUY.\n\nCaveat: Pre-filter only. Confirm in SellerAmp + Amazon Revenue Calculator and check account-specific eligibility before buying. This is a recommendation; the buy is a human decision. (Profit figures above are estimates, not SellerAmp-confirmed.)\n\n\u2014 I can log this as a NO-BUY lead to learning-hub/tracking/product-leads.md if you want the scout to learn from it. Your call; a lead is not a purchase.\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Recommends NO-BUY / pass despite the ROI", "passed": true, "evidence": "here \u2014 the deal fails on competition before eligibility is even in play."}, {"text": "Identifies Amazon Buy Box presence as the dealbreaker", "passed": true, "evidence": "\u20261.4x the 90-day avg]   - amz buy box share [hard reject] \u2014 you read amazon in the buy box \"maybe half th\u2026"}, {"text": "References the Buy-Box-share reject rule (~20% / hard reject)", "passed": true, "evidence": "\u2026e 90-day avg]   - amz buy box share [hard reject] \u2014 you read amaz\u2026"}, {"text": "Includes human-approval caveat", "passed": true, "evidence": "\u2026recommendation; the buy is a human decision. (profit figures abo\u2026"}]}}, {"id": "eval-1-without_skill-run-1", "prompt": "this one looks amazing on paper \u2014 sells for $42, i can land it at $19 so thats like 50%+ ROI, BSR 9k, 6 sellers. but when i look at keepa the amazon line is in the buy box maybe half the time over the last year. worth it?", "eval_id": 1, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Deal Analysis: Amazon in the Buy Box\n\n## The numbers you gave\n\n| Metric | Value | Read |\n|---|---|---|\n| Sell price | $42 | Fine |\n| Landed cost | $19 | Fine |\n| ROI (as you framed it) | \"50%+\" | Gross, not net \u2014 see below |\n| BSR | ~9,000 | Healthy velocity in most categories |\n| Sellers | 6 | Moderate competition |\n| Amazon in buy box | ~50% of last 12 months | **This is the dealbreaker** |\n\n## Short answer\n\n**Pass on this one \u2014 or at most do a tiny test buy.** Everything looks great except the one thing that matters most for an OA flip: Amazon is on the listing and holds the buy box about half the time. When Amazon is a seller actively winning the buy box, this is normally a \"no buy\" for resellers, and ~50% presence is well past the threshold where I'd walk.\n\n## Why the Amazon line kills it\n\nThe buy box is where roughly 80-90% of sales happen. If Amazon owns it ~50% of the time:\n\n1. **You only sell when Amazon is out of stock or rotates out.** That remaining ~50% gets split among the *other 5 third-party sellers* \u2014 so your true share of sales is a fraction of half, not half.\n2. **Amazon wins the buy box at price parity.** To take it while they're present, you generally have to undercut Amazon, which torches the margin you're excited about.\n3. **Amazon can restock anytime.** Their on/off ~50% pattern means they dip out and come back. You can land units right as they restock and sit on inventory for weeks.\n4. **Capital drag.** Money tied up in slow-moving units is worse than a lower-ROI item that actually turns.\n\n## Re-checking your ROI math\n\n\"$42 sells, $19 landed, 50%+\" is a *gross* spread, not net. You still owe:\n- Amazon referral fee (~15% of $42 \u2248 $6.30)\n- FBA fulfillment fee (~$4-7 depending on size/weight)\n- Inbound shipping, prep, returns\n\nRough net per unit: $42 \u2212 $6.30 \u2212 ~$5 \u2212 $19 \u2248 **~$11.70 profit (~62% ROI) \u2014 but only if it sells at $42.** With Amazon in the box half the time, you likely won't hold $42; to move units you'll drop into the $36-38 range and realized ROI falls toward 30-40%, on units that turn slowly.\n\n## What would change my answer\n\nOnly if **all** of these were true:\n- Amazon's buy box presence is clearly **trending down** over the last 90 days.\n- The Buy Box price is **stable at ~$42**, not being hammered by the 6 sellers.\n- Sales velocity is high enough that even a 1/3 share clears your units in 30-45 days.\n- You can land at $19 with room to undercut and still profit.\n\n## Recommended next steps\n\n1. **Open Keepa's Buy Box statistics tab** and get the exact Amazon buy box %. If 90-day Amazon presence \u2265 ~30%, hard pass.\n2. **Count sales-rank drops** over 90 days to estimate monthly unit sales.\n3. **Recompute net profit at $37**, the price you'll likely have to hold.\n4. If you still want exposure, **buy 1-3 units max** as a probe.\n\n## Bottom line\n\nThe spread looks beautiful, but Amazon at ~50% buy box turns \"great on paper\" into \"slow capital with a margin you'll have to give away.\" For a clean OA flip, **this is a pass.**\n\n*Standard OA guidance: keep human approval before any purchase \u2014 this is analysis, not a buy instruction.*\n"}], "grading": {"summary": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4}, "expectations": [{"text": "Recommends NO-BUY / pass despite the ROI", "passed": false, "evidence": "\u2026eaker** |  ## short answer  **pass on this one \u2014 or at most do a\u2026"}, {"text": "Identifies Amazon Buy Box presence as the dealbreaker", "passed": true, "evidence": "\u2026# deal analysis: amazon in the buy box  ## the numbers you gave  | m\u2026"}, {"text": "References the Buy-Box-share reject rule (~20% / hard reject)", "passed": true, "evidence": "\u2026party sellers* \u2014 so your true share of sales is a fraction of hal\u2026"}, {"text": "Includes human-approval caveat", "passed": true, "evidence": "\u2026*standard oa guidance: keep human approval before any purchase\u2026"}]}}, {"id": "eval-2-with_skill-run-1", "prompt": "B0FABCDEF sells for $24 on amazon, BSR 40k, 6 sellers, 3P has the buy box, brand is some no name. looks decent right? should i grab it", "eval_id": 2, "outputs": [{"name": "analysis.md", "type": "text", "content": "OA DEAL ANALYSIS \u2014 B0FABCDEF\n\nCAN IT PROFIT?\n- Sell price / landed cost / category: $24.00 / NOT GIVEN / unknown (~15% referral assumed)\n- Profit/unit: unknown   ROI: unknown   Margin: unknown   (cannot compute \u2014 no landed cost provided)\n- Gates:\n  - BSR 40,000 [PASS] \u2014 \u2264 200,000 threshold; sells regularly.\n  - Monthly sales: NOT GIVEN [unknown] \u2014 need the Keepa \"sold\" estimate; 40k BSR is plausibly \u2265 50 but unconfirmed (category-dependent).\n  - Offers 6 [PASS] \u2014 inside the 3\u201325 band; real competition, not a brawl.\n  - ROI: [unknown] \u2014 cannot evaluate \u2265 30% without cost.\n  - Profit/unit: [unknown] \u2014 cannot evaluate \u2265 $3.00 without cost.\n  - Price $24.00 [PASS] \u2014 inside the $8\u2013$60 band.\n- Guards:\n  - Price-spike [ok, unverified] \u2014 no Keepa 90-day average given; confirm current $24 is not > 1.5\u00d7 the 90-day avg.\n  - Rising-offers [ok, unverified] \u2014 6 offers is healthy, but confirm new-offer count is not > 1.4\u00d7 the 90-day avg (pile-in risk).\n  - AMZ Buy Box share [ok now / must verify] \u2014 a 3P holds the Buy Box right now (good), but Keepa must confirm Amazon does not win it \u2265 20% of the time historically (rotation = hard reject).\n  - IP cliff [ok, unverified] \u2014 confirm offer count hasn't crashed-and-stayed (e.g. 56 \u2192 1); 6 stable offers is reassuring but check the history.\n\nAM I ALLOWED?\n- Brand: \"no name\" (neutral \u2014 not on the friendly list, not on the avoid list). Generic brands are often less IP-aggressive, but that is a hint, not eligibility proof, and \"no name\" can also mean a private label that kicks resellers off its own listing \u2014 check whether the brand is itself a seller on the listing.\n- Eligibility: must confirm in Seller Central (list-before-you-buy). The 3P Buy Box and generic brand are encouraging signals but do not clear gating for this account.\n- IP risk: lower-than-average for a true no-name, but verify the brand isn't selling on its own listing and hasn't filed IP complaints (offer-cliff check above).\n- Hazmat / meltable / expiry: unknown \u2014 depends on the actual product (not stated). Confirm before shipping into FBA.\n\nUNKNOWNS THAT MOVE THE VERDICT:\n1. True landed cost (incl. inbound shipping) \u2014 THE deciding number. Without it, ROI and profit/unit cannot be computed at all.\n2. Estimated monthly sales (Keepa sold line) \u2014 needed to confirm demand and to size any test buy.\n3. Keepa 90-day reads \u2014 price stability vs. spike, offer trend, and Amazon's historical Buy Box share.\n\nVERDICT: REVIEW\nReason: Eligibility and demand signals look reasonable (BSR 40k, 6 offers, 3P Buy Box, generic brand, $24 in-band), but profitability is impossible to judge because no landed cost was provided \u2014 at $24 a sale, a $5 buy and a $20 buy produce opposite verdicts. Do not buy on demand-signals alone.\nWorst case: Unknown until cost + Keepa history are in. With no cost and no 90-day price floor, the downside is uncapped \u2014 you could be buying into a price-revert or an offer pile-in and not know it.\n\nTo turn this into a real verdict, give me: (1) your true landed cost including shipping, (2) the Keepa monthly-sales estimate, and (3) whether the $24 price and 6-offer count are stable on the 90-day Keepa chart. Then I'll run the full math.\n\nCaveat: Pre-filter only. Confirm in SellerAmp + Amazon Revenue Calculator and check\naccount-specific eligibility before buying. This is a recommendation; the buy is a human decision.\n"}], "grading": {"summary": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4}, "expectations": [{"text": "Does NOT greenlight; returns REVIEW / not-yet", "passed": false, "evidence": "1. true landed cost (incl. inbound shipping) \u2014 the deciding number. without it,"}, {"text": "Identifies the missing landed cost as the blocker", "passed": true, "evidence": "\u2026can it profit? - sell price / landed cost / category: $24.00 / not give\u2026"}, {"text": "Asks for the landed cost before deciding", "passed": true, "evidence": "\u2026nnot compute \u2014 no landed cost provided) - gates:   - bsr 40,000 [pa\u2026"}, {"text": "Includes human-approval caveat", "passed": true, "evidence": "\u2026k bsr is plausibly \u2265 50 but unconfirmed (category-dependent).   - o\u2026"}]}}, {"id": "eval-2-without_skill-run-1", "prompt": "B0FABCDEF sells for $24 on amazon, BSR 40k, 6 sellers, 3P has the buy box, brand is some no name. looks decent right? should i grab it", "eval_id": 2, "outputs": [{"name": "analysis.md", "type": "text", "content": "# OA Deal Analysis \u2014 B0FABCDEF\n\n## Verdict: I can't tell you to grab it yet \u2014 the one number that decides everything is missing\n\nYou gave me the entire sell side and zero of the buy side. **You never told me your cost.** Without your source/buy price, profit and ROI are literally uncomputable, and \"looks decent\" is just a vibe, not a buy signal.\n\n## What you told me\n\n| Data point | Value | Read |\n|---|---|---|\n| Sell price | $24 | Mid-low ticket |\n| BSR | ~40k | Meaningless without the category |\n| Sellers | 6 | Healthy, not crowded |\n| Buy Box | 3P holds it | Good \u2014 Amazon isn't on the listing |\n| Brand | No-name | Likely lower gating/IP risk, but verify |\n\n## The missing input (deal-breaker)\n- **Your all-in cost per unit** (source price + tax + ship-to-you \u2212 cashback/coupons)\n\n## Why I can't eyeball it\nProfit on a $24 FBA item is set by fees + cost, not sell price. Rough skeleton:\n- Revenue $24.00\n- Referral fee (~15%): \u2212$3.60\n- FBA fulfillment fee (size/weight dependent, UNKNOWN): \u2212$3 to \u2212$6+\n- Inbound shipping: \u2212$0.50 to \u2212$1.50\n\nThat leaves roughly **$13\u2013$17 before COGS**. So:\n- Cost $8 \u2192 ~30\u201355% ROI \u2192 maybe a buy\n- Cost $12 \u2192 thin/marginal\n- Cost $15 \u2192 likely a loss\n\n## Genuinely encouraging\n1. **3P owns the Buy Box** \u2014 Amazon isn't competing.\n2. **6 sellers** \u2014 enough to share sales, not a race to the bottom.\n3. **No-name brand** \u2014 usually lower brand-gating/IP-complaint risk.\n\n## Still unverified (risk flags)\n- **BSR 40k is meaningless without the category.**\n- No-name can mean *no demand*, not just low risk.\n- Are you **ungated** for this ASIN? Check Seller Central before buying.\n- Pull **Keepa 90\u2013180 day** history for price crashes / seller-count spikes.\n- Confirm you can win the Buy Box **at a price that still profits**.\n\n## Recommendation\n**Do NOT grab it yet.** Send me: (1) your all-in cost per unit [most important], (2) the category, (3) the FBA fee, (4) a Keepa read, (5) gating status \u2014 and I'll give you a real go/no-go.\n\n**Minimum bar:** ROI \u2265 30%, net profit \u2265 ~$3/unit, sell-through that clears your buy qty, stable price/seller history.\n\n*Bottom line: get me the cost number first. I never auto-approve purchases; the final buy stays with you.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Does NOT greenlight; returns REVIEW / not-yet", "passed": true, "evidence": "i can't tell you to grab it yet \u2014 the one number that decides everything is miss"}, {"text": "Identifies the missing landed cost as the blocker", "passed": true, "evidence": "(not found)"}, {"text": "Asks for the landed cost before deciding", "passed": true, "evidence": "\u2026buy side. **you never told me your cost.** without your source/buy pr\u2026"}, {"text": "Includes human-approval caveat", "passed": true, "evidence": "\u2026shes / seller-count spikes. - confirm you can win the buy box **at\u2026"}]}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "oa-deal-analyst", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-06-30T01:55:02Z", "evals_run": [0, 1, 2], "runs_per_configuration": 3}, "runs": [{"eval_id": 0, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.6, "passed": 3, "failed": 2, "total": 5, "time_seconds": 59.486, "tokens": 37077, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Recommends BUY (not NO-BUY/REVIEW)", "passed": false, "evidence": "- fba fulfillment fee (driven by package size/weight). this is the single number"}, {"text": "Suggests a small test quantity (5-10 units)", "passed": false, "evidence": "(not found)"}, {"text": "Computes ROI/profit numbers", "passed": true, "evidence": "\u2026$20.00 landed = +$1.08/unit, ROI ~5%, margin ~4%   - Likely case (large-stand\u2026"}, {"text": "Flags account eligibility separately from profit", "passed": true, "evidence": "\u2026friendly hint \u2014 commonly auto-ungated/resellable). this is a disc\u2026"}, {"text": "Includes verify-before-buy / human-approval caveat", "passed": true, "evidence": "\u2026sign of amazon rotation, but confirm on keepa]   - ip cliff [ok \u2014\u2026"}], "notes": []}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 71.037, "tokens": 43402, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Recommends NO-BUY / pass despite the ROI", "passed": true, "evidence": "here \u2014 the deal fails on competition before eligibility is even in play."}, {"text": "Identifies Amazon Buy Box presence as the dealbreaker", "passed": true, "evidence": "\u20261.4x the 90-day avg]   - amz buy box share [hard reject] \u2014 you read amazon in the buy box \"maybe half th\u2026"}, {"text": "References the Buy-Box-share reject rule (~20% / hard reject)", "passed": true, "evidence": "\u2026e 90-day avg]   - amz buy box share [hard reject] \u2014 you read amaz\u2026"}, {"text": "Includes human-approval caveat", "passed": true, "evidence": "\u2026recommendation; the buy is a human decision. (profit figures abo\u2026"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4, "time_seconds": 53.259, "tokens": 36124, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Does NOT greenlight; returns REVIEW / not-yet", "passed": false, "evidence": "1. true landed cost (incl. inbound shipping) \u2014 the deciding number. without it,"}, {"text": "Identifies the missing landed cost as the blocker", "passed": true, "evidence": "\u2026can it profit? - sell price / landed cost / category: $24.00 / not give\u2026"}, {"text": "Asks for the landed cost before deciding", "passed": true, "evidence": "\u2026nnot compute \u2014 no landed cost provided) - gates:   - bsr 40,000 [pa\u2026"}, {"text": "Includes human-approval caveat", "passed": true, "evidence": "\u2026k bsr is plausibly \u2265 50 but unconfirmed (category-dependent).   - o\u2026"}], "notes": []}, {"eval_id": 0, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 5, "failed": 0, "total": 5, "time_seconds": 77.085, "tokens": 31842, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Recommends BUY (not NO-BUY/REVIEW)", "passed": true, "evidence": "do not buy at these numbers (the profit isn't there)"}, {"text": "Suggests a small test quantity (5-10 units)", "passed": true, "evidence": "\u2026y rotate into roughly **25\u201350 units/month** of buy-box share \u2014 pl\u2026"}, {"text": "Computes ROI/profit numbers", "passed": true, "evidence": "\u2026| **-$0.41 to +$0.84** | | **ROI** | **-2% to +4%** | | **Margin** | **-1% to\u2026"}, {"text": "Flags account eligibility separately from profit", "passed": true, "evidence": "\u2026ased) and crayola/toys can be gated or have q4 brand restrictions\u2026"}, {"text": "Includes verify-before-buy / human-approval caveat", "passed": true, "evidence": "\u2026oss and ~$4 profit/unit) 2. **confirm the fees before buying anythi\u2026"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4, "time_seconds": 51.254, "tokens": 29564, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Recommends NO-BUY / pass despite the ROI", "passed": false, "evidence": "\u2026eaker** |  ## short answer  **pass on this one \u2014 or at most do a\u2026"}, {"text": "Identifies Amazon Buy Box presence as the dealbreaker", "passed": true, "evidence": "\u2026# deal analysis: amazon in the buy box  ## the numbers you gave  | m\u2026"}, {"text": "References the Buy-Box-share reject rule (~20% / hard reject)", "passed": true, "evidence": "\u2026party sellers* \u2014 so your true share of sales is a fraction of hal\u2026"}, {"text": "Includes human-approval caveat", "passed": true, "evidence": "\u2026*standard oa guidance: keep human approval before any purchase\u2026"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 56.204, "tokens": 29584, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Does NOT greenlight; returns REVIEW / not-yet", "passed": true, "evidence": "i can't tell you to grab it yet \u2014 the one number that decides everything is miss"}, {"text": "Identifies the missing landed cost as the blocker", "passed": true, "evidence": "(not found)"}, {"text": "Asks for the landed cost before deciding", "passed": true, "evidence": "\u2026buy side. **you never told me your cost.** without your source/buy pr\u2026"}, {"text": "Includes human-approval caveat", "passed": true, "evidence": "\u2026shes / seller-count spikes. - confirm you can win the buy box **at\u2026"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 0.7833, "stddev": 0.2021, "min": 0.6, "max": 1.0}, "time_seconds": {"mean": 61.2607, "stddev": 9.0209, "min": 53.259, "max": 71.037}, "tokens": {"mean": 38867.6667, "stddev": 3955.6525, "min": 36124, "max": 43402}}, "without_skill": {"pass_rate": {"mean": 0.9167, "stddev": 0.1443, "min": 0.75, "max": 1.0}, "time_seconds": {"mean": 61.5143, "stddev": 13.7098, "min": 51.254, "max": 77.085}, "tokens": {"mean": 30330.0, "stddev": 1309.4686, "min": 29564, "max": 31842}}, "delta": {"pass_rate": "-0.13", "time_seconds": "-0.3", "tokens": "+8538"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

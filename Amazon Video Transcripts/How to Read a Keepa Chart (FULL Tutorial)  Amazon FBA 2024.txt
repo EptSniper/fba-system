@@ -1,0 +1,1339 @@
+00:00 in this video I'm going to go through
+00:02 
+
+00:02 one of the most important tools that you
+00:04 
+
+00:04 will ever use if you are selling on
+00:07 
+
+00:07 Amazon and that is kipa kipa is a robust
+00:12 
+
+00:12 data analysis and pricing tool that
+00:16 
+
+00:16 allows you to see the entire pricing
+00:19 
+
+00:19 history of how has a product been
+00:22 
+
+00:22 selling throughout the last
+00:25 
+
+00:25 365 days of the year it will show you in
+00:29 
+
+00:29 detail the Peaks and lows the
+00:33 
+
+00:33 seasonality gaps in between sales and
+00:36 
+
+00:36 I'm going to explain to you how you can
+00:39 
+
+00:39 use keepa to your benefit as a seller to
+00:43 
+
+00:43 correctly analyze more importantly I'm
+00:46 
+
+00:46 going to show you how keepad can help
+00:48 
+
+00:48 you detect red flags products to make
+00:52 
+
+00:52 wise purchasing decisions for your
+00:55 
+
+00:55 Amazon business because we all know that
+00:59 
+
+00:59 the smarter
+01:00 
+
+01:00 the buyer you are the better the
+01:04 
+
+01:04 products you will get the faster they
+01:07 
+
+01:07 will sell and the more net profit you
+01:12 
+
+01:12 will make and signals that will tell you
+01:15 
+
+01:15 to stay clear and away and run as fast
+01:19 
+
+01:19 as you can away from the product to not
+01:22 
+
+01:22 buy it if you don't have keep already
+01:24 
+
+01:24 you can easily go to keepa.com and
+01:26 
+
+01:26 download it it's about $20 per month so
+01:31 
+
+01:31 it's definitely not expensive and a
+01:33 
+
+01:33 great investment in your business once
+01:35 
+
+01:35 you have keepa what you're going to want
+01:37 
+
+01:37 to do is install the keepa Chrome
+01:40 
+
+01:40 extension on Google Chrome and once you
+01:42 
+
+01:42 have it installed it's going to look
+01:45 
+
+01:45 like this on every product page on every
+01:48 
+
+01:48 listing that you visit on Amazon it's
+01:51 
+
+01:51 going to show you this graph and you can
+01:54 
+
+01:54 choose where on the page you want to
+01:55 
+
+01:55 graph I personally choose to have it
+01:58 
+
+01:58 right under the product image and
+01:60 
+
+01:60 description now before we get into the
+02:02 
+
+02:02 nitty greedy of how to properly analyze
+02:06 
+
+02:06 products I want to go through all the
+02:08 
+
+02:08 settings on Kea basically the settings
+02:12 
+
+02:12 is when you click on each one of this
+02:16 
+
+02:16 for example I'm clicking on the first
+02:17 
+
+02:17 one sales rank and as you can see if I
+02:21 
+
+02:21 click it one time all the sales rank
+02:24 
+
+02:24 curves and chart will disappear and if I
+02:27 
+
+02:27 click it again it will
+02:29 
+
+02:29 reappear the sales rank as you probably
+02:32 
+
+02:32 know is each listing and product is
+02:35 
+
+02:35 assigned a specific sales rank on its
+02:38 
+
+02:38 own category the lower the sales rank
+02:42 
+
+02:42 the better and faster that product sells
+02:45 
+
+02:45 this pink one right here is the buy box
+02:48 
+
+02:48 so if I click it out you see the pink
+02:51 
+
+02:51 chart disappears and if I click it back
+02:53 
+
+02:53 in it
+02:54 
+
+02:54 reappears this other one is a new
+02:57 
+
+02:57 third-party FBA chart and if i c click
+03:00 
+
+03:00 it out it disappears if I click it back
+03:02 
+
+03:02 in it reappears then you can also put
+03:05 
+
+03:05 the new third party fbm and a few other
+03:08 
+
+03:08 settings but because I only focus on FBA
+03:11 
+
+03:11 I only focus on new products and I also
+03:15 
+
+03:15 like to check out the sales rank for
+03:17 
+
+03:17 every product those are the very few
+03:20 
+
+03:20 charts that I like showing up on my Kea
+03:22 
+
+03:22 chart another important thing right here
+03:26 
+
+03:26 Isa allows you to see the time frame
+03:29 
+
+03:29 that you want to see for example if you
+03:32 
+
+03:32 want to see only sales for that day you
+03:35 
+
+03:35 click on day week month 3 month year and
+03:40 
+
+03:40 all the entire history which in this
+03:43 
+
+03:43 case it will be over 1,000 days I
+03:47 
+
+03:47 personally like to keep this one entire
+03:49 
+
+03:49 year some products will not have an
+03:51 
+
+03:51 entire year because they don't have that
+03:53 
+
+03:53 much sales history but most products
+03:56 
+
+03:56 will now you will see that you have two
+03:59 
+
+03:59 graphs the this one right here shows you
+04:01 
+
+04:01 the buy box and the pricing history for
+04:04 
+
+04:04 that product and this one right here
+04:07 
+
+04:07 shows you the seller chart this is how
+04:10 
+
+04:10 many sellers are currently selling on
+04:13 
+
+04:13 the listing and you can also Mouse over
+04:16 
+
+04:16 so if you put your mouse over the chart
+04:19 
+
+04:19 or the line you can see how throughout
+04:23 
+
+04:23 time the seller the amount of sellers
+04:27 
+
+04:27 increase or decrease so in this case we
+04:30 
+
+04:30 we see that up until February 20th the
+04:34 
+
+04:34 seller count remain steady around 5 6 7
+04:37 
+
+04:37 and then something happened maybe a
+04:39 
+
+04:39 clearance or a good deal a bunch of
+04:41 
+
+04:41 sellers bought this product and the
+04:44 
+
+04:44 seller count went from 7 to 21 and you
+04:47 
+
+04:47 can quickly see how right here the curve
+04:53 
+
+04:53 skyrockets the pricing however remains
+04:56 
+
+04:56 pretty steady it it remains pretty
+04:59 
+
+04:59 steady at a around 96
+05:02 
+
+05:02 97 that's where the buy box is just as a
+05:05 
+
+05:05 reminder the buy box is pink and if
+05:08 
+
+05:08 there is no buy box in case of
+05:10 
+
+05:10 suppressed listings you will look at
+05:14 
+
+05:14 this one at the orange which is the
+05:17 
+
+05:17 price of new thirdparty FBA sellers now
+05:20 
+
+05:20 so far we've been in the price history
+05:22 
+
+05:22 Tab and as you can see we have several
+05:24 
+
+05:24 tabs here let's move on to the second
+05:27 
+
+05:27 tab which is track a product so the
+05:30 
+
+05:30 track of product feature is exceptional
+05:33 
+
+05:33 on keepa and they will email you almost
+05:37 
+
+05:37 near real time alerts when the product
+05:40 
+
+05:40 pricing meets your criteria so for
+05:43 
+
+05:43 example this product is currently
+05:45 
+
+05:45 selling at
+05:46 
+
+05:46 $88 let's say I know that once it hits
+05:50 
+
+05:50 $40 or less it will be profitable for me
+05:52 
+
+05:52 to resell so I want to put right here
+05:56 
+
+05:56 $40 or less from a new B seller for
+06:00 
+
+06:00 example and then start tracking and
+06:03 
+
+06:03 keepa will track it for one entire year
+06:05 
+
+06:05 now this is only if you are doing Amazon
+06:08 
+
+06:08 to Amazon reselling and if you are I
+06:12 
+
+06:12 have a separate video you can look on my
+06:15 
+
+06:15 YouTube channel I have a separate video
+06:17 
+
+06:17 on how to do Amazon to Amazon selling I
+06:21 
+
+06:21 really don't do much at all of Amazon to
+06:25 
+
+06:25 Amazon although it is a very nice
+06:28 
+
+06:28 opportunity if that's where your focus
+06:30 
+
+06:30 is moving on to the data data tab right
+06:34 
+
+06:34 here will allow you to see all the
+06:38 
+
+06:38 buyers that have had the buy box so
+06:42 
+
+06:42 within the data tab you will go to buy
+06:45 
+
+06:45 box statistics which is where we are
+06:47 
+
+06:47 right now and as you can see we have a
+06:49 
+
+06:49 bunch of buyers I mean a bunch of
+06:52 
+
+06:52 sellers we have a bunch of Sellers and
+06:55 
+
+06:55 here kipa will tell you the amount of
+06:58 
+
+06:58 share the buyb share that each seller
+07:02 
+
+07:02 has so for example Midwest store has a
+07:06 
+
+07:06 25% buyb share bolo America has 18%
+07:12 
+
+07:12 buybook share and it will also tell you
+07:15 
+
+07:15 the average price that they have held
+07:18 
+
+07:18 the buy box at for example Midwest store
+07:22 
+
+07:22 has had an average price of
+07:25 
+
+07:25 91.8 while they were holding the 25%
+07:29 
+
+07:29 buyb share
+07:30 
+
+07:30 if you're curious about a particular
+07:32 
+
+07:32 seller you can also click right here and
+07:35 
+
+07:35 in a new tab Amazon will open the
+07:39 
+
+07:39 storefront for that seller and you can
+07:42 
+
+07:42 see their address and different right
+07:45 
+
+07:45 here the address and different the the
+07:48 
+
+07:48 positive ranking and different details
+07:51 
+
+07:51 of that storefront if you're curious
+07:53 
+
+07:53 about another important fact is that
+07:56 
+
+07:56 keepa will tell you the last time that
+07:59 
+
+07:59 that seller h
+08:01 
+
+08:01 the buy box which in this case it was
+08:03 
+
+08:03 today March 19th at 2:00 p.m. with 11
+08:08 
+
+08:08 minutes moving forward if you go to
+08:11 
+
+08:11 product details by the way we're still
+08:13 
+
+08:13 under data if you go under product
+08:15 
+
+08:15 details then you will see the amount of
+08:18 
+
+08:18 out of stock oos right here means out of
+08:23 
+
+08:23 stock so the amount the percentage of
+08:25 
+
+08:25 out of stock that Amazon has been in the
+08:27 
+
+08:27 last 90 days so in this case Amazon has
+08:31 
+
+08:31 not been on the listing at all 100% out
+08:34 
+
+08:34 of stock in the last 90 days and that's
+08:37 
+
+08:37 a very good sign for our sellers because
+08:40 
+
+08:40 we never really want to compete against
+08:42 
+
+08:42 Amazon and if we do compete against
+08:44 
+
+08:44 Amazon we want Amazon to be out of stock
+08:46 
+
+08:46 most of the time another important one
+08:49 
+
+08:49 is right here the buy box out of stock
+08:52 
+
+08:52 and in this case it's 0% which is also a
+08:55 
+
+08:55 good sign this basically tells us that
+08:58 
+
+08:58 this listing has had a buy box for the
+09:00 
+
+09:00 last 90 days meaning it has not had its
+09:04 
+
+09:04 buy box suppressed at all it has
+09:07 
+
+09:07 consistently had a buy box during the
+09:09 
+
+09:09 last 90 days if it did have a buyb
+09:13 
+
+09:13 suppress here you would see 2% or 10% a
+09:17 
+
+09:17 number above 0% now let's actually dig
+09:21 
+
+09:21 in deeper and see if each listing is
+09:25 
+
+09:25 worth it or what the red flags are or
+09:27 
+
+09:27 not so this keep a chart right here
+09:30 
+
+09:30 tells me that the listing is good I
+09:34 
+
+09:34 would actually want the buy box line the
+09:37 
+
+09:37 pink line to fluctuate a little bit more
+09:42 
+
+09:42 because Normal listings fluctuate all
+09:46 
+
+09:46 the time they are not a straight Red
+09:49 
+
+09:49 Line when you see a straight red line
+09:52 
+
+09:52 and I will show you another example that
+09:54 
+
+09:54 generally means that the brand controls
+09:57 
+
+09:57 that listing and you should stay away
+09:59 
+
+09:59 but this one is not too bad there's a a
+10:02 
+
+10:02 lot of competition against Sellers as we
+10:05 
+
+10:05 can see here in the buy box a lot of
+10:07 
+
+10:07 sellers are selling that which to me is
+10:09 
+
+10:09 a good sign as well I do not want to go
+10:13 
+
+10:13 into a listing where there is only one
+10:15 
+
+10:15 seller or two sellers because that might
+10:18 
+
+10:18 be a sign of a potential IP complaint
+10:21 
+
+10:21 but this is a healthy listing right here
+10:23 
+
+10:23 the only kind of iffy sign is right here
+10:27 
+
+10:27 the amount of sellers that have in
+10:30 
+
+10:30 skyrocketed in the last month or so but
+10:33 
+
+10:33 it's still not a huge bad sign in my
+10:36 
+
+10:36 opinion there's always going to be a big
+10:39 
+
+10:39 amount of sellers in every healthy
+10:42 
+
+10:42 listing worth selling on so this is not
+10:45 
+
+10:45 a bad sign so overall I I think this is
+10:48 
+
+10:48 a good listing now here's another
+10:51 
+
+10:51 listing as you can see the keepo chart
+10:53 
+
+10:53 is slightly different this part of the
+10:56 
+
+10:56 keepa chart is healthy because it
+10:58 
+
+10:58 fluctuates but what is going on with
+11:01 
+
+11:01 this keepa chart right here and again
+11:04 
+
+11:04 that was the importance of setting up
+11:06 
+
+11:06 your range to see at least one year
+11:09 
+
+11:09 worth of data because you want to see
+11:12 
+
+11:12 what the listing has been doing for at
+11:15 
+
+11:15 least one year worth of history and my
+11:20 
+
+11:20 initial feeling is that either one
+11:23 
+
+11:23 seller or the brand itself is
+11:26 
+
+11:26 controlling this listing so to make sure
+11:29 
+
+11:29 of the that I would go into data and
+11:31 
+
+11:31 book statistics and as you can see jvn
+11:35 
+
+11:35 hair jvn hair which is happens to be the
+11:39 
+
+11:39 brand on this listing has been
+11:41 
+
+11:41 controlling the listing quite a bit now
+11:45 
+
+11:45 it hasn't been controlling the listing
+11:47 
+
+11:47 to the point that is obnoxious and they
+11:50 
+
+11:50 will get every single sale as you can
+11:52 
+
+11:52 see over the last 90 days they have only
+11:56 
+
+11:56 won 15% of the time the buybook share
+11:59 
+
+11:59 which tells me that they are okay
+12:02 
+
+12:02 competing with other sellers now you
+12:04 
+
+12:04 have to bear in mind that there might be
+12:06 
+
+12:06 periods where they dominate the buy box
+12:09 
+
+12:09 as evidence here in some of the previous
+12:12 
+
+12:12 periods but they seem to be running out
+12:15 
+
+12:15 of stock quite a bit and in the times
+12:18 
+
+12:18 that they run out of stock that means
+12:20 
+
+12:20 that sellers have free range to sell
+12:23 
+
+12:23 very fast and very well so again I think
+12:27 
+
+12:27 that this listing is okay because even
+12:30 
+
+12:30 though the brand itself is on the
+12:32 
+
+12:32 listing I don't believe that you would
+12:33 
+
+12:33 get an IP complaint from the brand or
+12:36 
+
+12:36 that it would get to the point where you
+12:38 
+
+12:38 wouldn't get any sales at all moving on
+12:40 
+
+12:40 to a different listing as we see this is
+12:44 
+
+12:44 pretty healthy the price is pretty
+12:46 
+
+12:46 consistent now many sellers make the
+12:49 
+
+12:49 mistake of pricing their items at
+12:52 
+
+12:52 exactly what the buy box or the current
+12:55 
+
+12:55 lowest price is which in this case is $
+12:58 
+
+12:58 2469 but if you look at the recent
+13:01 
+
+13:01 history the price consistency is at
+13:04 
+
+13:04 $21.99 it's not at$
+13:06 
+
+13:06 2469 so when you are making a purchasing
+13:09 
+
+13:09 decision you should really make a
+13:12 
+
+13:12 decision based on a $21.98 sale price
+13:17 
+
+13:17 not on a 2469 sale price always try to
+13:20 
+
+13:20 be as conservative as you can with your
+13:24 
+
+13:24 pricing estimates and how you're
+13:27 
+
+13:27 calculating your profit okay here we go
+13:29 
+
+13:29 go with another example every time that
+13:31 
+
+13:31 you see a yellow background right here
+13:34 
+
+13:34 that is Amazon right here Amazon on the
+13:37 
+
+13:37 listing or has been on the listing so as
+13:41 
+
+13:41 we can see right now we don't have a
+13:44 
+
+13:44 yellow vertical line currently if we go
+13:48 
+
+13:48 to the weekly chart there is no yellow
+13:51 
+
+13:51 background in the last even month there
+13:53 
+
+13:53 was one on March 6th but not recently
+13:57 
+
+13:57 but if we go to the yearly chart we do
+13:60 
+
+13:60 see that Amazon has been on the listing
+14:03 
+
+14:03 quite a bit so the next thing that I
+14:05 
+
+14:05 want to do because I don't want to
+14:07 
+
+14:07 discard any good product just because I
+14:10 
+
+14:10 didn't do a full analysis a lot of
+14:12 
+
+14:12 sellers will look at this and they will
+14:15 
+
+14:15 immediately discard this product because
+14:17 
+
+14:17 they think that Amazon is on the listing
+14:20 
+
+14:20 and Amazon has a huge buy Box share but
+14:24 
+
+14:24 in order for us to know that we got to
+14:26 
+
+14:26 go into data and buy box statistics and
+14:29 
+
+14:29 as we see on the last 30 days Amazon has
+14:33 
+
+14:33 only had an 8% buybook share now let's
+14:38 
+
+14:38 look at the 90 days it does increase to
+14:41 
+
+14:41 18% buybook share from Amazon but as you
+14:45 
+
+14:45 can see Amazon is competing very well
+14:49 
+
+14:49 with other sellers meaning that it's
+14:51 
+
+14:51 giving away the buy box or it's running
+14:54 
+
+14:54 out of stock as we can see if we go to
+14:57 
+
+14:57 the product details Amazon is out of
+15:00 
+
+15:00 stock 69% of the time that means that
+15:05 
+
+15:05 31% of the time that's when Amazon is
+15:08 
+
+15:08 and the rest of the time is open range
+15:11 
+
+15:11 for sellers to take over and price at
+15:15 
+
+15:15 their price so I think that this is a
+15:18 
+
+15:18 good product to go into Amazon seems to
+15:21 
+
+15:21 be running out of stock quite a bit at
+15:24 
+
+15:24 least over the last 90 days or so now
+15:27 
+
+15:27 where is the price consistency here the
+15:29 
+
+15:29 price consistency seems to be not at
+15:33 
+
+15:33 3988 but around
+15:36 
+
+15:36 $34.99 if you draw let's say an
+15:39 
+
+15:39 imaginary line all around here you can
+15:43 
+
+15:43 see that the price is not here this is a
+15:46 
+
+15:46 spiking price you should calculate based
+15:48 
+
+15:48 on around here
+15:51 
+
+15:51 $34.99 now what's happening with this
+15:54 
+
+15:54 listing this listing I can already tell
+15:57 
+
+15:57 that there's something very off with
+15:59 
+
+15:59 that and why can I tell that because see
+16:01 
+
+16:01 how this line right here goes almost in
+16:04 
+
+16:04 a completely straight and flat line
+16:08 
+
+16:08 which is crazy a healthy normal listing
+16:11 
+
+16:11 should never go like that it should
+16:13 
+
+16:13 always fluctuate a little bit because it
+16:15 
+
+16:15 means that third party sellers are
+16:18 
+
+16:18 always competing with the repricers
+16:21 
+
+16:21 constantly competing literally by the
+16:23 
+
+16:23 second on pricing and pricing fluctuates
+16:26 
+
+16:26 but this tells me that price is steady
+16:28 
+
+16:28 as a rough
+16:30 
+
+16:30 which probably means that either the
+16:32 
+
+16:32 brand or a brand Protection Agency which
+16:35 
+
+16:35 in this case is the latter
+16:37 
+
+16:37 pattern I know for a fact it's a brand
+16:40 
+
+16:40 Protection Agency and let me show you
+16:43 
+
+16:43 what I mean if you go to their
+16:45 
+
+16:45 storefront see pattern and what I'm
+16:48 
+
+16:48 going to do is I'm actually going to
+16:50 
+
+16:50 Google pattern and this is their website
+16:52 
+
+16:52 pattern if I go to what we do it's a
+16:56 
+
+16:56 brand Protection Agency right here
+16:58 
+
+16:58 that's one of the main things that they
+16:60 
+
+16:60 do brand protection that means that if
+17:03 
+
+17:03 we attempt to go on this listing the
+17:06 
+
+17:06 likelihood of getting an IP complaint is
+17:09 
+
+17:09 very high so it's not worth the risk so
+17:12 
+
+17:12 I would totally skip on this listing
+17:15 
+
+17:15 here's another example many sellers
+17:17 
+
+17:17 would look at into this listing and they
+17:19 
+
+17:19 would be like okay Amazon is not on the
+17:21 
+
+17:21 listing okay and the price is right here
+17:24 
+
+17:24 right now at
+17:25 
+
+17:25 42.99 but what is going on really Amazon
+17:30 
+
+17:30 was on the listing and the there was
+17:33 
+
+17:33 such a difference such a discrepancy in
+17:35 
+
+17:35 price when Amazon was on the listing it
+17:37 
+
+17:37 was
+17:38 
+
+17:38 $19.99 and now we are at over double
+17:41 
+
+17:41 that price so I would not if I were to
+17:44 
+
+17:44 go on this listing I would need to be
+17:46 
+
+17:46 around this price $1 199.99 definitely
+17:49 
+
+17:49 not you don't want to calculate your net
+17:53 
+
+17:53 profit based on
+17:54 
+
+17:54 $42.99 because what happens if you do
+17:58 
+
+17:58 buy your inventory based on this
+18:00 
+
+18:00 projection and Amazon comes back on the
+18:03 
+
+18:03 listing then that's it you're done that
+18:07 
+
+18:07 would be a total loss for you so always
+18:09 
+
+18:09 be very conservative with your analysis
+18:12 
+
+18:12 and your purchasing decisions same goes
+18:16 
+
+18:16 for this case look at the spike in this
+18:19 
+
+18:19 price it's crazy the price consistency
+18:22 
+
+18:22 here is around 28.99 or even
+18:26 
+
+18:26 $31.99 which is right here in
+18:29 
+
+18:29 September or even right here maybe
+18:33 
+
+18:33 $39.99 that would be a little bit of a
+18:35 
+
+18:35 push but definitely definitely not right
+18:39 
+
+18:39 here look $
+18:41 
+
+18:41 59.93 do not buy inventory based on you
+18:46 
+
+18:46 estimating to sell at
+18:47 
+
+18:47 59.93 because what's going on if a
+18:51 
+
+18:51 wholesaler or Amazon or another FBA
+18:55 
+
+18:55 seller or an fbm seller comes in I wants
+18:57 
+
+18:57 to be extremely competitive
+18:59 
+
+18:59 and they found a way obviously this
+19:03 
+
+19:03 people right here back in the day in
+19:06 
+
+19:06 December were able to find a way to buy
+19:10 
+
+19:10 inventory cheap enough to price at
+19:15 
+
+19:15 $28.99 so you don't want to be competing
+19:17 
+
+19:17 with those guys so stay away from those
+19:21 
+
+19:21 here's a a little bit of a different
+19:22 
+
+19:22 scenario the current price right now on
+19:26 
+
+19:26 this new
+19:27 
+
+19:27 listing is right here at
+19:32 
+
+19:32 17250 which is a little bit higher oh no
+19:36 
+
+19:36 it's around
+19:37 
+
+19:37 177 so as you see back in the day when
+19:41 
+
+19:41 Amazon was on the listing this is about
+19:43 
+
+19:43 6 months ago it was price around here
+19:47 
+
+19:47 now there was a little bit of a spike
+19:48 
+
+19:48 about a month ago and if you bought it
+19:52 
+
+19:52 based on on this price spike then you
+19:56 
+
+19:56 are done now because the priceing lower
+19:59 
+
+19:59 but this would be a good
+20:02 
+
+20:02 172 that would be a good price to start
+20:07 
+
+20:07 purchasing inventory not at this at 255
+20:10 
+
+20:10 but at
+20:11 
+
+20:11 172 that would be a good price to sell
+20:14 
+
+20:14 it at I hope this keepa tutorial for
+20:18 
+
+20:18 beginners has been extremely helpful for
+20:21 
+
+20:21 you I try my best in showing you all the
+20:25 
+
+20:25 different
+20:26 
+
+20:26 scenarios the moral of the story here is
+20:29 
+
+20:29 that the more you do it the more
+20:31 
+
+20:31 scenarios you're going to run into and
+20:34 
+
+20:34 the more you're going to learn just like
+20:36 
+
+20:36 I show you right now about 10 or a dozen
+20:40 
+
+20:40 scenarios you will see plenty of
+20:43 
+
+20:43 different scenarios and you start
+20:45 
+
+20:45 building experience and determining
+20:47 
+
+20:47 what's good and what's bad in terms of
+20:50 
+
+20:50 buying purchases I can't stress enough
+20:53 
+
+20:53 how important it is to have a good
+20:57 
+
+20:57 understanding of how Kea works in order
+20:59 
+
+20:59 to make good buying decisions and good
+21:02 
+
+21:02 analysis on each of the listings that
+21:05 
+
+21:05 you are looking at make sure to try my
+21:09 
+
+21:09 online Arbitrage leads I do this myself
+21:13 
+
+21:13 I Source them myself every single
+21:16 
+
+21:16 morning so if you haven't tried my
+21:18 
+
+21:18 online Arbitrage leads this is a great
+21:21 
+
+21:21 starting point for beginners middle or
+21:24 
+
+21:24 Advanced Amazon sellers and I include
+21:28 
+
+21:28 the very detailed notes on what my
+21:32 
+
+21:32 analysis is for each of the products
+21:34 
+
+21:34 that I source so that would be a good
+21:37 
+
+21:37 learning stepping stone as well for you
+21:41 
+
+21:41 make sure to like the video if you like
+21:42 
+
+21:42 the video make sure to subscribe if you
+21:44 
+
+21:44 haven't already and make sure to check
+21:47 
+
+21:47 this other video that I think you're
+21:50 
+
+21:50 also going to like if you like this
+21:52 
+
+21:52 particular video as usual keep up the
+21:55 
+
+21:55 great work

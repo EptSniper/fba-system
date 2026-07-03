@@ -1,0 +1,3922 @@
+00:00 one of the most common asks I get from
+00:02 
+
+00:02 clients is how do I build a custom AI
+00:05 
+
+00:05 chatbot well a few months ago this was
+00:07 
+
+00:07 something you needed to hire a
+00:08 
+
+00:08 consultant for today that's not
+00:11 
+
+00:11 necessarily the case in this video I'll
+00:13 
+
+00:13 walk through three ways to make a custom
+00:15 
+
+00:15 AI assistant using a few new releases
+00:18 
+
+00:18 from open AI I'll review a no code
+00:21 
+
+00:21 solution via their new gpts feature a
+00:23 
+
+00:23 python solution via the new assistance
+00:26 
+
+00:26 API and then finally talk about how to
+00:28 
+
+00:28 fine-tune an assistant with your data
+00:30 
+
+00:30 and if you're new here welcome I'm sha I
+00:33 
+
+00:33 make videos about data science and
+00:34 
+
+00:34 Entrepreneurship and if you enjoy this
+00:36 
+
+00:36 content please consider subscribing
+00:38 
+
+00:38 that's a great no cost way you can
+00:40 
+
+00:40 support me in all the videos that I make
+00:42 
+
+00:42 before jumping into the solutions I
+00:43 
+
+00:43 wanted to quickly differentiate a AI
+00:46 
+
+00:46 chatbot from a AI assistant while these
+00:49 
+
+00:49 terms might be used interchangeably the
+00:51 
+
+00:51 way I like to think about it is that a
+00:53 
+
+00:53 chatbot is an AI you can have a
+00:55 
+
+00:55 conversation with while an AI assistant
+00:57 
+
+00:57 is essentially a chatbot that can use
+00:59 
+
+00:59 tools a tool could be web browsing it
+01:02 
+
+01:02 could be a calculator it could be a
+01:04 
+
+01:04 python interpreter or anything else that
+01:06 
+
+01:06 helps augment the abilities of a chatbot
+01:09 
+
+01:09 for example if you have the free version
+01:11 
+
+01:11 of chat GPT that's a chatbot because it
+01:14 
+
+01:14 comes with a basic chat functionality
+01:16 
+
+01:16 without any additional tools however if
+01:18 
+
+01:18 you have the premium version of chat GPT
+01:20 
+
+01:20 that's an assistant because it has
+01:22 
+
+01:22 built-in tools like web browsing and
+01:25 
+
+01:25 document retrieval turning chatbots into
+01:27 
+
+01:27 assistance via tools is a powerful way
+01:30 
+
+01:30 to to expand its capabilities and
+01:32 
+
+01:32 Effectiveness each of the approaches I
+01:34 
+
+01:34 talk about in this video can be used to
+01:36 
+
+01:36 develop an AI assistant and I'll use
+01:39 
+
+01:39 each of these approaches to build an AI
+01:41 
+
+01:41 that can respond to my YouTube comments
+01:43 
+
+01:43 in my likeness which I'll call Shaw GPT
+01:47 
+
+01:47 the first way I'm going to talk about is
+01:49 
+
+01:49 the easiest and fastest of the three and
+01:51 
+
+01:51 it consists of using open ai's new gpts
+01:55 
+
+01:55 feature so the way to get to that is we
+01:57 
+
+01:57 go to chat GPT and if you have the
+01:59 
+
+01:59 premium version version you can go to
+02:01 
+
+02:01 this Explorer GPT thing here and then
+02:04 
+
+02:04 you can go look at my gpts and so you
+02:07 
+
+02:07 can make these custom gpts and they'll
+02:10 
+
+02:10 appear here so I've already made a
+02:12 
+
+02:12 version of this Shaw GPT but we'll go
+02:14 
+
+02:14 ahead and create a new GPT so we can see
+02:17 
+
+02:17 what this looks like from scratch the
+02:19 
+
+02:19 thing about this gpts feature is it
+02:21 
+
+02:21 actually has a chat interface to help
+02:24 
+
+02:24 you build the AI assistance so not only
+02:27 
+
+02:27 is this a no code solution it has a step
+02:30 
+
+02:30 bystep chatbot that will help you build
+02:33 
+
+02:33 this Ai and so here the GPT Builder says
+02:36 
+
+02:36 hi I'll help you build a new GPT you can
+02:38 
+
+02:38 say something like make a creative who
+02:40 
+
+02:40 helps generate visuals for my new
+02:41 
+
+02:41 product or make software engineer who
+02:43 
+
+02:43 helps format my code what would you like
+02:45 
+
+02:45 to make make a YouTube comment responder
+02:51 
+
+02:51 let's see what that spits out so you can
+02:53 
+
+02:53 see that GPT Builder is thinking what's
+02:56 
+
+02:56 happening is you say this to GPT Builder
+02:58 
+
+02:58 and then behind the scenes it's going to
+03:00 
+
+03:00 go ahead and update the instructions for
+03:03 
+
+03:03 the AI assistant so if you go to the
+03:05 
+
+03:05 configure tab it'll start filling in
+03:07 
+
+03:07 these things it'll film the description
+03:09 
+
+03:09 for the assistant and it'll give it its
+03:11 
+
+03:11 instructions but let's go back how about
+03:13 
+
+03:13 the name shot GPT for this GPT does that
+03:15 
+
+03:15 work that's perfect okay so now it's
+03:18 
+
+03:18 going to generate a profile picture so
+03:20 
+
+03:20 it'll use Dolly 2 which is if you're not
+03:22 
+
+03:22 familiar that's a different AI that
+03:24 
+
+03:24 instead of generating text like chat GPT
+03:27 
+
+03:27 it generates images like this one here
+03:29 
+
+03:29 so that's a cool thing about this gbt
+03:31 
+
+03:31 Builder it'll generate a profile picture
+03:33 
+
+03:33 for you you can also just upload your
+03:35 
+
+03:35 own so I've got a folder here called sha
+03:37 
+
+03:37 GPT and I've got some different images
+03:40 
+
+03:40 that we can use so I'll just upload this
+03:42 
+
+03:42 one and then I'll tell GPT Builder to
+03:44 
+
+03:44 use this image instead so it's going to
+03:46 
+
+03:46 use the picture that I uploaded okay so
+03:48 
+
+03:48 now it's asking for a bit more guidance
+03:50 
+
+03:50 on how to answer questions outside the
+03:53 
+
+03:53 expertise in data science and
+03:54 
+
+03:54 Entrepreneurship so a lot of questions
+03:56 
+
+03:56 that I get on YouTube aren't actually
+03:58 
+
+03:58 about data science or entrepreneur
+03:60 
+
+03:60 preneurship it's usually people just
+04:01 
+
+04:01 saying great content or something like
+04:03 
+
+04:03 that just sharing feedback about the
+04:05 
+
+04:05 video so I'll provide those instructions
+04:08 
+
+04:08 here okay so here I wrote out
+04:10 
+
+04:10 instructions for both positive and
+04:12 
+
+04:12 negative feedback so for positive
+04:14 
+
+04:14 feedback unrelated to data science
+04:16 
+
+04:16 Express gratitude for their viewership
+04:18 
+
+04:18 suggestions or positive feedback given
+04:20 
+
+04:20 negative feedback thank the viewer
+04:22 
+
+04:22 rephrase their criticism to convey not
+04:24 
+
+04:24 convert convey understanding and offer
+04:27 
+
+04:27 an idea for improvement so these are
+04:29 
+
+04:29 just some general rules of thumb of how
+04:31 
+
+04:31 to respond to comments how do you
+04:33 
+
+04:33 envision sha GPT addressing comments
+04:35 
+
+04:35 that ask for personal advice on Career
+04:36 
+
+04:36 changes to Day signs or starting a new
+04:39 
+
+04:39 business okay so that's a good question
+04:41 
+
+04:41 I didn't see this last time I made sha
+04:43 
+
+04:43 GPT through this interface basically
+04:45 
+
+04:45 when people ask me these questions I
+04:46 
+
+04:46 tell them that there's no way to just
+04:48 
+
+04:48 give general advice to anyone without
+04:50 
+
+04:50 knowing more details and ultimately I
+04:53 
+
+04:53 only know what's worked for me and I
+04:54 
+
+04:54 don't necessarily know what's the best
+04:56 
+
+04:56 choice for other people and that's
+04:57 
+
+04:57 ultimately up to them but I'm always
+04:59 
+
+04:59 happy to kind of share my personal
+05:01 
+
+05:01 experience and what has worked for me so
+05:03 
+
+05:03 basically going to try to put that into
+05:04 
+
+05:04 words so that GPT Builder can instruct
+05:07 
+
+05:07 the model accordingly so the way I tried
+05:10 
+
+05:10 to convey that is acknowledge that
+05:12 
+
+05:12 advice for their unique situation is
+05:14 
+
+05:14 hard to give without a full
+05:15 
+
+05:15 understanding of their situation however
+05:17 
+
+05:17 sha GPT can share Shaw's personal
+05:19 
+
+05:19 experience in case it is helpful for the
+05:22 
+
+05:22 viewer okay here we go sha GPT will now
+05:24 
+
+05:24 take the approach that when addressing
+05:25 
+
+05:25 personal advice inquiries okay so for
+05:28 
+
+05:28 the Final Touch what tone of L language
+05:30 
+
+05:30 do you prefer shbg use more formal and
+05:32 
+
+05:32 professional or casual and friendly
+05:34 
+
+05:34 casual and friendly and concise I don't
+05:37 
+
+05:37 like reading a lot of text and so I try
+05:39 
+
+05:39 not to put that burden on other people
+05:41 
+
+05:41 so I like to keep text very concise okay
+05:44 
+
+05:44 sweet feel free to try out shot yout in
+05:46 
+
+05:46 the preview and see how it responds if
+05:48 
+
+05:48 there's anything else you'd like to
+05:49 
+
+05:49 address what would it be okay so we can
+05:51 
+
+05:51 now give it a whirl how do I start in
+05:54 
+
+05:54 data science so it gives a very long
+05:56 
+
+05:56 response doesn't feel very concise
+05:58 
+
+05:58 starting data science is exciting here's
+05:60 
+
+05:60 a quick guide to getting you going learn
+06:02 
+
+06:02 the basics explore online courses
+06:03 
+
+06:03 Hands-On practice understanding data
+06:05 
+
+06:05 manipulation diving into machine
+06:07 
+
+06:07 learning build a portfolio Network and
+06:08 
+
+06:08 learn continuously so it's casual it's
+06:10 
+
+06:10 friendly but it's not very concise and
+06:12 
+
+06:12 doesn't really sound like me the
+06:14 
+
+06:14 response sounds a lot like what chat GPT
+06:16 
+
+06:16 would say so if someone reads this
+06:18 
+
+06:18 comment or response from me they'll be
+06:19 
+
+06:19 like did sha just copy paste my comment
+06:21 
+
+06:21 into chat GPT and paste the response so
+06:24 
+
+06:24 one thing we can do to remove that
+06:27 
+
+06:27 ambiguity is we can have sh GPT sign off
+06:31 
+
+06:31 with its name just so people know that
+06:33 
+
+06:33 it was generated by an AI assistant and
+06:35 
+
+06:35 not by me personally we can add this to
+06:38 
+
+06:38 the GPT Builder Okay so it updated the
+06:41 
+
+06:41 instructions so now it should sign up as
+06:43 
+
+06:43 Shaw GPT so here's another one can you
+06:45 
+
+06:45 explain machine learning in simple terms
+06:47 
+
+06:47 so it gave a pretty good response I like
+06:49 
+
+06:49 this example just learning by example
+06:51 
+
+06:51 and experiences it signed off with sha
+06:53 
+
+06:53 GPT which is good again however the
+06:55 
+
+06:55 response is way too long I would never
+06:57 
+
+06:57 respond like this but it's good that it
+06:59 
+
+06:59 identifies itself I want to move over to
+07:01 
+
+07:01 this configure tab so I guess some weird
+07:04 
+
+07:04 things even though it said it was going
+07:05 
+
+07:05 to use the name sha GPT that never made
+07:08 
+
+07:08 it over it's still I guess in beta
+07:10 
+
+07:10 they're still working out some Kinks if
+07:11 
+
+07:11 anything isn't what you want from this
+07:14 
+
+07:14 chat interface you can always move over
+07:15 
+
+07:15 to the configure Tab and just set these
+07:18 
+
+07:18 things manually so you can set the name
+07:20 
+
+07:20 of the assistant you can set the
+07:23 
+
+07:23 description this was autogenerated
+07:25 
+
+07:25 friendly and informative responder for a
+07:27 
+
+07:27 data science and Entrepreneurship
+07:29 
+
+07:29 YouTube channel and then these are the
+07:30 
+
+07:30 instructions that it generated through
+07:32 
+
+07:32 the conversation we were having sha GPT
+07:34 
+
+07:34 is the Casual friendly and concise voice
+07:36 
+
+07:36 behind a YouTube channel on data science
+07:38 
+
+07:38 and Entrepreneurship it acknowledges the
+07:41 
+
+07:41 complexity of giving personalized advice
+07:43 
+
+07:43 offering insights from Shaw's
+07:45 
+
+07:45 experiences instead positive feedback is
+07:47 
+
+07:47 met with gratitude and criticism is
+07:49 
+
+07:49 handled constructively sha gbt always
+07:51 
+
+07:51 signs off its messages with its name sha
+07:54 
+
+07:54 gbt so we can see like a lot of the
+07:56 
+
+07:56 aspects of the conversation were
+07:58 
+
+07:58 incorporated into to the instructions
+08:00 
+
+08:00 another cool thing here is you can set
+08:02 
+
+08:02 these conversation starters which is
+08:04 
+
+08:04 nice for the UI you can just put like
+08:06 
+
+08:06 frequently asked questions for your AI
+08:08 
+
+08:08 assistant here another really cool thing
+08:10 
+
+08:10 about gpts is that it has builtin
+08:12 
+
+08:12 retrieval also called retrieval
+08:15 
+
+08:15 augmented generation so basically what
+08:17 
+
+08:17 this means is you can equip your
+08:20 
+
+08:20 assistant with specialized knowledge
+08:21 
+
+08:21 that lives in like a PDF or like a Word
+08:24 
+
+08:24 document or whatever so you can upload
+08:26 
+
+08:26 those files and the assistant will be
+08:29 
+
+08:29 able to read those files and incorporate
+08:31 
+
+08:31 the appropriate context as needed so for
+08:34 
+
+08:34 example I have a bunch of my articles
+08:36 
+
+08:36 here so I could upload four ways to
+08:38 
+
+08:38 quantify fat taals with python I can
+08:41 
+
+08:41 upload that PDF and then I can ask it a
+08:43 
+
+08:43 question what is a fat tail it didn't
+08:47 
+
+08:47 use the PDF in this case it just gave a
+08:50 
+
+08:50 standard definition of fat Tails as
+08:53 
+
+08:53 something more extreme than a normal
+08:55 
+
+08:55 distribution which is a common way of
+08:57 
+
+08:57 defining bat Tales however it's not the
+08:59 
+
+08:59 definition of fat tails that I used in
+09:01 
+
+09:01 that article so another thing we could
+09:02 
+
+09:02 try is like how can we quantify fat
+09:06 
+
+09:06 tails so even though it didn't use the
+09:09 
+
+09:09 definition of fat tailedness from that
+09:11 
+
+09:11 article it did seamlessly grab the four
+09:14 
+
+09:14 ways to quantify fat taals from the
+09:17 
+
+09:17 article the way this is working is that
+09:19 
+
+09:19 GPT 4 or whatever GPT is underlying
+09:22 
+
+09:22 these custom gpts here it has been
+09:24 
+
+09:24 trained to know when to seek outside
+09:27 
+
+09:27 knowledge if it doesn't know something
+09:29 
+
+09:29 and so so here it does it pretty
+09:30 
+
+09:30 seamlessly it feels like it read the
+09:32 
+
+09:32 article and is like rephrasing it in its
+09:34 
+
+09:34 own words which is pretty interesting
+09:36 
+
+09:36 okay so that's knowledge you can upload
+09:38 
+
+09:38 I think up to like 10 files or something
+09:40 
+
+09:40 actually probably more the next thing I
+09:41 
+
+09:41 want to point out are these capabilities
+09:43 
+
+09:43 so this is what makes these gpts
+09:46 
+
+09:46 assistant and not just chat Bots it's
+09:48 
+
+09:48 because it has these extended
+09:49 
+
+09:49 capabilities such as web browsing image
+09:52 
+
+09:52 generation and code interpreter so web
+09:54 
+
+09:54 browsing is exactly what you expect if
+09:56 
+
+09:56 the user says hey look up something or
+09:59 
+
+09:59 search the web for some resources or
+10:01 
+
+10:01 whatever the assistant knows when to
+10:04 
+
+10:04 call upon this web browsing capability
+10:06 
+
+10:06 to do that if the user asks the
+10:09 
+
+10:09 assistant to generate an image it knows
+10:11 
+
+10:11 to use Dolly and the code interpreter
+10:13 
+
+10:13 allows the assistant to not only write
+10:15 
+
+10:15 python code because that's what a
+10:17 
+
+10:17 chatbot can do but actually run that
+10:19 
+
+10:19 python code and then return the values
+10:22 
+
+10:22 to the user or use the values from that
+10:25 
+
+10:25 computation to inform the response to
+10:28 
+
+10:28 the user so since for this YouTube
+10:31 
+
+10:31 responder use case we don't need image
+10:34 
+
+10:34 generation because you can't have images
+10:35 
+
+10:35 on YouTube probably don't need a code
+10:37 
+
+10:37 interpreter either web browsing could be
+10:39 
+
+10:39 cool to provide additional resources and
+10:41 
+
+10:41 of course I could upload all these other
+10:43 
+
+10:43 articles as well so we can just do that
+10:45 
+
+10:45 to give it more knowledge so we can't
+10:47 
+
+10:47 bulk upload PDFs at this point but I can
+10:50 
+
+10:50 go through one by one and upload all of
+10:53 
+
+10:53 these articles to have it have a bit
+10:54 
+
+10:54 more specialized knowledge about the
+10:56 
+
+10:56 actual content that is on the channel
+10:58 
+
+10:58 the last thing are these actions which
+11:00 
+
+11:00 are pretty interesting so essentially
+11:02 
+
+11:02 this allows gpts to make API calls so we
+11:06 
+
+11:06 can learn more here how to create a GPT
+11:10 
+
+11:10 okay so this answers one question you
+11:11 
+
+11:11 can have 20 files uploaded that answers
+11:13 
+
+11:13 that okay here custom actions you can
+11:15 
+
+11:15 make third party API calls available to
+11:17 
+
+11:17 your GPT so that's pretty cool like the
+11:19 
+
+11:19 canonical case here is like if you want
+11:21 
+
+11:21 to grab weather data so if you want to
+11:23 
+
+11:23 get weather from a particular City you
+11:25 
+
+11:25 can endow the assistant with that
+11:28 
+
+11:28 capability to look up the weather in a
+11:30 
+
+11:30 particular City not necessarily for this
+11:32 
+
+11:32 YouTube comment responder I think here
+11:34 
+
+11:34 just knowledge and the web browsing is
+11:37 
+
+11:37 sufficient and so what's cool about
+11:39 
+
+11:39 these is you can save these gpts and
+11:41 
+
+11:41 make it available to everyone so you
+11:43 
+
+11:43 don't have to worry about like deploying
+11:45 
+
+11:45 your assistant into production because
+11:46 
+
+11:46 they have this built-in way to do it so
+11:48 
+
+11:48 you can make it published only to
+11:49 
+
+11:49 yourself anyone with the link or
+11:51 
+
+11:51 everyone in the world and then you can
+11:52 
+
+11:52 select a category so that's pretty cool
+11:54 
+
+11:54 it got the category right we can uh
+11:57 
+
+11:57 confirm but I won't because I've already
+11:59 
+
+11:59 published a version of sha GPT and I
+12:01 
+
+12:01 spent a bit more time making that one so
+12:03 
+
+12:03 I don't want to put this example version
+12:05 
+
+12:05 out there but if you want to interact
+12:07 
+
+12:07 with sha GPT I'll put a link in the
+12:09 
+
+12:09 description and you can kind of see for
+12:11 
+
+12:11 yourself the performance I guess another
+12:14 
+
+12:14 thing is people say like you can become
+12:15 
+
+12:15 a millionaire making a GPT or something
+12:18 
+
+12:18 and I don't know maybe based on my
+12:20 
+
+12:20 interaction with this interface I don't
+12:22 
+
+12:22 know how that would work however looking
+12:24 
+
+12:24 at the other gpts this doesn't feel so
+12:26 
+
+12:26 much as like a direct way to generate
+12:28 
+
+12:28 Revenue however it feels like a very big
+12:31 
+
+12:31 opportunity for these companies or
+12:33 
+
+12:33 really any company to do promotion and
+12:36 
+
+12:36 lead generation for their business so
+12:38 
+
+12:38 like canva being number one on here it's
+12:40 
+
+12:40 like that's amazing advertising cuz
+12:42 
+
+12:42 whatever it is they get 100 million
+12:44 
+
+12:44 daily users of chat GPT that's a lot of
+12:47 
+
+12:47 eyeballs seeing canva basically for free
+12:49 
+
+12:49 feels more like an opportunity for these
+12:52 
+
+12:52 companies to promote their business so
+12:54 
+
+12:54 like Ali Academy I don't know who that
+12:56 
+
+12:56 is but I can just like go to her website
+12:59 
+
+12:59 look at that geni Innovation for
+13:00 
+
+13:00 Creative so look at that of course this
+13:02 
+
+13:02 might be a way to generate revenue or
+13:05 
+
+13:05 whatever but to me it feels more an
+13:07 
+
+13:07 opportunity for advertising a business
+13:10 
+
+13:10 or something like that as opposed to
+13:12 
+
+13:12 direct monetization so just my thoughts
+13:14 
+
+13:14 on becoming a millionaire with custom
+13:16 
+
+13:16 gpts okay so when it's all done and
+13:18 
+
+13:18 published so this is publicly available
+13:21 
+
+13:21 data scientist GPT for YouTube comments
+13:23 
+
+13:23 and so we can have these things ready to
+13:26 
+
+13:26 go so people can ask their data science
+13:28 
+
+13:28 questions even though it has the
+13:31 
+
+13:31 Articles available to it that I wrote it
+13:33 
+
+13:33 doesn't explain it in the way that I
+13:35 
+
+13:35 explained it in the Articles it kind of
+13:37 
+
+13:37 gives a more traditional explanation of
+13:40 
+
+13:40 these things so that's kind of one
+13:41 
+
+13:41 downside for these custom gpts it still
+13:44 
+
+13:44 feels a lot like chat GPT but just with
+13:47 
+
+13:47 slightly different wrapping paper and of
+13:49 
+
+13:49 course if I spent a lot more time with
+13:51 
+
+13:51 it I could build something that doesn't
+13:53 
+
+13:53 sound so much like Chad GPT but the
+13:56 
+
+13:56 second obvious downside of this is it
+13:58 
+
+13:58 requires a pre premium version of chat
+14:00 
+
+14:00 GPT and some people just like a hobbyist
+14:03 
+
+14:03 or something or you're like a student it
+14:05 
+
+14:05 may not make sense to pay $2 a month for
+14:08 
+
+14:08 this and of course this isn't something
+14:09 
+
+14:09 you can easily integrate into like an
+14:12 
+
+14:12 app that you make or a website for
+14:13 
+
+14:13 people to use this they have to come to
+14:15 
+
+14:15 the chat GPT website so if you don't
+14:18 
+
+14:18 have premium or you want to incorporate
+14:21 
+
+14:21 this assistant into some application or
+14:24 
+
+14:24 some website we can turn to the
+14:26 
+
+14:26 assistance API which is way number two
+14:29 
+
+14:29 I'm going to talk about so if you don't
+14:30 
+
+14:30 have a premium account there's still a
+14:32 
+
+14:32 no code solution for building a AI
+14:35 
+
+14:35 assistant and that's through the
+14:37 
+
+14:37 assistance playground this is a
+14:39 
+
+14:39 relatively new feature so the
+14:40 
+
+14:40 playground's been around for a while
+14:42 
+
+14:42 this is the original version the
+14:44 
+
+14:44 complete playgrounds you can pick
+14:46 
+
+14:46 whatever model you like here and it'll
+14:47 
+
+14:47 just do the auto regressive text
+14:50 
+
+14:50 generation it'll just keep predicting
+14:51 
+
+14:51 the next word recursively chat is
+14:54 
+
+14:54 similar where you can set the model and
+14:56 
+
+14:56 whatever parameters you like and set the
+14:58 
+
+14:58 system message and just do like a chat
+15:01 
+
+15:01 however assistance takes things to the
+15:02 
+
+15:02 next level where it's a lot like the
+15:04 
+
+15:04 gpts configure tab that we saw earlier
+15:07 
+
+15:07 where you can have a name instructions
+15:09 
+
+15:09 models and then you can add tools to the
+15:11 
+
+15:11 chat bot so we can really just copy
+15:13 
+
+15:13 paste all this over so we have sha GPT
+15:16 
+
+15:16 here are your instructions we can select
+15:18 
+
+15:18 the model so we can have GPT for Turbo
+15:21 
+
+15:21 we can add functions so we can write
+15:24 
+
+15:24 custom functions here it has to be in a
+15:25 
+
+15:25 particular format shown here so you need
+15:28 
+
+15:28 to give it a name for the function you
+15:30 
+
+15:30 need to describe it in words and then
+15:32 
+
+15:32 you need to provide the inputs for the
+15:35 
+
+15:35 function so what information does the
+15:37 
+
+15:37 assistant need to pass to the function
+15:39 
+
+15:39 in order to generate an output also has
+15:42 
+
+15:42 the code interpreter so it can not only
+15:44 
+
+15:44 write python code it can run the python
+15:47 
+
+15:47 code receive a response and then it also
+15:49 
+
+15:49 has retrieval like we saw with the
+15:51 
+
+15:51 custom GPT the one thing missing here is
+15:53 
+
+15:53 web browsing natively I think that's
+15:55 
+
+15:55 something that they're going to add
+15:56 
+
+15:56 later but as of right now it's January
+15:59 
+
+15:59 30th 2024 web browsing is not integrated
+16:03 
+
+16:03 into the assistance playground or
+16:05 
+
+16:05 assistance API but we do have functions
+16:07 
+
+16:07 code interpreter retrieval and we can
+16:09 
+
+16:09 also add files like we did before let's
+16:12 
+
+16:12 see if we can do bulk file upload here
+16:14 
+
+16:14 aha we can there we go bulk file upload
+16:17 
+
+16:17 available in the playground okay so we
+16:19 
+
+16:19 can just see how this works we can do
+16:21 
+
+16:21 like a side by-side comparison so we'll
+16:23 
+
+16:23 ask sha GPT what is fat tailedness and
+16:27 
+
+16:27 we'll ask sha GPT
+16:29 
+
+16:29 playground what is fat tailedness okay
+16:32 
+
+16:32 so again it's kind of giving the more
+16:34 
+
+16:34 traditional definition of something fat
+16:36 
+
+16:36 tailed has heavier Tails compared to a
+16:38 
+
+16:38 normal distribution so the response is
+16:40 
+
+16:40 very similar to what we see over here in
+16:42 
+
+16:42 the gpt's case so while using the
+16:44 
+
+16:44 playground to make an assistant in this
+16:46 
+
+16:46 way seems like a free hack a free
+16:48 
+
+16:48 version of the custom gpts it has one
+16:51 
+
+16:51 serious limitation which is that if you
+16:53 
+
+16:53 only use the playground your assistant
+16:55 
+
+16:55 is trapped in the playground it's not
+16:57 
+
+16:57 like the GPT T's interface we saw
+16:60 
+
+16:60 earlier where you can with one click
+17:02 
+
+17:02 deploy the assistant onto the chat GPT
+17:04 
+
+17:04 website so if you want to release the
+17:06 
+
+17:06 assistant from this playground you want
+17:08 
+
+17:08 to put it into a website an app or
+17:10 
+
+17:10 whatever you're going to need to do some
+17:12 
+
+17:12 coding so let's do that okay so here we
+17:14 
+
+17:14 got a jupit notebook this is available
+17:16 
+
+17:16 in the GitHub repository Linked In the
+17:18 
+
+17:18 description below so if you want this
+17:19 
+
+17:19 code feel free to grab it there kind of
+17:21 
+
+17:21 walking through this just importing some
+17:23 
+
+17:23 modules of course we're going to use the
+17:25 
+
+17:25 open AI assistance API which is still in
+17:28 
+
+17:28 b so that's why I put that there you'll
+17:30 
+
+17:30 need to import your secret key and if
+17:34 
+
+17:34 you don't have a secret key or don't
+17:36 
+
+17:36 know how to get your secret key for the
+17:38 
+
+17:38 open AI API I have a video all about
+17:40 
+
+17:40 that I'll link it in the description
+17:42 
+
+17:42 below maybe pop it up on the screen here
+17:45 
+
+17:45 so you can check that out but you can
+17:46 
+
+17:46 get a key in a very straightforward way
+17:48 
+
+17:48 you don't need to be premium user if you
+17:50 
+
+17:50 just have an open AI account you can get
+17:51 
+
+17:51 an API key and if you're new you get
+17:54 
+
+17:54 some free credits to start what I have
+17:56 
+
+17:56 is a text file called sk. and I'm in
+17:58 
+
+17:58 importing the secret key from that text
+18:01 
+
+18:01 file that's the way I like to do it and
+18:02 
+
+18:02 also importing time for a helper
+18:04 
+
+18:04 function we'll see in a second here the
+18:06 
+
+18:06 first thing we need to do is to set up
+18:08 
+
+18:08 the client so set up communication with
+18:10 
+
+18:10 the opening eye API so you just do that
+18:13 
+
+18:13 oneline in code I make a quick helper
+18:15 
+
+18:15 function because when we're using these
+18:17 
+
+18:17 assistants they have to think so it
+18:18 
+
+18:18 takes time for us to get a response from
+18:21 
+
+18:21 the API so what this function does is
+18:24 
+
+18:24 weights and periodically grabs the
+18:26 
+
+18:26 status of the API call and then when
+18:28 
+
+18:28 it's done it'll move on to the next step
+18:31 
+
+18:31 of the code and it'll tell us how long
+18:33 
+
+18:33 it took to do that so that's just like a
+18:34 
+
+18:34 helper function it's not super important
+18:36 
+
+18:36 this is kind of what we were doing
+18:38 
+
+18:38 before in the playground and in the
+18:41 
+
+18:41 gpt's chat interface but now we're going
+18:43 
+
+18:43 to do it in Python the first step is
+18:46 
+
+18:46 defining our instructions so this is
+18:49 
+
+18:49 essentially the system message so I'm
+18:51 
+
+18:51 using the same thing we had in the
+18:53 
+
+18:53 playground here sha GPT functioning as a
+18:55 
+
+18:55 virtual data science consultant on
+18:57 
+
+18:57 YouTube blah blah blah blah blah just
+18:59 
+
+18:59 copy paste that here and then we can
+19:00 
+
+19:00 create the assistant using this chunk of
+19:03 
+
+19:03 code here the way this works is we
+19:05 
+
+19:05 created this client object earlier and
+19:07 
+
+19:07 then we're going to be accessing the
+19:09 
+
+19:09 assistance API and we're just going to
+19:11 
+
+19:11 use this create method what that allows
+19:13 
+
+19:13 us to do is create an assistant set its
+19:16 
+
+19:16 name its description its instructions
+19:19 
+
+19:19 and the model that we want to use notice
+19:21 
+
+19:21 that this is everything we said here the
+19:23 
+
+19:23 name description isn't here but you can
+19:25 
+
+19:25 set the description via the assistance
+19:27 
+
+19:27 API the instructions and the model so
+19:30 
+
+19:30 it's all the same and then I just print
+19:32 
+
+19:32 the assistant not that it gives us a
+19:33 
+
+19:33 whole lot of useful information but it's
+19:35 
+
+19:35 just this object that looks like this
+19:38 
+
+19:38 okay in order to talk to the assistant
+19:40 
+
+19:40 you can set up this thread object which
+19:43 
+
+19:43 is new in the assistance API compared to
+19:46 
+
+19:46 the chat completion API which is what I
+19:48 
+
+19:48 talked about in a previous video we can
+19:49 
+
+19:49 create this thread which is just like a
+19:51 
+
+19:51 back and forth conversation it helps
+19:54 
+
+19:54 avoid doing this boiler plate code of
+19:56 
+
+19:56 keeping track of what the system message
+19:58 
+
+19:58 is and what the user says and what the
+19:60 
+
+19:60 assistant says and what the user says
+20:02 
+
+20:02 and assistant says so on and so forth
+20:03 
+
+20:03 It's all handled by the thread so that's
+20:05 
+
+20:05 super convenient you can generate the
+20:06 
+
+20:06 user message so here I just put
+20:08 
+
+20:08 something like great content thank you
+20:10 
+
+20:10 so that's a comment and then we can add
+20:13 
+
+20:13 this comment to the thread using this so
+20:16 
+
+20:16 we have to specify which thread we're
+20:18 
+
+20:18 going to add the message to which role
+20:20 
+
+20:20 is saying the message and then the
+20:22 
+
+20:22 content of the message we get the thread
+20:24 
+
+20:24 idea from here role is user and then
+20:27 
+
+20:27 content is here then finally we can send
+20:30 
+
+20:30 the message to the assistant to generate
+20:32 
+
+20:32 a response the way that works is you use
+20:37 
+
+20:37 this method here so we're in the threads
+20:39 
+
+20:39 module the runs subm module and we're
+20:42 
+
+20:42 going to use this create method to
+20:44 
+
+20:44 create a run which is just an API call
+20:47 
+
+20:47 essentially so we'll need to provide the
+20:49 
+
+20:49 thread ID which we just added this user
+20:51 
+
+20:51 message to and we need to provide the
+20:54 
+
+20:54 assistant ID and so where this comes
+20:56 
+
+20:56 from is the assistant object we made ear
+20:58 
+
+20:58 earlier if we do that we can run that
+21:00 
+
+21:00 and then it'll take a few seconds to run
+21:03 
+
+21:03 so that's why I run this helper function
+21:05 
+
+21:05 I made and then once the run is complete
+21:07 
+
+21:07 we can view that returned object so it
+21:09 
+
+21:09 took about 5 Seconds to do that first
+21:11 
+
+21:11 one so actually we can just like run
+21:13 
+
+21:13 this whole thing I think that's fine
+21:14 
+
+21:14 yeah we'll just run this whole thing all
+21:16 
+
+21:16 right so it took less time this time so
+21:18 
+
+21:18 it took about 3 seconds to run so
+21:20 
+
+21:20 automatically when we do this run when
+21:22 
+
+21:22 the assistant generates the response it
+21:24 
+
+21:24 gets automatically added to the thread
+21:26 
+
+21:26 so we don't have to do anything extra so
+21:28 
+
+21:28 all we can do is grab the messages from
+21:31 
+
+21:31 this thread that was just updated by the
+21:34 
+
+21:34 assistant and we can print the most
+21:36 
+
+21:36 recent message in the thread so the
+21:38 
+
+21:38 response from the assistant is you're
+21:40 
+
+21:40 welcome I'm glad you found it helpful if
+21:42 
+
+21:42 you have any more questions or topics
+21:43 
+
+21:43 you're curious about feel free to ask
+21:45 
+
+21:45 shot GPZ it signed off correctly which
+21:48 
+
+21:48 is nice and it is a pretty positive
+21:50 
+
+21:50 response it captures the sentiment that
+21:52 
+
+21:52 I convey it's just super long I never
+21:55 
+
+21:55 talk like this again I don't like
+21:56 
+
+21:56 reading and I don't want to burden
+21:58 
+
+21:58 people people with just putting way too
+21:59 
+
+21:59 much text for them to read I try to keep
+22:01 
+
+22:01 my responses pretty concise then here I
+22:04 
+
+22:04 just delete the assistant because what
+22:06 
+
+22:06 happens is every time you make an
+22:07 
+
+22:07 assistant it'll pop up here and if
+22:10 
+
+22:10 you're running this notebook as just
+22:12 
+
+22:12 like a tutorial or you're running it
+22:13 
+
+22:13 multiple times debugging or something
+22:15 
+
+22:15 you're going to have a very long list of
+22:17 
+
+22:17 assistants here if you don't delete them
+22:19 
+
+22:19 so that's what this line of code's doing
+22:21 
+
+22:21 okay so we have this problem that it's
+22:23 
+
+22:23 giving nice responses but these are just
+22:25 
+
+22:25 way too long they don't really sound
+22:27 
+
+22:27 like me one thing we can do to get sha
+22:28 
+
+22:28 GPT to sound more like me is to give it
+22:30 
+
+22:30 some examples to learn from so that's
+22:32 
+
+22:32 what I do here through so-called fuse
+22:34 
+
+22:34 shot prompting it's essentially where
+22:36 
+
+22:36 you put a set of examples in the
+22:39 
+
+22:39 instructions for the assistant so these
+22:41 
+
+22:41 are real past comments and my responses
+22:43 
+
+22:43 to these comments and all I did was
+22:45 
+
+22:45 append this sha GPT to them so it has
+22:48 
+
+22:48 that format we're looking for and then
+22:50 
+
+22:50 we just do the same thing we create
+22:51 
+
+22:51 another system in the same way we name
+22:53 
+
+22:53 it shot GPT we give it a description we
+22:56 
+
+22:56 give it the new set of instructions
+22:58 
+
+22:58 which is is what we defined here and
+22:59 
+
+22:59 then we Define the model then we can
+23:01 
+
+23:01 create a new thread so we can talk to
+23:03 
+
+23:03 the assistant we'll use the same user
+23:05 
+
+23:05 message great content thank you we'll
+23:07 
+
+23:07 add the message to the thread so again
+23:10 
+
+23:10 specifying the thread ID the role of
+23:12 
+
+23:12 who's saying it and the message then
+23:14 
+
+23:14 we'll run the thread so we'll send it to
+23:17 
+
+23:17 the assistant to generate a response by
+23:19 
+
+23:19 passing in the thread ID and assistant
+23:21 
+
+23:21 ID and then we'll wait a few seconds for
+23:23 
+
+23:23 the assistant to generate a response so
+23:25 
+
+23:25 it took about 3 seconds and then here
+23:27 
+
+23:27 we're just printing the assistance
+23:29 
+
+23:29 response so this is what sha GPT says
+23:31 
+
+23:31 now with the updated instructions to the
+23:34 
+
+23:34 same exact comment which is you're
+23:36 
+
+23:36 welcome happy to hear you found it
+23:38 
+
+23:38 useful shot GPT so that's a lot better I
+23:40 
+
+23:40 would probably have said just something
+23:42 
+
+23:42 like glad it was helpful happy to hear
+23:45 
+
+23:45 you found it useful maybe just one of
+23:47 
+
+23:47 these to make it a bit more concise cuz
+23:49 
+
+23:49 you're just saying the same thing in
+23:50 
+
+23:50 more words but this is a lot better than
+23:52 
+
+23:52 the original and a lot better than what
+23:53 
+
+23:53 we were seeing in the playground with
+23:55 
+
+23:55 the no code Solutions but of course we
+23:58 
+
+23:58 could have have added the few shot
+23:59 
+
+23:59 examples in the no code solution and we
+24:01 
+
+24:01 would have gotten the same results so
+24:03 
+
+24:03 another thing is technical questions
+24:05 
+
+24:05 which Chad GPT might respond in a
+24:07 
+
+24:07 certain way but it may not be the same
+24:09 
+
+24:09 way that I would respond to that
+24:11 
+
+24:11 technical question so before we tried
+24:12 
+
+24:12 adding PDF versions of my article so we
+24:15 
+
+24:15 could get the context of how I talk
+24:17 
+
+24:17 about fat tailedness for example but it
+24:19 
+
+24:19 for whatever reason it wasn't capturing
+24:21 
+
+24:21 that but now we've done this few shot
+24:23 
+
+24:23 prompting so let's see how its response
+24:26 
+
+24:26 changes we're just doing the same exact
+24:27 
+
+24:27 thing as before we're creating a new
+24:29 
+
+24:29 thread we're generating a user message
+24:31 
+
+24:31 so a new thread is as if we opened a new
+24:33 
+
+24:33 chat GPT chat so it's not going to
+24:36 
+
+24:36 remember this previous message that's
+24:38 
+
+24:38 why we're making the new thread add user
+24:40 
+
+24:40 message to thread so exactly what we did
+24:42 
+
+24:42 before but now the user message is what
+24:44 
+
+24:44 is fat tailedness and then we're going
+24:46 
+
+24:46 to send the message to the assistant we
+24:49 
+
+24:49 actually don't need this here I haven't
+24:50 
+
+24:50 gone through and cleaned up this code
+24:51 
+
+24:51 okay and then we wait for the assistant
+24:53 
+
+24:53 to process the prompt it takes a bit
+24:55 
+
+24:55 longer now presumably because it's a
+24:57 
+
+24:57 longer response it's not just like glad
+24:60 
+
+24:60 you liked it it's explaining what fat
+25:02 
+
+25:02 tailedness is and in fact when we print
+25:04 
+
+25:04 the results this is what we get fat
+25:05 
+
+25:05 tailedness refers to property
+25:07 
+
+25:07 probability distribution which tails are
+25:09 
+
+25:09 fatter than those of a normal
+25:10 
+
+25:10 distribution okay so it's just giving
+25:12 
+
+25:12 the same thing as we saw before but
+25:15 
+
+25:15 notice that we haven't added any
+25:17 
+
+25:17 documents like we did in the no code
+25:19 
+
+25:19 Solutions so let's do that I quickly
+25:21 
+
+25:21 deleted the assistant so we don't have
+25:23 
+
+25:23 them piling up here's how we can add
+25:25 
+
+25:25 documents to the assistant so the way
+25:27 
+
+25:27 that works is like this so we go to the
+25:31 
+
+25:31 files module and just do this create
+25:34 
+
+25:34 method so we just use this syntax open
+25:36 
+
+25:36 which is just opening a file so it's
+25:39 
+
+25:39 creating a python readable version of
+25:43 
+
+25:43 the file so we're going to open the file
+25:44 
+
+25:44 we specify the path which is in this
+25:47 
+
+25:47 articles folder this is just setting
+25:49 
+
+25:49 that we'll be opening this file for
+25:51 
+
+25:51 reading purposes as opposed to writing
+25:53 
+
+25:53 to it we also need to specify the
+25:55 
+
+25:55 purpose of this file so we'll say it's
+25:57 
+
+25:57 for assistant the other option is for
+25:59 
+
+25:59 fine-tuning which we'll see here in a
+26:01 
+
+26:01 little bit once we create this file
+26:03 
+
+26:03 it'll actually populate here but I think
+26:06 
+
+26:06 it actually got deleted at the end of
+26:08 
+
+26:08 this notebook so if you were to just run
+26:11 
+
+26:11 this chunk of Code by itself it's going
+26:13 
+
+26:13 to create a file in your files tab on
+26:15 
+
+26:15 your open AI account and actually any
+26:18 
+
+26:18 assistant that you make can use these
+26:21 
+
+26:21 files for retrieval all you have to do
+26:23 
+
+26:23 is provide the file ID as we'll see in a
+26:25 
+
+26:25 second here but notice where all these
+26:27 
+
+26:27 came from is when we were in the
+26:29 
+
+26:29 playground and we uploaded all 10 of
+26:31 
+
+26:31 these articles with the file uploaded we
+26:34 
+
+26:34 can create a new assistant that can
+26:36 
+
+26:36 access that particular file so the way
+26:38 
+
+26:38 that works is we created this file
+26:40 
+
+26:40 object and now we can just pass it to
+26:42 
+
+26:42 the assistant so this is the same exact
+26:45 
+
+26:45 method we were using before to generate
+26:47 
+
+26:47 the assistant we said the name the
+26:48 
+
+26:48 description the instructions but now
+26:51 
+
+26:51 we're going to define the tools so here
+26:53 
+
+26:53 we're going to use retrieval as a tool
+26:56 
+
+26:56 and when we do that we also need to
+26:58 
+
+26:58 specify the file IDs of the documents
+27:01 
+
+27:01 that the assistant can use so in this
+27:03 
+
+27:03 case we're just going to use this one
+27:04 
+
+27:04 that we created up here but of course if
+27:06 
+
+27:06 you have a ton of files uploaded here
+27:08 
+
+27:08 you can use all of them and you just
+27:10 
+
+27:10 need to specify all of the file IDs in
+27:12 
+
+27:12 this list here and then finally you
+27:14 
+
+27:14 specify the model so now that we added
+27:16 
+
+27:16 retrieval let's try the technical
+27:18 
+
+27:18 question once again so this one took a
+27:20 
+
+27:20 lot longer to run took about 45 seconds
+27:22 
+
+27:22 but we're running it in the same way
+27:24 
+
+27:24 this is interesting it generated kind of
+27:26 
+
+27:26 like a mixed response something close to
+27:28 
+
+27:28 what we were seeing before where it's
+27:29 
+
+27:29 kind of giving a traditional definition
+27:32 
+
+27:32 of fat tailedness it's just more fat
+27:34 
+
+27:34 tailed than a normal distribution but
+27:36 
+
+27:36 then it's bringing in Concepts from the
+27:38 
+
+27:38 articles that I provided which is you
+27:40 
+
+27:40 know fat tailedness ranges from thin
+27:42 
+
+27:42 tailed to very fat tailed which is
+27:45 
+
+27:45 almost verbatim from the article and
+27:47 
+
+27:47 then it adds these four different ways
+27:49 
+
+27:49 to quantify F tailedness and then it
+27:51 
+
+27:51 kind of gives some context these methods
+27:53 
+
+27:53 offer different insights into
+27:55 
+
+27:55 distributions shape allowing for more
+27:57 
+
+27:57 detailed understanding of the data's
+27:58 
+
+27:58 Behavior especially regarding the
+27:60 
+
+27:60 occurrences and impact of rare and
+28:02 
+
+28:02 extreme events sha GPT yeah that's
+28:04 
+
+28:04 pretty interesting that it added in
+28:06 
+
+28:06 those four heris and gave this dichotomy
+28:09 
+
+28:09 of thin tailed versus fat tailedness
+28:12 
+
+28:12 which is something I talk about in the
+28:13 
+
+28:13 article and then finally I delete the
+28:15 
+
+28:15 assistant and delete the file if you're
+28:17 
+
+28:17 running this multiple times you don't
+28:19 
+
+28:19 accumulate a bunch of files and
+28:20 
+
+28:20 assistants on your account and then some
+28:22 
+
+28:22 more resources I'll put all these in the
+28:25 
+
+28:25 description you can read more about the
+28:27 
+
+28:27 assistance AP API just from like a high
+28:29 
+
+28:29 level the documentation which is the API
+28:31 
+
+28:31 reference breaks down the python side of
+28:34 
+
+28:34 things and then finally more On Tools so
+28:37 
+
+28:37 here we just used retrieval but there
+28:39 
+
+28:39 are two other tools that you can use
+28:42 
+
+28:42 which are the code interpreter which we
+28:44 
+
+28:44 saw in both the playground and the gpts
+28:47 
+
+28:47 and the functions tool which is
+28:49 
+
+28:49 something we saw in the assistants
+28:50 
+
+28:50 playground so just going back to that we
+28:52 
+
+28:52 only used retrieval here but we could
+28:54 
+
+28:54 have also used the code interpreter and
+28:57 
+
+28:57 functions so if you want to read more
+28:58 
+
+28:58 about that I'll provide this link in the
+29:00 
+
+29:00 description kind of talks about the
+29:02 
+
+29:02 tools talks about the code interpreter
+29:04 
+
+29:04 which as it says here allows assistance
+29:06 
+
+29:06 API to write and run python code so
+29:08 
+
+29:08 that's on the code interpreter reading
+29:11 
+
+29:11 images and files okay that's cool and
+29:13 
+
+29:13 also had the input output logs that's
+29:15 
+
+29:15 cool knowledge retrieval which is what
+29:17 
+
+29:17 we did in all the different examples I
+29:19 
+
+29:19 talked about here and then function
+29:21 
+
+29:21 calling so this is the cool thing and
+29:23 
+
+29:23 you can almost have any function with
+29:24 
+
+29:24 this capability so the way this works is
+29:27 
+
+29:27 you need to give the name of the
+29:28 
+
+29:28 function along with a natural language
+29:30 
+
+29:30 description and then you need to also
+29:32 
+
+29:32 provide a so-called Json schema which
+29:35 
+
+29:35 essentially outlines what the inputs of
+29:37 
+
+29:37 the function are so the assistant knows
+29:39 
+
+29:39 what information to give to this
+29:41 
+
+29:41 function in order to get a response at
+29:44 
+
+29:44 this point we've seen both no code and
+29:46 
+
+29:46 python ways of generating an assistant
+29:49 
+
+29:49 and we saw that we can get pretty far by
+29:51 
+
+29:51 using things like retrieval and fuse
+29:53 
+
+29:53 shot prompting to improve the assistant
+29:56 
+
+29:56 performance however there's still still
+29:58 
+
+29:58 something missing from the assistant
+29:60 
+
+29:60 responses it just doesn't really feel
+30:01 
+
+30:01 like something I would say it's very
+30:03 
+
+30:03 verbose and doesn't quite explain things
+30:06 
+
+30:06 how I would explain it so to kind of
+30:08 
+
+30:08 better capture this feel aspect of the
+30:11 
+
+30:11 assistant responses let's turn to
+30:13 
+
+30:13 fine-tuning the model unlike the
+30:16 
+
+30:16 assistance API there's no no code
+30:19 
+
+30:19 solution for the fine-tuning bit you
+30:21 
+
+30:21 have to write some python code to
+30:23 
+
+30:23 fine-tune the model and it requires a
+30:25 
+
+30:25 bit more work because in order to do
+30:27 
+
+30:27 fine tuning you need to curate a
+30:29 
+
+30:29 training data set so here I'm going to
+30:31 
+
+30:31 kind of walk through the process of how
+30:34 
+
+30:34 I did that for this YouTube comment
+30:36 
+
+30:36 responder use case here's another
+30:38 
+
+30:38 Jupiter notebook example code is on the
+30:40 
+
+30:40 GitHub repository so check it out if you
+30:42 
+
+30:42 like here we're importing some modules
+30:45 
+
+30:45 again importing the open AI python
+30:47 
+
+30:47 Library importing the secret key in the
+30:49 
+
+30:49 same way that we did in the previous
+30:51 
+
+30:51 example and then here importing a few
+30:53 
+
+30:53 other libraries that we're going to use
+30:55 
+
+30:55 for the data preparation so again we're
+30:57 
+
+30:57 going to set up our client and then
+30:59 
+
+30:59 we're going to need to prepare the
+31:00 
+
+31:00 training data so this is what makes fine
+31:02 
+
+31:02 tuning a lot of work it's just acquiring
+31:05 
+
+31:05 the right data and a important rule in
+31:09 
+
+31:09 machine learning if there are any rules
+31:11 
+
+31:11 in machine learning is that data quality
+31:13 
+
+31:13 is the most important thing not how
+31:15 
+
+31:15 fancy your model is not how efficient
+31:18 
+
+31:18 your code is but how good your data is
+31:21 
+
+31:21 at capturing the thing that you're
+31:23 
+
+31:23 trying to model and so in this case what
+31:25 
+
+31:25 I did was I went to my YouTube channel
+31:28 
+
+31:28 and I took real comments that people
+31:30 
+
+31:30 left and then real comments that I
+31:32 
+
+31:32 responded with to create this input
+31:34 
+
+31:34 output pair so what that looks like is
+31:37 
+
+31:37 this so I got about 60 comments and
+31:41 
+
+31:41 responses just copy pasted into this
+31:44 
+
+31:44 numbers sheet I use numbers because I'm
+31:46 
+
+31:46 on Mac but you could use Excel to just
+31:48 
+
+31:48 copy paste it in there and then I
+31:50 
+
+31:50 exported it as a CSV file just to see
+31:52 
+
+31:52 some examples of this comment was this
+31:55 
+
+31:55 was a very thorough introduction to llms
+31:57 
+
+31:57 and answer answered many questions I had
+31:58 
+
+31:58 thank you to which I said great to hear
+32:01 
+
+32:01 glad it was helpful smiley face and of
+32:03 
+
+32:03 course we can have emojis in here this
+32:05 
+
+32:05 one says Mr Moneybags over here which
+32:07 
+
+32:07 was funny so these are just real world
+32:09 
+
+32:09 comments which we incorporate into F
+32:12 
+
+32:12 shop prompting but you just can't fit 60
+32:15 
+
+32:15 comments and responses into your
+32:17 
+
+32:17 assistant instructions and if you do
+32:19 
+
+32:19 it's just going to create this like
+32:21 
+
+32:21 bulky overhead because the instructions
+32:23 
+
+32:23 are going to be passed to the assistant
+32:25 
+
+32:25 every time a thread is initiated so you
+32:27 
+
+32:27 can imagine that the API calls are just
+32:30 
+
+32:30 going to become more costly over the
+32:32 
+
+32:32 long run if you just have a really large
+32:34 
+
+32:34 instruction set and so that's where fine
+32:36 
+
+32:36 tuning is helpful in fact open AI has a
+32:39 
+
+32:39 nice guide on fine tuning here we go
+32:41 
+
+32:41 common use cases so I'll also put this
+32:43 
+
+32:43 in the description some common use cases
+32:46 
+
+32:46 when fine-tuning can improve results
+32:48 
+
+32:48 setting the style tone format and other
+32:50 
+
+32:50 qualitative aspects so that's the main
+32:52 
+
+32:52 motivation for using it in this use case
+32:54 
+
+32:54 another one's improving reliability at
+32:56 
+
+32:56 producing the desired output next is
+32:58 
+
+32:58 correcting failures to follow complex
+33:00 
+
+33:00 prompts handling many edge cases in
+33:02 
+
+33:02 specific ways so I guess that's good if
+33:04 
+
+33:04 there's like a specific prompts or
+33:06 
+
+33:06 specific situations where the assistant
+33:08 
+
+33:08 is failing you can just include those in
+33:09 
+
+33:09 your training data set and it'll learn
+33:11 
+
+33:11 how to not do that and then performing a
+33:13 
+
+33:13 new skill or task that's hard to
+33:15 
+
+33:15 articulate in a prompt and so I like how
+33:18 
+
+33:18 they put it here the high Lev way to
+33:19 
+
+33:19 think about it is you want to find tune
+33:21 
+
+33:21 when it's easier to show not tell kind
+33:24 
+
+33:24 of like how I was experiencing in the
+33:26 
+
+33:26 initial no code GPT solution it was
+33:29 
+
+33:29 asking me these questions and I wasn't
+33:31 
+
+33:31 necessarily sure how to give the best
+33:33 
+
+33:33 instructions that's another downside of
+33:35 
+
+33:35 these no code Solutions is that even
+33:37 
+
+33:37 though it doesn't require us to write
+33:39 
+
+33:39 python code it may not be obvious how to
+33:41 
+
+33:41 give good instructions using natural
+33:43 
+
+33:43 language showing not telling is just a
+33:45 
+
+33:45 better way to convey the desired
+33:49 
+
+33:49 behavior of the assistant going back to
+33:51 
+
+33:51 the training data prep we have all these
+33:54 
+
+33:54 comments and responses in the CSV file
+33:57 
+
+33:57 how however the fine-tuning API doesn't
+33:60 
+
+33:60 take CSV files as input the data need to
+34:03 
+
+34:03 be in a very specific format which they
+34:05 
+
+34:05 talk about here data preparation and
+34:08 
+
+34:08 Analysis for chat model fine tuning and
+34:11 
+
+34:11 basically it wants the examples the
+34:13 
+
+34:13 inputs and outputs in a Json L format so
+34:17 
+
+34:17 basically it wants it in a text file
+34:19 
+
+34:19 here's an example it wants it in this
+34:20 
+
+34:20 format where each row is an example and
+34:24 
+
+34:24 it consists of a system message a user
+34:27 
+
+34:27 message and then an assistant message
+34:30 
+
+34:30 and each line is in the Json format
+34:33 
+
+34:33 which you can essentially think of as a
+34:35 
+
+34:35 python dictionary what we need to do is
+34:37 
+
+34:37 take the CSV file from here and
+34:40 
+
+34:40 translate it into the proper format in
+34:42 
+
+34:42 order to use it for fine tuning the way
+34:44 
+
+34:44 that works here is I initialize these
+34:46 
+
+34:46 lists to hold all the comments and all
+34:49 
+
+34:49 the responses then I open the CSV file
+34:52 
+
+34:52 this is a CSV file YouTube comments. CSV
+34:55 
+
+34:55 in read mode this like a common syntax
+34:57 
+
+34:57 tax for reading text files in Python not
+34:59 
+
+34:59 entirely sure how it actually works but
+35:02 
+
+35:02 it's something I've used a lot so maybe
+35:04 
+
+35:04 I should figure out how it works but
+35:06 
+
+35:06 anyway my understanding is that it
+35:07 
+
+35:07 handles the opening and closing of the
+35:10 
+
+35:10 text file but if someone knows better
+35:12 
+
+35:12 than me drop it in the comments below
+35:13 
+
+35:13 I'm curious so the first thing we do is
+35:15 
+
+35:15 use this CSV do reader method to read
+35:19 
+
+35:19 the file and then what that allows us to
+35:21 
+
+35:21 do is go through the CSV file line by
+35:23 
+
+35:23 line and just grab each chunk of text so
+35:26 
+
+35:26 we're doing that in this for Loop and
+35:29 
+
+35:29 then we're actually going to skip the
+35:30 
+
+35:30 first line cuz as you can see here the
+35:32 
+
+35:32 first line says comment and response so
+35:35 
+
+35:35 what I'm doing is if the first element
+35:37 
+
+35:37 of the line is equal to comment to just
+35:39 
+
+35:39 skip that line that's how I'm skipping
+35:41 
+
+35:41 the first line here but this will
+35:42 
+
+35:42 probably be different if your first line
+35:45 
+
+35:45 isn't comment and response with that
+35:46 
+
+35:46 first line out of the way the for Loop
+35:48 
+
+35:48 will go to the next line which is this
+35:50 
+
+35:50 comment and this response and then what
+35:52 
+
+35:52 I'm going to do is append the comment to
+35:55 
+
+35:55 the comment list and then append the
+35:58 
+
+35:58 response to the response list but also
+36:01 
+
+36:01 appending this Shaw GPT sign off to the
+36:04 
+
+36:04 response so we get that desired behavior
+36:07 
+
+36:07 and of course you can do whatever string
+36:09 
+
+36:09 manipulation you like here to ensure
+36:11 
+
+36:11 that the output format of the assistant
+36:14 
+
+36:14 is whatever you like so here I just have
+36:16 
+
+36:16 like a simple thing that I'm adding to
+36:18 
+
+36:18 it but if you want it to be in like a
+36:20 
+
+36:20 Json format or you want it to have like
+36:22 
+
+36:22 a particular format you can do whatever
+36:24 
+
+36:24 string manipulation you like to ensure
+36:27 
+
+36:27 that it has that format so this will
+36:28 
+
+36:28 just go all the way through the CSV file
+36:31 
+
+36:31 just grabbing each comment and each
+36:32 
+
+36:32 response so we do that it'll save all
+36:35 
+
+36:35 the comments to the comment list so
+36:38 
+
+36:38 that's what this is and then it'll have
+36:40 
+
+36:40 all my responses here or should I say
+36:42 
+
+36:42 all of sha gpt's responses here and so
+36:45 
+
+36:45 that's what that looks like you can see
+36:47 
+
+36:47 emojis and all okay so all we did right
+36:50 
+
+36:50 now is just put all the comments and
+36:51 
+
+36:51 responses from the CSV file in a list we
+36:54 
+
+36:54 haven't actually made it into this Json
+36:55 
+
+36:55 L format so in order to do that we go to
+36:58 
+
+36:58 this next cell where we Define our
+37:01 
+
+37:01 instruction string and we generate each
+37:03 
+
+37:03 example line by line so the way that
+37:06 
+
+37:06 works is again going back to this
+37:08 
+
+37:08 example here each example is a
+37:11 
+
+37:11 dictionary so it's this key value pair
+37:13 
+
+37:13 where the key is always messages for
+37:15 
+
+37:15 whatever reason and then the value is a
+37:18 
+
+37:18 list which is this list here however the
+37:20 
+
+37:20 list is a list of dictionaries so it
+37:23 
+
+37:23 contains three dictionaries the first
+37:25 
+
+37:25 one corresponding to the system message
+37:28 
+
+37:28 the second dictionary corresponding to
+37:30 
+
+37:30 the user's message and the third
+37:32 
+
+37:32 dictionary corresponding to the
+37:34 
+
+37:34 assistance response that's the goal
+37:37 
+
+37:37 that's what we're trying to do here and
+37:38 
+
+37:38 so the way I do it is Define the system
+37:41 
+
+37:41 message just once then I just go like
+37:44 
+
+37:44 index by index through the comment list
+37:46 
+
+37:46 we go 0 to 58 through the comment list
+37:49 
+
+37:49 because there are 59 elements and we
+37:51 
+
+37:51 just generate each of these three
+37:53 
+
+37:53 dictionaries we generate the system
+37:55 
+
+37:55 message we generate the user message and
+37:58 
+
+37:58 then we generate the assistant response
+38:00 
+
+38:00 and so that's what we're doing here so
+38:02 
+
+38:02 roll system content is always going to
+38:05 
+
+38:05 be this instructions string then we have
+38:08 
+
+38:08 roll user the content is going to be the
+38:11 
+
+38:11 I element of the comment list and then
+38:14 
+
+38:14 we have the assistant role and its
+38:16 
+
+38:16 content is the I element of the response
+38:19 
+
+38:19 list okay and then we just take these
+38:21 
+
+38:21 three dictionaries put them into a list
+38:24 
+
+38:24 and then we create a dictionary I kind
+38:27 
+
+38:27 of do two things in one step here so
+38:29 
+
+38:29 sorry if it's unclear but we take this
+38:31 
+
+38:31 list and create a dictionary with the
+38:33 
+
+38:33 key is messages and the value is this
+38:36 
+
+38:36 messages list and then we append this
+38:38 
+
+38:38 dictionary to the example list so it's
+38:41 
+
+38:41 matching this format here where each
+38:44 
+
+38:44 line of this text file is a Json format
+38:48 
+
+38:48 so it's essentially a dictionary and in
+38:50 
+
+38:50 the same way each element of this
+38:52 
+
+38:52 example list is a dictionary okay so
+38:55 
+
+38:55 there was a issue with with this line of
+38:57 
+
+38:57 code which I just fixed but what we're
+38:59 
+
+38:59 doing here is we're going to create our
+39:01 
+
+39:01 train test split we're going to
+39:02 
+
+39:02 designate a set of examples for training
+39:04 
+
+39:04 and then we're going to designate
+39:05 
+
+39:05 another set of examples for the
+39:07 
+
+39:07 validation data set and so the way I do
+39:09 
+
+39:09 that is I randomly generate nine
+39:12 
+
+39:12 integers between zero and the number of
+39:16 
+
+39:16 examples minus one and then I use those
+39:20 
+
+39:20 indices to create a new list for the
+39:22 
+
+39:22 validation data set so this is just
+39:25 
+
+39:25 creating a list here where it's going to
+39:27 
+
+39:27 go through each index in this index list
+39:30 
+
+39:30 here and it's going to copy that example
+39:32 
+
+39:32 from example list and put it into Data
+39:34 
+
+39:34 validation list and since these examples
+39:36 
+
+39:36 will still be an example list we can go
+39:39 
+
+39:39 through and iteratively remove them in
+39:41 
+
+39:41 this for Loop so now at this stage we've
+39:44 
+
+39:44 got two lists one is called example list
+39:48 
+
+39:48 which is a list of dictionaries that
+39:50 
+
+39:50 have the data in the proper format this
+39:53 
+
+39:53 should have 50 elements it does and then
+39:56 
+
+39:56 we have have validation data list which
+39:59 
+
+39:59 is just all the examples in our
+40:01 
+
+40:01 validation data set and so this is also
+40:03 
+
+40:03 a list of dictionaries and then we write
+40:06 
+
+40:06 these examples to two different files so
+40:08 
+
+40:08 the first one is for the training data
+40:10 
+
+40:10 and the second one is for the validation
+40:12 
+
+40:12 data and so kind of in a similar way as
+40:14 
+
+40:14 before we're opening this text file
+40:17 
+
+40:17 specifically a Json L file with the
+40:20 
+
+40:20 right flag on and then we'll just go
+40:23 
+
+40:23 through each element of example list and
+40:26 
+
+40:26 dump it into this Json file and then
+40:28 
+
+40:28 we'll do a new line character so it
+40:30 
+
+40:30 creates a new line for each example and
+40:31 
+
+40:31 then we'll do the same exact thing for
+40:33 
+
+40:33 the validation data set and so once we
+40:35 
+
+40:35 do that it should create these files
+40:37 
+
+40:37 here training data. Json L validation
+40:39 
+
+40:39 data. Json L and then we can upload
+40:42 
+
+40:42 these files to the open aai API for
+40:45 
+
+40:45 fine-tuning the way you do that is very
+40:47 
+
+40:47 similar to what we saw in the previous
+40:48 
+
+40:48 notebook when we're uploading the
+40:50 
+
+40:50 article for rag purposes for retrieval
+40:53 
+
+40:53 purposes so we just use this files.
+40:56 
+
+40:56 create method meod we open the file
+40:59 
+
+40:59 which we just saved but now we set the
+41:01 
+
+41:01 purpose as fine-tune as opposed to
+41:03 
+
+41:03 assistance do that for both the training
+41:05 
+
+41:05 and validation data I just put that
+41:07 
+
+41:07 there so it didn't run the job
+41:08 
+
+41:08 prematurely and then we can just run the
+41:10 
+
+41:10 fine-tuning job so the way it works here
+41:13 
+
+41:13 is we specify the training file the
+41:16 
+
+41:16 validation file ID which is just a
+41:18 
+
+41:18 property of these two objects we can set
+41:20 
+
+41:20 a suffix which is basically some unique
+41:23 
+
+41:23 identifier or some identifier we can put
+41:26 
+
+41:26 into the name of the fine-tuning job or
+41:29 
+
+41:29 name of the model so we can identify it
+41:31 
+
+41:31 and then we can specify what model we
+41:33 
+
+41:33 want to use so gp4 is not available for
+41:35 
+
+41:35 fine tuning the most state-of-the-art
+41:38 
+
+41:38 advanced model for fine tuning available
+41:40 
+
+41:40 is gbt 3.5 turbo so that's what we're
+41:42 
+
+41:42 going to use here and then we can just
+41:44 
+
+41:44 run this and it'll create this
+41:46 
+
+41:46 fine-tuning job and then if we go back
+41:48 
+
+41:48 to our open AI account click on this
+41:50 
+
+41:50 fine-tuning tab we can see this fine
+41:52 
+
+41:52 tuning job is running and so this
+41:55 
+
+41:55 actually kind of takes 15 or 20 minutes
+41:57 
+
+41:57 it's not something that runs like
+41:59 
+
+41:59 immediately fast but I did this
+42:01 
+
+42:01 yesterday so we can just use this model
+42:03 
+
+42:03 it's kind of like the cooking shows like
+42:05 
+
+42:05 we already cooked the pasta last night
+42:06 
+
+42:06 and we're going to eat it in front of
+42:07 
+
+42:07 you and so yeah it's already set up here
+42:09 
+
+42:09 so fine tuning jobs running once it
+42:12 
+
+42:12 finishes running after like 20 minutes
+42:13 
+
+42:13 or so we'll be able to use it another
+42:15 
+
+42:15 thing about fine-tuning is that your
+42:17 
+
+42:17 fine-tune models don't integrate into
+42:19 
+
+42:19 the assistance API they only work with
+42:21 
+
+42:21 the chat completions API which means
+42:23 
+
+42:23 those tools that we could include like
+42:26 
+
+42:26 retrieval like the code interpreter like
+42:28 
+
+42:28 the functions which we could just easily
+42:30 
+
+42:30 add to our system by specifying some
+42:33 
+
+42:33 keyword argument that's not available
+42:35 
+
+42:35 natively through the chat completions
+42:37 
+
+42:37 API so if you want to add rag you want
+42:39 
+
+42:39 to add tools you got to build out that
+42:41 
+
+42:41 functionality yourself using python code
+42:44 
+
+42:44 and of course you can use like Lang
+42:45 
+
+42:45 chain or llama index or some python
+42:47 
+
+42:47 library to do that but it's not
+42:49 
+
+42:49 integrated into chat completions I'm
+42:51 
+
+42:51 sure at some point the fine-tuning
+42:53 
+
+42:53 models will be incorporated to the
+42:55 
+
+42:55 assistance API but at this point it's
+42:57 
+
+42:57 not available okay so we're going to
+42:58 
+
+42:58 throw into test comment so we specify
+43:00 
+
+43:00 the model and then we have to define the
+43:02 
+
+43:02 messages like this so we Define the
+43:04 
+
+43:04 system message using the instruction
+43:06 
+
+43:06 string from before then we pass the user
+43:09 
+
+43:09 comment just like that then we can run
+43:11 
+
+43:11 that and then Sean GPT just says thanks
+43:14 
+
+43:14 it's more concise I'll say that for sure
+43:16 
+
+43:16 and I don't know if I've ever just said
+43:18 
+
+43:18 thanks to a comment but this is a pretty
+43:20 
+
+43:20 brief response let's see what another
+43:23 
+
+43:23 response looks like and so this is a
+43:25 
+
+43:25 comment that came in recently it wasn't
+43:26 
+
+43:26 in the training data set so let's see
+43:28 
+
+43:28 what the response to this looks like so
+43:30 
+
+43:30 the comment was I'm typing this after
+43:32 
+
+43:32 watching half of the video as I'm
+43:34 
+
+43:34 already amazed with the clarity of
+43:35 
+
+43:35 explanation exceptional and then sha GPT
+43:38 
+
+43:38 says wow thanks for the compliment
+43:39 
+
+43:39 that's pretty good that that is
+43:41 
+
+43:41 something that I would write I was
+43:42 
+
+43:42 playing around with this yesterday and
+43:44 
+
+43:44 it gave like a pretty cheeky answer I
+43:46 
+
+43:46 don't know if it'll generate that again
+43:47 
+
+43:47 but I found that funny it was something
+43:49 
+
+43:49 like thanks for commenting I hope the
+43:51 
+
+43:51 second half of the video is good and it
+43:53 
+
+43:53 had some emojis in there and I thought
+43:55 
+
+43:55 it was funny but now it's like
+43:56 
+
+43:56 generating responses that I would say oh
+43:59 
+
+43:59 yeah here we go this is something
+44:01 
+
+44:01 similar to what I saw yesterday so
+44:02 
+
+44:02 appreciate the compliment hope the
+44:04 
+
+44:04 second half doesn't disappoint so now
+44:06 
+
+44:06 let's see how it handles a technical
+44:07 
+
+44:07 question again the fine tune model
+44:09 
+
+44:09 doesn't have retrieval built into it if
+44:11 
+
+44:11 I wanted to add retrieval to this model
+44:13 
+
+44:13 I need to use like llama index or Lang
+44:15 
+
+44:15 chain or something like that to add it
+44:16 
+
+44:16 in there so let's see how it handles
+44:18 
+
+44:18 this of course it's not going to
+44:20 
+
+44:20 describe fat tilted how I did in the
+44:22 
+
+44:22 articles but it is giving a much more
+44:25 
+
+44:25 concise and closer response to what I
+44:28 
+
+44:28 would say compared to what we were
+44:29 
+
+44:29 seeing before like this monstrosity
+44:32 
+
+44:32 without the fine tuning there you go
+44:34 
+
+44:34 that's how you do fine tuning it takes a
+44:36 
+
+44:36 little bit more effort up front to get
+44:38 
+
+44:38 together your training data set but
+44:39 
+
+44:39 honestly it took me about maybe 20 to 30
+44:42 
+
+44:42 minutes to manually copy paste those
+44:44 
+
+44:44 comments into the CSV file maybe another
+44:46 
+
+44:46 like 20 minutes to write this script to
+44:48 
+
+44:48 prepare the training data but you don't
+44:50 
+
+44:50 have to write the script you can just
+44:51 
+
+44:51 bring in your CSV file and it should be
+44:53 
+
+44:53 ready to go and then again I'll delete
+44:55 
+
+44:55 the training in valid ation files
+44:57 
+
+44:57 hopefully that doesn't ruin the
+44:58 
+
+44:58 fine-tuning job but it doesn't really
+44:59 
+
+44:59 matter and then more resources here I'll
+45:01 
+
+45:01 drop these in the description below so
+45:04 
+
+45:04 you can take a closer look at it so open
+45:06 
+
+45:06 AI guide for fine-tuning that was pretty
+45:08 
+
+45:08 helpful all of open ai's documentation
+45:10 
+
+45:10 is super clean and easy to understand
+45:12 
+
+45:12 let's see they have their API reference
+45:14 
+
+45:14 on fine tuning and then how to prepare
+45:17 
+
+45:17 your data for fine tuning is also
+45:19 
+
+45:19 available here so overall impressions of
+45:20 
+
+45:20 fine tuning I'm honestly pretty
+45:22 
+
+45:22 impressed I didn't expect it to work as
+45:25 
+
+45:25 well as it did especially because it
+45:26 
+
+45:26 only used 50 training examples in grad
+45:29 
+
+45:29 school if I wanted to train a good model
+45:31 
+
+45:31 I needed 100,000 examples to train a
+45:35 
+
+45:35 good predictive model but because of the
+45:37 
+
+45:37 power of GPT 3.5 turbo it's already a
+45:40 
+
+45:40 powerful model even fine tuning with
+45:42 
+
+45:42 just 50 examples results in really good
+45:45 
+
+45:45 results that's why personally I feel
+45:47 
+
+45:47 like fine-tuning is probably the biggest
+45:49 
+
+45:49 Innovation that we've seen in machine
+45:51 
+
+45:51 learning because if you can find the
+45:53 
+
+45:53 right base model for your use case and
+45:55 
+
+45:55 you can just tweak it with just a
+45:57 
+
+45:57 handful of examples you can get really
+45:60 
+
+45:60 good results in a fraction of the time
+46:02 
+
+46:02 that it would have taken you to develop
+46:04 
+
+46:04 that model from scratch okay so that's
+46:06 
+
+46:06 basically it we talked about three
+46:07 
+
+46:07 different ways to build a custom AI
+46:10 
+
+46:10 assistant using open AI we first talked
+46:12 
+
+46:12 about the no code solution which allowed
+46:14 
+
+46:14 you to build an assistant pretty quickly
+46:16 
+
+46:16 without any python coding next we looked
+46:18 
+
+46:18 at the assistance API which gave us a
+46:20 
+
+46:20 pretty straightforward way of creating
+46:22 
+
+46:22 assistance using python code which we
+46:24 
+
+46:24 can take and Port over to an application
+46:26 
+
+46:26 or a website and then finally we saw how
+46:28 
+
+46:28 we can fine tune an assistant to
+46:30 
+
+46:30 dramatically change its style and really
+46:33 
+
+46:33 Come Away with something that has good
+46:35 
+
+46:35 performance if you want to play around
+46:36 
+
+46:36 with the no Cod shot GPT I'll provide a
+46:38 
+
+46:38 link in the description below but if you
+46:40 
+
+46:40 want to interact with the fine tuned
+46:42 
+
+46:42 version of sha GPT drop a comment in the
+46:45 
+
+46:45 comment section below and I'll be sure
+46:46 
+
+46:46 to respond with shot GPT unless you
+46:48 
+
+46:48 explicitly don't want me to respond with
+46:50 
+
+46:50 shbt just let me know and I'll respond
+46:52 
+
+46:52 as myself so I hope this tutorial was
+46:54 
+
+46:54 helpful and gave you an idea of which
+46:56 
+
+46:56 approach might be best for your
+46:58 
+
+46:58 particular use case of building an AI
+47:00 
+
+47:00 assistant while open AI does currently
+47:03 
+
+47:03 have the state of the art large language
+47:05 
+
+47:05 models for building these things a
+47:07 
+
+47:07 natural question is how can we build
+47:09 
+
+47:09 these types of AI assistants using
+47:11 
+
+47:11 open-source Solutions so that's exactly
+47:13 
+
+47:13 what I'm going to cover in future videos
+47:15 
+
+47:15 of this series where we're going to
+47:17 
+
+47:17 explore both retrieval augmented
+47:19 
+
+47:19 generation or rag and model fine-tuning
+47:22 
+
+47:22 using open-source models and if you
+47:24 
+
+47:24 enjoyed this content this is just one
+47:26 
+
+47:26 video in a much larger series on using
+47:29 
+
+47:29 large language models in practice so if
+47:31 
+
+47:31 you want to learn more check out the
+47:32 
+
+47:32 series playlist Linked In the
+47:34 
+
+47:34 description below and in the comment
+47:36 
+
+47:36 section and as always thank you so much
+47:38 
+
+47:38 for your time and thanks for
+47:43 
+
+47:43 watching

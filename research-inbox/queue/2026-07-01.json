@@ -1,0 +1,36 @@
+{
+  "date": "2026-07-01",
+  "note": "YouTube videos/courses queued for transcription. Run knowledge-rag/fetch_transcripts.py to pull transcripts; the next daily run ingests them. Titles were dedup-checked against learning-hub/transcripts/ and the manifest items[] list.",
+  "videos": [
+    {
+      "videoId": "TZyBG1_-jLM",
+      "title": "Finding Winning Products To Resell on Amazon FBA Made Easy | Reverse Sourcing Masterclass for 2026",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=TZyBG1_-jLM",
+      "topic": "fba_oa_mastery",
+      "why": "2026 reverse-sourcing masterclass; extends the storefront-stalking / reverse-sourcing corpus with a current end-to-end workflow.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "HXYMH_l6Ufk",
+      "title": "This Has Completely Changed My Amazon FBA Business.. (NEW Storefront Stalking Reveal!)",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=HXYMH_l6Ufk",
+      "topic": "fba_oa_mastery",
+      "why": "A newer storefront-stalking method claim; worth transcribing to compare against the Keepa-50-storefront + reverse-scan workflow already noted.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "V0lMedQJzmQ",
+      "title": "How To Start Amazon Online Arbitrage In 2026 (Full Beginners Guide)",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=V0lMedQJzmQ",
+      "topic": "fba_oa_mastery",
+      "why": "Fresh (Apr 2026) full beginner OA walkthrough; baseline check of current tool/workflow vs the 2025 guides in the corpus.",
+      "isLongCourse": false,
+      "status": "done"
+    }
+  ]
+}

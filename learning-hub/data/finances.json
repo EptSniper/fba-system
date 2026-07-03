@@ -1,0 +1,25 @@
+{
+  "source": "learning-hub/tracking/finances.md",
+  "updated": "2026-06-20",
+  "currency": "USD",
+  "connected": false,
+  "note": "Machine-readable mirror of finances.md. Real values are zero until selling starts; SP-API will populate this later. Honest empty state by design.",
+  "summary": {
+    "invested": 0,
+    "revenue": 0,
+    "fees": 0,
+    "netProfit": 0,
+    "netProfitMTD": 0,
+    "cashInInventory": 0,
+    "pendingPayout": 0,
+    "blendedRoi": null
+  },
+  "recurringCosts": [
+    { "tool": "Amazon Seller Central (Professional)", "monthly": 39.99, "active": false },
+    { "tool": "Keepa", "monthly": 20.0, "active": false },
+    { "tool": "SellerAmp SAS", "monthly": 20.0, "active": false }
+  ],
+  "purchases": [],
+  "sales": [],
+  "profitByDay": []
+}

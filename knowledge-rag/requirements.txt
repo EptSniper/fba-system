@@ -1,0 +1,7 @@
+# ingest.py needs NOTHING beyond the standard library (chunking is pure Python).
+# These are only for build_index.py (embedding + vector search):
+sentence-transformers>=3.0
+faiss-cpu>=1.8
+numpy>=1.26
+# To convert new PDFs into sources/pdfs/*.md, use the system `pdftotext` (poppler-utils)
+# or any PDF reader — no Python PDF dep required.

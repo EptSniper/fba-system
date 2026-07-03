@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "fba-compliance-checker",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-06-30T02:39:39Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 63.664,
+        "tokens": 38491,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags Nike as gated / needs brand approval",
+          "passed": true,
+          "evidence": "\u2026Nike / Air Force 1  - **Gating:** **Hard-gated for a\u2026"
+        },
+        {
+          "text": "Flags IP / authenticity / invoice risk",
+          "passed": true,
+          "evidence": "\u2026all) typically demands **invoices from a Nike-authorized\u2026"
+        },
+        {
+          "text": "Recommends list-before-buy / Seller Central check",
+          "passed": true,
+          "evidence": "\u2026cisive next step  **List-before-you-buy.** Before spendi\u2026"
+        },
+        {
+          "text": "Eligibility verdict is BLOCKED / don't buy (not a green light)",
+          "passed": true,
+          "evidence": "\u2026est.  ---  ## VERDICT: **BLOCKED** (do not buy for Amazon\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 101.409,
+        "tokens": 42704,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Identifies hazmat (flammable/aerosol/alcohol)",
+          "passed": true,
+          "evidence": "\u2026t cliff before buying. - Hazmat / meltable / expiry / ov\u2026"
+        },
+        {
+          "text": "Flags meltable/seasonal OR FBA hazmat program/restriction",
+          "passed": true,
+          "evidence": "\u2026efore buying. - Hazmat / meltable / expiry / oversize:\u2026"
+        },
+        {
+          "text": "Returns VERIFY / eligibility-must-be-checked (not unqualified yes)",
+          "passed": true,
+          "evidence": "\u2026s. Without ASINs I can't check gating, IP history, the\u2026"
+        },
+        {
+          "text": "Addresses FBA eligibility/restrictions specifically",
+          "passed": true,
+          "evidence": "\u2026# FBA Eligibility Analysis \u2014 S\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 66.068,
+        "tokens": 38176,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Friendly/ungated treated as a HINT, not a guarantee",
+          "passed": true,
+          "evidence": "\u2026front  Eligibility is **account-specific**. It is ultimately deci\u2026"
+        },
+        {
+          "text": "Gives decisive Seller Central / Boxem / approval check",
+          "passed": true,
+          "evidence": "\u2026ultimately decided in **Seller Central / SP-API**, not by me or\u2026"
+        },
+        {
+          "text": "Leans ALLOWED but with verification (not blocked)",
+          "passed": true,
+          "evidence": "\u2026d Crayola is easy to get ungated. Am I allowed to sell\u2026"
+        },
+        {
+          "text": "Stays on eligibility (no ROI/profit verdict)",
+          "passed": false,
+          "evidence": "\u2026e deal makes money. That profit question (Keepa demand,\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 62.203,
+        "tokens": 32921,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags Nike as gated / needs brand approval",
+          "passed": true,
+          "evidence": "\u2026never survives Amazon's gating, IP, and authenticity\u2026"
+        },
+        {
+          "text": "Flags IP / authenticity / invoice risk",
+          "passed": true,
+          "evidence": "\u2026urvives Amazon's gating, IP, and authenticity rules.\u2026"
+        },
+        {
+          "text": "Recommends list-before-buy / Seller Central check",
+          "passed": true,
+          "evidence": "\u2026hem.** Confirm gating in Seller Central; if not ungated (you alm\u2026"
+        },
+        {
+          "text": "Eligibility verdict is BLOCKED / don't buy (not a green light)",
+          "passed": true,
+          "evidence": "\u2026from a retail outlet are BLOCKED \u2014 by brand gating AND th\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 111.742,
+        "tokens": 62139,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Identifies hazmat (flammable/aerosol/alcohol)",
+          "passed": true,
+          "evidence": "\u2026classic FBA \"meltable / hazmat\" trap. Two separate prob\u2026"
+        },
+        {
+          "text": "Flags meltable/seasonal OR FBA hazmat program/restriction",
+          "passed": true,
+          "evidence": "\u2026es carry FBA eligibility/restriction risk that is separate\u2026"
+        },
+        {
+          "text": "Returns VERIFY / eligibility-must-be-checked (not unqualified yes)",
+          "passed": true,
+          "evidence": "\u2026# Compliance check: scented candles + hand\u2026"
+        },
+        {
+          "text": "Addresses FBA eligibility/restrictions specifically",
+          "passed": true,
+          "evidence": "\u2026sanitizer (clearance, Q4 FBA)  **Question:** \"Thinkin\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5,
+        "passed": 2,
+        "failed": 2,
+        "total": 4,
+        "time_seconds": 83.682,
+        "tokens": 42478,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Friendly/ungated treated as a HINT, not a guarantee",
+          "passed": false,
+          "evidence": "(not found)"
+        },
+        {
+          "text": "Gives decisive Seller Central / Boxem / approval check",
+          "passed": true,
+          "evidence": "\u2026ngate,\" but **easy != no approval needed.**  - Crayola is\u2026"
+        },
+        {
+          "text": "Leans ALLOWED but with verification (not blocked)",
+          "passed": true,
+          "evidence": "\u2026Crayola Markers \u2014 \"Am I allowed to sell them?\"  **Verdic\u2026"
+        },
+        {
+          "text": "Stays on eligibility (no ROI/profit verdict)",
+          "passed": false,
+          "evidence": "\u2026ibility/risk read, not a profit call.** Whether a specif\u2026"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.9167,
+        "stddev": 0.1443,
+        "min": 0.75,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 77.047,
+        "stddev": 21.1323,
+        "min": 63.664,
+        "max": 101.409
+      },
+      "tokens": {
+        "mean": 39790.3333,
+        "stddev": 2528.22,
+        "min": 38176,
+        "max": 42704
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.8333,
+        "stddev": 0.2887,
+        "min": 0.5,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 85.8757,
+        "stddev": 24.8422,
+        "min": 62.203,
+        "max": 111.742
+      },
+      "tokens": {
+        "mean": 45846.0,
+        "stddev": 14897.3303,
+        "min": 32921,
+        "max": 62139
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.08",
+      "time_seconds": "-8.8",
+      "tokens": "-6056"
+    }
+  },
+  "notes": []
+}

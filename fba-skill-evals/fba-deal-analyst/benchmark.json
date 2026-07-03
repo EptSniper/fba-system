@@ -1,0 +1,303 @@
+{
+  "metadata": {
+    "skill_name": "oa-deal-analyst",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-06-30T01:55:02Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.6,
+        "passed": 3,
+        "failed": 2,
+        "total": 5,
+        "time_seconds": 59.486,
+        "tokens": 37077,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends BUY (not NO-BUY/REVIEW)",
+          "passed": false,
+          "evidence": "- fba fulfillment fee (driven by package size/weight). this is the single number"
+        },
+        {
+          "text": "Suggests a small test quantity (5-10 units)",
+          "passed": false,
+          "evidence": "(not found)"
+        },
+        {
+          "text": "Computes ROI/profit numbers",
+          "passed": true,
+          "evidence": "\u2026$20.00 landed = +$1.08/unit, ROI ~5%, margin ~4%   - Likely case (large-stand\u2026"
+        },
+        {
+          "text": "Flags account eligibility separately from profit",
+          "passed": true,
+          "evidence": "\u2026friendly hint \u2014 commonly auto-ungated/resellable). this is a disc\u2026"
+        },
+        {
+          "text": "Includes verify-before-buy / human-approval caveat",
+          "passed": true,
+          "evidence": "\u2026sign of amazon rotation, but confirm on keepa]   - ip cliff [ok \u2014\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 71.037,
+        "tokens": 43402,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends NO-BUY / pass despite the ROI",
+          "passed": true,
+          "evidence": "here \u2014 the deal fails on competition before eligibility is even in play."
+        },
+        {
+          "text": "Identifies Amazon Buy Box presence as the dealbreaker",
+          "passed": true,
+          "evidence": "\u20261.4x the 90-day avg]   - amz buy box share [hard reject] \u2014 you read amazon in the buy box \"maybe half th\u2026"
+        },
+        {
+          "text": "References the Buy-Box-share reject rule (~20% / hard reject)",
+          "passed": true,
+          "evidence": "\u2026e 90-day avg]   - amz buy box share [hard reject] \u2014 you read amaz\u2026"
+        },
+        {
+          "text": "Includes human-approval caveat",
+          "passed": true,
+          "evidence": "\u2026recommendation; the buy is a human decision. (profit figures abo\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 53.259,
+        "tokens": 36124,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Does NOT greenlight; returns REVIEW / not-yet",
+          "passed": false,
+          "evidence": "1. true landed cost (incl. inbound shipping) \u2014 the deciding number. without it,"
+        },
+        {
+          "text": "Identifies the missing landed cost as the blocker",
+          "passed": true,
+          "evidence": "\u2026can it profit? - sell price / landed cost / category: $24.00 / not give\u2026"
+        },
+        {
+          "text": "Asks for the landed cost before deciding",
+          "passed": true,
+          "evidence": "\u2026nnot compute \u2014 no landed cost provided) - gates:   - bsr 40,000 [pa\u2026"
+        },
+        {
+          "text": "Includes human-approval caveat",
+          "passed": true,
+          "evidence": "\u2026k bsr is plausibly \u2265 50 but unconfirmed (category-dependent).   - o\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 77.085,
+        "tokens": 31842,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends BUY (not NO-BUY/REVIEW)",
+          "passed": true,
+          "evidence": "do not buy at these numbers (the profit isn't there)"
+        },
+        {
+          "text": "Suggests a small test quantity (5-10 units)",
+          "passed": true,
+          "evidence": "\u2026y rotate into roughly **25\u201350 units/month** of buy-box share \u2014 pl\u2026"
+        },
+        {
+          "text": "Computes ROI/profit numbers",
+          "passed": true,
+          "evidence": "\u2026| **-$0.41 to +$0.84** | | **ROI** | **-2% to +4%** | | **Margin** | **-1% to\u2026"
+        },
+        {
+          "text": "Flags account eligibility separately from profit",
+          "passed": true,
+          "evidence": "\u2026ased) and crayola/toys can be gated or have q4 brand restrictions\u2026"
+        },
+        {
+          "text": "Includes verify-before-buy / human-approval caveat",
+          "passed": true,
+          "evidence": "\u2026oss and ~$4 profit/unit) 2. **confirm the fees before buying anythi\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 51.254,
+        "tokens": 29564,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends NO-BUY / pass despite the ROI",
+          "passed": false,
+          "evidence": "\u2026eaker** |  ## short answer  **pass on this one \u2014 or at most do a\u2026"
+        },
+        {
+          "text": "Identifies Amazon Buy Box presence as the dealbreaker",
+          "passed": true,
+          "evidence": "\u2026# deal analysis: amazon in the buy box  ## the numbers you gave  | m\u2026"
+        },
+        {
+          "text": "References the Buy-Box-share reject rule (~20% / hard reject)",
+          "passed": true,
+          "evidence": "\u2026party sellers* \u2014 so your true share of sales is a fraction of hal\u2026"
+        },
+        {
+          "text": "Includes human-approval caveat",
+          "passed": true,
+          "evidence": "\u2026*standard oa guidance: keep human approval before any purchase\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 56.204,
+        "tokens": 29584,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Does NOT greenlight; returns REVIEW / not-yet",
+          "passed": true,
+          "evidence": "i can't tell you to grab it yet \u2014 the one number that decides everything is miss"
+        },
+        {
+          "text": "Identifies the missing landed cost as the blocker",
+          "passed": true,
+          "evidence": "(not found)"
+        },
+        {
+          "text": "Asks for the landed cost before deciding",
+          "passed": true,
+          "evidence": "\u2026buy side. **you never told me your cost.** without your source/buy pr\u2026"
+        },
+        {
+          "text": "Includes human-approval caveat",
+          "passed": true,
+          "evidence": "\u2026shes / seller-count spikes. - confirm you can win the buy box **at\u2026"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 0.7833,
+        "stddev": 0.2021,
+        "min": 0.6,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 61.2607,
+        "stddev": 9.0209,
+        "min": 53.259,
+        "max": 71.037
+      },
+      "tokens": {
+        "mean": 38867.6667,
+        "stddev": 3955.6525,
+        "min": 36124,
+        "max": 43402
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.9167,
+        "stddev": 0.1443,
+        "min": 0.75,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 61.5143,
+        "stddev": 13.7098,
+        "min": 51.254,
+        "max": 77.085
+      },
+      "tokens": {
+        "mean": 30330.0,
+        "stddev": 1309.4686,
+        "min": 29564,
+        "max": 31842
+      }
+    },
+    "delta": {
+      "pass_rate": "-0.13",
+      "time_seconds": "-0.3",
+      "tokens": "+8538"
+    }
+  },
+  "notes": []
+}

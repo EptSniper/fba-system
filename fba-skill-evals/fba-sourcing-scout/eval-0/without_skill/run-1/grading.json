@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Recommends reverse sourcing / storefront stalking for a beginner",
+      "passed": true,
+      "evidence": "\u2026your gates.  **Step 3 \u2014 Storefront stalking (reverse sourci\u2026"
+    },
+    {
+      "text": "Deal-first (source where the sale/cashback is)",
+      "passed": true,
+      "evidence": "\u2026pes the batch | | **BSR (sales rank)** | Strong & stab\u2026"
+    },
+    {
+      "text": "Produces a concrete plan / steps (not vague)",
+      "passed": true,
+      "evidence": "\u2026od (do this in order)  **Step 1 \u2014 Open the sales, not\u2026"
+    },
+    {
+      "text": "Hands to deal-analyst / verify, no auto-buy",
+      "passed": true,
+      "evidence": "\u2026product actually sells. SellerAmp (SAS) or a free FBA calc\u2026"
+    }
+  ]
+}

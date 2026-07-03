@@ -1,0 +1,18 @@
+KEEPA READ — Toys & Games item (BSR ~8k, "300 sold")
+
+- Demand: est. ~300/mo. Two signals agree and both are strong. The yellow "sold" line reads "300 sold" ⇒ comfortably above the ≥50/mo gate (6x over). BSR hovering ~8,000 in Toys & Games is a fast-moving rank for that category (well inside the ≤200,000 gate), and "lots of drops" (each tooth ≈ a sale) confirms the listing is converting frequently rather than sitting. BSR "bouncing around" 8k is normal healthy oscillation for a seller this active, not instability — it's the sawtooth of regular sales, not a rank that's deteriorating. One caution: if a "!" sits next to the estimated-sales figure, that 300 is shared across all variations and should be discounted. Confirm this read is for the single child ASIN you'd actually buy.
+  - Seasonality: cannot confirm from the description given. Toys is a seasonally loaded category (Q4 spikes, post-holiday troughs). Pull the 1-year BSR view before trusting 300/mo as a year-round number — a rank that's 8k now could be far weaker in spring/summer.
+
+- Price stability: stable. Buy Box flat at $27 "for months" is exactly the signal you want — the resale price is trustworthy and there's no whipsaw eating your margin. No price spike (current is the months-long level, not >1.5x a depressed 90-day average), so no FBA ~2-week-delay revert risk. Buy Box ~$27, 90-day avg ~$27.
+  - Note: $27 is inside the $8–$60 OA sell band. Good.
+
+- Competition: offers steady at 5 and flat for months ⇒ inside the 3–25 gate and the healthiest possible shape — not rising (no seller pile-in, no price about to tank), not a single-seller monopoly, not a 50-offer brawl. Flat-at-5 for months means the same sellers have parked on this listing and it has been quietly profitable for them — that's a buy-positive, not a stagnation flag, because the BSR drops and 300 sold prove it's still selling fast underneath the flat offer count. Buy Box rotation: cannot fully confirm without the Buy Box Statistics tab, but with 5 stable offers and a steady $27 BB it most likely rotates across the 3P FBA sellers (healthy). No Amazon on the listing.
+
+- Red flags: none confirmed.
+  - Amazon presence: none on the listing — clears the hard-reject gate (Amazon does not hold the Buy Box). Still worth a 5-second glance at the Buy Box Statistics tab to confirm Amazon hasn't held ≥20% historically (Amazon can be absent today yet rotate back in); described state shows no Amazon, so this is a confirm-not-worry item.
+  - No rising offers, no price spike, no IP cliff (offers steady at 5, not a 56→1 crash), Buy Box present and flat at $27.
+  - Open items to verify, not flags: (1) "!"/variation-share on the 300 figure; (2) 1-year view for Toys seasonality; (3) Buy Box Statistics tab for Amazon's historical %.
+
+- Verdict on history alone: supports a buy. The deciding factor: this is the clean profile — strong, corroborated demand (~300/mo via both the sold line and dense BSR drops), a rock-steady $27 Buy Box, and a flat 5-offer count with no Amazon. Every Keepa gate the history can speak to is clear, and there are zero instant-reject fingerprints. The "bouncing" BSR and the "flat" offer count are both healthy here, not warnings.
+
+Hand-off: pair with landed cost in fba-deal-analyst for the full gate run — the history says demand and price hold, but the buy still hinges on ROI ≥ 30% and profit ≥ $3 at a $27 sell after all FBA fees, prep, and returns allowance, plus account-specific eligibility (Toys can be gated/IP-sensitive). Confirm the velocity, the $27 Buy Box, and Amazon's historical Buy Box share in SellerAmp before any money moves.

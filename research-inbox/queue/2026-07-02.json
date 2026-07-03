@@ -1,0 +1,26 @@
+{
+  "date": "2026-07-02",
+  "note": "YouTube videos/courses queued for transcription. Run knowledge-rag/fetch_transcripts.py to pull transcripts; the next daily run ingests them. Titles were dedup-checked against learning-hub/transcripts/ and the manifest items[] list.",
+  "videos": [
+    {
+      "videoId": "IBXT2txZtJE",
+      "title": "How to Get Ungated on Amazon in 2026 | Free Ungating Guide",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=IBXT2txZtJE",
+      "topic": "fba_oa_mastery",
+      "why": "March 2026 ungating walkthrough; corpus has one 2026 ungate master guide \u2014 this cross-checks current auto-ungate ASIN tactics and invoice requirements against it.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "rHCB-vSCWcI",
+      "title": "The ULTIMATE SellerAmp SAS for Amazon FBA Tutorial (Step by Step for Beginners)",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=rHCB-vSCWcI",
+      "topic": "fba_oa_mastery",
+      "why": "Newest (May 26, 2026) comprehensive SAS tutorial; checks whether the SAS Masterguide settings/alerts guidance staged 2026-07-01 still matches the current UI.",
+      "isLongCourse": false,
+      "status": "done"
+    }
+  ]
+}

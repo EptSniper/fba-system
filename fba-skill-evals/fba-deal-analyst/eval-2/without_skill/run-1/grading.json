@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Does NOT greenlight; returns REVIEW / not-yet",
+      "passed": true,
+      "evidence": "i can't tell you to grab it yet \u2014 the one number that decides everything is miss"
+    },
+    {
+      "text": "Identifies the missing landed cost as the blocker",
+      "passed": true,
+      "evidence": "(not found)"
+    },
+    {
+      "text": "Asks for the landed cost before deciding",
+      "passed": true,
+      "evidence": "\u2026buy side. **you never told me your cost.** without your source/buy pr\u2026"
+    },
+    {
+      "text": "Includes human-approval caveat",
+      "passed": true,
+      "evidence": "\u2026shes / seller-count spikes. - confirm you can win the buy box **at\u2026"
+    }
+  ]
+}

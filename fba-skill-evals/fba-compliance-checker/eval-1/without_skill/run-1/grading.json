@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Identifies hazmat (flammable/aerosol/alcohol)",
+      "passed": true,
+      "evidence": "\u2026classic FBA \"meltable / hazmat\" trap. Two separate prob\u2026"
+    },
+    {
+      "text": "Flags meltable/seasonal OR FBA hazmat program/restriction",
+      "passed": true,
+      "evidence": "\u2026es carry FBA eligibility/restriction risk that is separate\u2026"
+    },
+    {
+      "text": "Returns VERIFY / eligibility-must-be-checked (not unqualified yes)",
+      "passed": true,
+      "evidence": "\u2026# Compliance check: scented candles + hand\u2026"
+    },
+    {
+      "text": "Addresses FBA eligibility/restrictions specifically",
+      "passed": true,
+      "evidence": "\u2026sanitizer (clearance, Q4 FBA)  **Question:** \"Thinkin\u2026"
+    }
+  ]
+}

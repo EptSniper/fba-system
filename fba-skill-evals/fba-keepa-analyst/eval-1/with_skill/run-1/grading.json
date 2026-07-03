@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Reads demand as strong (~300/mo, BSR drops)",
+      "passed": true,
+      "evidence": "\u2026& Games item (BSR ~8k, \"300 sold\")  - Demand: est. ~\u2026"
+    },
+    {
+      "text": "Notes stable price + flat offers as positive",
+      "passed": true,
+      "evidence": "\u2026mer.  - Price stability: stable. Buy Box flat at $27 \"fo\u2026"
+    },
+    {
+      "text": "Notes no Amazon on listing as positive",
+      "passed": true,
+      "evidence": "\u2026BA sellers (healthy). No Amazon on the listing.  - Red f\u2026"
+    },
+    {
+      "text": "Verdict supports a buy on history (with verify/handoff)",
+      "passed": true,
+      "evidence": "\u2026ing around\" 8k is normal healthy oscillation for a seller\u2026"
+    }
+  ]
+}

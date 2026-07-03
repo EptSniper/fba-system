@@ -1,0 +1,9 @@
+{
+  "source": "learning-hub/tracking/inventory.md",
+  "updated": "2026-06-20",
+  "connected": false,
+  "note": "Machine-readable mirror of inventory.md. Empty until first inventory is ordered; SP-API will populate this later.",
+  "summary": { "unitsOwned": 0, "atFba": 0, "inTransit": 0, "lowStock": 0 },
+  "items": [],
+  "restock": []
+}

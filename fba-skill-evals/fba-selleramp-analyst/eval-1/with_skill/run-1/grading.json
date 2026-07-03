@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Flags ROI 28% as below the 30% gate",
+      "passed": true,
+      "evidence": "\u2026s.  - Profit $4.20 / ROI 28% / Margin ~16% (4.20 \u00f7 2\u2026"
+    },
+    {
+      "text": "Notes cost $15 exceeds Max Cost $14",
+      "passed": true,
+      "evidence": "\u2026%.  - Breakeven $19.50 \u00b7 Max Cost $14 (land below this \u2014 a\u2026"
+    },
+    {
+      "text": "Verdict borderline / reject (not a clean buy)",
+      "passed": true,
+      "evidence": "\u2026- Profit $4.20 \u2265 $3.00 \u2192 PASS.   - ROI 28% < 30% \u2192 FAI\u2026"
+    },
+    {
+      "text": "Hands off (keepa/deal-analyst) \u2014 SAS isn't a buy order",
+      "passed": true,
+      "evidence": "\u2026ore trusting this panel, verify in SAS: inbound shipping\u2026"
+    }
+  ]
+}

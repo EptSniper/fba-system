@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FBA Operator Console — Command Center</title>
+<meta name="description" content="A client-side Amazon FBA decision engine: fee-aware Deal Analyzer, Keepa practice lab, outcome tracking, auto review queue, product judge, AI coach, and a learning curriculum — single self-contained file." />
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0d1320; --panel:#111824; --panel-2:#0f1521; --panel-3:#141c2a;
+    --line:#1f2a3a; --line-soft:#1b2536;
+    --txt:#e6edf3; --muted:#8b9bb0; --muted-2:#5f6f85;
+    --accent:#36d399; --accent-2:#22d3ee; --accent-dim:#163c30;
+    --amber:#f5b14c; --red:#f9737f; --violet:#a78bfa; --blue:#6aa3ff;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--txt);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent-2);text-decoration:none} a:hover{text-decoration:underline}
+  button{font-family:inherit}
+  .mono{font-family:var(--mono)}
+
+  /* ---------- layout shell ---------- */
+  .app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+  @media(max-width:780px){.app{grid-template-columns:1fr}}
+  aside{border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.015),transparent),var(--panel-2);
+    display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+  @media(max-width:780px){aside{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
+  .brand{display:flex;align-items:center;gap:10px;padding:16px 16px 12px}
+  .logo{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#04130d;font-weight:800;font-family:var(--mono);font-size:18px}
+  .brand h1{font-size:14.5px;letter-spacing:.2px}.brand .sub{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:1px}
+  nav{display:flex;flex-direction:column;gap:1px;padding:6px 8px 16px}
+  @media(max-width:780px){nav{flex-direction:row;flex-wrap:wrap;gap:4px}}
+  .navlink{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;color:var(--muted);font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid transparent;background:none;text-align:left;width:100%}
+  .navlink:hover{background:rgba(255,255,255,.03);color:var(--txt);text-decoration:none}
+  .navlink.active{background:rgba(54,211,153,.1);color:#eafff6;border-color:var(--accent-dim)}
+  .navlink .ic{width:16px;text-align:center;font-size:14px;opacity:.9}
+  .navlink .badge{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--red);color:#1a0608;border-radius:999px;padding:1px 7px;font-weight:700}
+  .nav-sec{font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:1.2px;padding:12px 12px 4px;font-family:var(--mono)}
+
+  main{min-width:0;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;gap:12px;padding:12px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(10,14,20,.86);backdrop-filter:blur(8px);z-index:20}
+  .topbar h2{font-size:16px;font-weight:700;flex:1}
+  .pill{font-family:var(--mono);font-size:11px;color:var(--accent);border:1px solid var(--accent-dim);background:rgba(54,211,153,.07);padding:4px 10px;border-radius:999px;display:inline-flex;gap:6px;align-items:center}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .view{padding:22px;max-width:1180px;width:100%}
+
+  /* ---------- generic UI ---------- */
+  .card{border:1px solid var(--line);border-radius:13px;background:linear-gradient(180deg,rgba(255,255,255,.012),transparent),var(--panel);padding:16px 18px}
+  .grid{display:grid;gap:14px}
+  .g-auto{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+  .g-2{grid-template-columns:1fr 1fr}.g-3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:780px){.g-2,.g-3{grid-template-columns:1fr}}
+  h3.sec{font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin:4px 0 12px}
+  .kpi{border:1px solid var(--line);border-radius:12px;background:var(--panel-2);padding:14px 16px}
+  .kpi .v{font-family:var(--mono);font-size:26px;font-weight:700;line-height:1}
+  .kpi .l{font-size:11px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.6px}
+  .kpi .s{font-size:11px;color:var(--muted-2);margin-top:3px}
+  .btn{cursor:pointer;border:1px solid var(--line);background:var(--bg2);color:var(--txt);border-radius:8px;padding:8px 13px;font-size:12.5px;font-weight:600;font-family:var(--mono);transition:.13s;display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{border-color:var(--accent-2);color:#fff}
+  .btn.primary{background:linear-gradient(135deg,rgba(54,211,153,.2),rgba(34,211,238,.14));border-color:var(--accent-dim);color:#eafff6}
+  .btn.primary:hover{border-color:var(--accent)}
+  .btn.ghost{background:transparent}.btn.danger:hover{border-color:var(--red);color:var(--red)}
+  .btn.sm{padding:5px 9px;font-size:11px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  label.fld{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px}
+  input,select,textarea{background:var(--bg2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 10px;font-size:13px;font-family:var(--sans);width:100%}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-2);box-shadow:0 0 0 2px rgba(34,211,238,.13)}
+  input.mono{font-family:var(--mono)}
+  .hint{font-size:11px;color:var(--muted-2);line-height:1.45}
+  .badge2{font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .verdict{font-family:var(--mono);font-weight:700;font-size:12px;padding:3px 10px;border-radius:7px;display:inline-block}
+  .v-strong{background:rgba(54,211,153,.16);color:var(--accent)}
+  .v-buy{background:rgba(34,211,238,.15);color:var(--accent-2)}
+  .v-review{background:rgba(245,177,76,.14);color:var(--amber)}
+  .v-watch{background:rgba(167,139,250,.14);color:var(--violet)}
+  .v-reject{background:rgba(249,115,127,.14);color:var(--red)}
+  .tag{font-size:10.5px;font-family:var(--mono);padding:2px 7px;border-radius:6px;border:1px solid rgba(249,115,127,.3);background:rgba(249,115,127,.06);color:var(--red);display:inline-block}
+  .tag.ok{border-color:var(--accent-dim);background:rgba(54,211,153,.06);color:var(--accent)}
+  .tag.warn{border-color:rgba(245,177,76,.3);background:rgba(245,177,76,.06);color:var(--amber)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line-soft)}
+  th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);cursor:pointer;user-select:none}
+  tbody tr{cursor:pointer}tbody tr:hover{background:rgba(255,255,255,.02)}
+  td.num,th.num{text-align:right;font-family:var(--mono)}
+  .empty{color:var(--muted-2);font-size:13px;padding:18px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+  .notice{font-size:12px;border-radius:9px;padding:9px 12px;margin-bottom:12px;line-height:1.45}
+  .notice.warn{border:1px solid rgba(245,177,76,.3);background:rgba(245,177,76,.06);color:#eddcc0}
+  .gaugewrap{position:relative;width:118px;height:118px}
+  .gaugewrap .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .gaugewrap .p{font-family:var(--mono);font-size:24px;font-weight:700}
+  .gaugewrap .t{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+  details.stage{border:1px solid var(--line);border-radius:11px;background:var(--panel);margin-bottom:10px;overflow:hidden}
+  details.stage[open]{border-color:var(--accent-dim)}
+  details.stage>summary{list-style:none;cursor:pointer;padding:13px 15px;display:flex;align-items:center;gap:12px}
+  details.stage>summary::-webkit-details-marker{display:none}
+  .sbadge{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px;border:1px solid var(--line);color:var(--muted);background:var(--panel-2);flex:none}
+  details.stage.done .sbadge{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#04130d;border-color:transparent}
+  .stitle{flex:1;min-width:0}.stitle h4{font-size:14.5px}.stitle p{font-size:12px;color:var(--muted)}
+  .scount{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .sbody{padding:0 15px 15px;border-top:1px solid var(--line-soft)}
+  ul.items{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  li.item{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border:1px solid var(--line-soft);border-radius:9px;background:var(--panel-2)}
+  li.item label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;width:100%}
+  li.item input[type=checkbox]{width:17px;height:17px;margin-top:1px;accent-color:#36d399;flex:none;cursor:pointer}
+  .itxt{font-size:13px}.itxt b{font-family:var(--mono);color:var(--accent);font-weight:700}
+  li.item.on .itxt{color:var(--muted)} li.item.on .itxt b{color:var(--muted)}
+  .pipeline{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent);mask-image:linear-gradient(90deg,#000 92%,transparent)}
+  .pnode{flex:0 0 auto;min-width:58px;text-align:center;border:1px solid var(--line);border-radius:9px;padding:8px 6px;background:var(--panel-2)}
+  .pnode.done{border-color:var(--accent-dim);background:linear-gradient(180deg,rgba(54,211,153,.1),transparent)}
+  .pnode .n{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--muted-2)}.pnode.done .n{color:var(--accent)}
+  .pnode .t{font-size:8.5px;color:var(--muted);margin-top:3px;height:22px;overflow:hidden;line-height:1.15}
+  .vids{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .vid{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel-2)}
+  .vid img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--bg2)}
+  .vid .m{padding:9px 11px}.vid .vt{font-size:12.5px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .vid .vc{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:5px}
+  .vid .why{font-size:10.5px;color:var(--accent);margin-top:6px;border-top:1px dashed var(--line-soft);padding-top:6px}
+  .chatlog{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;padding-right:4px}
+  .msg{padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.5;max-width:88%}
+  .msg.u{align-self:flex-end;background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.2)}
+  .msg.a{align-self:flex-start;background:var(--panel-2);border:1px solid var(--line)}
+  .msg.a b{color:var(--accent)}
+  .keyrow{display:flex;gap:6px;align-items:center}
+  .small{font-size:11px;color:var(--muted)}
+  .flexbtns{display:flex;gap:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="logo">▲</div>
+      <div><h1>FBA Operator</h1><div class="sub">Command Center</div></div>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+  <main>
+    <div class="topbar">
+      <h2 id="viewTitle">Command Center</h2>
+      <span class="pill"><span class="dot"></span><span id="status">LOCAL</span></span>
+    </div>
+    <div class="view" id="view"></div>
+  </main>
+</div>
+
+<script>
+(function(){
+/* =========================================================================
+   FBA OPERATOR CONSOLE — client-side decision engine (single file, no build)
+   Modules: Home · Deal Analyzer · Review Queue · Keepa Lab · Product Judge ·
+            AI Coach · Video Library · Skills · Settings
+   Data persisted in localStorage (versioned, export/import). No backend.
+   ========================================================================= */
+
+/* ---------------- curriculum + concepts (kept from v0, mapped to concepts) -- */
+const STAGES = [
+  {id:"foundations",title:"Foundations & Economics",concept:"FBA business model and startup economics",difficulty:"Beginner",
+   desc:"How FBA works and what it realistically costs.",
+   queries:["Amazon FBA 2026 beginner how it works startup cost","Amazon FBA realistic budget private label"],
+   items:["FBA = Amazon stores, picks, packs, ships & handles returns; <b>you own inventory + brand</b>",
+          "You must be <b>18+</b> to hold a seller account",
+          "Private-label launch <b>~$2,500–$5,000</b> (arbitrage ~$500–$3,000)",
+          "<b>3–6 months</b> to first profitable month",
+          "Target <b>25–35%</b> net margin; under <b>20%</b> = high risk"]},
+  {id:"feemath",title:"Fee Math",concept:"unit economics and Amazon fee structure",difficulty:"Beginner",
+   desc:"Model every 2026 fee before you commit.",
+   queries:["Amazon FBA fees 2026 referral fulfillment storage explained","Amazon revenue calculator profit tutorial"],
+   items:["Referral <b>8–15%</b> (commonly 15%), <b>$0.30</b> min",
+          "Fulfillment <b>~$3.18</b> small to <b>~$6.63+</b> large standard (2026)",
+          "<b>3.5%</b> fuel surcharge on fulfillment (since Apr 17, 2026)",
+          "Storage <b>$0.87/cu ft</b> Jan–Sep, <b>$2.25</b> Oct–Dec",
+          "Aged-inventory surcharge from <b>181 days</b>; low-inventory fee under your day threshold",
+          "Run <b>every SKU</b> through the Revenue Calculator before the PO"]},
+  {id:"research",title:"Product Research Criteria",concept:"product selection criteria and demand screening",difficulty:"Beginner",
+   desc:"Filter for small, light, profitable, beatable.",
+   queries:["Amazon FBA product research criteria 2026 price weight demand","how to find FBA products to sell 2026"],
+   items:["Price band <b>$15–$50</b>","Small & light, ideally <b>under 1 lb</b>",
+          "Demand <b>~200+ units/mo</b> (10–15/day); prefer 'bought in past month'",
+          "Competition under <b>~1,000–1,500</b> results; weak/sub-4★ leaders",
+          "Evergreen <b>repeat-purchase</b> niches (home, kitchen, pet, beauty, office, baby, health)",
+          "Avoid sized apparel, fragile, gated, lithium batteries"]},
+  {id:"tools",title:"Tools & Keepa",concept:"Keepa chart reading and sales-rank interpretation",difficulty:"Intermediate",
+   desc:"Use sanctioned data — Keepa first — never scrape.",
+   queries:["Keepa product finder tutorial 2026 sales rank drops","how to read Keepa charts buy box sales rank"],
+   items:["Keepa = price + <b>sales-rank history</b>; falling rank = rising demand",
+          "'Sales Rank Drops' estimate sales (noisier <b>>~50/mo</b>)",
+          "Product Finder filters whole catalog, up to <b>10,000</b>/query",
+          "Keepa Premium <b>~$19+/mo</b> unlocks sales data, Finder & API",
+          "Amazon's own <b>Product Opportunity Explorer</b> + <b>Brand Analytics</b>"]},
+  {id:"validation",title:"Validation",concept:"demand validation and margin confirmation before sourcing",difficulty:"Intermediate",
+   desc:"Confirm demand and margin before you spend.",
+   queries:["Amazon FBA validate product demand margin before buying 2026","Amazon FBA product validation checklist"],
+   items:["Verify <b>~200+ units/mo</b> via Keepa drops or 'bought in past month'",
+          "Sales-rank stable over <b>90 days</b> — not a one-off spike",
+          "Confirm <b>25–35%</b> net margin after all 2026 fees + PPC + returns",
+          "Order a sample; verify quality + real <b>dimensions/weight</b>",
+          "Mine the <b>review/return gap</b> — fix the complaint everyone repeats",
+          "Don't be the cheapest — strong launches price competitively, not bottom"]},
+  {id:"sourcing",title:"Sourcing",concept:"supplier sourcing, negotiation, and quality control",difficulty:"Intermediate",
+   desc:"Find a supplier and protect your first order.",
+   queries:["Amazon FBA sourcing Alibaba supplier negotiation 2026","Alibaba supplier inspection FBA first order"],
+   items:["Source via Alibaba/1688; <b>3+ quotes</b>; sample before bulk",
+          "Always pay for <b>third-party inspection</b> (defects can hit ~20%)",
+          "Negotiate MOQ, unit cost, lead time (mfg <b>15–30 days</b>)",
+          "Use Amazon <b>Partnered Carrier</b> to cut inbound placement fees",
+          "Plan landed cost: product + freight + duties + prep"]},
+  {id:"launch",title:"Listing & Launch",concept:"listing optimization and launch strategy",difficulty:"Intermediate",
+   desc:"Win page-1 visibility and a high rating.",
+   queries:["Amazon FBA launch strategy 2026 listing optimization A+ content","Amazon product launch PPC keywords 2026"],
+   items:["Keywords: <b>3–5 primary</b> / <b>10–15 secondary</b> / <b>20–30 long-tail</b>",
+          "<b>5+ images</b> + Premium A+ content (lifts conversion)",
+          "Launch <b>~500 units</b> (competitive) or <b>~300</b> (lower volume)",
+          "<b>Never stock out</b> at launch",
+          "A/B test with <b>Manage Your Experiments</b>; seed reviews via <b>Vine</b>",
+          "From <b>Jul 27, 2026</b>: titles ≤ <b>75 chars</b> (non-media) + Item Highlights",
+          "Protect star rating <b>(≥4.4★)</b> — rating quality beats review velocity"]},
+  {id:"ppc",title:"PPC",concept:"Sponsored Products advertising, ACoS and TACoS",difficulty:"Advanced",
+   desc:"Buy visibility profitably; track TACoS.",
+   queries:["Amazon PPC strategy 2026 TACoS ACoS campaigns","Amazon Sponsored Products tutorial 2026"],
+   items:["Launch PPC <b>~30–50%</b> of inventory retail value over 60 days",
+          "Ongoing PPC <b>~10–15%</b> of target revenue",
+          "Separate <b>launch / scale / defense</b> campaigns",
+          "Track <b>TACoS</b>, not just ACoS","<b>Throttle bids</b> when inventory is low"]},
+  {id:"inventory",title:"Inventory & Cash Flow",concept:"inventory planning, reorder points and cash flow",difficulty:"Advanced",
+   desc:"Never stock out, never overstock, beat Q4.",
+   queries:["Amazon FBA inventory management cash flow reorder IPI 2026","Amazon FBA restock AWD strategy"],
+   items:["Reorder before your day-of-supply threshold (set alerts at 45–60 days)",
+          "Ship in <b>September</b> to beat Q4 storage ($2.25 vs $0.87/cu ft)",
+          "Clear slow movers before the <b>181-day</b> aged surcharge",
+          "Use <b>Restock Inventory</b> + <b>AWD</b> auto-replenishment","Keep IPI <b>above 500</b>"]},
+  {id:"scaling",title:"Scaling",concept:"scaling SKUs, reinvestment and hiring",difficulty:"Advanced",
+   desc:"Reinvest, add SKUs, hire to compound.",
+   queries:["Amazon FBA scaling strategy 2026 add products hire VA","scale Amazon FBA brand Subscribe and Save"],
+   items:["Reinvest <b>80–100%</b> of profit for 12–18 months",
+          "Add SKUs/variations under <b>parent ASINs</b>","Grow <b>Subscribe & Save</b> recurring revenue",
+          "Hire a VA around <b>~$10k/mo</b> revenue","Lift conversion + AOV before buying more traffic"]},
+  {id:"exit",title:"Brand & Exit",concept:"brand registry, defensibility and selling the business",difficulty:"Advanced",
+   desc:"Build a defensible brand, sell for a multiple.",
+   queries:["Amazon FBA brand building exit sell business multiple 2026","sell Amazon FBA business Empire Flippers Quiet Light"],
+   items:["Enroll in <b>Brand Registry</b>; defend the Buy Box (~99%)","Go <b>multi-channel</b> (Walmart, Shopify, DTC)",
+          "Clean books with <b>12+ months</b> profit history","Businesses sell for <b>~2–4× annual profit</b>",
+          "Brokers: <b>Empire Flippers, Quiet Light</b>"]},
+];
+const CHANNELS=[["Jungle Scout","https://www.youtube.com/@junglescout"],["My Amazon Guy","https://www.youtube.com/@MyAmazonGuy"],["Helium 10","https://www.youtube.com/@Helium10"]];
+const CATEGORIES={"Home & Kitchen":0.15,"Beauty & Personal Care":0.15,"Pet Supplies":0.15,"Office Products":0.15,"Toys & Games":0.15,"Health & Household":0.15,"Sports & Outdoors":0.15,"Baby":0.15,"Tools & Home Improvement":0.15,"Garden & Patio":0.15,"Kitchen Dining":0.15,"Electronics":0.08,"Grocery":0.08,"Other / 15% default":0.15};
+const OUTCOMES=["new","watched","rejected","bought","sold","profitable","broke_even","lost_money","reordered"];
+const OUTCOME_LABEL={new:"New",watched:"Watched",rejected:"Rejected",bought:"Bought",sold:"Sold",profitable:"Profitable",broke_even:"Broke even",lost_money:"Lost money",reordered:"Reordered"};
+
+/* ---------------- store (versioned localStorage) ------------------------- */
+const LS_KEY="fba_console_v2";
+const DEFAULT_STATE={
+  v:2,
+  settings:{ytKey:"",aiKey:"",aiBase:"https://api.openai.com/v1/chat/completions",aiModel:"gpt-4o-mini",
+            fuel:0.035, lowInvDays:30, feeChecked:"2026-06-16"},
+  curriculum:{}, products:[], chartLogs:[], coach:[], lastId:0,
+};
+let LS_OK=true, state=null;
+function load(){
+  try{const raw=localStorage.getItem(LS_KEY);
+    state = raw? deepMerge(clone(DEFAULT_STATE), JSON.parse(raw)) : clone(DEFAULT_STATE);
+  }catch(e){ LS_OK=false; state=clone(DEFAULT_STATE); }
+}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ LS_OK=false; } }
+function deepMerge(base,o){ for(const k in o){ if(o[k]&&typeof o[k]==="object"&&!Array.isArray(o[k])&&base[k]) deepMerge(base[k],o[k]); else base[k]=o[k]; } return base; }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function nid(){ state.lastId=(state.lastId||0)+1; return "p"+state.lastId; }
+function esc(s){ const t=document.createElement("div"); t.textContent=s==null?"":String(s); return t.innerHTML; }
+function decodeEnt(s){ const t=document.createElement("textarea"); t.innerHTML=s||""; return t.value; }
+
+/* ---------------- fee + decision engine --------------------------------- */
+function feeFBA(weightLb){ // 2026 standard-size approx by weight, + fuel surcharge
+  const w=Number(weightLb)||1; let base;
+  if(w<=0.75)base=3.22; else if(w<=1)base=4.65; else if(w<=1.5)base=5.50; else if(w<=2)base=6.10;
+  else if(w<=2.5)base=6.63; else if(w<=3)base=6.75; else base=6.75+0.16*((w-3)/0.5);
+  return +(base*(1+(state.settings.fuel||0.035))).toFixed(2);
+}
+function num(v,d=0){ const n=Number(v); return isFinite(n)?n:d; }
+// d: {sell,cogs,weight,category,referralPct(optional),fbaFee(optional),prep,inbound,storage,adPct,returnPct,sales,reviews,rating,offers,amazonSeller}
+function computeDeal(d){
+  const sell=num(d.sell);
+  const refRate = d.referralPct!=null&&d.referralPct!==""? num(d.referralPct)/100 : (CATEGORIES[d.category]??0.15);
+  const referral=Math.max(sell*refRate, sell>0?0.30:0);
+  const fba = d.fbaFee!=null&&d.fbaFee!==""? num(d.fbaFee) : feeFBA(d.weight);
+  const prep=num(d.prep), inbound=num(d.inbound), storage=num(d.storage), cogs=num(d.cogs);
+  const adAllow=sell*(num(d.adPct,10)/100), retAllow=sell*(num(d.returnPct,3)/100);
+  const profitBeforeAds = sell - cogs - referral - fba - prep - inbound - storage - retAllow;
+  const profit = profitBeforeAds - adAllow;
+  const margin = sell>0? profit/sell : 0;
+  const invested = cogs+prep+inbound;
+  const roi = invested>0? profit/invested : 0;
+  const breakEvenAcos = sell>0? profitBeforeAds/sell : 0;
+  // confidence/score 0-100
+  let score=0;
+  score += margin>=0.30?26: margin>=0.25?22: margin>=0.20?15: margin>=0.12?7:0;            // margin (26)
+  score += roi>=1?20: roi>=0.6?16: roi>=0.4?11: roi>=0.2?5:0;                                // roi (20)
+  const sales=num(d.sales);
+  score += sales>=400?18: sales>=200?15: sales>=100?9: sales>0?4:2;                          // demand (18)
+  const reviews=num(d.reviews), rating=num(d.rating), offers=num(d.offers);
+  score += reviews&&reviews<=300?12: reviews&&reviews<=800?8: reviews?3:6;                    // review moat (12)
+  score += offers&&offers<=10?9: offers&&offers<=18?6: offers?2:5;                            // crowding (9)
+  score += rating&&rating<=4.3?9: rating&&rating<=4.5?5: rating?2:5;                          // beatable rating (9)
+  let s=Math.round(Math.max(0,Math.min(100,score)));
+  // risk tags + hard gates
+  const risks=[];
+  if(margin<0.15) risks.push(["Margin below 15% floor","red"]);
+  else if(margin<0.25) risks.push(["Margin under 25% target","warn"]);
+  if(roi<0.3) risks.push(["Low ROI on cash","warn"]);
+  if(d.amazonSeller) risks.push(["Amazon sells this — Buy Box risk","red"]);
+  if(offers>20) risks.push(["Severe offer crowding","red"]);
+  else if(offers>15) risks.push(["Crowded Buy Box","warn"]);
+  if(reviews>1000) risks.push(["Entrenched review moat","warn"]);
+  if(rating>=4.7&&reviews>500) risks.push(["Strong incumbents (hard to beat)","warn"]);
+  if(num(d.weight)>1) risks.push(["Heavier — higher FBA/size fees","warn"]);
+  if(sell<15||sell>50) risks.push(["Price outside $15–$50 band","warn"]);
+  if(sales&&sales<200) risks.push(["Thin demand vs ~200/mo","warn"]);
+  const missing=[];
+  ["sell","cogs","weight","sales"].forEach(k=>{ if(!d[k]&&d[k]!==0) missing.push(k); });
+  if(missing.length) risks.push(["Missing data: "+missing.join(", "),"warn"]);
+  // verdict bands with hard-gate overrides
+  let verdict;
+  const hardRed = margin<0.15 || d.amazonSeller || offers>22;
+  if(hardRed){ verdict = margin<0.05? "Reject":"Review"; if(margin<0.05) s=Math.min(s,38); else s=Math.min(s,62); }
+  else if(s>=80) verdict="Strong Buy"; else if(s>=70) verdict="Buy"; else if(s>=55) verdict="Review";
+  else if(s>=40) verdict="Watchlist"; else verdict="Reject";
+  return {sell,referral:+referral.toFixed(2),refRate,fba,prep,inbound,storage,cogs,
+    adAllow:+adAllow.toFixed(2),retAllow:+retAllow.toFixed(2),
+    profit:+profit.toFixed(2),margin,roi,breakEvenAcos,score:s,verdict,risks,missing};
+}
+function verdictClass(v){return {"Strong Buy":"v-strong","Buy":"v-buy","Review":"v-review","Watchlist":"v-watch","Reject":"v-reject"}[v]||"v-watch";}
+
+/* routing: which products belong in the review queue */
+function needsReview(p){
+  const c=p.calc||{};
+  if(c.verdict==="Review") return "Verdict: Review (borderline)";
+  if(c.missing&&c.missing.length) return "Missing data: "+c.missing.join(", ");
+  if(c.score>=55&&c.score<70) return "Low confidence (score "+c.score+")";
+  if(c.roi>=0.6 && (num(p.reviews)>1000 || p.amazonSeller)) return "High ROI but weak Amazon presence";
+  const medium=(c.risks||[]).filter(r=>r[1]==="warn").length;
+  if(medium>=3) return "Multiple medium-risk flags ("+medium+")";
+  return null;
+}
+
+/* ---------------- router + nav ------------------------------------------ */
+const NAV=[
+  ["__s1","SOURCING"],
+  ["home","◎","Command Center"],["deals","▣","Deal Analyzer"],["queue","⚑","Review Queue"],
+  ["keepa","◔","Keepa Lab"],["judge","⚖","Product Judge"],
+  ["__s2","LEARNING"],
+  ["coach","✦","AI Coach"],["library","▷","Video Library"],["skills","◆","Skills"],
+  ["__s3","SYSTEM"],["settings","⚙","Settings"],
+];
+function renderNav(){
+  const nav=document.getElementById("nav"); nav.innerHTML="";
+  const qn=reviewItems().length;
+  NAV.forEach(n=>{
+    if(n[0].startsWith("__s")){ const d=document.createElement("div"); d.className="nav-sec"; d.textContent=n[1]; nav.appendChild(d); return; }
+    const [id,ic,label]=n;
+    const b=document.createElement("button"); b.className="navlink"+(currentRoute()===id?" active":"");
+    b.setAttribute("aria-current",currentRoute()===id?"page":"false");
+    b.innerHTML='<span class="ic" aria-hidden="true">'+ic+'</span><span>'+label+'</span>'+(id==="queue"&&qn?'<span class="badge">'+qn+'</span>':'');
+    b.onclick=()=>{ location.hash=id; };
+    nav.appendChild(b);
+  });
+}
+function currentRoute(){ return (location.hash||"#home").slice(1).split("?")[0] || "home"; }
+const TITLES={home:"Command Center",deals:"Deal Analyzer",queue:"Review Queue",keepa:"Keepa Lab",judge:"Product Judge",coach:"AI Coach",library:"Video Library",skills:"Skills & Curriculum",settings:"Settings"};
+function route(){
+  const r=currentRoute(); const v=document.getElementById("view");
+  document.getElementById("viewTitle").textContent=TITLES[r]||"Command Center";
+  ({home:viewHome,deals:viewDeals,queue:viewQueue,keepa:viewKeepa,judge:viewJudge,coach:viewCoach,library:viewLibrary,skills:viewSkills,settings:viewSettings}[r]||viewHome)(v);
+  renderNav();
+  document.querySelector('main').scrollTop=0;
+}
+
+/* ---------------- shared helpers ---------------------------------------- */
+function privateNotice(){ return LS_OK?"":'<div class="notice warn">⚠ Your browser blocks local storage (private mode?). Nothing will be saved this session — use Export when available.</div>'; }
+function fmtPct(x){ return (x*100).toFixed(0)+"%"; }
+function fmt$(x){ return "$"+(num(x)).toFixed(2); }
+function reviewItems(){ return state.products.map(p=>({p,reason:needsReview(p)})).filter(x=>x.reason && p_active(x.p)); }
+function p_active(p){ return !["rejected","lost_money"].includes(p.outcome); }
+
+/* gauge svg */
+function gauge(pct,label){
+  const C=2*Math.PI*46, off=C*(1-pct/100);
+  return '<div class="gaugewrap"><svg viewBox="0 0 110 110" width="118" height="118" role="img" aria-label="'+label+' '+pct+' percent">'+
+    '<circle cx="55" cy="55" r="46" fill="none" stroke="#1f2a3a" stroke-width="9"/>'+
+    '<circle cx="55" cy="55" r="46" fill="none" stroke="url(#gg)" stroke-width="9" stroke-linecap="round" transform="rotate(-90 55 55)" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'"/>'+
+    '<defs><linearGradient id="gg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#36d399"/><stop offset="100%" stop-color="#22d3ee"/></linearGradient></defs>'+
+    '</svg><div class="n"><div class="p">'+pct+'%</div><div class="t">'+label+'</div></div></div>';
+}
+
+/* =======================================================================
+   VIEW: HOME — daily command center
+   ======================================================================= */
+function viewHome(v){
+  const P=state.products;
+  const analyzed=P.length;
+  const byOut={}; OUTCOMES.forEach(o=>byOut[o]=0); P.forEach(p=>byOut[p.outcome=(p.outcome||"new")]++);
+  const resolved=P.filter(p=>["profitable","broke_even","lost_money","sold","reordered"].includes(p.outcome));
+  const wins=P.filter(p=>["profitable","reordered"].includes(p.outcome)).length;
+  const winRate=resolved.length? Math.round(wins/resolved.length*100):0;
+  const pnl=P.reduce((a,p)=>a+num(p.actualPnl),0);
+  const qn=reviewItems().length;
+  const acc=chartAccuracy();
+  const totalItems=STAGES.reduce((a,s)=>a+s.items.length,0);
+  const done=Object.values(state.curriculum).filter(Boolean).length;
+  const readiness=totalItems?Math.round(done/totalItems*100):0;
+  const top=[...P].filter(p_active).sort((a,b)=>(b.calc?.score||0)-(a.calc?.score||0)).slice(0,5);
+  const recent=[...P].sort((a,b)=>(b.updated||0)-(a.updated||0)).slice(0,5);
+
+  // next best action
+  let next;
+  if(qn) next={t:"Clear your review queue",d:qn+" product"+(qn>1?"s":"")+" need a decision before they go stale.",go:"queue"};
+  else if(analyzed===0) next={t:"Analyze your first product",d:"Run a real ASIN through the Deal Analyzer — fee math first.",go:"deals"};
+  else if(byOut.bought>0 && resolved.length===0) next={t:"Log an outcome",d:"You've bought "+byOut.bought+" — mark how they performed so the engine learns.",go:"deals"};
+  else next={t:"Source the next opportunity",d:"Top pipeline product is scoring "+(top[0]?.calc?.score||0)+"/100.",go:"deals"};
+
+  v.innerHTML=privateNotice()+
+  '<div class="grid g-auto" style="margin-bottom:16px">'+
+    kpi(analyzed,"Products analyzed","")+
+    kpi(qn,"Awaiting review", qn?"action needed":"all clear")+
+    kpi(byOut.bought+byOut.reordered,"Bought / reordered","")+
+    kpi(winRate+"%","Win rate", resolved.length+" resolved")+
+    kpi((pnl>=0?"+":"")+"$"+pnl.toFixed(0),"Logged P&L","your entries")+
+    kpi(acc.total?acc.pct+"%":"—","Chart-read accuracy", acc.total?acc.total+" calls":"log calls in Keepa Lab")+
+  '</div>'+
+  '<div class="grid g-2">'+
+    '<div class="card"><h3 class="sec">▸ Next best action</h3>'+
+      '<div style="font-size:16px;font-weight:700">'+esc(next.t)+'</div>'+
+      '<p class="small" style="margin:6px 0 12px">'+esc(next.d)+'</p>'+
+      '<button class="btn primary" onclick="location.hash=\''+next.go+'\'">Go →</button></div>'+
+    '<div class="card" style="display:flex;gap:16px;align-items:center">'+gauge(readiness,"Readiness")+
+      '<div><h3 class="sec" style="margin-bottom:6px">Operator readiness</h3>'+
+      '<p class="small">'+done+' / '+totalItems+' curriculum checkpoints. Readiness measures what you\'ve <i>learned</i> — your sourcing record is the KPIs above.</p>'+
+      '<button class="btn ghost sm" style="margin-top:8px" onclick="location.hash=\'skills\'">Open curriculum</button></div></div>'+
+  '</div>'+
+  '<div class="card" style="margin-top:16px"><h3 class="sec">⚑ Review queue</h3>'+
+    (qn? '<table><thead><tr><th>ASIN</th><th>Title</th><th class="num">Score</th><th>Verdict</th><th>Why flagged</th></tr></thead><tbody>'+
+        reviewItems().slice(0,6).map(x=>'<tr onclick="location.hash=\'queue\'"><td class="mono">'+esc(x.p.asin||"—")+'</td><td>'+esc((x.p.title||"").slice(0,40))+'</td><td class="num">'+(x.p.calc?.score||0)+'</td><td><span class="verdict '+verdictClass(x.p.calc?.verdict)+'">'+esc(x.p.calc?.verdict||"")+'</span></td><td class="small">'+esc(x.reason)+'</td></tr>').join("")+
+        '</tbody></table>' : '<div class="empty">Nothing queued. Products with missing data, medium risk, or borderline verdicts land here automatically.</div>')+
+  '</div>'+
+  '<div class="grid g-2" style="margin-top:16px">'+
+    '<div class="card"><h3 class="sec">★ Top opportunities</h3>'+ (top.length? top.map(p=>oppRow(p)).join("") : '<div class="empty">Analyze products to populate.</div>')+'</div>'+
+    '<div class="card"><h3 class="sec">↻ Recent activity</h3>'+ (recent.length? recent.map(p=>'<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line-soft);padding:7px 0"><span>'+esc((p.title||p.asin||"product").slice(0,34))+'</span><span class="badge2">'+esc(OUTCOME_LABEL[p.outcome]||p.outcome)+'</span></div>').join("") : '<div class="empty">No products yet.</div>')+'</div>'+
+  '</div>';
+}
+function kpi(v,l,s){ return '<div class="kpi"><div class="v">'+esc(v)+'</div><div class="l">'+esc(l)+'</div>'+(s?'<div class="s">'+esc(s)+'</div>':'')+'</div>'; }
+function oppRow(p){ return '<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line-soft);padding:8px 0;cursor:pointer" onclick="editProduct(\''+p.id+'\')"><span>'+esc((p.title||p.asin||"product").slice(0,32))+'</span><span class="row"><span class="verdict '+verdictClass(p.calc?.verdict)+'">'+(p.calc?.score||0)+'</span></span></div>'; }
+
+/* =======================================================================
+   VIEW: DEAL ANALYZER — calculator + product table + decision log
+   ======================================================================= */
+let editingId=null;
+function viewDeals(v){
+  v.innerHTML=privateNotice()+
+  '<div class="grid g-2">'+
+    '<div class="card"><h3 class="sec">▣ Analyze a product</h3><div id="dealForm"></div></div>'+
+    '<div class="card"><h3 class="sec">⟐ Live verdict</h3><div id="dealOut"></div></div>'+
+  '</div>'+
+  '<div class="card" style="margin-top:16px"><div class="row" style="justify-content:space-between"><h3 class="sec" style="margin:0">▤ Pipeline ('+state.products.length+')</h3>'+
+    '<div class="row"><select id="filterOut" class="mono" style="width:auto"><option value="">All outcomes</option>'+OUTCOMES.map(o=>'<option value="'+o+'">'+OUTCOME_LABEL[o]+'</option>').join("")+'</select></div></div>'+
+    '<div id="dealTable" style="margin-top:10px"></div></div>';
+  renderDealForm();
+  document.getElementById("filterOut").onchange=renderDealTable; renderDealTable();
+}
+const DEAL_FIELDS=[
+  ["asin","ASIN","text",""],["title","Title / name","text",""],
+  ["category","Category","select",""],["sell","Sell price $","number","0.01"],["cogs","Buy cost (COGS) $","number","0.01"],
+  ["weight","Weight (lb)","number","0.01"],["sales","Est. sales/mo","number","1"],
+  ["reviews","Top-listing reviews","number","1"],["rating","Top rating ★","number","0.1"],["offers","Offer count","number","1"],
+  ["referralPct","Referral % (blank=auto)","number","0.1"],["fbaFee","FBA fee $ (blank=auto)","number","0.01"],
+  ["prep","Prep $/unit","number","0.01"],["inbound","Inbound ship $/unit","number","0.01"],["storage","Storage $/unit/mo","number","0.01"],
+  ["adPct","Ad allowance %","number","1"],["returnPct","Return allowance %","number","1"],
+];
+function curForm(){
+  const p = editingId? state.products.find(x=>x.id===editingId)||{} : {};
+  return p;
+}
+function renderDealForm(){
+  const p=curForm();
+  const f=document.getElementById("dealForm");
+  let h='<div class="grid g-2">';
+  DEAL_FIELDS.forEach(([k,label,type,step])=>{
+    if(type==="select"){
+      h+='<label class="fld">'+label+'<select id="f_'+k+'">'+Object.keys(CATEGORIES).map(c=>'<option '+(p[k]===c?"selected":"")+'>'+c+'</option>').join("")+'</select></label>';
+    } else {
+      h+='<label class="fld">'+label+'<input id="f_'+k+'" class="mono" type="'+type+'" '+(step?'step="'+step+'"':'')+' value="'+(p[k]!=null?esc(p[k]):"")+'" placeholder="'+(["adPct"].includes(k)?"10":["returnPct"].includes(k)?"3":"")+'"></label>';
+    }
+  });
+  h+='</div>';
+  h+='<label class="fld" style="margin-top:10px">Keepa evidence snapshot / notes<textarea id="f_notes" rows="2" placeholder="e.g. rank stable 8k–12k over 90d, 1 dominant seller, price flat $24.99">'+esc(p.notes||"")+'</textarea></label>';
+  h+='<div class="flexbtns" style="margin-top:12px"><button class="btn primary" id="saveDeal">'+(editingId?"Update":"Save to pipeline")+'</button>'+
+     (editingId?'<button class="btn ghost" id="newDeal">New</button>':'')+
+     '<button class="btn ghost" id="recalc">Recalculate</button></div>';
+  f.innerHTML=h;
+  DEAL_FIELDS.forEach(([k])=>{ const el=document.getElementById("f_"+k); if(el) el.addEventListener("input",renderDealOut); });
+  document.getElementById("f_notes").addEventListener("input",()=>{});
+  document.getElementById("saveDeal").onclick=saveDeal;
+  document.getElementById("recalc").onclick=renderDealOut;
+  if(document.getElementById("newDeal")) document.getElementById("newDeal").onclick=()=>{editingId=null;renderDealForm();renderDealOut();};
+  renderDealOut();
+}
+function readForm(){
+  const d={}; DEAL_FIELDS.forEach(([k,,type])=>{ const el=document.getElementById("f_"+k); if(!el)return;
+    d[k]= type==="number"? (el.value===""?"":Number(el.value)) : el.value; });
+  d.amazonSeller=false; d.notes=document.getElementById("f_notes")?.value||"";
+  return d;
+}
+function renderDealOut(){
+  const d=readForm(); const c=computeDeal(d);
+  document.getElementById("dealOut").innerHTML=
+    '<div class="row" style="justify-content:space-between;align-items:center"><span class="verdict '+verdictClass(c.verdict)+'" style="font-size:15px;padding:5px 14px">'+c.verdict+'</span>'+
+      '<span class="mono" style="font-size:22px;font-weight:700">'+c.score+'<span style="color:var(--muted);font-size:13px">/100</span></span></div>'+
+    '<div class="grid g-3" style="margin-top:14px">'+
+      miniKpi(fmt$(c.profit),"Profit/unit",c.profit>=0?"":"red")+
+      miniKpi(fmtPct(c.margin),"Net margin",c.margin>=0.25?"ok":c.margin>=0.15?"warn":"red")+
+      miniKpi(fmtPct(c.roi),"ROI / cash",c.roi>=0.5?"ok":c.roi>=0.3?"warn":"red")+
+    '</div>'+
+    '<div class="grid g-3" style="margin-top:10px">'+
+      miniKpi(fmt$(c.referral),"Referral ("+fmtPct(c.refRate)+")","")+
+      miniKpi(fmt$(c.fba),"FBA + fuel","")+
+      miniKpi(fmtPct(c.breakEvenAcos),"Break-even ACoS","")+
+    '</div>'+
+    '<div style="margin-top:14px"><div class="hint" style="margin-bottom:6px">Risk tags</div>'+
+      (c.risks.length? c.risks.map(r=>'<span class="tag '+(r[1]==="warn"?"warn":"")+'" style="margin:0 5px 5px 0">'+esc(r[0])+'</span>').join("") : '<span class="tag ok">No red flags</span>')+'</div>'+
+    '<p class="hint" style="margin-top:12px">Fees use the 2026 schedule + '+fmtPct(state.settings.fuel)+' fuel surcharge. <a href="https://sellercentral.amazon.com/revcal" target="_blank" rel="noopener">Verify in Revenue Calculator ↗</a></p>';
+}
+function miniKpi(v,l,tone){ const col=tone==="ok"?"var(--accent)":tone==="warn"?"var(--amber)":tone==="red"?"var(--red)":"var(--txt)";
+  return '<div class="kpi" style="padding:10px 12px"><div class="v" style="font-size:18px;color:'+col+'">'+esc(v)+'</div><div class="l">'+esc(l)+'</div></div>'; }
+function saveDeal(){
+  const d=readForm(); const c=computeDeal(d);
+  if(editingId){ const p=state.products.find(x=>x.id===editingId); Object.assign(p,d,{calc:c,updated:Date.now()}); }
+  else { state.products.push(Object.assign({id:nid(),outcome:"new",created:Date.now(),updated:Date.now(),calc:c},d)); editingId=null; }
+  save(); renderDealForm(); renderDealTable(); renderNav();
+  toast(editingId?"Updated":"Saved to pipeline");
+}
+let sortKey="score",sortDir=-1;
+function renderDealTable(){
+  const filt=document.getElementById("filterOut")?.value||"";
+  let rows=state.products.slice(); if(filt) rows=rows.filter(p=>(p.outcome||"new")===filt);
+  rows.sort((a,b)=>{ const av=tableVal(a,sortKey),bv=tableVal(b,sortKey); return (av>bv?1:av<bv?-1:0)*sortDir; });
+  const cols=[["asin","ASIN"],["title","Title"],["sell","Sell","num"],["margin","Margin","num"],["roi","ROI","num"],["score","Score","num"],["verdict","Verdict"],["outcome","Outcome"]];
+  const el=document.getElementById("dealTable");
+  if(!rows.length){ el.innerHTML='<div class="empty">No products yet — analyze one above and Save to pipeline.</div>'; return; }
+  el.innerHTML='<table><thead><tr>'+cols.map(c=>'<th class="'+(c[2]==="num"?"num":"")+'" data-k="'+c[0]+'">'+c[1]+(sortKey===c[0]?(sortDir<0?" ▾":" ▴"):"")+'</th>').join("")+'<th></th></tr></thead><tbody>'+
+    rows.map(p=>{ const c=p.calc||{}; return '<tr onclick="editProduct(\''+p.id+'\')">'+
+      '<td class="mono">'+esc(p.asin||"—")+'</td><td>'+esc((p.title||"").slice(0,34))+'</td>'+
+      '<td class="num">'+fmt$(p.sell)+'</td><td class="num" style="color:'+(c.margin>=0.25?"var(--accent)":c.margin>=0.15?"var(--amber)":"var(--red)")+'">'+fmtPct(c.margin||0)+'</td>'+
+      '<td class="num">'+fmtPct(c.roi||0)+'</td><td class="num">'+(c.score||0)+'</td>'+
+      '<td><span class="verdict '+verdictClass(c.verdict)+'">'+esc(c.verdict||"")+'</span></td>'+
+      '<td><select class="mono" style="width:auto;padding:3px 6px;font-size:11px" onchange="setOutcome(event,\''+p.id+'\')" onclick="event.stopPropagation()">'+OUTCOMES.map(o=>'<option value="'+o+'" '+((p.outcome||"new")===o?"selected":"")+'>'+OUTCOME_LABEL[o]+'</option>').join("")+'</select></td>'+
+      '<td><button class="btn ghost sm" onclick="event.stopPropagation();delProduct(\''+p.id+'\')">✕</button></td></tr>'; }).join("")+
+    '</tbody></table>';
+  el.querySelectorAll("th[data-k]").forEach(th=>th.onclick=()=>{ const k=th.dataset.k; if(sortKey===k)sortDir*=-1; else{sortKey=k;sortDir=-1;} renderDealTable(); });
+}
+function tableVal(p,k){ if(k==="margin")return p.calc?.margin||0; if(k==="roi")return p.calc?.roi||0; if(k==="score")return p.calc?.score||0; if(k==="verdict")return p.calc?.verdict||""; if(k==="sell")return num(p.sell); return (p[k]||"").toString().toLowerCase(); }
+window.editProduct=function(id){ editingId=id; if(currentRoute()!=="deals"){location.hash="deals"; setTimeout(()=>{renderDealForm();},30);} else renderDealForm(); document.querySelector("main").scrollTop=0; };
+window.setOutcome=function(e,id){ e.stopPropagation(); const p=state.products.find(x=>x.id===id); p.outcome=e.target.value; p.updated=Date.now();
+  if(["profitable","reordered","sold","broke_even","lost_money"].includes(p.outcome) && p.actualPnl==null){ const v=prompt("Actual profit/loss for "+(p.title||p.asin||"product")+"? ($, optional)"); if(v!==null&&v!=="") p.actualPnl=Number(v)||0; }
+  save(); renderNav(); if(currentRoute()==="deals")renderDealTable(); };
+window.delProduct=function(id){ if(!confirm("Remove this product?"))return; state.products=state.products.filter(x=>x.id!==id); if(editingId===id)editingId=null; save(); renderDealTable(); renderDealForm(); renderNav(); };
+
+/* =======================================================================
+   VIEW: REVIEW QUEUE
+   ======================================================================= */
+function viewQueue(v){
+  const items=reviewItems();
+  v.innerHTML=privateNotice()+'<div class="card"><h3 class="sec">⚑ Auto-routed for review ('+items.length+')</h3>'+
+    '<p class="hint" style="margin-bottom:12px">Products land here automatically when they have missing data, multiple medium-risk flags, a borderline "Review" verdict, low confidence, or high ROI with weak Amazon presence. Resolve each — it feeds your outcome history.</p>'+
+    (items.length? items.map(x=>{ const p=x.p,c=p.calc||{}; return '<div class="card" style="background:var(--panel-2);margin-bottom:10px"><div class="row" style="justify-content:space-between"><div><b>'+esc(p.title||p.asin||"product")+'</b> <span class="mono small">'+esc(p.asin||"")+'</span><br><span class="tag warn" style="margin-top:6px;display:inline-block">'+esc(x.reason)+'</span></div>'+
+        '<div style="text-align:right"><span class="verdict '+verdictClass(c.verdict)+'">'+esc(c.verdict)+' · '+(c.score||0)+'</span><div class="small" style="margin-top:4px">'+fmtPct(c.margin||0)+' margin · '+fmtPct(c.roi||0)+' ROI</div></div></div>'+
+        '<div class="flexbtns" style="margin-top:10px"><button class="btn sm" onclick="editProduct(\''+p.id+'\')">Open</button>'+
+        '<button class="btn sm" onclick="qResolve(\''+p.id+'\',\'watched\')">Watch</button>'+
+        '<button class="btn sm primary" onclick="qResolve(\''+p.id+'\',\'bought\')">Buy</button>'+
+        '<button class="btn sm danger" onclick="qResolve(\''+p.id+'\',\'rejected\')">Reject</button></div></div>'; }).join("")
+      : '<div class="empty">Queue is clear. 🎉</div>')+'</div>';
+}
+window.qResolve=function(id,outcome){ const p=state.products.find(x=>x.id===id); p.outcome=outcome; p.updated=Date.now(); save(); route(); toast("Marked "+OUTCOME_LABEL[outcome]); };
+
+/* =======================================================================
+   VIEW: KEEPA LAB — practice logger + chart-reading accuracy
+   ======================================================================= */
+function chartAccuracy(){
+  const resolved=state.chartLogs.filter(l=>l.realized);
+  let correct=0; resolved.forEach(l=>{ if(callMatchesOutcome(l.call,l.realized)) correct++; });
+  return {total:resolved.length,correct,pct:resolved.length?Math.round(correct/resolved.length*100):0};
+}
+function callMatchesOutcome(call,outcome){
+  const good=["profitable","reordered","sold"], bad=["lost_money","rejected"];
+  if(call==="buy") return good.includes(outcome);
+  if(call==="reject") return bad.includes(outcome)||outcome==="broke_even";
+  if(call==="watch") return outcome==="watched"||outcome==="broke_even";
+  return false;
+}
+function viewKeepa(v){
+  const acc=chartAccuracy();
+  v.innerHTML=privateNotice()+
+  '<div class="grid g-2"><div class="card"><h3 class="sec">◔ Log a Keepa read</h3>'+
+    '<label class="fld">ASIN<input id="k_asin" class="mono" placeholder="B0..."></label>'+
+    '<label class="fld" style="margin-top:8px">What the chart shows<textarea id="k_read" rows="3" placeholder="rank trend, price stability, buy box rotation, offer count, review velocity"></textarea></label>'+
+    '<div class="grid g-2" style="margin-top:8px"><label class="fld">Your call<select id="k_call"><option value="buy">Buy</option><option value="watch">Watch</option><option value="reject">Reject</option></select></label>'+
+    '<label class="fld">Confidence<select id="k_conf"><option>High</option><option selected>Medium</option><option>Low</option></select></label></div>'+
+    '<label class="fld" style="margin-top:8px">Risk factors noted<input id="k_risk" placeholder="e.g. seasonal, 1 dominant seller, price tanking"></label>'+
+    '<button class="btn primary" style="margin-top:12px" id="k_save">Log read</button></div>'+
+  '<div class="card" style="display:flex;gap:16px;align-items:center">'+gauge(acc.pct,"Accuracy")+
+    '<div><h3 class="sec" style="margin-bottom:6px">Chart-reading accuracy</h3>'+
+    '<p class="small">'+acc.correct+' / '+acc.total+' resolved calls matched the real outcome. Log a read, then once you mark the product\'s outcome (in Deal Analyzer) the call is scored automatically.</p></div></div></div>'+
+  '<div class="card" style="margin-top:16px"><h3 class="sec">Logged reads ('+state.chartLogs.length+')</h3>'+
+    (state.chartLogs.length? '<table><thead><tr><th>ASIN</th><th>Call</th><th>Read</th><th>Realized</th><th>Result</th><th></th></tr></thead><tbody>'+
+      state.chartLogs.slice().reverse().map(l=>'<tr><td class="mono">'+esc(l.asin)+'</td><td><span class="badge2">'+esc(l.call)+'</span></td><td class="small">'+esc((l.read||"").slice(0,46))+'</td>'+
+        '<td><select class="mono" style="width:auto;padding:3px 6px;font-size:11px" onchange="setRealized(\''+l.id+'\',event.target.value)"><option value="">—</option>'+["profitable","reordered","sold","broke_even","lost_money","rejected","watched"].map(o=>'<option value="'+o+'" '+(l.realized===o?"selected":"")+'>'+OUTCOME_LABEL[o]+'</option>').join("")+'</select></td>'+
+        '<td>'+(l.realized?(callMatchesOutcome(l.call,l.realized)?'<span class="tag ok">✓ right</span>':'<span class="tag">✗ wrong</span>'):'<span class="small">pending</span>')+'</td>'+
+        '<td><button class="btn ghost sm" onclick="delLog(\''+l.id+'\')">✕</button></td></tr>').join("")+'</tbody></table>'
+      : '<div class="empty">No reads logged yet. This is the feedback loop — your call vs. what actually happened.</div>')+'</div>';
+  document.getElementById("k_save").onclick=()=>{ const asin=document.getElementById("k_asin").value.trim(); if(!asin){toast("Enter an ASIN");return;}
+    state.chartLogs.push({id:nid(),asin,read:document.getElementById("k_read").value,call:document.getElementById("k_call").value,conf:document.getElementById("k_conf").value,risk:document.getElementById("k_risk").value,realized:"",created:Date.now()});
+    save(); viewKeepa(v); toast("Read logged"); };
+}
+window.setRealized=function(id,val){ const l=state.chartLogs.find(x=>x.id===id); l.realized=val; save(); route(); };
+window.delLog=function(id){ state.chartLogs=state.chartLogs.filter(x=>x.id!==id); save(); route(); };
+
+/* =======================================================================
+   VIEW: PRODUCT JUDGE — deterministic verdict + optional AI explanation
+   ======================================================================= */
+function viewJudge(v){
+  const opts=state.products.map(p=>'<option value="'+p.id+'">'+esc((p.title||p.asin||p.id))+'</option>').join("");
+  v.innerHTML=privateNotice()+
+  '<div class="card"><h3 class="sec">⚖ Judge a product</h3>'+
+    '<p class="hint" style="margin-bottom:10px">The Product Judge is your <b>sourcing</b> brain (separate from the learning Coach). It runs the same deterministic fee+risk engine as the Deal Analyzer and gives a clear verdict and the reasons. Optionally add an AI explanation in Settings.</p>'+
+    (opts? '<label class="fld">Pick from pipeline<select id="j_pick"><option value="">— choose —</option>'+opts+'</select></label>' : '<div class="empty">Analyze a product first, or use the Deal Analyzer.</div>')+
+    '<div id="j_out" style="margin-top:14px"></div></div>';
+  const pick=document.getElementById("j_pick");
+  if(pick) pick.onchange=()=>judge(pick.value);
+}
+function judge(id){
+  const out=document.getElementById("j_out"); const p=state.products.find(x=>x.id===id); if(!p){out.innerHTML="";return;}
+  const c=p.calc||computeDeal(p);
+  out.innerHTML='<div class="row" style="justify-content:space-between"><span class="verdict '+verdictClass(c.verdict)+'" style="font-size:16px;padding:6px 16px">'+c.verdict+'</span><span class="mono" style="font-size:22px;font-weight:700">'+c.score+'/100</span></div>'+
+    '<div class="grid g-3" style="margin-top:12px">'+miniKpi(fmtPct(c.margin),"Margin",c.margin>=.25?"ok":c.margin>=.15?"warn":"red")+miniKpi(fmtPct(c.roi),"ROI",c.roi>=.5?"ok":"warn")+miniKpi(fmt$(c.profit),"Profit/unit","")+'</div>'+
+    '<div style="margin-top:12px"><div class="hint" style="margin-bottom:6px">Why</div>'+
+      (c.risks.length?c.risks.map(r=>'<span class="tag '+(r[1]==="warn"?"warn":"")+'" style="margin:0 5px 5px 0">'+esc(r[0])+'</span>').join(""):'<span class="tag ok">Clears all gates — no red flags</span>')+'</div>'+
+    '<div class="flexbtns" style="margin-top:12px"><button class="btn" onclick="editProduct(\''+p.id+'\')">Open in analyzer</button>'+
+      (state.settings.aiKey?'<button class="btn primary" id="j_ai">Ask AI why ✦</button>':'<span class="small">Add an AI key in Settings for an LLM explanation.</span>')+'</div>'+
+    '<div id="j_ai_out" style="margin-top:10px"></div>';
+  if(state.settings.aiKey){ document.getElementById("j_ai").onclick=async()=>{
+    const box=document.getElementById("j_ai_out"); box.innerHTML='<div class="msg a">Thinking…</div>';
+    const sys="You are an Amazon FBA sourcing analyst. Be concise, specific, and honest about risk. No hype, no income promises.";
+    const prompt="Product: "+(p.title||p.asin)+". Sell $"+p.sell+", COGS $"+p.cogs+", weight "+p.weight+"lb, est "+p.sales+"/mo, "+p.reviews+" reviews, "+p.rating+"★, "+p.offers+" offers. Engine verdict: "+c.verdict+" ("+c.score+"/100), margin "+fmtPct(c.margin)+", ROI "+fmtPct(c.roi)+". Risks: "+c.risks.map(r=>r[0]).join("; ")+". In 3-4 sentences: should I source this, what's the single biggest risk, and what to verify next?";
+    const r=await aiComplete(sys,prompt); box.innerHTML='<div class="msg a">'+(r?esc(r).replace(/\n/g,"<br>"):'AI call failed (often CORS — providers block browser calls; use a serverless proxy). The deterministic verdict above stands on its own.')+'</div>';
+  }; }
+}
+
+/* =======================================================================
+   VIEW: AI COACH — learning (rule-based fallback, optional LLM)
+   ======================================================================= */
+function weakestStages(){
+  return STAGES.map(s=>{ const done=s.items.filter((_,i)=>state.curriculum[s.id+":"+i]).length; return {s,done,total:s.items.length,pct:done/s.items.length}; })
+    .sort((a,b)=>a.pct-b.pct);
+}
+function viewCoach(v){
+  v.innerHTML=privateNotice()+'<div class="card"><h3 class="sec">✦ AI Coach — learning</h3>'+
+    '<p class="hint" style="margin-bottom:10px">The Coach helps you <b>learn</b> (separate from the Product Judge, which sources). Ask "what should I study next?", "explain break-even ACoS", "what\'s the biggest risk in pet supplements?". Without an AI key it answers from your progress + curriculum; add a key in Settings for full LLM answers.</p>'+
+    '<div class="chatlog" id="coachLog"></div>'+
+    '<div class="keyrow" style="margin-top:10px"><input id="coachIn" placeholder="Ask the coach…" onkeydown="if(event.key===\'Enter\')document.getElementById(\'coachSend\').click()"><button class="btn primary" id="coachSend">Send</button></div>'+
+    '<div class="flexbtns" style="margin-top:8px"><button class="btn ghost sm" onclick="coachAsk(\'What should I study next?\')">What next?</button><button class="btn ghost sm" onclick="coachAsk(\'What are my weak areas?\')">Weak areas</button><button class="btn ghost sm" onclick="coachAsk(\'Explain break-even ACoS\')">Break-even ACoS</button></div></div>';
+  renderCoachLog();
+  document.getElementById("coachSend").onclick=()=>{ const t=document.getElementById("coachIn").value.trim(); if(t){coachAsk(t);document.getElementById("coachIn").value="";} };
+}
+function renderCoachLog(){ const el=document.getElementById("coachLog"); if(!el)return;
+  el.innerHTML = state.coach.length? state.coach.map(m=>'<div class="msg '+(m.r==="u"?"u":"a")+'">'+ (m.r==="u"?esc(m.t):m.t) +'</div>').join("") : '<div class="msg a">Hi — I\'m your FBA learning coach. Ask me what to study, or to explain any concept. I read your curriculum progress and outcomes to tailor advice.</div>';
+  el.scrollTop=el.scrollHeight;
+}
+window.coachAsk=async function(text){
+  state.coach.push({r:"u",t:text}); renderCoachLog();
+  let reply;
+  if(state.settings.aiKey){
+    const w=weakestStages()[0]; const ctx="Learner progress: weakest area is "+w.s.title+" ("+w.done+"/"+w.total+"). Products analyzed: "+state.products.length+", chart accuracy "+chartAccuracy().pct+"%.";
+    const sys="You are a concise, no-hype Amazon FBA learning coach. Use the learner's context. Never promise income. Keep to 4-6 sentences.";
+    const r=await aiComplete(sys,ctx+"\n\nQuestion: "+text);
+    reply = r? esc(r).replace(/\n/g,"<br>") : coachRule(text);
+  } else reply=coachRule(text);
+  state.coach.push({r:"a",t:reply}); if(state.coach.length>40)state.coach=state.coach.slice(-40); save(); renderCoachLog();
+};
+function coachRule(text){
+  const t=text.toLowerCase();
+  if(/(acos|tacos|break.?even)/.test(t)) return "<b>Break-even ACoS</b> = your profit margin <i>before</i> ad spend, as a % of price. If a unit nets 28% before ads, you can spend up to 28% of revenue on PPC and still break even — anything under that is profit. Track <b>TACoS</b> (total ad spend ÷ <i>total</i> sales) to see if ads are subsidizing organic.";
+  if(/(next|study|learn)/.test(t)){ const w=weakestStages().find(x=>x.pct<1)||weakestStages()[0];
+    return "Your weakest area is <b>"+w.s.title+"</b> ("+w.done+"/"+w.total+" done). Focus there next — it covers "+esc(w.s.concept)+". Open <b>Skills</b> to check the items, then pull matching videos in the <b>Library</b>."; }
+  if(/(weak|bad area|gap)/.test(t)){ const ws=weakestStages().slice(0,3).map(x=>x.s.title+" ("+Math.round(x.pct*100)+"%)").join(", ");
+    return "Your three thinnest areas right now: <b>"+esc(ws)+"</b>. Knock out the lowest first — and remember the curriculum measures what you've <i>read</i>; your real edge shows up in the Deal Analyzer + outcome history."; }
+  if(/(risk|bad product|reject)/.test(t)) return "Biggest product risks to screen for: margin under 15% after all 2026 fees, Amazon selling it directly (Buy Box risk), 20+ offers (price war), entrenched reviews (1000+) you can't out-rank, and oversize weight. Run the candidate through the <b>Deal Analyzer</b> — it flags these automatically.";
+  if(/(fee|margin|cost)/.test(t)) return "Model fees <i>before</i> sourcing: referral (8–15%), FBA fulfillment (~$3.18–$6.63+ by weight) plus the 3.5% fuel surcharge, storage, prep, inbound, and allowances for ads + returns. Target 25–35% net. The Deal Analyzer computes all of it live.";
+  return "I answer from your progress + curriculum when there's no AI key set. Try \"what should I study next?\", \"explain break-even ACoS\", or \"what makes a product risky?\" — or add an AI key in Settings for open-ended answers.";
+}
+
+/* =======================================================================
+   VIEW: VIDEO LIBRARY — concept-scored matching
+   ======================================================================= */
+function viewLibrary(v){
+  v.innerHTML=privateNotice()+'<div class="card"><div class="row" style="justify-content:space-between"><h3 class="sec" style="margin:0">▷ Concept library</h3>'+
+    '<div class="row"><select id="lib_diff" class="mono" style="width:auto"><option value="">All levels</option><option>Beginner</option><option>Intermediate</option><option>Advanced</option></select></div></div>'+
+    '<p class="hint" style="margin:8px 0 0">Each card is a research <b>concept</b>, not a keyword. "Find videos" opens a tuned multi-variant search; with a YouTube key it fetches + hydrates (views, duration, channel) and scores each result for relevance, freshness, engagement, and credibility — and tells you <i>why</i> it matched. '+(state.settings.ytKey?'<span class="tag ok">key set — inline mode</span>':'<span class="tag warn">no key — search-link mode</span>')+'</p></div>'+
+    '<div id="libList" style="margin-top:14px"></div>';
+  document.getElementById("lib_diff").onchange=renderLib; renderLib();
+}
+function renderLib(){
+  const diff=document.getElementById("lib_diff")?.value||"";
+  const el=document.getElementById("libList");
+  el.innerHTML=STAGES.filter(s=>!diff||s.difficulty===diff).map(s=>
+    '<div class="card" style="margin-bottom:12px"><div class="row" style="justify-content:space-between"><div><b>'+esc(s.title)+'</b> <span class="badge2">'+s.difficulty+'</span><br><span class="small">Concept: '+esc(s.concept)+'</span></div>'+
+    '<div class="flexbtns"><button class="btn primary sm" onclick="findVideos(\''+s.id+'\')">▶ Find videos</button><button class="btn ghost sm" onclick="openSearch(\''+s.id+'\')">search ↗</button></div></div>'+
+    '<div class="vids" id="vids_'+s.id+'" style="margin-top:12px"></div></div>').join("");
+}
+function stageQuery(s){ return s.queries[0]; }
+window.openSearch=function(id){ const s=STAGES.find(x=>x.id===id); window.open("https://www.youtube.com/results?search_query="+encodeURIComponent(stageQuery(s)),"_blank","noopener"); };
+window.findVideos=async function(id){
+  const s=STAGES.find(x=>x.id===id); const box=document.getElementById("vids_"+id);
+  const key=state.settings.ytKey;
+  if(!key){ window.openSearch(id); return; }
+  box.innerHTML='<div class="small">Searching + scoring…</div>';
+  try{
+    // concept-driven retrieval: combine query variants, fetch, hydrate, score, dedupe
+    const ids=new Set(); let cand=[];
+    for(const q of s.queries){
+      const r=await fetch("https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=6&order=relevance&relevanceLanguage=en&videoEmbeddable=true&q="+encodeURIComponent(q)+"&key="+encodeURIComponent(key));
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      const d=await r.json(); (d.items||[]).forEach(it=>{ if(it.id?.videoId && !ids.has(it.id.videoId)){ ids.add(it.id.videoId); cand.push(it);} });
+    }
+    if(!cand.length) throw new Error("no results");
+    // hydrate with videos.list (stats/duration) + channels.list (subs)
+    const vids=[...ids].slice(0,20);
+    const vr=await fetch("https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id="+vids.join(",")+"&key="+encodeURIComponent(key));
+    const vd=(await vr.json()).items||[];
+    const chIds=[...new Set(vd.map(x=>x.snippet.channelId))];
+    const cr=await fetch("https://www.googleapis.com/youtube/v3/channels?part=statistics&id="+chIds.join(",")+"&key="+encodeURIComponent(key));
+    const subs={}; ((await cr.json()).items||[]).forEach(c=>subs[c.id]=Number(c.statistics?.subscriberCount||0));
+    const terms=(s.concept+" "+s.title).toLowerCase().split(/\W+/).filter(w=>w.length>3);
+    const now=Date.now();
+    const scored=vd.map(it=>{
+      const title=(it.snippet.title||"").toLowerCase(), desc=(it.snippet.description||"").toLowerCase();
+      const rel=terms.reduce((a,w)=>a+(title.includes(w)?2:desc.includes(w)?1:0),0)/(terms.length*2||1);
+      const views=Number(it.statistics?.viewCount||0), likes=Number(it.statistics?.likeCount||0);
+      const eng=Math.min(1,(likes/Math.max(views,1))*40)+Math.min(1,views/200000)*0.5;
+      const ageDays=(now-new Date(it.snippet.publishedAt).getTime())/864e5;
+      const fresh=ageDays<540?1:ageDays<1100?0.6:0.3;
+      const cred=Math.min(1,(subs[it.snippet.channelId]||0)/300000);
+      const dur=(it.contentDetails?.duration||""); const mins=isoMins(dur);
+      const score=rel*0.45+eng*0.2+fresh*0.2+cred*0.15;
+      const why=[]; if(rel>0.4)why.push("on-topic title"); if(fresh===1)why.push("recent"); if(cred>0.4)why.push("credible channel"); if(eng>0.4)why.push("high engagement");
+      return {it,score,mins,why:why.join(" · ")||"concept match"};
+    }).sort((a,b)=>b.score-a.score).slice(0,4);
+    box.innerHTML='<div class="vids">'+scored.map(o=>{ const it=o.it; const tn=it.snippet.thumbnails?.medium?.url||"";
+      return '<div class="vid"><a href="https://www.youtube.com/watch?v='+it.id+'" target="_blank" rel="noopener"><img loading="lazy" src="'+tn+'" alt=""><div class="m"><div class="vt">'+esc(decodeEnt(it.snippet.title))+'</div><div class="vc">'+esc(decodeEnt(it.snippet.channelTitle))+' · '+o.mins+'m</div><div class="why">▸ '+esc(o.why)+' · score '+o.score.toFixed(2)+'</div></div></a></div>'; }).join("")+'</div>';
+  }catch(e){ box.innerHTML='<div class="small" style="color:var(--amber)">API error: '+esc(e.message)+'. Opening a tuned search instead.</div>'; window.openSearch(id); }
+};
+function isoMins(d){ const m=/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/.exec(d||""); if(!m)return 0; return (+(m[1]||0))*60+(+(m[2]||0)); }
+
+/* =======================================================================
+   VIEW: SKILLS — curriculum (granular updates, a11y, editable fee)
+   ======================================================================= */
+function viewSkills(v){
+  const totalItems=STAGES.reduce((a,s)=>a+s.items.length,0);
+  const done=Object.values(state.curriculum).filter(Boolean).length;
+  const pct=totalItems?Math.round(done/totalItems*100):0;
+  v.innerHTML=privateNotice()+
+  '<div class="card" style="display:flex;gap:18px;align-items:center;margin-bottom:14px">'+gauge(pct,"Readiness")+
+    '<div style="flex:1"><h3 class="sec" style="margin-bottom:6px">Curriculum readiness</h3>'+
+    '<div class="small" id="skMeta"><b id="skDone">'+done+'</b> / '+totalItems+' checkpoints · <span id="skStages">'+STAGES.filter(s=>stageDone(s)).length+'</span>/'+STAGES.length+' stages complete</div>'+
+    '<div class="pipeline" id="pipe" style="margin-top:12px"></div></div></div>'+
+  '<div class="notice warn" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>⚙ Low-inventory-level fee threshold is <b>contested</b> across sources (28 vs 35 days of supply). Set what your account shows: <a href="https://sellercentral.amazon.com/help/hub/reference/external/GV43F6S76Y9DHYRH" target="_blank" rel="noopener">verify in Seller Central ↗</a></span>'+
+    '<label class="row" style="gap:6px">days: <input type="number" id="lowInv" class="mono" style="width:70px" value="'+num(state.settings.lowInvDays,30)+'"></label></div>'+
+  '<div id="stages"></div>'+
+  '<p class="hint" style="margin-top:14px">Fees reflect Amazon\'s 2026 schedule (last checked '+esc(state.settings.feeChecked)+'). <a href="https://sell.amazon.com/pricing" target="_blank" rel="noopener">Verify current fees ↗</a>. Two figures in older notes — "price ~47% above category average" and "revenue can outgrow traffic 2:1" — come from specific case studies (Momentum Commerce launch study; one agency case) and are directional, not universal laws.</p>'+
+  '<div class="card" style="margin-top:14px"><h3 class="sec">Trusted channels</h3><div class="flexbtns">'+CHANNELS.map(c=>'<a class="btn ghost sm" href="'+c[1]+'" target="_blank" rel="noopener">▷ '+c[0]+'</a>').join("")+'</div>'+
+    '<p class="hint" style="margin-top:10px">Reality: 18+ to sell · launch ~$2,500–$5,000 · 3–6 months to first profit · most sellers earn modest revenue. No guarantees.</p></div>';
+  document.getElementById("lowInv").addEventListener("change",e=>{ state.settings.lowInvDays=Number(e.target.value)||30; save(); });
+  renderStages(); renderPipe();
+}
+function stageDone(s){ return s.items.every((_,i)=>state.curriculum[s.id+":"+i]); }
+function renderStages(){
+  const el=document.getElementById("stages"); el.innerHTML="";
+  STAGES.forEach((s,si)=>{
+    const done=stageDone(s); const nd=s.items.filter((_,i)=>state.curriculum[s.id+":"+i]).length;
+    const d=document.createElement("details"); d.className="stage"+(done?" done":""); d.id="st_"+s.id; if(si===firstOpenIndex())d.open=true;
+    const sum=document.createElement("summary"); sum.setAttribute("role","button"); sum.setAttribute("aria-expanded",d.open?"true":"false");
+    sum.innerHTML='<div class="sbadge">'+(done?"✓":(si+1))+'</div><div class="stitle"><h4>'+esc(s.title)+'</h4><p>'+esc(s.desc)+'</p></div><div class="scount" id="cnt_'+s.id+'">'+nd+'/'+s.items.length+'</div>';
+    d.addEventListener("toggle",()=>sum.setAttribute("aria-expanded",d.open?"true":"false"));
+    d.appendChild(sum);
+    const body=document.createElement("div"); body.className="sbody";
+    const ul=document.createElement("ul"); ul.className="items";
+    s.items.forEach((txt,i)=>{ const id=s.id+":"+i; const li=document.createElement("li"); li.className="item"+(state.curriculum[id]?" on":""); li.id="li_"+id;
+      const lab=document.createElement("label");
+      const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=!!state.curriculum[id]; cb.setAttribute("aria-label",txt.replace(/<[^>]+>/g,""));
+      cb.addEventListener("change",()=>toggleItem(s,si,i,cb.checked,li));
+      const span=document.createElement("span"); span.className="itxt"; span.innerHTML=txt;
+      lab.appendChild(cb); lab.appendChild(span); li.appendChild(lab); ul.appendChild(li);
+    });
+    body.appendChild(ul);
+    const yt=document.createElement("div"); yt.style.marginTop="12px";
+    yt.innerHTML='<button class="btn ghost sm" onclick="location.hash=\'library\'">▷ Find videos for this concept</button>';
+    body.appendChild(yt); d.appendChild(body); el.appendChild(d);
+  });
+}
+function firstOpenIndex(){ for(let i=0;i<STAGES.length;i++) if(!stageDone(STAGES[i])) return i; return 0; }
+/* GRANULAR update — no teardown (fixes the open-state bug) */
+function toggleItem(s,si,i,checked,li){
+  const id=s.id+":"+i; state.curriculum[id]=checked; save();
+  li.classList.toggle("on",checked);
+  const nd=s.items.filter((_,j)=>state.curriculum[s.id+":"+j]).length;
+  const cnt=document.getElementById("cnt_"+s.id); if(cnt)cnt.textContent=nd+"/"+s.items.length;
+  const det=document.getElementById("st_"+s.id); const sb=det&&det.querySelector(".sbadge");
+  if(stageDone(s)){ det.classList.add("done"); if(sb)sb.textContent="✓"; } else { det.classList.remove("done"); if(sb)sb.textContent=(si+1); }
+  // update gauge + meta + pipeline node, not the whole view
+  const totalItems=STAGES.reduce((a,x)=>a+x.items.length,0);
+  const done=Object.values(state.curriculum).filter(Boolean).length;
+  const pct=totalItems?Math.round(done/totalItems*100):0;
+  updateGaugeDom(pct,"Readiness");
+  const dEl=document.getElementById("skDone"); if(dEl)dEl.textContent=done;
+  const stEl=document.getElementById("skStages"); if(stEl)stEl.textContent=STAGES.filter(x=>stageDone(x)).length;
+  const pnode=document.getElementById("pn_"+s.id); if(pnode){ pnode.classList.toggle("done",stageDone(s)); const n=pnode.querySelector(".n"); if(n)n.textContent=stageDone(s)?"✓":(si+1); }
+}
+function updateGaugeDom(pct,label){ const wrap=document.querySelector(".gaugewrap"); if(!wrap)return;
+  const C=2*Math.PI*46; const arc=wrap.querySelectorAll("circle")[1]; if(arc)arc.setAttribute("stroke-dashoffset",C*(1-pct/100));
+  const p=wrap.querySelector(".p"); if(p)p.textContent=pct+"%"; const svg=wrap.querySelector("svg"); if(svg)svg.setAttribute("aria-label",label+" "+pct+" percent"); }
+function renderPipe(){ const el=document.getElementById("pipe"); if(!el)return; el.innerHTML="";
+  STAGES.forEach((s,si)=>{ const n=document.createElement("div"); n.className="pnode"+(stageDone(s)?" done":""); n.id="pn_"+s.id;
+    n.innerHTML='<div class="n">'+(stageDone(s)?"✓":(si+1))+'</div><div class="t">'+esc(s.title)+'</div>'; el.appendChild(n); });
+}
+
+/* =======================================================================
+   VIEW: SETTINGS — keys, fees, export/import
+   ======================================================================= */
+function viewSettings(v){
+  const st=state.settings;
+  v.innerHTML=privateNotice()+
+  '<div class="card"><h3 class="sec">⚙ API keys (stored only in this browser)</h3>'+
+    keyField("ytKey","YouTube Data API v3 key","AIza… — enables inline concept-scored video matching")+
+    keyField("aiKey","AI API key (optional)","sk-… — enables AI Coach + Product Judge explanations")+
+    '<label class="fld" style="margin-top:8px">AI endpoint (OpenAI-compatible)<input id="s_aiBase" value="'+esc(st.aiBase)+'"></label>'+
+    '<label class="fld" style="margin-top:8px">AI model<input id="s_aiModel" class="mono" value="'+esc(st.aiModel)+'"></label>'+
+    '<p class="hint" style="margin-top:8px">⚠ Browser AI calls are often blocked by the provider\'s CORS policy. For reliable Coach/Judge, proxy through a tiny serverless function (e.g. a Vercel route) that holds the key. The Product Judge\'s verdict is fully deterministic and works with no key.</p>'+
+    '<button class="btn primary" style="margin-top:10px" id="saveKeys">Save settings</button></div>'+
+  '<div class="card" style="margin-top:14px"><h3 class="sec">Fee assumptions</h3>'+
+    '<div class="grid g-2"><label class="fld">Fuel surcharge<input id="s_fuel" class="mono" type="number" step="0.001" value="'+num(st.fuel,0.035)+'"></label>'+
+    '<label class="fld">Low-inventory threshold (days)<input id="s_low" class="mono" type="number" value="'+num(st.lowInvDays,30)+'"></label></div>'+
+    '<p class="hint" style="margin-top:8px">2026 fees are baked into the Deal Analyzer; the fuel surcharge and low-inventory threshold are editable because they move. <a href="https://sellercentral.amazon.com/revcal" target="_blank" rel="noopener">Verify in Seller Central ↗</a></p></div>'+
+  '<div class="card" style="margin-top:14px"><h3 class="sec">Backup — export / import (single-device insurance)</h3>'+
+    '<p class="hint" style="margin-bottom:10px">Your data lives only in this browser. Export regularly; import to restore or move between devices.</p>'+
+    '<div class="flexbtns"><button class="btn" id="exp">⬇ Export JSON</button><button class="btn" id="cpy">⧉ Copy to clipboard</button><button class="btn" id="imp">⬆ Import</button><button class="btn danger" id="reset">Reset all data</button></div>'+
+    '<textarea id="impBox" rows="3" placeholder="Paste exported JSON here, then click Import" style="margin-top:10px"></textarea></div>';
+  ["ytKey","aiKey"].forEach(k=>{ const t=document.getElementById("tg_"+k); if(t)t.onclick=()=>{ const i=document.getElementById("s_"+k); i.type=i.type==="password"?"text":"password"; t.textContent=i.type==="password"?"show":"hide"; }; });
+  document.getElementById("saveKeys").onclick=()=>{ st.ytKey=val("s_ytKey");st.aiKey=val("s_aiKey");st.aiBase=val("s_aiBase");st.aiModel=val("s_aiModel");st.fuel=Number(val("s_fuel"))||0.035;st.lowInvDays=Number(val("s_low"))||30; save(); toast("Saved"); renderNav(); };
+  document.getElementById("exp").onclick=()=>{ const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="fba-console-backup.json"; a.click(); };
+  document.getElementById("cpy").onclick=async()=>{ try{await navigator.clipboard.writeText(JSON.stringify(state)); toast("Copied");}catch(e){toast("Copy failed");} };
+  document.getElementById("imp").onclick=()=>{ try{ const o=JSON.parse(document.getElementById("impBox").value); state=deepMerge(clone(DEFAULT_STATE),o); save(); toast("Imported"); route(); }catch(e){ toast("Invalid JSON"); } };
+  document.getElementById("reset").onclick=()=>{ if(confirm("Erase ALL local data (products, logs, progress)?")){ state=clone(DEFAULT_STATE); save(); route(); } };
+}
+function keyField(k,label,hint){ return '<label class="fld" style="margin-top:8px">'+label+'<span class="keyrow"><input id="s_'+k+'" type="password" value="'+esc(state.settings[k])+'" autocomplete="off"><button type="button" class="btn ghost sm" id="tg_'+k+'">show</button></span></label><div class="hint">'+hint+'</div>'; }
+function val(id){ return document.getElementById(id)?.value||""; }
+
+/* ---------------- AI (optional, OpenAI-compatible) ----------------------- */
+async function aiComplete(system,user){
+  const st=state.settings; if(!st.aiKey) return null;
+  try{
+    const r=await fetch(st.aiBase,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+st.aiKey},
+      body:JSON.stringify({model:st.aiModel,messages:[{role:"system",content:system},{role:"user",content:user}],temperature:0.4,max_tokens:400})});
+    if(!r.ok) return null; const d=await r.json(); return d.choices?.[0]?.message?.content||null;
+  }catch(e){ return null; }
+}
+
+/* ---------------- toast + boot ------------------------------------------ */
+let toastT;
+function toast(msg){ let t=document.getElementById("toast"); if(!t){ t=document.createElement("div"); t.id="toast"; t.style.cssText="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel-3);border:1px solid var(--accent-dim);color:#eafff6;padding:9px 16px;border-radius:9px;font-size:13px;font-family:var(--mono);z-index:100;box-shadow:0 8px 24px -8px #000"; document.body.appendChild(t);} t.textContent=msg; t.style.opacity="1"; clearTimeout(toastT); toastT=setTimeout(()=>t.style.opacity="0",1600); }
+
+load();
+document.getElementById("status").textContent = LS_OK? "LOCAL ✓":"NO-SAVE";
+window.addEventListener("hashchange",route);
+if(!location.hash){ try{location.hash="home";}catch(e){} }
+route();
+})(); /* build:v2-ready */
+</script>
+</body>
+</html>

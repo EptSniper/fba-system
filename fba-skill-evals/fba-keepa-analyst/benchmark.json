@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "fba-keepa-analyst",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-06-30T02:41:27Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 50.68,
+        "tokens": 35298,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Identifies rising offer count as avoid/negative",
+          "passed": true,
+          "evidence": "\u2026ers. That blows past the rising-offers guard (new-offer\u2026"
+        },
+        {
+          "text": "Connects rising offers to falling/tanking price",
+          "passed": true,
+          "evidence": "\u2026ine problem. Buy Box has slid from ~$35 to ~$28 over 9\u2026"
+        },
+        {
+          "text": "Verdict leans reject/caution on history",
+          "passed": true,
+          "evidence": "\u2026guard) \u2014 primary instant-reject fingerprint.   - Falling\u2026"
+        },
+        {
+          "text": "Hands off / verify / not a final buy",
+          "passed": true,
+          "evidence": "\u2026which are what actually confirm >=50/mo. So treat \"decen\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 68.564,
+        "tokens": 37399,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Reads demand as strong (~300/mo, BSR drops)",
+          "passed": true,
+          "evidence": "\u2026& Games item (BSR ~8k, \"300 sold\")  - Demand: est. ~\u2026"
+        },
+        {
+          "text": "Notes stable price + flat offers as positive",
+          "passed": true,
+          "evidence": "\u2026mer.  - Price stability: stable. Buy Box flat at $27 \"fo\u2026"
+        },
+        {
+          "text": "Notes no Amazon on listing as positive",
+          "passed": true,
+          "evidence": "\u2026BA sellers (healthy). No Amazon on the listing.  - Red f\u2026"
+        },
+        {
+          "text": "Verdict supports a buy on history (with verify/handoff)",
+          "passed": true,
+          "evidence": "\u2026ing around\" 8k is normal healthy oscillation for a seller\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 85.521,
+        "tokens": 40675,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags Amazon ~60% Buy Box as reject/major risk",
+          "passed": true,
+          "evidence": "\u2026ey actually mean  ### 1. Amazon held the Buy Box ~60% of\u2026"
+        },
+        {
+          "text": "References ~20% threshold OR hard-reject for Amazon BB",
+          "passed": true,
+          "evidence": "\u2026~60% of the past year \u2192 HARD REJECT  This is not a yellow fl\u2026"
+        },
+        {
+          "text": "Reads 40->2 crash as cliff / IP / supply signal",
+          "passed": true,
+          "evidence": "\u2026from 40 \u2192 2 \u2192 this is an IP-cliff fingerprint, not a\u2026"
+        },
+        {
+          "text": "Verdict leans reject / pass",
+          "passed": true,
+          "evidence": "\u2026of the past year \u2192 HARD REJECT  This is not a yellow fl\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 31.942,
+        "tokens": 30567,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Identifies rising offer count as avoid/negative",
+          "passed": true,
+          "evidence": "\u2026Keepa Read: Offer Count Climbing, Buy Box Sliding  ##\u2026"
+        },
+        {
+          "text": "Connects rising offers to falling/tanking price",
+          "passed": true,
+          "evidence": "\u2026Count Climbing, Buy Box Sliding  ## The setup - Offer\u2026"
+        },
+        {
+          "text": "Verdict leans reject/caution on history",
+          "passed": true,
+          "evidence": "\u2026; >2-3 months to clear = pass.  ## Bottom line  A satu\u2026"
+        },
+        {
+          "text": "Hands off / verify / not a final buy",
+          "passed": true,
+          "evidence": "\u2026k read only \u2014 separately confirm eligibility before any b\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 63.632,
+        "tokens": 32929,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Reads demand as strong (~300/mo, BSR drops)",
+          "passed": true,
+          "evidence": "\u2026oys with lots of drops = strong, real demand.** In Toys\u2026"
+        },
+        {
+          "text": "Notes stable price + flat offers as positive",
+          "passed": true,
+          "evidence": "\u2026share.  **3. Offer count steady at 5 for months = stable\u2026"
+        },
+        {
+          "text": "Notes no Amazon on listing as positive",
+          "passed": true,
+          "evidence": "\u2026lone FBM offer.  **5. No Amazon on the listing = best co\u2026"
+        },
+        {
+          "text": "Verdict supports a buy on history (with verify/handoff)",
+          "passed": true,
+          "evidence": "\u2026of new sellers; five is healthy to split sales among. Ch\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 63.788,
+        "tokens": 33176,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags Amazon ~60% Buy Box as reject/major risk",
+          "passed": true,
+          "evidence": "\u2026# Keepa Read: Amazon ~60% Buy Box + Offer Cou\u2026"
+        },
+        {
+          "text": "References ~20% threshold OR hard-reject for Amazon BB",
+          "passed": true,
+          "evidence": "\u2026sn't 90\u2013100% (which is a no-go), so there's a recurring\u2026"
+        },
+        {
+          "text": "Reads 40->2 crash as cliff / IP / supply signal",
+          "passed": true,
+          "evidence": "\u2026y) vs regular repeating dips (the profile that can w\u2026"
+        },
+        {
+          "text": "Verdict leans reject / pass",
+          "passed": true,
+          "evidence": "\u2026Almost always a be-very-careful flag. When Amazon is on\u2026"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 68.255,
+        "stddev": 17.4226,
+        "min": 50.68,
+        "max": 85.521
+      },
+      "tokens": {
+        "mean": 37790.6667,
+        "stddev": 2709.8126,
+        "min": 35298,
+        "max": 40675
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 53.1207,
+        "stddev": 18.3414,
+        "min": 31.942,
+        "max": 63.788
+      },
+      "tokens": {
+        "mean": 32224.0,
+        "stddev": 1440.3086,
+        "min": 30567,
+        "max": 33176
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+15.1",
+      "tokens": "+5567"
+    }
+  },
+  "notes": []
+}

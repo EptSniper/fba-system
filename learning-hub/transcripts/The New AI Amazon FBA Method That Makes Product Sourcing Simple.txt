@@ -1,0 +1,1939 @@
+00:07 So in the world of AI, it might not be
+00:09 
+
+00:09 quite that easy to make some extra money
+00:10 
+
+00:10 as an Amazon seller, but there's plenty
+00:13 
+
+00:13 of new AI methods that we can use in
+00:15 
+
+00:15 2026 and beyond to scale a lot faster.
+00:17 
+
+00:17 So in today's video, I'm going to be
+00:18 
+
+00:18 diving into the most detailed AI that's
+00:21 
+
+00:21 built specifically to help Amazon
+00:22 
+
+00:22 sellers. And let's just go ahead and get
+00:24 
+
+00:24 started cuz I know your time is valuable
+00:25 
+
+00:25 and you're excited to start plugging
+00:27 
+
+00:27 this stuff into your Amazon business. So
+00:28 
+
+00:28 right now, one of the best ways to
+00:30 
+
+00:30 leverage AI for Amazon sellers is on the
+00:32 
+
+00:32 Boxem AI. This is the software that
+00:34 
+
+00:34 you'll use to track profit, create
+00:36 
+
+00:36 shipments, get more feedback, and get
+00:38 
+
+00:38 ungated in bulk. But today, I also want
+00:39 
+
+00:39 to use it to have the AI just walk me
+00:41 
+
+00:41 through the process of becoming an
+00:43 
+
+00:43 Amazon seller. And then in conjunction
+00:44 
+
+00:44 with the Boxem AI, I would also
+00:46 
+
+00:46 recommend downloading this. This is a
+00:48 
+
+00:48 free tool. Basically, it just listens to
+00:50 
+
+00:50 what you're saying and just makes it a
+00:51 
+
+00:51 little bit easier to type things, talk
+00:53 
+
+00:53 with AI, and just work on your computer
+00:54 
+
+00:54 faster in general. That'll apply to any
+00:56 
+
+00:56 business you run. But using Whisper
+00:58 
+
+00:58 Flow, let's just go ahead and hop back
+00:59 
+
+00:59 into Boxy and say, "Hey Boxy, I'm a
+01:01 
+
+01:01 brand new Amazon seller. Can you walk me
+01:03 
+
+01:03 through the process of finding products
+01:04 
+
+01:04 that I can actually sell as a beginner?"
+01:06 
+
+01:06 And then we can just go ahead and send
+01:07 
+
+01:07 that off to Boxy. And let's see what it
+01:09 
+
+01:09 says here. So, the first thing we need
+01:10 
+
+01:10 to do is figure out, "Hey, what can I
+01:12 
+
+01:12 sell on Amazon?" Which I totally agree
+01:14 
+
+01:14 with. For a long time, probably the most
+01:15 
+
+01:15 common complaint that I heard from
+01:17 
+
+01:17 people who are getting into Amazon was,
+01:18 
+
+01:18 "Hey, I found products, but I can't get
+01:20 
+
+01:20 ungated. I can't figure out how to get
+01:21 
+
+01:21 approved to sell anything." So, let's go
+01:23 
+
+01:23 ahead and use Boxy's suggested step one,
+01:24 
+
+01:24 which is to get bulk ungated. We're
+01:26 
+
+01:26 going to go ahead and run the suggested
+01:27 
+
+01:27 list and see how much we can get ungated
+01:29 
+
+01:29 in. So, let's go ahead and click that
+01:30 
+
+01:30 link and that's going to take me over to
+01:32 
+
+01:32 the inventory tab, where I just want to
+01:33 
+
+01:33 go ahead and press bulk scan. And then I
+01:35 
+
+01:35 want to go ahead and click check
+01:36 
+
+01:36 suggested ASINs. Or just as another
+01:38 
+
+01:38 note, you can also just input ASINs in
+01:40 
+
+01:40 the box here and it'll check those for
+01:41 
+
+01:41 you automatically. But what this is
+01:43 
+
+01:43 going to do, as soon as I click this
+01:44 
+
+01:44 button, is check a pre-selected list of
+01:46 
+
+01:46 about 750 products while I'm recording
+01:49 
+
+01:49 this video that have had a high success
+01:50 
+
+01:50 rate for new Amazon sellers to get
+01:53 
+
+01:53 auto-approved in these brands. So, these
+01:54 
+
+01:54 are brands that it can check up to five
+01:56 
+
+01:56 per second. And these are going to be
+01:57 
+
+01:57 brands that is applying for you on your
+01:60 
+
+01:60 behalf through your Amazon seller
+02:01 
+
+02:01 account. And if you see that this says
+02:03 
+
+02:03 ungating, you were either already
+02:04 
+
+02:04 approved to sell these brands or it just
+02:06 
+
+02:06 went ahead and applied to sell those
+02:07 
+
+02:07 brands for you and got your account
+02:09 
+
+02:09 approved. So, you can see so far it's
+02:10 
+
+02:10 already ungated like 75 of the brands on
+02:13 
+
+02:13 that list. So, I'm actually just going
+02:14 
+
+02:14 to give this a second to run, and let's
+02:16 
+
+02:16 see what else BoxN is suggesting here.
+02:17 
+
+02:17 So, it's saying to look for
+02:19 
+
+02:19 beginner-friendly territory, looking for
+02:21 
+
+02:21 things that are auto ungated. Awesome,
+02:22 
+
+02:22 we're already planning on doing that.
+02:24 
+
+02:24 Let's go ahead and also use Seller Amp
+02:25 
+
+02:25 or fast analysis. So, this is going to
+02:27 
+
+02:27 answer a lot of important questions,
+02:29 
+
+02:29 which I totally agree with. I've sourced
+02:30 
+
+02:30 pretty much all of my profitable items
+02:32 
+
+02:32 using Seller Amp. Looks like it's also
+02:34 
+
+02:34 suggesting some just like default
+02:35 
+
+02:35 beginner filters to look for. So, we
+02:37 
+
+02:37 want to look for things that have under
+02:38 
+
+02:38 100K BSR. Usually, I like to source for
+02:40 
+
+02:40 things that are in the 100 to 150K BSR
+02:43 
+
+02:43 as a max range, but we can also look at
+02:45 
+
+02:45 the estimates on Seller Amp as we're
+02:46 
+
+02:46 diving in here. Make sure the fees
+02:48 
+
+02:48 actually work out. Totally agree. And
+02:49 
+
+02:49 then we can start sourcing from normal
+02:51 
+
+02:51 retailers. So, I like it. Let's go ahead
+02:53 
+
+02:53 and pop back over to the bulk ungating
+02:55 
+
+02:55 check we did. And let's see. Let's take
+02:57 
+
+02:57 one of these random brands here. So,
+02:58 
+
+02:58 let's just grab this for example. That's
+02:60 
+
+02:60 like a clothing brand of some kind. I
+03:01 
+
+03:01 think this is a Target brand as well.
+03:03 
+
+03:03 So, this is actually a pretty good
+03:04 
+
+03:04 example. So, what I want to do is I want
+03:05 
+
+03:05 to say I'm just going to paste that
+03:06 
+
+03:06 ASIN, and I'm going to say, "Hey BoxN,
+03:08 
+
+03:08 the auto ungating checker confirmed that
+03:10 
+
+03:10 this ASIN is auto ungated. What do I do
+03:12 
+
+03:12 with this ASIN now that I know that this
+03:14 
+
+03:14 is auto ungated? How can I find products
+03:15 
+
+03:15 based on this?" Cool. So, it's saying we
+03:17 
+
+03:17 can turn that into a brand we can mine
+03:20 
+
+03:20 into. I like that. We can definitely see
+03:21 
+
+03:21 what kind of potential there is, and
+03:22 
+
+03:22 then we can also see if we can find more
+03:24 
+
+03:24 sellable ASINs from sellers already
+03:26 
+
+03:26 selling that ASIN. So, let's actually
+03:27 
+
+03:27 just go ahead and jump in based on that.
+03:29 
+
+03:29 So, I'm going to go ahead and Google
+03:30 
+
+03:30 that ASIN there. So, let's go ahead and
+03:32 
+
+03:32 pull up that Amazon listing right now
+03:33 
+
+03:33 for that product. Seems like we know it
+03:35 
+
+03:35 is just like a standard like black bra.
+03:37 
+
+03:37 We can always check and see if this like
+03:39 
+
+03:39 standard product from our list is
+03:41 
+
+03:41 already profitable. It's always good to
+03:42 
+
+03:42 just get a feel for what these things
+03:43 
+
+03:43 cost. There's the brand's website
+03:45 
+
+03:45 directly, and I do see Target sells them
+03:47 
+
+03:47 for like 23 bucks. Does the brand sell
+03:49 
+
+03:49 them on their website? No, it just says
+03:50 
+
+03:50 to go buy them on Amazon. Okay, sends
+03:52 
+
+03:52 you right sends you right back to where
+03:53 
+
+03:53 we were. So, Target is probably going to
+03:54 
+
+03:54 be the move. So, these are like 23
+03:57 
+
+03:57 bucks. This one in particular, we need
+03:59 
+
+03:59 to buy for $17 or less according to
+04:02 
+
+04:02 SellerAmp to make an ideal profit range,
+04:04 
+
+04:04 which on something like women's clothing
+04:06 
+
+04:06 is very important. We need to make sure
+04:07 
+
+04:07 we have plenty of ROI just in case
+04:08 
+
+04:08 there's any returns or anything like
+04:10 
+
+04:10 that go on. But, let's just go ahead and
+04:11 
+
+04:11 use what Boxy was suggesting to go ahead
+04:13 
+
+04:13 and find other things based on this. So,
+04:15 
+
+04:15 it wants us to go ahead and pull up the
+04:16 
+
+04:16 storefronts of these other sellers. And
+04:18 
+
+04:18 then it wants us to go ahead and start
+04:19 
+
+04:19 skimming that storefront brand list. I
+04:20 
+
+04:20 like that. We can see how much potential
+04:22 
+
+04:22 is in those brands. And then it also
+04:23 
+
+04:23 wants us to see if those brands repeat
+04:25 
+
+04:25 between multiple sellers, which also
+04:27 
+
+04:27 makes sense. If that's true, then that
+04:28 
+
+04:28 would be a very reseller friendly brand.
+04:31 
+
+04:31 So, let's just actually go ahead and pop
+04:32 
+
+04:32 open one of these sellers here. I'm
+04:33 
+
+04:33 going to pick an FBA seller specifically
+04:36 
+
+04:36 just because FBA sellers are going to be
+04:38 
+
+04:38 more likely to be like a legit seller.
+04:40 
+
+04:40 FBM sellers can sometimes be like drop
+04:42 
+
+04:42 shippers or doing things that it makes
+04:44 
+
+04:44 it impossible for us to replicate how
+04:45 
+
+04:45 they're actually making money without
+04:47 
+
+04:47 breaking rules. So, that's why I like to
+04:49 
+
+04:49 just storefront stock FBA sellers. And
+04:51 
+
+04:51 in this case, I want to look for the guy
+04:52 
+
+04:52 So, this person has the fewest feedback
+04:54 
+
+04:54 as well. So, putting myself in the shoes
+04:56 
+
+04:56 of a new Amazon seller, the other people
+04:58 
+
+04:58 who have the lowest feedback are going
+04:59 
+
+04:59 to be the most similar to the type of
+05:01 
+
+05:01 business I run. And that obviously means
+05:03 
+
+05:03 we're going to be able to find some
+05:04 
+
+05:04 potential based on that. Let's see, what
+05:05 
+
+05:05 do they carry? They carry a lot of
+05:06 
+
+05:06 industrial and scientific products. They
+05:08 
+
+05:08 carry CDs. Interesting. Like a good
+05:10 
+
+05:10 amount of their store is some of these
+05:11 
+
+05:11 like CDs and stuff. They They're selling
+05:13 
+
+05:13 some Minecraft music. They sell beauty
+05:15 
+
+05:15 and personal care. All right, so we know
+05:16 
+
+05:16 what they like to sell. I also like to
+05:18 
+
+05:18 figure out what are their favorite
+05:19 
+
+05:19 brands. So, in this case, this Bamboo
+05:21 
+
+05:21 Lab is a huge percentage of their store.
+05:23 
+
+05:23 They've clearly gotten very good at
+05:25 
+
+05:25 sourcing this particular product. And
+05:27 
+
+05:27 maybe that means we can make some money
+05:29 
+
+05:29 off of it. So, let's start searching for
+05:30 
+
+05:30 this and see what does this go for in
+05:33 
+
+05:33 general? Seems PLA basic, is that what
+05:35 
+
+05:35 this is? PLA 3D. It's not really
+05:37 
+
+05:37 describing it in a detailed way.
+05:39 
+
+05:39 Probably the basic one. Let's see. 1 kg.
+05:42 
+
+05:42 How much does this weigh? Does it say on
+05:43 
+
+05:43 here? Yeah, okay, 1 kg. And then let's
+05:45 
+
+05:45 see. It also says it has the reusable
+05:48 
+
+05:48 spool, which I noticed over here is a
+05:50 
+
+05:50 different version. So, how much more
+05:51 
+
+05:51 does that cost? So, this is 23 bucks
+05:53 
+
+05:53 with the spool. SellerAmp is showing me
+05:55 
+
+05:55 that I need to buy this for 13-ish
+05:57 
+
+05:57 dollars to make a profit. And this also
+05:59 
+
+05:59 includes all of my shipping to Amazon.
+06:01 
+
+06:01 It includes sales tax, all the extra
+06:03 
+
+06:03 Amazon fees, that kind of thing. So,
+06:04 
+
+06:04 just in case you're wondering if that's
+06:06 
+
+06:06 actually the true profit, yes, it would
+06:07 
+
+06:07 be. And it does seem like there is a
+06:09 
+
+06:09 pretty decent discount here. Let's see,
+06:11 
+
+06:11 as low as $12.99 per roll. Quick add.
+06:14 
+
+06:14 How do we get it to $12.99 per roll?
+06:15 
+
+06:15 Let's see. Let's just add a ton of
+06:17 
+
+06:17 these. When does it become $12.99 per
+06:19 
+
+06:19 roll? See, maybe never? Did I click this
+06:21 
+
+06:21 115 times to see if the price goes
+06:23 
+
+06:23 lower? Yes, I did. Am I ashamed?
+06:25 
+
+06:25 Absolutely not. If it works, we make a
+06:26 
+
+06:26 bunch of money. But, I don't think this
+06:28 
+
+06:28 is going to be cheap enough. So, the
+06:30 
+
+06:30 cheapest option on this is 15 bucks.
+06:32 
+
+06:32 But, that is good to know because I can
+06:33 
+
+06:33 see like this for example, the max cost
+06:36 
+
+06:36 on this is also $15. So, let's see if
+06:39 
+
+06:39 this one is potentially worth it. So, I
+06:41 
+
+06:41 see the issue. So, there's actually no
+06:42 
+
+06:42 buy box on this product. So, no one
+06:44 
+
+06:44 currently has the add to cart button on
+06:45 
+
+06:45 the listing, which means that it's going
+06:47 
+
+06:47 to default to the storefront price. But,
+06:48 
+
+06:48 really we need to look at the lowest
+06:51 
+
+06:51 price on the listing in general, which
+06:52 
+
+06:52 in this case is like 28 bucks. So, we'd
+06:54 
+
+06:54 have to sell that for 12-ish dollars.
+06:56 
+
+06:56 Let's see. What are these are like more
+06:57 
+
+06:57 expensive though? Like mistletoe green,
+06:59 
+
+06:59 this one is $33. And then, let's see.
+07:02 
+
+07:02 Yeah, this is also in stock on our
+07:04 
+
+07:04 supplier. Let's see, ETA February 21st.
+07:06 
+
+07:06 Okay, I'm filming this on the 19th, so
+07:08 
+
+07:08 that is fine. It'll be here in 2 days.
+07:09 
+
+07:09 It's not like it's multiple month-long
+07:11 
+
+07:11 back order. And the mistletoe green PLA
+07:13 
+
+07:13 basic. Okay, just because I see the
+07:16 
+
+07:16 spool in the picture and then the other
+07:17 
+
+07:17 one had the spool, I'm going to assume
+07:19 
+
+07:19 we need the spool. So, yeah, we're going
+07:20 
+
+07:20 to be buying these for 15 bucks. They're
+07:21 
+
+07:21 going to be selling pretty decently.
+07:23 
+
+07:23 Like this this overall listing sells
+07:25 
+
+07:25 pretty well. And it will also be for a
+07:26 
+
+07:26 $5 profit. We can also check and make
+07:28 
+
+07:28 sure that this is going to be something
+07:30 
+
+07:30 that we can auto ungate. So, let's pop
+07:32 
+
+07:32 back over here into the inventory tab on
+07:34 
+
+07:34 Boxome and click bulk scan. Go ahead and
+07:35 
+
+07:35 paste that ASIN. Let's check it.
+07:37 
+
+07:37 Awesome. So, this is either auto ungated
+07:39 
+
+07:39 or something that I've already sold in
+07:40 
+
+07:40 in past. I don't remember ever selling
+07:41 
+
+07:41 something like this. So, I'm going to
+07:43 
+
+07:43 assume this is an auto ungated. I was
+07:44 
+
+07:44 also seeing lots of other newer sellers
+07:46 
+
+07:46 on this like we saw. Could be
+07:47 
+
+07:47 interesting. You can see it for example
+07:48 
+
+07:48 this person has four feedback. This
+07:50 
+
+07:50 person has zero feedback, so it's
+07:51 
+
+07:51 decently likely to be something that is
+07:53 
+
+07:53 as auto ungated. Let's see what else is
+07:54 
+
+07:54 on this listing cuz now we know there's
+07:55 
+
+07:55 some potential here. This sells 17 times
+07:58 
+
+07:58 a month. Does it have the spool? Yeah,
+07:59 
+
+07:59 it does say it has the spool. It doesn't
+08:00 
+
+08:00 sell super fast, but we can buy it
+08:02 
+
+08:02 profitably. So this would be something
+08:03 
+
+08:03 maybe I'd get 10 units of. That last one
+08:05 
+
+08:05 that sells a lot more kind of split
+08:07 
+
+08:07 between all the different colors I need
+08:09 
+
+08:09 to add, but this is like a pretty
+08:10 
+
+08:10 standard like green, so I'd probably
+08:12 
+
+08:12 test like 20 to 30 of those. So that
+08:14 
+
+08:14 would be like a hundred plus dollars in
+08:15 
+
+08:15 profit just selling a product that's
+08:16 
+
+08:16 automatically approved. Here's another
+08:18 
+
+08:18 one. I'd probably only buy 10 of this
+08:19 
+
+08:19 just cuz it doesn't sell super fast. And
+08:21 
+
+08:21 then that would still be another 50
+08:22 
+
+08:22 bucks a month or so in profit. Well,
+08:24 
+
+08:24 let's go ahead and keep scrolling down
+08:25 
+
+08:25 cuz really all we're trying to do is
+08:26 
+
+08:26 create like a decent catalog of products
+08:29 
+
+08:29 that we can just restock over and over
+08:30 
+
+08:30 again. That's where it becomes really
+08:32 
+
+08:32 fun basically. Let's see. Here's just
+08:33 
+
+08:33 the refill. That could be cheap enough
+08:35 
+
+08:35 cuz with the refill alone, yeah, if we
+08:37 
+
+08:37 buy in bulk which we obviously are going
+08:39 
+
+08:39 to, those are 13 bucks and our max cost
+08:41 
+
+08:41 is actually 14. So let's see. Let's go
+08:43 
+
+08:43 ahead and plug that in here. Yeah, we're
+08:46 
+
+08:46 buying these for 13. That is a 550
+08:48 
+
+08:48 profit per unit. And once again, I'd
+08:50 
+
+08:50 probably just place a 10 to 20 unit test
+08:52 
+
+08:52 order here. If you're ever unsure,
+08:53 
+
+08:53 that's always a smart bet. Or what we
+08:55 
+
+08:55 can also do is go into the data offers
+08:58 
+
+08:58 tab on Keepa. So as far as product
+08:59 
+
+08:59 research goes, all you need is Seller
+09:01 
+
+09:01 Amp and Keepa and then Boxem for the AI
+09:03 
+
+09:03 assistant shipping products. Basically
+09:05 
+
+09:05 everything you need to do with the back
+09:06 
+
+09:06 end of your business and that'll be your
+09:08 
+
+09:08 software suite. Maybe you throw in a
+09:09 
+
+09:09 repricer like Flash Pricer after you're
+09:11 
+
+09:11 making some sales as well. That way you
+09:13 
+
+09:13 can kind of like automatically monitor
+09:14 
+
+09:14 stores and stuff. Well, let's see. Like
+09:16 
+
+09:16 I can see multiple people on this
+09:18 
+
+09:18 listing. You see how stock counts are
+09:19 
+
+09:19 decreasing pretty consistently. Like
+09:21 
+
+09:21 this person went from eight down to
+09:22 
+
+09:22 five. This person went from 12 to six.
+09:24 
+
+09:24 Person maybe made four sales there in a
+09:26 
+
+09:26 short little time span. And these are
+09:27 
+
+09:27 all FBA sellers that are all charging
+09:29 
+
+09:29 $31 or above. So we can see tons of
+09:32 
+
+09:32 proof on the offers tab down here that
+09:34 
+
+09:34 this item does actually sell. So that
+09:35 
+
+09:35 would be another kind of decent winning
+09:37 
+
+09:37 product here. Let's see, is this just
+09:39 
+
+09:39 the refill? Yeah, just the refill.
+09:40 
+
+09:40 That's another profitable one cuz we're
+09:42 
+
+09:42 buying these for 13 for the refills,
+09:43 
+
+09:43 remember? Let's see, basic refill right
+09:45 
+
+09:45 there. That's another profitable
+09:46 
+
+09:46 product. So this is like a very high
+09:48 
+
+09:48 potential brand that we just found here
+09:49 
+
+09:49 with some of that auto ungated sourcing.
+09:51 
+
+09:51 Let's go ahead and continue on. Let's
+09:52 
+
+09:52 see what other products this person
+09:54 
+
+09:54 carries, see if we can find some more
+09:55 
+
+09:55 profit. It looks like they sell like
+09:57 
+
+09:57 some craft yarn or wool or whatever. I'm
+09:59 
+
+09:59 usually just going to start with the
+10:01 
+
+10:01 ones that have the highest profit
+10:02 
+
+10:02 potential. And if even those aren't
+10:04 
+
+10:04 profitable, there's no reason to look at
+10:05 
+
+10:05 the stuff that's a lot cheaper. So let's
+10:06 
+
+10:06 see, like what is this selling for? Let
+10:08 
+
+10:08 me check like Google shopping tab. So
+10:10 
+
+10:10 Michael's has some. Michael's also sells
+10:11 
+
+10:11 a 15 pack, which could be good. We could
+10:13 
+
+10:13 split that bulk apart. Let's see,
+10:15 
+
+10:15 Walmart sells it for 7.27. Michael's
+10:18 
+
+10:18 could be cheaper with that code. Okay,
+10:20 
+
+10:20 we probably have something. Interesting.
+10:22 
+
+10:22 Okay, buy one get one 50% off. That'd
+10:24 
+
+10:24 actually be a lot cheaper than it was
+10:25 
+
+10:25 telling us it would be. So let's see,
+10:27 
+
+10:27 let's add it to cart. Is that actually
+10:29 
+
+10:29 stacking? Let's go view cart. Add two
+10:31 
+
+10:31 items to qualify. Let's see. Okay, yeah,
+10:33 
+
+10:33 it is actually stacking. So we're
+10:34 
+
+10:34 getting this for 6.74 each. It's going
+10:37 
+
+10:37 to be close. It's also not like the
+10:39 
+
+10:39 craziest seller in the world, but I also
+10:40 
+
+10:40 see these two. So if we can get the
+10:42 
+
+10:42 style cheap enough, these two styles
+10:43 
+
+10:43 that sell a little bit faster might also
+10:45 
+
+10:45 be interesting. So let's definitely dig
+10:47 
+
+10:47 in further. So 6.47 * 3. Okay, so our
+10:50 
+
+10:50 ROI is like a little bit low. So let's
+10:52 
+
+10:52 actually go back over to Boxy and see if
+10:54 
+
+10:54 it has any suggestions for us. Hey Boxy,
+10:56 
+
+10:56 I just found a product at Michael's, but
+10:58 
+
+10:58 it's only a 20% ROI. Are there any extra
+11:00 
+
+11:00 ways that you can think of that I can
+11:02 
+
+11:02 make this product cheaper so that I can
+11:03 
+
+11:03 buy it and it actually becomes
+11:04 
+
+11:04 profitable? And let's see. Okay, 20% ROI
+11:06 
+
+11:06 is where you manufacture margin. Okay,
+11:08 
+
+11:08 stack a coupon. Okay, we already used
+11:09 
+
+11:09 the coupon. Use coupon code or cashback
+11:12 
+
+11:12 extensions. Okay, we can definitely look
+11:13 
+
+11:13 at that. Buy discounted gift cards for
+11:15 
+
+11:15 Michael's. Okay, that's probably going
+11:16 
+
+11:16 to help a lot. We can also try to get
+11:17 
+
+11:17 rid of sales tax, which in my case I am
+11:20 
+
+11:20 baking in sales tax, so that would help
+11:21 
+
+11:21 as well. We can also check and see if
+11:23 
+
+11:23 FBM beats FBA or see if we can do like
+11:25 
+
+11:25 bulk deals, which actually now that I
+11:27 
+
+11:27 think about it, I completely forgot to
+11:28 
+
+11:28 check this one. I don't think that's
+11:30 
+
+11:30 going to be cheaper just like doing the
+11:31 
+
+11:31 math in my head. Let's see, like 88 / 15
+11:34 
+
+11:34 is our math. So, I'm just going to do it
+11:35 
+
+11:35 in seller. 88 / 15 and that puts us at
+11:37 
+
+11:37 587. Hey, it is actually cheaper. Okay,
+11:39 
+
+11:39 cool. I'm grateful for my bad mental
+11:41 
+
+11:41 math there. 587 * 3 and we're
+11:43 
+
+11:43 profitable. Okay, so now we can have
+11:45 
+
+11:45 more fun with it. Coupon exclusion, I
+11:46 
+
+11:46 think I saw. That's fine. Or hey, how
+11:49 
+
+11:49 about I just read and realize that it
+11:51 
+
+11:51 says 584 right there and my calculator
+11:53 
+
+11:53 was useless. Okay, that's fine. But, we
+11:55 
+
+11:55 should probably still use that
+11:56 
+
+11:56 suggestion from Boxy. So, it was talking
+11:58 
+
+11:58 about discounted gift cards, which I
+11:60 
+
+11:60 want to say Hey Boxy, where do I buy
+12:01 
+
+12:01 those discounted gift cards from? Having
+12:03 
+
+12:03 been a seller for several years now, I
+12:04 
+
+12:04 know that CardBear is the go-to, but
+12:06 
+
+12:06 again, I want to put myself in the shoes
+12:07 
+
+12:07 of a brand new seller and it was
+12:09 
+
+12:09 suggesting CardBear. So, let's go check
+12:10 
+
+12:10 it out. Let's search for Michaels and
+12:12 
+
+12:12 then it looks like Michaels sells
+12:14 
+
+12:14 discounted gift cards at all these
+12:15 
+
+12:15 websites and seems like we can get
+12:17 
+
+12:17 anywhere from 12 to 14% discount. Let's
+12:20 
+
+12:20 see, what are these looking like?
+12:21 
+
+12:21 E-delivery, that's perfect. That's what
+12:23 
+
+12:23 I want. I don't want to deal with
+12:24 
+
+12:24 waiting for a gift card to come in the
+12:25 
+
+12:25 mail and these are pretty like nice and
+12:27 
+
+12:27 simple. So, I can go in here to this
+12:28 
+
+12:28 website. I can add this to cart and I
+12:30 
+
+12:30 can spend $215 on $250 worth of Michaels
+12:34 
+
+12:34 credit and then I've basically
+12:36 
+
+12:36 immediately saved myself 14% there. And
+12:38 
+
+12:38 let's see, so there were these other
+12:39 
+
+12:39 websites. Those are not quite as much
+12:41 
+
+12:41 discount and the dis- the gift card
+12:43 
+
+12:43 values are lower. I am not super
+12:45 
+
+12:45 interested in that. But, now we can go
+12:46 
+
+12:46 in here and make this even more
+12:47 
+
+12:47 profitable cuz the ROI right now is
+12:49 
+
+12:49 decent. Like at that price we found in
+12:51 
+
+12:51 the bulk pack, but there's no reason to
+12:52 
+
+12:52 make less money than we could. Now, I
+12:54 
+
+12:54 can subtract 14% from our cost and now
+12:56 
+
+12:56 it's a 56% ROI, almost $9 profit per
+12:59 
+
+12:59 unit. That becomes much more of a
+13:00 
+
+13:00 no-brainer for me. Let's see, let's
+13:02 
+
+13:02 check out these other two versions just
+13:04 
+
+13:04 to see if those are the same deal. Does
+13:05 
+
+13:05 this have that same 15 pack? It does.
+13:08 
+
+13:08 What color are we looking for? Raspberry
+13:10 
+
+13:10 and we're looking for charcoal. See,
+13:12 
+
+13:12 okay, so I did find raspberry. Right
+13:14 
+
+13:14 here, raspberry says it's out of stock.
+13:15 
+
+13:15 Charcoal, on the other hand, is in
+13:17 
+
+13:17 stock. Okay, 584 each, max cost of 1759.
+13:21 
+
+13:21 So, we are going to be making some money
+13:22 
+
+13:22 here, especially since we know we have
+13:24 
+
+13:24 those discounts. Let's do the same
+13:25 
+
+13:25 thing. So, 584 * 3 and then we just go
+13:28 
+
+13:28 ahead and subtract that 14% right there.
+13:30 
+
+13:30 Yes, that's going to take us to 15
+13:31 
+
+13:31 bucks, 52% ROI, $8 profit right there.
+13:34 
+
+13:34 And sweet. Okay, so yeah, found another
+13:36 
+
+13:36 pretty decent potential brand here. So,
+13:37 
+
+13:37 that was really just like the first two
+13:38 
+
+13:38 brands in the list. So, there I would
+13:40 
+
+13:40 assume there's definitely some more
+13:41 
+
+13:41 potential in this person's storefront.
+13:43 
+
+13:43 We could keep doing that forever and
+13:44 
+
+13:44 you'd find a ton of profitable products.
+13:46 
+
+13:46 You're also noticing that this was the
+13:48 
+
+13:48 first storefront of the first auto
+13:50 
+
+13:50 ungated product that we found. So, you
+13:51 
+
+13:51 got to imagine when you go ahead and run
+13:52 
+
+13:52 your scan on Boxem and you have 50, 100,
+13:55 
+
+13:55 200 brands that are automatically
+13:56 
+
+13:56 approved, really you've created
+13:57 
+
+13:57 hundreds, thousands of storefront
+13:59 
+
+13:59 stocking potentials for other stores
+14:01 
+
+14:01 that sell the same things that you
+14:02 
+
+14:02 could. But, obviously just finding the
+14:04 
+
+14:04 products is not the whole process. So,
+14:06 
+
+14:06 now I want to say, "Hey Boxy, I just
+14:07 
+
+14:07 found some profitable items at Michael's
+14:10 
+
+14:10 and I found some 3D printed parts that
+14:12 
+
+14:12 seem pretty profitable. How do I make
+14:13 
+
+14:13 these sell as fast as possible?" All
+14:15 
+
+14:15 right, let's see. So, it's suggesting to
+14:18 
+
+14:18 go with FBM first if we want speed
+14:20 
+
+14:20 today, stay within a couple percent of
+14:21 
+
+14:21 the buy box, try to set our handling
+14:24 
+
+14:24 times nice and quick so that Amazon
+14:26 
+
+14:26 gives us more buy box share. If we have
+14:28 
+
+14:28 extra margin, we could try some PPC. I
+14:30 
+
+14:30 don't do a ton of PPC, but I have used
+14:32 
+
+14:32 it in this case before. Usually I use
+14:33 
+
+14:33 PPC as a way to buy, like it's saying,
+14:36 
+
+14:36 low competition traffic or I'll buy it
+14:38 
+
+14:38 on products I've been stuck with for a
+14:39 
+
+14:39 while. Usually it's not going to be
+14:40 
+
+14:40 necessary at all. And then it's just
+14:42 
+
+14:42 making sure we pick fast selling
+14:43 
+
+14:43 listings. But, in this case, we
+14:44 
+
+14:44 obviously know we found some nice and
+14:46 
+
+14:46 profitable listings. So, let's actually
+14:47 
+
+14:47 check, like this product for example
+14:49 
+
+14:49 that it's suggesting we could try to
+14:50 
+
+14:50 FBM. Let's actually just take this ASIN
+14:52 
+
+14:52 and say, "Okay, so I found this ASIN.
+14:55 
+
+14:55 How do I tell if I can FBM the product
+14:57 
+
+14:57 or do I need to FBA it?" And let's see.
+14:58 
+
+14:58 So, it's saying you can list anything as
+14:60 
+
+14:60 FBM. Real question is whether it's FBM
+15:02 
+
+15:02 friendly. Okay, so we need to see if the
+15:03 
+
+15:03 buy box says shipped from Amazon or if
+15:05 
+
+15:05 it says it shipped from a seller. We can
+15:07 
+
+15:07 also check the offer summary to see if
+15:09 
+
+15:09 there's other FBM sellers or we can
+15:11 
+
+15:11 check the Keepa data buy box statistics
+15:13 
+
+15:13 to see if anyone is getting FBM buy box
+15:16 
+
+15:16 share. Which I like I like that. Let's
+15:17 
+
+15:17 dive in. So, we can go and check it out.
+15:18 
+
+15:18 All the offers right now are all FBA
+15:20 
+
+15:20 sellers. And now the reason why that
+15:22 
+
+15:22 would be a problem is typically FBA
+15:24 
+
+15:24 sellers are getting that 2-day Prime
+15:26 
+
+15:26 shipping. If you're an FBM seller,
+15:28 
+
+15:28 you're shipping direct from you to the
+15:29 
+
+15:29 customer. So, it's a little bit slower,
+15:31 
+
+15:31 and Amazon tends to trust those sellers
+15:32 
+
+15:32 a little bit less just in terms of
+15:33 
+
+15:33 figuring out who to share sales with.
+15:35 
+
+15:35 So, this could be something we would
+15:36 
+
+15:36 need to FBA. Let's also take the
+15:38 
+
+15:38 suggestion of looking at the data by box
+15:40 
+
+15:40 statistics. And I can see yes, so the
+15:41 
+
+15:41 only two people that have made sales in
+15:43 
+
+15:43 the last, honestly, 365 days are both
+15:46 
+
+15:46 FBA sellers. You see that FBA check mark
+15:48 
+
+15:48 is on right there. So, this would be
+15:49 
+
+15:49 something we would need to FBA. So, the
+15:51 
+
+15:51 next natural step is how do we do that?
+15:53 
+
+15:53 How do we actually list those things?
+15:54 
+
+15:54 Which, okay, cool, it's already actually
+15:55 
+
+15:55 just suggesting how we do that. So, we
+15:57 
+
+15:57 just need to go to FBA inventory page
+15:59 
+
+15:59 and then list FBA. So, let's just go
+16:01 
+
+16:01 ahead and do that. Let's go to
+16:02 
+
+16:02 inventory, click list FBA. That's going
+16:03 
+
+16:03 to take you right here. Go ahead and
+16:05 
+
+16:05 paste that ASIN, click new SKU. Let's go
+16:07 
+
+16:07 ahead and set the price we want to
+16:08 
+
+16:08 charge. Usually, I'll just put it way
+16:09 
+
+16:09 above the price I actually want to sell
+16:11 
+
+16:11 it for. That way, when the product
+16:13 
+
+16:13 arrives at Amazon, just in case the
+16:14 
+
+16:14 price has gone up in the interim, I
+16:16 
+
+16:16 don't want to accidentally check in and
+16:17 
+
+16:17 sell it for like way less money than I
+16:19 
+
+16:19 could have. We're buying these for 13
+16:20 
+
+16:20 bucks. And then, our supplier was, I
+16:22 
+
+16:22 think, bamboo or something like that. Uh
+16:24 
+
+16:24 yeah, looks good to me. So, now when we
+16:25 
+
+16:25 create this listing, we also have all
+16:28 
+
+16:28 the data about this product stored in
+16:30 
+
+16:30 our SKU. So, I know what I paid for it,
+16:32 
+
+16:32 I know where I bought it, I know when I
+16:33 
+
+16:33 listed the item. So, that helps me just
+16:35 
+
+16:35 manage the inventory, help me know when
+16:36 
+
+16:36 to restock it, help me know how much
+16:38 
+
+16:38 profit is left, if I need to change
+16:39 
+
+16:39 prices or anything. Let's go ahead and
+16:41 
+
+16:41 submit that and then also submit that
+16:42 
+
+16:42 listing to Amazon. That's going to load
+16:44 
+
+16:44 for usually about 10 to 15 minutes for
+16:46 
+
+16:46 this to communicate with Amazon. And
+16:48 
+
+16:48 then, after those listings are actually
+16:49 
+
+16:49 created, you'll have to go to the
+16:51 
+
+16:51 shipments tab on Boxem. It'll just walk
+16:53 
+
+16:53 you through the process of creating that
+16:54 
+
+16:54 shipment. So, for example, let's just
+16:56 
+
+16:56 call it test. When you're making the
+16:57 
+
+16:57 shipment, I would suggest turning all
+16:59 
+
+16:59 these things on. It just improves how
+17:00 
+
+17:00 much data you're storing about your
+17:02 
+
+17:02 product so you can make smarter
+17:03 
+
+17:03 decisions and stuff. And then, unless
+17:04 
+
+17:04 you're making a really big shipment, I
+17:06 
+
+17:06 would also opt into 2D barcodes on
+17:08 
+
+17:08 Boxem. This is something that can help
+17:09 
+
+17:09 speed up your check-in times at Amazon.
+17:11 
+
+17:11 Usually, I've seen maybe a day or two
+17:13 
+
+17:13 faster, you'll start making sales if you
+17:15 
+
+17:15 enable this right here. Otherwise, if
+17:16 
+
+17:16 you make a really big shipment, you can
+17:18 
+
+17:18 do box and provided. And that's going to
+17:20 
+
+17:20 send your shipment to multiple different
+17:21 
+
+17:21 destinations and save you on placement
+17:23 
+
+17:23 fees. This gets a little bit more
+17:25 
+
+17:25 complicated, which you can always just
+17:26 
+
+17:26 talk to Boxy about and have it explained
+17:28 
+
+17:28 to you how the difference works. But in
+17:30 
+
+17:30 general, what I'd say is if your
+17:31 
+
+17:31 shipment is less than 200 lb, do 2D
+17:33 
+
+17:33 barcodes. If it's more than 200 lb total
+17:35 
+
+17:35 of items, do box and provided. And then
+17:37 
+
+17:37 after you have those products listed,
+17:38 
+
+17:38 everything described, you'll go ahead
+17:39 
+
+17:39 and create a shipment right here. And
+17:40 
+
+17:40 that's going to walk you through the 1 2
+17:42 
+
+17:42 3 step process of creating a shipment.
+17:45 
+
+17:45 you're ready to actually ship those
+17:46 
+
+17:46 first products out, there's a deep dive
+17:47 
+
+17:47 video on the channel that shows you all
+17:49 
+
+17:49 the different buttons to press to make
+17:50 
+
+17:50 this process as fast as possible. I just
+17:52 
+
+17:52 want to focus on the AI and sourcing
+17:54 
+
+17:54 applications today, though. So, with all
+17:55 
+
+17:55 the nuances and skills involved in
+17:57 
+
+17:57 selling on Amazon, there's not quite an
+17:59 
+
+17:59 AI that you can just type in and hey,
+18:01 
+
+18:01 make me some money. But now that we have
+18:02 
+
+18:02 tools like that, it definitely makes the
+18:04 
+
+18:04 process a lot simpler than when I
+18:05 
+
+18:05 personally started selling about 7 years
+18:07 
+
+18:07 ago. So, if you're excited to dive in
+18:09 
+
+18:09 and start using those AI methods to
+18:10 
+
+18:10 source more products, you can go ahead
+18:12 
+
+18:12 and grab a 2-week free trial of Boxy and
+18:13 
+
+18:13 SellerAmp down below. Those are the
+18:15 
+
+18:15 softwares that you'll need to actually
+18:16 
+
+18:16 start making some money on Amazon. As
+18:18 
+
+18:18 well as if you want to see a much more
+18:19 
+
+18:19 detailed breakdown into the process of
+18:21 
+
+18:21 selling on Amazon, I'll leave a link
+18:22 
+
+18:22 down below for a free course that also
+18:24 
+
+18:24 comes with tons of free documents like a
+18:26 
+
+18:26 list of where I buy all my inventory
+18:27 
+
+18:27 from. And if you watched this far and
+18:29 
+
+18:29 you want to see that next step of the
+18:30 
+
+18:30 process where we actually ship these
+18:31 
+
+18:31 products off to Amazon in detail, go
+18:33 
+
+18:33 ahead and click this video right here.

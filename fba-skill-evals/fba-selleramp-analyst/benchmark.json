@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "fba-selleramp-analyst",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-06-30T02:57:53Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 92.52,
+        "tokens": 47284,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Gives SAS settings checklist (inbound + thresholds)",
+          "passed": true,
+          "evidence": "\u2026Why | |---|---|---| | **Inbound shipping** | **~$0.60/lb\u2026"
+        },
+        {
+          "text": "Catches the sales-tax double-count trap (bake into cost, not %)",
+          "passed": true,
+          "evidence": "\u2026a real cost. | | **Sales tax** | **Leave the % field\u2026"
+        },
+        {
+          "text": "Cites 30% ROI / $3 profit gates",
+          "passed": true,
+          "evidence": "\u2026ime. | | **Min ROI** | **30%** (\u224825% acceptable only\u2026"
+        },
+        {
+          "text": "Notes true landed cost must include shipping",
+          "passed": true,
+          "evidence": "\u2026---|---|---| | **Inbound shipping** | **~$0.60/lb** (range\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 63.702,
+        "tokens": 40181,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags ROI 28% as below the 30% gate",
+          "passed": true,
+          "evidence": "\u2026s.  - Profit $4.20 / ROI 28% / Margin ~16% (4.20 \u00f7 2\u2026"
+        },
+        {
+          "text": "Notes cost $15 exceeds Max Cost $14",
+          "passed": true,
+          "evidence": "\u2026%.  - Breakeven $19.50 \u00b7 Max Cost $14 (land below this \u2014 a\u2026"
+        },
+        {
+          "text": "Verdict borderline / reject (not a clean buy)",
+          "passed": true,
+          "evidence": "\u2026- Profit $4.20 \u2265 $3.00 \u2192 PASS.   - ROI 28% < 30% \u2192 FAI\u2026"
+        },
+        {
+          "text": "Hands off (keepa/deal-analyst) \u2014 SAS isn't a buy order",
+          "passed": true,
+          "evidence": "\u2026ore trusting this panel, verify in SAS: inbound shipping\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 90.348,
+        "tokens": 42188,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Explains Max Cost as the reverse calculator / most you can pay",
+          "passed": true,
+          "evidence": "\u2026# SellerAmp Read \u2014 Max Cost reverse calculation  **Y\u2026"
+        },
+        {
+          "text": "Needs FBA fee / size-weight to compute",
+          "passed": true,
+          "evidence": "\u2026ch depends on the item's size/weight tier \u2014 and you ha\u2026"
+        },
+        {
+          "text": "Ties it to the 30% ROI target",
+          "passed": true,
+          "evidence": "\u2026can pay and still hit my ROI?  In SellerAmp this is e\u2026"
+        },
+        {
+          "text": "Mentions stacking / landing below the number",
+          "passed": true,
+          "evidence": "\u2026till clear the bar. Land below Max Cost (after stacking\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 88.359,
+        "tokens": 42287,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Gives SAS settings checklist (inbound + thresholds)",
+          "passed": true,
+          "evidence": "\u2026ny cost field (buy cost, inbound shipping, prep) is off,\u2026"
+        },
+        {
+          "text": "Catches the sales-tax double-count trap (bake into cost, not %)",
+          "passed": true,
+          "evidence": "\u2026or you** \u2014 you do it. So bake in a prep cost of about\u2026"
+        },
+        {
+          "text": "Cites 30% ROI / $3 profit gates",
+          "passed": true,
+          "evidence": "\u2026ROI threshold \u2192 set to **30%** Set the ROI target/thr\u2026"
+        },
+        {
+          "text": "Notes true landed cost must include shipping",
+          "passed": true,
+          "evidence": "\u2026field (buy cost, inbound shipping, prep) is off, the ROI i\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 84.405,
+        "tokens": 37387,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Flags ROI 28% as below the 30% gate",
+          "passed": true,
+          "evidence": "\u2026it | $4.20 | | SAS ROI | 28% | | SAS Breakeven | $19\u2026"
+        },
+        {
+          "text": "Notes cost $15 exceeds Max Cost $14",
+          "passed": true,
+          "evidence": "\u2026eakeven | $19.50 | | SAS Max Cost | $14.00 |  ## Short ans\u2026"
+        },
+        {
+          "text": "Verdict borderline / reject (not a clean buy)",
+          "passed": true,
+          "evidence": "\u2026mp Deal Check \u2014 Verdict: PASS (no buy) at $15 cost  ##\u2026"
+        },
+        {
+          "text": "Hands off (keepa/deal-analyst) \u2014 SAS isn't a buy order",
+          "passed": true,
+          "evidence": "\u2026on holds the Buy Box - **Keepa history** \u2014 is $26 the r\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.75,
+        "passed": 3,
+        "failed": 1,
+        "total": 4,
+        "time_seconds": 86.703,
+        "tokens": 62203,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Explains Max Cost as the reverse calculator / most you can pay",
+          "passed": true,
+          "evidence": "\u2026# Max Cost for a $32 Buy Box at 30%\u2026"
+        },
+        {
+          "text": "Needs FBA fee / size-weight to compute",
+          "passed": true,
+          "evidence": "\u2026g on the item's shipping weight. For a typical small-and\u2026"
+        },
+        {
+          "text": "Ties it to the 30% ROI target",
+          "passed": true,
+          "evidence": "\u2026ost for a $32 Buy Box at 30% ROI  **Short answer:** Y\u2026"
+        },
+        {
+          "text": "Mentions stacking / landing below the number",
+          "passed": false,
+          "evidence": "\u2026is **30%**. The numbers below are calculated to hit ex\u2026"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 82.19,
+        "stddev": 16.0479,
+        "min": 63.702,
+        "max": 92.52
+      },
+      "tokens": {
+        "mean": 43217.6667,
+        "stddev": 3661.7362,
+        "min": 40181,
+        "max": 47284
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.9167,
+        "stddev": 0.1443,
+        "min": 0.75,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 86.489,
+        "stddev": 1.9857,
+        "min": 84.405,
+        "max": 88.359
+      },
+      "tokens": {
+        "mean": 47292.3333,
+        "stddev": 13143.3818,
+        "min": 37387,
+        "max": 62203
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.08",
+      "time_seconds": "-4.3",
+      "tokens": "-4075"
+    }
+  },
+  "notes": []
+}

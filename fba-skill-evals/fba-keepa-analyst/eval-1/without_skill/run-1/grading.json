@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Reads demand as strong (~300/mo, BSR drops)",
+      "passed": true,
+      "evidence": "\u2026oys with lots of drops = strong, real demand.** In Toys\u2026"
+    },
+    {
+      "text": "Notes stable price + flat offers as positive",
+      "passed": true,
+      "evidence": "\u2026share.  **3. Offer count steady at 5 for months = stable\u2026"
+    },
+    {
+      "text": "Notes no Amazon on listing as positive",
+      "passed": true,
+      "evidence": "\u2026lone FBM offer.  **5. No Amazon on the listing = best co\u2026"
+    },
+    {
+      "text": "Verdict supports a buy on history (with verify/handoff)",
+      "passed": true,
+      "evidence": "\u2026of new sellers; five is healthy to split sales among. Ch\u2026"
+    }
+  ]
+}

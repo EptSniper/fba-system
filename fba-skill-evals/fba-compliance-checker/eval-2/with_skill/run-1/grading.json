@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 0.75,
+    "passed": 3,
+    "failed": 1,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Friendly/ungated treated as a HINT, not a guarantee",
+      "passed": true,
+      "evidence": "\u2026front  Eligibility is **account-specific**. It is ultimately deci\u2026"
+    },
+    {
+      "text": "Gives decisive Seller Central / Boxem / approval check",
+      "passed": true,
+      "evidence": "\u2026ultimately decided in **Seller Central / SP-API**, not by me or\u2026"
+    },
+    {
+      "text": "Leans ALLOWED but with verification (not blocked)",
+      "passed": true,
+      "evidence": "\u2026d Crayola is easy to get ungated. Am I allowed to sell\u2026"
+    },
+    {
+      "text": "Stays on eligibility (no ROI/profit verdict)",
+      "passed": false,
+      "evidence": "\u2026e deal makes money. That profit question (Keepa demand,\u2026"
+    }
+  ]
+}

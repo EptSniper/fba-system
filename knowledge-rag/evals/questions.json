@@ -1,0 +1,32 @@
+[
+  {
+    "id": "oa_candidate",
+    "question": "What makes an OA product safe and profitable?",
+    "required_terms": ["200,000", "50", "30% roi", "$3 profit", "account eligibility"],
+    "citation_contains": ["ai-brain.json", "product-research-template.md"]
+  },
+  {
+    "id": "keepa_risk",
+    "question": "How should I read Keepa before buying?",
+    "required_terms": ["90-day", "offer count", "buy box", "historical price"],
+    "citation_contains": ["sourcing-playbook.md", "product-research-template.md"]
+  },
+  {
+    "id": "eligibility",
+    "question": "How do I know if I am allowed to sell a gated ASIN?",
+    "required_terms": ["seller central", "account-specific", "exact asin", "invoice"],
+    "citation_contains": ["ungating-playbook.md"]
+  },
+  {
+    "id": "test_quantity",
+    "question": "How many units should I buy for a new product?",
+    "required_terms": ["5–10", "30–50%", "historical price"],
+    "citation_contains": ["sourcing-playbook.md", "product-research-template.md"]
+  },
+  {
+    "id": "learning_loop",
+    "question": "How should the scout become smarter and more accurate?",
+    "required_terms": ["realized outcome", "target leakage", "challenger", "calibration"],
+    "citation_contains": ["ai-architecture.md", "ARCHITECTURE.md"]
+  }
+]

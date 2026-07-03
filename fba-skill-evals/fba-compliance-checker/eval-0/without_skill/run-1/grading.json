@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Flags Nike as gated / needs brand approval",
+      "passed": true,
+      "evidence": "\u2026never survives Amazon's gating, IP, and authenticity\u2026"
+    },
+    {
+      "text": "Flags IP / authenticity / invoice risk",
+      "passed": true,
+      "evidence": "\u2026urvives Amazon's gating, IP, and authenticity rules.\u2026"
+    },
+    {
+      "text": "Recommends list-before-buy / Seller Central check",
+      "passed": true,
+      "evidence": "\u2026hem.** Confirm gating in Seller Central; if not ungated (you alm\u2026"
+    },
+    {
+      "text": "Eligibility verdict is BLOCKED / don't buy (not a green light)",
+      "passed": true,
+      "evidence": "\u2026from a retail outlet are BLOCKED \u2014 by brand gating AND th\u2026"
+    }
+  ]
+}

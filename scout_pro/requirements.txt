@@ -1,0 +1,16 @@
+# --- core (needed to run discovery on SQLite + scikit-learn) ---
+keepa>=1.3              # sanctioned Amazon public-marketplace data (PAID key required)
+requests>=2.31          # Discord webhook
+python-dotenv>=1.0      # .env loading
+SQLAlchemy>=2.0         # data layer (Postgres or SQLite)
+numpy>=1.24
+pandas>=2.0             # feature engineering
+scikit-learn>=1.3       # calibrated classifier, metrics, fallback models
+joblib>=1.3             # model persistence
+
+# --- recommended (production engine + parquet lake) ---
+lightgbm>=4.0           # primary classifier/regressor/LambdaMART ranker (sklearn is the fallback)
+pyarrow>=14.0           # Parquet raw-history lake
+
+# --- optional (Postgres warehouse instead of SQLite) ---
+# psycopg[binary]>=3.1  # then set DATABASE_URL=postgresql+psycopg://user:pass@host:5432/fba

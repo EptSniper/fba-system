@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "fba-sourcing-scout", "runs": [{"id": "eval-0-with_skill-run-1", "prompt": "brand new, $500, no idea what to sell \u2014 where to begin sourcing today?", "eval_id": 0, "outputs": [{"name": "analysis.md", "type": "text", "content": "# FBA Sourcing Plan \u2014 Brand-New Beginner, $500 Start\n\nYou're at the hardest, most valuable stage: finding your *first* leads. This won't be one slick deal handed to you \u2014 it's a few hours of structured digging. My job is to make those hours count by pointing you at the highest-probability method and giving you an exact play to run today. A lead here is a *hypothesis to verify*, never a buy order \u2014 every promising one ends at fba-deal-analyst + SellerAmp, and no money moves without your own approval.\n\n---\n\n## Reality check on your situation\n\n- **$500 budget** \u2192 spend ~$300\u2013$400 on inventory, keep ~$100\u2013$150 as buffer (returns, a prep fee, a shipping label). Don't deploy it all on day one.\n- **No brand in mind, total beginner** \u2192 your method is **reverse sourcing (storefront stalking)**. You don't need to guess a brand; you copy sellers who've already done the vetting for you.\n- **Goal today** is not to buy. It's to walk away with **3\u20138 candidate leads** in the table below, then run each through the gates. Expect most to die at the gate. That's normal and it's the point.\n\n---\n\n```\nSOURCING PLAN \u2014 2026-06-29\nBest-deal angle today: No single live sale to chase yet (you have no target brand).\n  So today is RECON, not buying \u2014 build the lead bank first via reverse sourcing,\n  THEN match the survivors to whatever sale/cashback/coupon is live when you're ready\n  to pull the trigger. Deal-first still rules the BUY; recon just front-loads the targets.\nMethod: Reverse sourcing / storefront stalking \u2014 fits because you have no brand and\n  no retailer you know well. You harvest ASINs already vetted by small OA sellers\n  instead of guessing from scratch.\nTargets: Small 3P sellers (1\u2013100 reviews) on friendly-brand listings; their\n  storefronts; each ASIN traced back to a retail source.\n```\n\n---\n\n## The exact play to run today (reverse sourcing, step by step)\n\nYou'll need the free tools first: **Keepa** browser extension, **SellerAmp (SAS)** trial, and a cashback-comparison habit (TopCashback / Rakuten / BeFrugal). Then:\n\n1. **Start on a friendly-brand listing.** Open an Amazon listing for a beginner-friendly, commonly-resellable brand \u2014 pick from this hint list (these are *discovery* signals, not permission to sell): **Jellycat, Crocs, Yeti, Stanley, Crayola, Elmer's, Monster Jam, LEGO, Hot Wheels, Pokemon, Owala, Carter's, Under Armour, New Balance, Hoka, Mrs. Meyer's, Native, Tonies.** Avoid IP-aggressive brands for now: Nike, Adidas, Jordan, Apple, Sony, Disney.\n\n2. **Open the Offers tab in SellerAmp.** You'll see every seller on that listing.\n\n3. **Click sellers with 1\u2013100 reviews.** These are regular people running OA \u2014 copyable. (100\u2013200+ reviews = advanced sellers, harder to mimic; skip for now.)\n\n4. **Open their storefront.** That storefront is a list of ASINs they've already vetted and are profiting on. Tell it's an OA seller (not a brand/private-label): they carry *name brands* across many categories, not one own-brand line. Rough income read: #ASINs \u00d7 ~$50/mo.\n\n5. **Harvest 5\u201310 ASINs** that look like the friendly brands above and sit in the **$8\u2013$60** sell band. For each, hit the SAS Google button to trace the retail source (brand site or major retailer \u2014 **never eBay/AliExpress**, counterfeit risk).\n\n6. **Go down the rabbit hole.** Each storefront reveals new brands; each brand listing reveals new small sellers. Save every winning seller ID to a lead bank so next session starts warm, not cold.\n\n---\n\n## Flag the instant-rejects EARLY (so you don't waste the gate run)\n\nBefore a lead earns a row below, eyeball the Keepa chart and kill it on sight if you see any of these:\n\n- **Amazon is the seller / holds the Buy Box** (now or \u226520% historically) \u2192 hard reject.\n- **Rising offers** \u2014 new-offer count climbing well above its 90-day average \u2192 seller pile-in, price about to tank.\n- **Price spike** \u2014 current price > 1.5\u00d7 its 90-day average \u2192 it'll revert during FBA's ~2-week delay.\n- **IP cliff** \u2014 offer count crashed and never recovered (e.g. 56 \u2192 1) \u2192 brand filed IP complaints. Worse than any price drop.\n- **Hard-gated brand** \u2014 list the ASIN in Seller Central *before* buying; if you can't get ungated, it's dead.\n- **Too easy to find** (front-page clearance everyone sees) \u2192 margin already competed away.\n\n---\n\n## CANDIDATE LEADS (hand to fba-deal-analyst)\n\n*This table is your output for the session. I'm seeding it with the structure and worked-through example rows showing what a real harvested lead looks like \u2014 you fill it with the actual ASINs you pull from storefronts today. Each row is a hypothesis, not a buy.*\n\n| # | Brand / product | ASIN (if known) | retail source | rough sell\u2192cost | why flagged | next step |\n|---|---|---|---|---|---|---|\n| 1 | Crocs Classic Clog (mainstream color) | _from storefront_ | Crocs.com / major retailer on sale | ~$45 sell \u2192 target landed \u2264 ~$26 | Friendly brand, in $8\u2013$60 band, classic colors move; from a 1\u2013100-review seller's storefront | Verify in SellerAmp; check Keepa for Amazon BB share + offer trend; trace a live sale + stack cashback |\n| 2 | Crayola art/activity set | _from storefront_ | Brand site / Target (stack Target Circle GC) | ~$20 sell \u2192 target landed \u2264 ~$12 | Friendly, steady seasonal demand, low IP risk | Confirm BSR \u2264 200k + \u226550 sales/mo on Keepa; SAS Max Cost; check gating |\n| 3 | Yeti drinkware (standard color) | _from storefront_ | Yeti.com / major retailer clearance | ~$35 sell \u2192 target landed \u2264 ~$20 | Friendly brand; mainstream color only (skip odd colors) | Check offer count 3\u201325 + no IP cliff; verify ungated; run gates |\n| 4 | Mrs. Meyer's / Native (consumable) | _from storefront_ | Brand site, Subscribe & Save ~5\u201315% | ~$12 sell \u2192 target landed \u2264 ~$7 | Consumable repeat-buy; friendly; \u226525% ROI OK only if non-returnable grocery | Confirm it's truly non-returnable grocery before relaxing ROI; SAS check |\n| 5 | _harvested ASIN_ | _____ | _____ | _____ | _from seller storefront \u2014 note why_ | _____ |\n| 6 | _harvested ASIN_ | _____ | _____ | _____ | _____ | _____ |\n\n---\n\n## The gates every survivor must clear (at fba-deal-analyst, not here)\n\nA lead becomes a *maybe-buy* only if it clears **all** of these \u2014 confirmed in SellerAmp + Amazon's Revenue Calculator:\n\n- BSR \u2264 200,000 in category\n- Estimated monthly sales \u2265 50 (Keepa yellow \"sold\" line)\n- Offer count between 3 and 25\n- **ROI \u2265 30%** after all fees + returns/prep allowance (\u226525% OK *only* for non-returnable grocery)\n- Profit \u2265 $3.00/unit\n- Sell price $8\u2013$60\n- Amazon does **not** hold the Buy Box\n\nAnd remember landed cost **includes shipping** \u2014 a $10 item with $9.95 shipping is a **$20** cost.\n\n---\n\n## Manufacturing margin (the moat, for when you BUY)\n\nYou rarely find a deal already profitable \u2014 you *make* it profitable by stacking, so a competitor without the stack can't match you:\n\n- **Coupon / signup codes** (Coupert)\n- **Cashback** \u2014 compare via RevROI across TopCashback / Rakuten / BeFrugal (treat as cushion, **don't** bake it into COGS)\n- **Discounted gift cards** (cardbear.com, Target Circle)\n- **Subscribe & Save** (~5\u201315% on consumables)\n- **Military / student / nurse / veteran** discounts; **tax-exempt reseller cert**; free-shipping thresholds\n\nBuy from brand sites / major retailers only.\n\n---\n\n## Sizing your first buys ($500 budget)\n\n- **5\u201310 units per product** until you see how it actually moves \u2014 do not over-commit on a first order.\n- Formula: `variation monthly sales \u00f7 (price-competitive sellers + you)`, then cut **30\u201350%** for safety.\n- Worst-case test: only buy if, at the **lowest historical Buy-Box price**, you'd break even or lose \u2264 $1\u20132/unit.\n- Across $300\u2013$400 deployable, that's roughly **2\u20134 products** for your first run. Keep the rest as buffer.\n\n## Anti-flag tactics when you do order\n\n- Small first orders; pay with PayPal / Apple Pay / Google Pay, or message customer service to lift reseller flags.\n- **List the ASIN in Seller Central BEFORE you buy** \u2014 if it's hard-gated and you can't ungate, don't buy it.\n\n---\n\n## What to do next (in order)\n\n1. **Today:** run the reverse-sourcing play above and fill the lead table with 3\u20138 real harvested ASINs. Save winning seller IDs to your lead bank.\n2. **Per lead:** hand it to **fba-deal-analyst** for the full gate run, and confirm the numbers in **SellerAmp**.\n3. **Survivors only:** match each to a live sale + stack (cashback/coupon/GC), list the ASIN in Seller Central to check gating, then bring the buy decision to yourself for approval.\n4. Want me to **log any of these leads** to your tracker? I can hand them to fba-lead-capture.\n\n**Boundaries:** I surface and prioritize leads \u2014 I do **not** declare a BUY and I never tell you to purchase. Every lead is a hypothesis to verify. The buy call requires the full gate run in fba-deal-analyst, your eligibility check in Seller Central, and your own human approval before any money moves.\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Recommends reverse sourcing / storefront stalking for a beginner", "passed": true, "evidence": "\u2026ner** \u2192 your method is **reverse sourcing (storefront sta\u2026"}, {"text": "Deal-first (source where the sale/cashback is)", "passed": true, "evidence": "\u2026le today: No single live sale to chase yet (you have n\u2026"}, {"text": "Produces a concrete plan / steps (not vague)", "passed": true, "evidence": "\u2026# FBA Sourcing Plan \u2014 Brand-New Beginner, $5\u2026"}, {"text": "Hands to deal-analyst / verify, no auto-buy", "passed": true, "evidence": "\u2026here is a *hypothesis to verify*, never a buy order \u2014 ev\u2026"}]}}, {"id": "eval-0-without_skill-run-1", "prompt": "brand new, $500, no idea what to sell \u2014 where to begin sourcing today?", "eval_id": 0, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Brand New, $500, No Idea What to Sell \u2014 Where to Start Sourcing Today\n\nYou're in a great spot to learn the right way: a small budget forces discipline. The single biggest mistake beginners make is \"product hunting\" \u2014 staring at lists trying to guess a winner. Don't do that. In online arbitrage (OA) you don't invent a product; you find an *existing* Amazon listing that's already selling and buy the same item cheaper from a retail store. The deal finds you. Here's exactly how to begin today.\n\n## First: protect the $500\n\nThat $500 is your tuition AND your inventory. Split it so one bad buy doesn't end your run:\n\n- **Tools (~$30\u201360/mo, mostly free trials to start):** Keepa (~$19/mo) is non-negotiable \u2014 it's the price/rank history that tells you if a product actually sells. SellerAmp (SAS) or a free FBA calculator runs your profit math. Start both on trials.\n- **First inventory (~$300\u2013400):** Spread across **3\u20135 different products**, ~$50\u2013100 each. Do NOT put $400 into one product on your first buy. You want shots on goal and lessons, not one big bet.\n- **Buffer (~$50):** prep supplies, a shipment to Amazon, the odd return.\n\nSell-price target for a beginner: **$15\u2013$40 items**. Cheap enough that $50\u2013100 buys a real test quantity, expensive enough that fees don't eat all the profit.\n\n## The numbers a deal must hit (your gates)\n\nBefore you fall in love with anything, it has to clear all of these. If it misses one, pass \u2014 there's always another deal.\n\n| Gate | Beginner target | Why |\n|---|---|---|\n| **ROI** | >= 30% net (after ALL Amazon fees) | Your margin of safety on a small budget |\n| **Profit per unit** | >= $3\u20135 minimum | Below this, one return wipes the batch |\n| **BSR (sales rank)** | Strong & stable in its category (e.g. top ~1\u20132%) | Proves it actually sells, repeatedly |\n| **Sales velocity** | Sells enough/month to clear your units in ~30\u201360 days | Don't tie up cash in slow movers |\n| **Sellers on listing** | Roughly 3\u201315 FBA sellers | Too few = risky/IP; too many = price war |\n| **Buy Box price stability** | Flat-ish on Keepa, no nosedive | A falling price line = your profit evaporates |\n\nRun the math on the *net* number SellerAmp/the calculator gives you, never the sticker gap.\n\n## Sourcing TODAY \u2014 the deal-first method (do this in order)\n\n**Step 1 \u2014 Open the sales, not the product lists.**\nGo straight to the clearance / sale / coupon pages of big retailers that ship cheap and have lots of Amazon-matched inventory:\n- Walmart, Target, Kohl's, Macy's clearance\n- Home Depot / Lowe's, Walgreens / CVS, Big Lots\n- Manufacturer outlet and \"last chance\" pages\nStart at the **biggest current discount** (50%+ off, stacked coupons, cashback). Deep discounts are where margin lives.\n\n**Step 2 \u2014 Scan a sale page with a calculator extension.**\nInstall the Keepa and SellerAmp browser extensions. As you scroll a clearance page, the extension shows you the matching Amazon listing's price, rank, and rough profit inline \u2014 so you can skim past the junk fast and stop only on items that *might* clear your gates.\n\n**Step 3 \u2014 Storefront stalking (reverse sourcing).**\nFind a successful seller in a category and look at the products *they* sell, then trace those back to a cheaper retail source. You're reverse-engineering proven winners instead of guessing. Pair this with **Keepa Product Finder** later to filter the whole catalog by BSR, price, and seller count.\n\n**Step 4 \u2014 Verify every candidate before buying.** For each item that looks good:\n1. Pull the **Keepa chart** \u2014 is the rank consistently good and the price stable? (Not a one-time spike.)\n2. Run **net profit + ROI** in SellerAmp/the calculator with the real Amazon fees.\n3. **Check eligibility** \u2014 can you even sell it? In Amazon Seller Central, search the product; if you're \"gated\" (need approval) or it's a restricted brand/hazmat/meltable item, skip it for now. As a new account you'll be ungated on fewer brands \u2014 that's normal.\n4. **IP risk** \u2014 avoid major brands known to chase resellers, and anything that looks like it could draw a complaint. When unsure, pass.\n\nOnly when an item passes all four do you buy a small test quantity.\n\n## Today's concrete checklist\n\n1. Start Keepa + SellerAmp free trials; install both browser extensions.\n2. Confirm your Amazon Seller account and the FBA workflow basics.\n3. Open 3\u20134 retailer clearance pages and scan with the extension.\n4. Collect ~10\u201315 *candidates* that look like they clear the gates.\n5. Verify each on Keepa + profit + eligibility; keep the ones that survive.\n6. Buy small test quantities of your **3\u20135 best**, ~$50\u2013100 each.\n7. Write down every buy (cost, expected ROI, why) so your real outcomes teach you what to source next.\n\n## What NOT to do as a beginner\n\n- Don't chase trendy/seasonal \"hot products\" \u2014 you can't read their demand history yet.\n- Don't buy restricted, hazmat, meltable, or grocery/topical items until you understand the rules.\n- Don't go deep on a single product. Diversify your first buys.\n- Don't trust the price gap alone \u2014 only the **net** number after fees counts.\n- Don't skip Keepa. A deal you can't verify on Keepa is a guess, not a deal.\n\n## The mindset\n\nSourcing isn't finding \"the product.\" It's running every candidate through the same gates until a few survive, buying those small, and letting your real sell-through tell you where to dig next time. Expect your first batch to be about *learning the process*, not getting rich. Do the loop a few times and good deals start to recognize themselves.\n\n*Note: I am an assistant \u2014 I help you analyze and decide, but every purchase is your call. Verify eligibility and the live numbers yourself before spending, and never let a tool auto-buy on your behalf.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Recommends reverse sourcing / storefront stalking for a beginner", "passed": true, "evidence": "\u2026your gates.  **Step 3 \u2014 Storefront stalking (reverse sourci\u2026"}, {"text": "Deal-first (source where the sale/cashback is)", "passed": true, "evidence": "\u2026pes the batch | | **BSR (sales rank)** | Strong & stab\u2026"}, {"text": "Produces a concrete plan / steps (not vague)", "passed": true, "evidence": "\u2026od (do this in order)  **Step 1 \u2014 Open the sales, not\u2026"}, {"text": "Hands to deal-analyst / verify, no auto-buy", "passed": true, "evidence": "\u2026product actually sells. SellerAmp (SAS) or a free FBA calc\u2026"}]}}, {"id": "eval-1-with_skill-run-1", "prompt": "want to source Crayola \u2014 find winners in that brand efficiently?", "eval_id": 1, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Crayola Sourcing Plan\n\nYou want to source Crayola efficiently. Good news: Crayola is on the **friendly brand list** (often resellable / commonly auto-ungated) \u2014 so it's a sensible brand to go deep on. That's a hint to look closer, not permission to sell: you still confirm account-specific eligibility in Seller Central before any money moves.\n\nBecause you already know the brand, the highest-leverage method here is **Keepa Product Finder** (Method B), not random storefront stalking. But we still lead with the deal-first principle: don't grind a Crayola source that has no live sale \u2014 find where the best Crayola sale / cashback / coupon is *today*, then stack to manufacture margin.\n\n---\n\n## SOURCING PLAN \u2014 2026-06-29\n\n**Best-deal angle today:** Crayola via major retailers running art/craft promos \u2014 check, in order, **Target** (Target Circle offers + discounted Target gift cards via cardbear.com), **Walmart clearance**, **Michaels / JOANN-style craft clearance**, and **Crayola.com's own sale/outlet section**. Whichever has a real live sale/BOGO/coupon on Crayola right now is where you start. Layer the stack: coupon code (Coupert) + cashback (compare TopCashback / Rakuten / BeFrugal via RevROI) + discounted gift card + S&S where eligible. Treat cashback as cushion, not COGS.\n\n**Method:** Keepa Product Finder (you know the brand) \u2014 fast way to surface the ~1% of Crayola ASINs that actually sell and have room. Cross-check survivors against whichever retailer has the live deal. Fall back to reverse sourcing only if you want to widen the net.\n\n**Targets \u2014 Keepa Product Finder filter set (keepa.com \u2192 Data \u2192 Product Finder):**\n- Brand = **Crayola**\n- Sales Rank = **0 \u2192 150,000** (top ~1%; cap at 200k max)\n- Amazon availability = **out of stock** (Amazon not on the listing)\n- New offer count = **min 4\u20135** (real competition, not single-seller/wholesale, not a brawl)\n- Optional: sort by **90-day price-drop %** to surface spike-revert windows\n- Then work the survivors one at a time.\n\n**Why this fits:** Crayola is a wide catalog (crayons, markers, kits, paints, Color Wonder, Scribble Scrubbie, seasonal). Most SKUs are low-margin commodities; the Finder strips those out and leaves the few with demand + offer room. Pairing it with a live retail sale is what turns a thin Crayola item into a real margin via the stack.\n\n---\n\n## Flag the obvious instant-rejects EARLY (Crayola-specific)\n\nSo you don't waste analyst time, kill these on sight before deep analysis:\n- **Amazon holds the Buy Box** (now or \u226520% historically) \u2192 hard reject. Amazon stocks core Crayola directly a lot \u2014 this is the #1 Crayola killer.\n- **Price spike:** current price > 1.5\u00d7 90-day avg \u2192 reverts; brutal with FBA's ~2-week delay (common on seasonal Crayola).\n- **Rising offers:** new-offer count > 1.4\u00d7 90-day avg \u2192 seller pile-in, price about to tank (very common on basic crayon/marker packs everyone can find).\n- **IP cliff:** offers crash and never recover (e.g. 56 \u2192 1) \u2192 brand filed complaints.\n- **Too-easy-to-find / commodity:** the 24-count crayon box at every store with 40 sellers \u2192 skip; no moat.\n- **Seasonal traps:** back-to-school and holiday Crayola kits \u2014 fine to ride the wave, but don't get stuck holding off-season inventory.\n- **Sell price outside $8\u2013$60** \u2192 out of band.\n\n---\n\n## CANDIDATE LEADS (hand to fba-deal-analyst)\n\nThese are **hypotheses to verify, not buys.** Fill ASIN/source/numbers as you run the Finder against the live deal \u2014 the rows below are the *categories* worth flagging within Crayola based on where margin tends to hide.\n\n| # | Brand / product | ASIN (if known) | retail source | rough sell\u2192cost | why flagged | next step |\n|---|---|---|---|---|---|---|\n| 1 | Crayola gift/activity sets & kits (Inspiration Art Case, Imagination Art Set, mega bundles) | TBD from Finder | Target / Walmart / Crayola.com sale | ~$20\u201340 sell, target \u2264 ~$14\u201320 landed for 30% ROI | Bundles carry higher price + thinner offer counts than loose crayons; sit in the $8\u201360 band | Verify in SellerAmp; confirm Amazon not on Buy Box |\n| 2 | Crayola Scribble Scrubbie sets (pets, safari, playsets) | TBD | Target / Walmart clearance | ~$10\u201325 sell | Toy-adjacent, branded demand, frequently on craft clearance | Run gates; check 90-day offer trend |\n| 3 | Crayola Color Wonder mess-free sets (refills + markers) | TBD | Target / Crayola.com | ~$8\u201320 sell | Recurring consumable demand (parents rebuy); refills less commoditized | Confirm BSR \u2264 200k, sales \u2265 50/mo |\n| 4 | Crayola Light-Up / tech-y kits (Ultimate Light Board, Glow boards) | TBD | Walmart / Target sale | ~$20\u201345 sell | Higher ASP, gift-driven, fewer me-too sellers | Check for price spike vs 90-day avg |\n| 5 | Seasonal Crayola (back-to-school packs, holiday/Easter kits) | TBD | Whoever has the live BOGO/clearance | varies | Only when there's a real sale to stack; ride the demand wave, exit before off-season | Time it; don't hold off-season |\n\n> The basic 24/64-count crayon and 10-count marker boxes are intentionally **left off** \u2014 too easy to find, Amazon-on-listing, 30+ sellers, no moat. Skip them.\n\n---\n\n## Sizing the buy (when one clears)\n\n- Beginner: **5\u201310 units/product** until you see how it moves.\n- Formula: `variation monthly sales \u00f7 (price-competitive sellers + you)`, then **cut 30\u201350%**.\n- Worst case: only buy if, at the lowest historical Buy-Box price, you **break even or lose \u2264 $1\u20132/unit**.\n\n## Anti-flag when ordering\nSmall first orders; pay with PayPal / Apple / Google Pay; message customer service to lift reseller flags if needed. **List the ASIN in Seller Central BEFORE you buy** \u2014 if Crayola is hard-gated on your account, don't buy.\n\n---\n\n## The gates every survivor must clear (in fba-deal-analyst)\n- BSR \u2264 200,000 \u00b7 est. monthly sales \u2265 50 \u00b7 offer count 3\u201325 \u00b7 ROI \u2265 30% after all fees + returns/prep allowance \u00b7 profit \u2265 $3.00/unit \u00b7 sell price $8\u2013$60 \u00b7 **Amazon does NOT hold the Buy Box**.\n- Remember true landed cost **includes shipping** (a $10 item + $9.95 shipping = $20 cost).\n\n---\n\n## Next steps\n1. Check today's live Crayola deal across Target / Walmart / Michaels / Crayola.com; pick the one with a real sale to stack.\n2. Run the Keepa Product Finder filter set above; work the survivors.\n3. For each promising lead: **run it through fba-deal-analyst and confirm in SellerAmp** before any decision.\n4. I can **log winners via fba-lead-capture**, and save any productive seller IDs (if you do reverse sourcing) to your lead bank for next time.\n\nA lead is a hypothesis to verify, not a decision. No purchase happens without your approval.\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Recommends Keepa Product Finder for a known brand", "passed": true, "evidence": "\u2026e method here is **Keepa Product Finder** (Method B), not random\u2026"}, {"text": "Gives the filter set (rank, Amazon OOS, offer count)", "passed": true, "evidence": "\u2026- Brand = **Crayola** - Sales Rank = **0 \u2192 150,000** (top ~\u2026"}, {"text": "Mentions storefront stalking OR instant-reject flags too", "passed": true, "evidence": "\u2026* (Method B), not random storefront stalking. But we still l\u2026"}, {"text": "Hands to deal-analyst / verify", "passed": true, "evidence": "\u2026IDATE LEADS (hand to fba-deal-analyst)  These are **hypotheses\u2026"}]}}, {"id": "eval-1-without_skill-run-1", "prompt": "want to source Crayola \u2014 find winners in that brand efficiently?", "eval_id": 1, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Sourcing Crayola: how to find winners in that brand efficiently\n\nGood pick. Crayola is on your **friendly brand list** (durable, steady demand, no private-label lock), and it's the literal worked example in your Keepa Product Finder playbook (~8,600 listings). It's also low-cost art/craft supplies, so your job is to filter ~8,600 ASINs down to a short list of real OA winners fast, then verify each in SellerAmp.\n\nHere's the efficient funnel, in order.\n\n---\n\n## Step 0 \u2014 Pre-flight checks (2 minutes, save hours)\n\n- **Gating:** Crayola is usually ungateable, but confirm *before* you buy. While you stalk listings, paste ASINs into **Boxem's bulk ungate checker** to instantly see what's auto-ungated for your account. Rule: **list before you buy** \u2014 if an ASIN is hard-gated in Seller Central, skip it.\n- **IP risk:** Run **IP Alert** (Chrome extension) on listings. Crayola isn't a notorious IP-complaint brand, but check the **brand-on-listing** signal \u2014 if Crayola is itself a seller on the ASIN, they can kick resellers off. Pass those.\n- **FBA eligibility quirk for this brand:** Crayola = art supplies. Watch for **markers/paint/glue** that can be **hazmat or meltable** (some markers/paints ship as hazmat; crayons/Model Magic can be heat-sensitive). Verify FBA eligibility on anything liquid, aerosol, or wax-heavy before committing.\n\n---\n\n## Two efficient ways to find the winners\n\n### Method A \u2014 Keepa Product Finder (best for \"go deep on one brand\")\nThis is the scalable filter and it's exactly built for what you're asking. **keepa.com -> Data -> Product Finder**:\n\n1. **Brand = Crayola** (-> ~8,600 listings).\n2. **Sales Rank: 0 -> 150,000-200,000** (top ~1% of the category; this drops you to roughly 1,000).\n3. **Amazon: out of stock** (you don't want to compete with Amazon on the Buy Box; removes ~300).\n4. **New offer count: min 4-5** (ensures real OA competition exists, not a single-seller/wholesale-locked listing; -> ~430 left).\n5. *(Optional)* Sort by **90-day drop %** to surface items currently priced well above their 90-day average \u2014 spike windows where a flip is sitting right now.\n\nYou've just gone from 8,600 -> ~430 candidates with a few clicks. Now open the survivors and read each Keepa chart.\n\n### Method B \u2014 Reverse sourcing / \"storefront stalking\" (best for finding the *retail source* too)\nOther sellers already did the research on Crayola \u2014 copy them:\n\n1. Open any name-brand Crayola listing -> **SellerAmp Offers** tab -> see every seller.\n2. Click sellers with **1-100 reviews** (regular people at your level; 100-200+ = advanced, harder to copy).\n3. Their **storefront** shows every product they sell -> vetted OA leads, often more Crayola + adjacent craft brands (Elmer's is also on your friendly list).\n4. Use SellerAmp's **Google button** to find the retail source for the good ones.\n5. Save winning **seller IDs** to a lead bank and go down rabbit holes \u2014 each storefront reveals new brands, each brand new sellers.\n\nUse **both**: Method A finds the ASINs, Method B finds who's already winning them and where they buy.\n\n---\n\n## Read the Keepa chart on each survivor (the core skill)\n\nOn the 3-month + 1-year views, a **winner** looks like:\n\n- **Yellow \"sold\" line present** (e.g. \"50 sold\", \"100 sold\") -> sells >=50/mo. **No yellow line => under 50/mo => usually pass.** This is your fastest single filter.\n- **Buy Box price (pink): stable or trending up** -> resale price is trustworthy.\n- **Offer count: flat or declining** = sellers selling through (good). **Rising = avoid** \u2014 price is about to tank.\n- **Lots of oscillation** (Buy Box + offers wiggling) = selling fast; long flat \"blocky\" stretches = slow mover.\n- **Buy Box spread across many FBA sellers** = healthy. One seller or **Amazon holding ~80-100%** = skip.\n- **Sellers on the listing for months** = it's been reliably profitable.\n\n**Instant-reject red flags:** rising offer count - **price spike** (current price well above its 3-12 month history; it reverts, and FBA's ~2-week delay makes that brutal) - **seller-count spike** (race to the bottom) - **IP \"cliff\"** (seller count crashes e.g. 56->1 and never recovers) - Amazon owns ~100% Buy Box - no Buy Box / featured offer - hard-gated.\n\n---\n\n## Run the SellerAmp math on the keepers\n\nFor each surviving Crayola ASIN, confirm against your criteria:\n\n- **Eligible / ungated** (SellerAmp panel tells you).\n- **ROI >= 30%** after all fees and **>= $3 profit/unit.** Crayola items are cheap, so $3/unit and 30% ROI is the real hurdle \u2014 thin margins are common here, so use cost engineering below.\n- **Sell price $8-$60** (your price band).\n- **True landed cost** \u2014 include shipping. A $10 item with $9.95 shipping is a **$20** cost; enter the real landed number.\n- Use **Max Cost** as a reverse calculator: the most you can pay and still hit 30% ROI. That's your buy-trigger price at the retailer.\n\n### Make thin Crayola deals profitable (\"manufacturing margin\")\nCrayola rarely shows up already profitable \u2014 you *make* it profitable by stacking:\n- **Coupons** (Coupert), **cashback** (compare via RevROI: TopCashback / Rakuten / BeFrugal), **discounted gift cards** (cardbear.com, Target Circle), **Subscribe & Save** (~5-15%), and a **tax-exempt/reseller certificate** (removes sales tax at Home Depot / Lowe's / Walmart).\n- Don't bake cashback into COGS \u2014 use it as a cushion on top of an already-passing deal.\n- Buy from **brand sites / major retailers only** \u2014 never eBay or AliExpress (counterfeit risk).\n\n**Where to buy Crayola:** Target (also the best ungating source), Walmart, Michaels, Staples, Office Depot, Walgreens \u2014 but the best margins usually come from **lowkey lesser-known sites** with a sale on *today*, not Walmart/Target where everyone's watching. **Start where the deal is today** (a craft BOGO or high cashback right now beats grinding a store with no sale). Q4 / back-to-school are strong seasonal windows for art supplies \u2014 check the 1-year BSR for seasonality.\n\n---\n\n## Size the buy\n\n- **Beginner:** 5-10 units per product until you see how it actually moves.\n- **Worst-case rule:** only buy where, even at the lowest historical Buy-Box price, you'd break even or lose <= $1-2/unit.\n- Philosophy: **base hits, not home runs** \u2014 most products make $100-200/mo. Build a **wide Crayola catalog, then go deep on the few that sell through.** Fast nickel beats a slow dime.\n\n---\n\n## The efficient loop, summarized\n\n1. Keepa Product Finder: Brand=Crayola, BSR 0-200k, Amazon OOS, offers min 4-5 -> ~430 candidates.\n2. Bulk-ungate-check the list (Boxem) + IP Alert; drop gated / brand-as-seller ASINs.\n3. Keepa chart read: keep only ones with a **yellow sold line**, stable/rising price, flat/falling offers, rotating Buy Box.\n4. SellerAmp math: ROI >= 30%, profit >= $3, real landed cost, Max Cost as your buy trigger.\n5. Stack cashback/coupons/gift cards to clear the bar; source where the deal is **today**.\n6. Buy 5-10 units, log the lead, record the outcome.\n\n> Reminder: keep human approval on every purchase \u2014 I'll help you find and vet, but you pull the trigger. Log each finished analysis to your product-leads tracker so the outcomes can train the scout.\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Recommends Keepa Product Finder for a known brand", "passed": true, "evidence": "\u2026ed example in your Keepa Product Finder playbook (~8,600 listing\u2026"}, {"text": "Gives the filter set (rank, Amazon OOS, offer count)", "passed": true, "evidence": "\u2026> ~8,600 listings). 2. **Sales Rank: 0 -> 150,000-200,000**\u2026"}, {"text": "Mentions storefront stalking OR instant-reject flags too", "passed": true, "evidence": "\u2026B \u2014 Reverse sourcing / \"storefront stalking\" (best for find\u2026"}, {"text": "Hands to deal-analyst / verify", "passed": true, "evidence": "\u2026al OA winners fast, then verify each in SellerAmp.  Here\u2026"}]}}, {"id": "eval-2-with_skill-run-1", "prompt": "Target toy BOGO this week + Target Circle \u2014 worth a sourcing run?", "eval_id": 2, "outputs": [{"name": "analysis.md", "type": "text", "content": "# FBA Sourcing Scout \u2014 Target Toy BOGO Run\n\n**Short answer: yes, this is exactly the kind of event worth building a run around.** A toy BOGO (\"buy one get one\") is a deep, headline-level discount \u2014 effectively up to 50% off across a whole department \u2014 and you have a Target Circle account to stack on top of it. That stack is the moat. The work below turns \"there's a BOGO\" into a concrete, vetted lead list to hand to fba-deal-analyst.\n\nOne honesty note up front: I can't see Target's live site or your real ASIN data from here, so the candidate leads below are *named targets and a repeatable method*, not confirmed buys. Every line ends at \"verify in SellerAmp + run fba-deal-analyst.\" Treat each as a hypothesis, not a decision.\n\n---\n\n## SOURCING PLAN \u2014 2026-06-29\n\n**Best-deal angle today:** Target toy BOGO (up to ~50% off the toy department) **stacked** with:\n- **Target Circle** offers (category/brand toy coupons that surface in the app \u2014 load every relevant one before checkout)\n- **Discounted Target gift cards** (cardbear.com \u2014 buy Target GC below face to shave another few % off COGS)\n- **Cashback** \u2014 compare RevROI across TopCashback / Rakuten / BeFrugal for the best Target rate this week; treat cashback as **cushion, not COGS**\n- **RedCard 5%** if you hold one\n- **Free-shipping threshold** \u2014 BOGO orders usually clear it easily; otherwise consolidate to one order\n\nThe BOGO + Circle + discounted-GC combo is how you manufacture margin a competitor buying at shelf price can't match. That is the whole point of sourcing this event instead of grinding a no-sale store.\n\n**Method:** **Hybrid \u2014 Method C (manual clearance/sale browse) gated by Method A & B verification.**\n- *Why C fits:* you have a specific, live, deep sale at a retailer (Target) with a known department (toys). Manual browse of the BOGO toy pages is the fastest way to harvest the actual discounted SKUs. This is the one case where manual is correct for a beginner \u2014 there's a real sale driving it, not aimless grinding.\n- *Why bolt on A & B:* manual browsing alone hands the analyst junk. Use **reverse sourcing (A)** to confirm real OA sellers are already moving these toy ASINs, and **Keepa Product Finder (B)** per friendly toy brand to confirm demand and offer health before you ever add to cart.\n\n**Targets (toy brands to prioritize on the BOGO pages):**\nLead with brands from the project's **friendly** list (commonly resellable / often auto-ungated), because BOGO toy aisles are full of them:\n- **LEGO** \u2014 but expect it to be everyone's first grab; check offer pile-in hard (see red flags)\n- **Hot Wheels / Monster Jam** (Mattel) \u2014 cheap, high-velocity, but watch the $8 price floor and thin profit\n- **Crayola / Elmer's** \u2014 arts & crafts, steady demand\n- **Pokemon** (cards/toys) \u2014 strong demand, but variation traps and counterfeit-adjacent scrutiny; verify carefully\n- **Tonies** \u2014 friendly, good price band, audio toys move well\n- **Play-Doh, Nerf, Barbie** (Mattel/Hasbro) \u2014 mainstream, check seasonality\n\n**Brands to be cautious with on these pages:** anything **Disney-licensed** (avoid list \u2014 IP-aggressive), and any private-label/Target-exclusive toy line (no existing Amazon listing to ride, or Target is the only source = easy-to-find, thin moat).\n\n---\n\n## CANDIDATE LEADS (hand to fba-deal-analyst)\n\nThese are *named hypotheses to verify*, not confirmed deals. ASINs left blank where they must be pulled live.\n\n| # | Brand / product | ASIN (if known) | Retail source | Rough sell\u2192cost (post-stack) | Why flagged | Next step |\n|---|---|---|---|---|---|---|\n| 1 | LEGO set (mid-size, $20\u201340 shelf) | (pull live) | Target BOGO toys + Circle + disc. GC | Sell ~$45\u201360 / effective cost ~$15\u201322 after BOGO | Friendly brand, high demand, BOGO halves cost basis | SellerAmp the ASIN; check offer count not in a brawl; run fba-deal-analyst |\n| 2 | Tonies character figure | (pull live) | Target BOGO + Circle | Sell ~$15\u201320 / cost ~$7\u20139 effective | Friendly, good $8\u201360 band, audio toys steady | Verify BSR \u2264200k, monthly sales \u226550; fba-deal-analyst |\n| 3 | Crayola / Elmer's craft kit | (pull live) | Target BOGO + cashback | Sell ~$12\u201318 / cost ~$5\u20138 effective | Friendly, evergreen demand, low IP risk | Confirm not Amazon-Buy-Box; check profit \u2265 $3; fba-deal-analyst |\n| 4 | Hot Wheels / Monster Jam multipack | (pull live) | Target BOGO + Circle | Sell ~$10\u201315 / cost ~$4\u20136 effective | Friendly, high velocity | WATCH $8 floor + thin profit; only if profit \u2265$3 survives fees; fba-deal-analyst |\n| 5 | Play-Doh / Nerf mainstream set | (pull live) | Target BOGO + disc. GC | Sell ~$15\u201325 / cost ~$7\u201311 effective | Mainstream, mostly ungated | Check seasonality + offer pile-in; fba-deal-analyst |\n| 6 | Pokemon TCG / toy item | (pull live) | Target BOGO + Circle | Sell ~$15\u201330 / cost ~$7\u201313 effective | Strong demand | HIGH SCRUTINY: variation traps, gating, counterfeit checks; fba-deal-analyst |\n\n---\n\n## Instant-reject / red-flag screen \u2014 apply BEFORE adding anything to cart\n\nKill a lead on the spot if any of these are true (don't waste the analyst's time):\n\n- **LEGO/Pokemon offer brawl** \u2014 if new-offer count is climbing toward the cap or already in a pile-in (>1.4\u00d7 its 90-day average), the price is about to tank. BOGO toys are *the* thing every reseller grabs, so this is the #1 killer this week.\n- **Amazon holds the Buy Box** (now, or \u226520% historically) \u2192 hard reject. Toys are a category Amazon plays in directly.\n- **Price spike** \u2014 current Amazon price >1.5\u00d7 its 90-day average \u2192 will revert before your FBA units land (~2-week delay).\n- **IP cliff** \u2014 offer count crashed and never recovered (e.g. 56\u21921) \u2192 brand filed IP complaints. Worse than a price drop.\n- **Disney-licensed / avoid-brand** toy \u2192 skip unless you've already confirmed eligibility.\n- **Too easy to find** \u2014 Target-exclusive or private-label line with no real Amazon listing, or the deal is so obvious every seller has it \u2192 no moat.\n- **Out of the $8\u2013$60 sell band** \u2192 off-strategy for a beginner; cheap toys especially often can't clear profit \u2265 $3 after fees.\n- **No featured offer / \"see all buying options\" only** \u2192 far slower sales.\n\n---\n\n## Sizing the buy (when a lead survives the gates)\n\n- Beginner rule: **5\u201310 units per product** until you see how it actually moves. Do NOT load up on BOGO volume just because it's cheap.\n- Formula: `variation monthly sales \u00f7 (price-competitive sellers + you)`, then **cut 30\u201350%**.\n- Worst-case check: only buy if, at the **lowest historical Buy-Box price**, you break even or lose \u2264 $1\u20132/unit.\n- Anti-flag when ordering: keep the first order small, pay with PayPal/Apple/Google Pay, and if Target flags you for reselling, message customer service. **List the ASIN in Seller Central BEFORE you buy \u2014 if it's hard-gated, don't buy it.**\n\n---\n\n## Verdict & next steps\n\n**Worth building a run around \u2014 yes.** A toy BOGO + Target Circle is a textbook deal-first, stackable event, and toy aisles are dense with friendly/ungated brands. The catch specific to BOGO toys: *everyone* sources them, so offer pile-in and Amazon-in-the-Buy-Box are your two biggest reject reasons. Win by stacking deeper (Circle + discounted GC + best cashback) and by being disciplined on the red-flag screen rather than buying volume because it's cheap.\n\nDo this, in order:\n1. Load **every** relevant Target Circle toy/brand offer in the app, and buy discounted Target gift cards on cardbear before you shop.\n2. Compare cashback rates (RevROI) and pick the best Target portal for this week.\n3. Walk the BOGO toy pages, harvest SKUs for the friendly brands above, and pull each ASIN.\n4. For each ASIN: scan in **SellerAmp**, apply the red-flag screen above, then **run it through fba-deal-analyst** for the full gate run and a real BUY/NO-BUY.\n5. Confirm account-specific eligibility in **Seller Central before any purchase** \u2014 and keep human approval on every buy (I never authorize a purchase).\n6. I can **log the survivors via fba-lead-capture** and save the winning seller IDs / brands to your lead bank so the next BOGO run starts from a vetted list instead of zero.\n\n*Reminder: this scout surfaces and prioritizes leads. It does not declare a BUY and never tells you to purchase. Each line above is a hypothesis to verify in SellerAmp and confirm with fba-deal-analyst.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Endorses the deal-first angle around the live BOGO", "passed": true, "evidence": "\u2026rcing Scout \u2014 Target Toy BOGO Run  **Short answer: yes\u2026"}, {"text": "Stacking (BOGO + Circle + cashback) to manufacture margin", "passed": true, "evidence": "\u2026Target Circle account to stack on top of it. That stack\u2026"}, {"text": "Each ASIN must still pass the gates / deal-analyst", "passed": true, "evidence": "\u2026lead list to hand to fba-deal-analyst.  One honesty note up fr\u2026"}, {"text": "No blanket buy (lead = hypothesis / verify each)", "passed": true, "evidence": "\u2026fba-deal-analyst.\" Treat each as a hypothesis, not a de\u2026"}]}}, {"id": "eval-2-without_skill-run-1", "prompt": "Target toy BOGO this week + Target Circle \u2014 worth a sourcing run?", "eval_id": 2, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Target Toy BOGO + Target Circle \u2014 Worth a Sourcing Run?\n\n**Short answer: Yes, this is exactly the kind of trigger you should build a run around \u2014 but the BOGO and Circle are levers to MAKE deals profitable, not a reason to buy on their own. The deal still has to pass the gates ASIN-by-ASIN.**\n\nThis matches your operation's core sourcing principle verbatim: *\"Source where the best SALE / cashback / coupon is TODAY (e.g. Target BOGO today) \u2014 then stack cashback + discount gift cards + coupons (manufacturing margin) for a moat nobody else has.\"* A Target toy BOGO + a Circle account is two stackable levers at a friendly retailer. Run it.\n\n---\n\n## Why this one is worth your time\n\n1. **Toys are a strong category for your friendly brand list.** Your brain's friendly brands include several toy/kid lines that Target carries: **LEGO, Hot Wheels, Monster Jam, Crayola, Pokemon, Tonies, Jellycat, Crocs (kids), Sunny Angels**. Anchor the run on these \u2014 you already know the demand and IP profile.\n\n2. **The math on a true BOGO is excellent.** Buy-one-get-one-free is effectively **50% off** when you buy in even quantities. Your normal target is ROI >= 30% / >= $3 profit per unit; a 50%-off cost basis clears that bar with a lot of room. That's the whole point of \"manufacturing margin\" \u2014 you're not finding a profitable deal, you're creating one.\n\n3. **Target Circle stacks cleanly on top.** Circle is explicitly listed in your cost-engineering toolkit alongside discounted gift cards. Layer it:\n   - **Circle offers / bonus** on the qualifying category\n   - **Discounted Target gift cards** (cardbear.com / Raise \u2014 2\u201310% off) to pay\n   - **Cashback portal** (compare TopCashback / Rakuten via RevROI before you click through)\n   - **RedCard 5%** if you have one\n   Re-run the SellerAmp math *after* stacking, and keep cashback as a cushion \u2014 don't bake it into COGS.\n\n4. **It's the right season to be loading toys.** Toys are a Q4 demand category. Today is 2026-06-29, so this is an off-season buy \u2014 fine if Keepa shows year-round movement, and a genuine opportunity if you can hold proven winners into the Q4 hump. Time FBA check-in by ~Nov 15 for anything you're staging for the holidays.\n\n---\n\n## How to run it (deal-first, not store-first)\n\n1. **Confirm the BOGO mechanics first.** Is it BOGO free or BOGO 50%? Which exact toy categories/brands qualify? Even-quantity requirement? This determines your real per-unit cost.\n2. **Filter to your friendly brands** that are in the promo (LEGO, Hot Wheels, Monster Jam, Crayola, Pokemon, Tonies\u2026). Skip the avoid list \u2014 **Disney** is on it and a lot of Target toys are Disney-licensed, so watch for that.\n3. **Validate every ASIN through the gates** \u2014 the promo does NOT skip this:\n   - BSR <= 200k, >= 50 sales/mo (Keepa yellow \"sold\" line present)\n   - 3\u201325 offers, price stable/rising, competition flat/falling\n   - **Amazon NOT on/rotating the Buy Box** (>= ~20% = hard reject)\n   - No price-spike vs 90-day avg; no IP \"cliff\"\n4. **Check eligibility before buying.** List the ASIN in Seller Central first \u2014 if it's hard-gated, don't buy. Bulk-check the brands in Boxem for auto-ungate. Screen brands with IP Alert.\n5. **Run SellerAmp math on the stacked landed cost** (true cost = price after BOGO + Circle + GC discount, plus tax baked into cost price, plus ~$0.50\u20131.00/unit prep). Use Max Cost as the reverse check.\n6. **Size small.** 5\u201310 units per ASIN on anything new. Worst-case rule: only buy where you'd still break even at the lowest historical Buy-Box price.\n\n---\n\n## Watch-outs specific to this run\n\n- **Don't buy because it's BOGO \u2014 buy because the ASIN passes.** A free second unit of something that doesn't sell is dead inventory, not profit.\n- **Disney licensing.** Disney is on your avoid list; a large share of Target toys are licensed. Filter it out, especially on a young account.\n- **Order-cancel / reseller flags at Target.** Start with small orders, pay with PayPal/Apple/Google Pay, and if flagged, lift it via Target live chat (this has worked before).\n- **BOGO often forces even quantities** \u2014 make sure both units of each pair are sellable ASINs, not \"one good toy + one dud.\"\n- **Gift-card sourcing takes a beat.** If you're buying discounted Target GCs for the stack, line them up before the promo ends.\n\n---\n\n## Bottom line\n\nBuild the run. A toy BOGO at Target + a Circle account is a textbook \"go where the deal is today\" trigger and a clean discount stack on a category full of your friendly brands. The promo is what makes thin deals profitable \u2014 but the buy/no-buy decision is still made one ASIN at a time on Keepa + SellerAmp + eligibility. Anchor on LEGO / Hot Wheels / Monster Jam / Crayola / Pokemon / Tonies, dodge Disney, validate each lead, stack Circle + discounted GC + cashback, and test small.\n\n*Not financial advice; no purchase is approved here \u2014 you confirm and buy. Verify the live BOGO terms and each ASIN before committing.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Endorses the deal-first angle around the live BOGO", "passed": true, "evidence": "\u2026# Target Toy BOGO + Target Circle \u2014 Worth\u2026"}, {"text": "Stacking (BOGO + Circle + cashback) to manufacture margin", "passed": true, "evidence": "\u2026ce where the best SALE / cashback / coupon is TODAY (e.g.\u2026"}, {"text": "Each ASIN must still pass the gates / deal-analyst", "passed": true, "evidence": "\u2026al still has to pass the gates ASIN-by-ASIN.**  This m\u2026"}, {"text": "No blanket buy (lead = hypothesis / verify each)", "passed": true, "evidence": "\u2026make sure both units of each pair are sellable ASINs,\u2026"}]}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "fba-sourcing-scout", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-06-30T02:57:53Z", "evals_run": [0, 1, 2], "runs_per_configuration": 3}, "runs": [{"eval_id": 0, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 113.009, "tokens": 43482, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Recommends reverse sourcing / storefront stalking for a beginner", "passed": true, "evidence": "\u2026ner** \u2192 your method is **reverse sourcing (storefront sta\u2026"}, {"text": "Deal-first (source where the sale/cashback is)", "passed": true, "evidence": "\u2026le today: No single live sale to chase yet (you have n\u2026"}, {"text": "Produces a concrete plan / steps (not vague)", "passed": true, "evidence": "\u2026# FBA Sourcing Plan \u2014 Brand-New Beginner, $5\u2026"}, {"text": "Hands to deal-analyst / verify, no auto-buy", "passed": true, "evidence": "\u2026here is a *hypothesis to verify*, never a buy order \u2014 ev\u2026"}], "notes": []}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 86.167, "tokens": 39445, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Recommends Keepa Product Finder for a known brand", "passed": true, "evidence": "\u2026e method here is **Keepa Product Finder** (Method B), not random\u2026"}, {"text": "Gives the filter set (rank, Amazon OOS, offer count)", "passed": true, "evidence": "\u2026- Brand = **Crayola** - Sales Rank = **0 \u2192 150,000** (top ~\u2026"}, {"text": "Mentions storefront stalking OR instant-reject flags too", "passed": true, "evidence": "\u2026* (Method B), not random storefront stalking. But we still l\u2026"}, {"text": "Hands to deal-analyst / verify", "passed": true, "evidence": "\u2026IDATE LEADS (hand to fba-deal-analyst)  These are **hypotheses\u2026"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 117.258, "tokens": 41903, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Endorses the deal-first angle around the live BOGO", "passed": true, "evidence": "\u2026rcing Scout \u2014 Target Toy BOGO Run  **Short answer: yes\u2026"}, {"text": "Stacking (BOGO + Circle + cashback) to manufacture margin", "passed": true, "evidence": "\u2026Target Circle account to stack on top of it. That stack\u2026"}, {"text": "Each ASIN must still pass the gates / deal-analyst", "passed": true, "evidence": "\u2026lead list to hand to fba-deal-analyst.  One honesty note up fr\u2026"}, {"text": "No blanket buy (lead = hypothesis / verify each)", "passed": true, "evidence": "\u2026fba-deal-analyst.\" Treat each as a hypothesis, not a de\u2026"}], "notes": []}, {"eval_id": 0, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 75.64, "tokens": 33882, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Recommends reverse sourcing / storefront stalking for a beginner", "passed": true, "evidence": "\u2026your gates.  **Step 3 \u2014 Storefront stalking (reverse sourci\u2026"}, {"text": "Deal-first (source where the sale/cashback is)", "passed": true, "evidence": "\u2026pes the batch | | **BSR (sales rank)** | Strong & stab\u2026"}, {"text": "Produces a concrete plan / steps (not vague)", "passed": true, "evidence": "\u2026od (do this in order)  **Step 1 \u2014 Open the sales, not\u2026"}, {"text": "Hands to deal-analyst / verify, no auto-buy", "passed": true, "evidence": "\u2026product actually sells. SellerAmp (SAS) or a free FBA calc\u2026"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 107.807, "tokens": 56381, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Recommends Keepa Product Finder for a known brand", "passed": true, "evidence": "\u2026ed example in your Keepa Product Finder playbook (~8,600 listing\u2026"}, {"text": "Gives the filter set (rank, Amazon OOS, offer count)", "passed": true, "evidence": "\u2026> ~8,600 listings). 2. **Sales Rank: 0 -> 150,000-200,000**\u2026"}, {"text": "Mentions storefront stalking OR instant-reject flags too", "passed": true, "evidence": "\u2026B \u2014 Reverse sourcing / \"storefront stalking\" (best for find\u2026"}, {"text": "Hands to deal-analyst / verify", "passed": true, "evidence": "\u2026al OA winners fast, then verify each in SellerAmp.  Here\u2026"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 101.061, "tokens": 55850, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Endorses the deal-first angle around the live BOGO", "passed": true, "evidence": "\u2026# Target Toy BOGO + Target Circle \u2014 Worth\u2026"}, {"text": "Stacking (BOGO + Circle + cashback) to manufacture margin", "passed": true, "evidence": "\u2026ce where the best SALE / cashback / coupon is TODAY (e.g.\u2026"}, {"text": "Each ASIN must still pass the gates / deal-analyst", "passed": true, "evidence": "\u2026al still has to pass the gates ASIN-by-ASIN.**  This m\u2026"}, {"text": "No blanket buy (lead = hypothesis / verify each)", "passed": true, "evidence": "\u2026make sure both units of each pair are sellable ASINs,\u2026"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 105.478, "stddev": 16.8582, "min": 86.167, "max": 117.258}, "tokens": {"mean": 41610.0, "stddev": 2034.3866, "min": 39445, "max": 43482}}, "without_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 94.836, "stddev": 16.963, "min": 75.64, "max": 107.807}, "tokens": {"mean": 48704.3333, "stddev": 12839.2626, "min": 33882, "max": 56381}}, "delta": {"pass_rate": "+0.00", "time_seconds": "+10.6", "tokens": "-7094"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

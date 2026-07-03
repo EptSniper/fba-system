@@ -1,0 +1,25 @@
+# === secrets — NEVER commit ===
+API_KEYS.env
+.env
+*.env
+*.local.env
+# Code Review 2026-07-02, Finding B6: *.env/.env only match files literally ending in ".env" —
+# they miss Next.js-style suffixed env files like tracker/.env.local (which held a real, live
+# Vercel token, uncovered until this line). This must come BEFORE the !*.env.example negation
+# below — gitignore evaluates rules in order and the LAST match wins, so listing the broad
+# exclude first lets the later negation still re-include example templates correctly.
+.env.*
+secrets/
+# keep example templates tracked (they end in .example, not .env)
+!*.env.example
+
+# common noise
+__pycache__/
+node_modules/
+.next/
+.vercel/
+*.pyc
+
+# vendored external tool (its own separate GitHub-tracked repo, not project code) — do not
+# nest its history inside this repo
+ui-ux-pro-max-skill/

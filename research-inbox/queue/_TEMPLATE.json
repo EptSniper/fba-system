@@ -1,0 +1,16 @@
+{
+  "date": "YYYY-MM-DD",
+  "note": "The daily task writes one queue file per day (e.g. 2026-06-30.json) listing YouTube videos/courses to transcribe. fetch_transcripts.py reads files matching YYYY-MM-DD.json, pulls transcripts via the API, and sets each item's status to 'done'.",
+  "videos": [
+    {
+      "videoId": "dQw4w9WgXcQ",
+      "title": "example title",
+      "channel": "example channel",
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "topic": "fba_oa_mastery | build_the_system | ...",
+      "why": "one line: why this is worth transcribing",
+      "isLongCourse": false,
+      "status": "queued"
+    }
+  ]
+}

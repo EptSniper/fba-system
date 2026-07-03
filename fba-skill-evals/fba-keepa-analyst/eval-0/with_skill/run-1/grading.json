@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Identifies rising offer count as avoid/negative",
+      "passed": true,
+      "evidence": "\u2026ers. That blows past the rising-offers guard (new-offer\u2026"
+    },
+    {
+      "text": "Connects rising offers to falling/tanking price",
+      "passed": true,
+      "evidence": "\u2026ine problem. Buy Box has slid from ~$35 to ~$28 over 9\u2026"
+    },
+    {
+      "text": "Verdict leans reject/caution on history",
+      "passed": true,
+      "evidence": "\u2026guard) \u2014 primary instant-reject fingerprint.   - Falling\u2026"
+    },
+    {
+      "text": "Hands off / verify / not a final buy",
+      "passed": true,
+      "evidence": "\u2026which are what actually confirm >=50/mo. So treat \"decen\u2026"
+    }
+  ]
+}

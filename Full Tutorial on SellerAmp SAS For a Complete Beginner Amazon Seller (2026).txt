@@ -1,0 +1,675 @@
+# tactiq.io free youtube transcript
+# Full Tutorial on SellerAmp SAS For a Complete Beginner Amazon Seller (2026)
+# https://www.youtube.com/watch/G_pGhjkWNY4
+
+00:00:00.080 In this video, I'll go over a full
+00:00:01.920 step-by-step tutorial of Seller Amp SAS.
+00:00:04.480 This software is mandatory for your
+00:00:06.080 Amazon online arbitrage business to make
+00:00:07.919 sourcing product a lot more efficient
+00:00:09.679 and easier for beginner Amazon sellers.
+00:00:12.000 All right, perfect. All right, let's get
+00:00:13.200 right into it. We're going to be on
+00:00:14.400 seller.com going to go through the
+00:00:16.480 pricing. There is a 14-day free trial.
+00:00:20.400 Um, but if you want to go over the
+00:00:22.080 pricing plans, I think seller just made
+00:00:23.920 a new one for this third one. But I
+00:00:26.160 think the difference between the getting
+00:00:27.599 started and the getting serious is that
+00:00:29.359 the getting started doesn't have
+00:00:30.480 unlimited lookups. Only has 1,000
+00:00:33.680 um and the getting serious has
+00:00:35.040 unlimited. So if you're a beginner, I
+00:00:37.440 would recommend getting started and once
+00:00:38.879 you hit those 1,000 lookups, which you
+00:00:40.559 will um upgrade at that point, but like
+00:00:44.559 I said, there is a 14-day free trial. So
+00:00:46.879 for both of these plans, but I would
+00:00:48.800 recommend just getting getting just
+00:00:50.559 getting started with getting started.
+00:00:52.719 And then for going pro, you get a little
+00:00:54.960 bit of extra stuff um with users and
+00:00:57.280 stuff like that. But if you're doing so
+00:00:58.480 yourself or just one other person um
+00:01:00.719 getting started is just fine. So now
+00:01:02.480 that you made an account with CellMamp
+00:01:03.840 and pick one of the plans, we're going
+00:01:04.959 to head to the Chrome web store and
+00:01:06.640 download the Chrome extension. This is
+00:01:08.240 going to make the seller populate. It's
+00:01:10.320 going to look something like this. We're
+00:01:11.840 going to go over this in a second here,
+00:01:13.280 but first we're actually going to update
+00:01:14.880 our settings to really match and make
+00:01:17.600 sourcing uh the cost of the product
+00:01:20.080 really, really accurate. Because if
+00:01:21.600 you're not accurate, then you're not
+00:01:22.720 going to be accurately predicting your
+00:01:23.920 profit, which in business, you want to
+00:01:25.360 be as accurate as possible. So, you're
+00:01:27.680 going to log in with your thing, head to
+00:01:30.960 settings, and these are my settings. So,
+00:01:34.159 there's a lot of options here, but um
+00:01:36.079 you can just copy mine. Uh for the most
+00:01:38.720 part, the inbound shipping, so you know,
+00:01:40.880 shipping to you is typically going to be
+00:01:42.880 free after a certain amount, but
+00:01:44.159 shipping to Amazon's warehouses is going
+00:01:46.240 to cost you money. And depending on what
+00:01:48.799 your location is, it's going to cost you
+00:01:51.119 anywhere between 50 to 80 cents a pound.
+00:01:53.119 So I put 60 cents a pound here. Every
+00:01:55.119 time you do FBA shipment, you want to go
+00:01:57.040 back and see if it was around 50 60
+00:01:59.280 cents a pound depending on your
+00:02:00.640 location. Then you can kind of update
+00:02:01.840 it. But you can keep it 60 cents a pound
+00:02:03.680 right now for um for the average. And
+00:02:07.600 then all these ones I don't keep on zero
+00:02:10.318 monthly storage times. But for minimum
+00:02:13.680 BSR I put 0% maximum I put 2% minimum
+00:02:17.760 profit um $3. I think anything under $3
+00:02:21.200 is not worth your time sourcing for the
+00:02:23.040 most part. Minimum ROI because of um how
+00:02:25.920 Amazon's returns policy is. You want a
+00:02:28.239 minimum ROI of at least 30%.
+00:02:31.040 Um for prep fee, if you have a prep fee,
+00:02:32.959 put this in. This is when you have a
+00:02:34.080 prep center. Miscellaneous fee. That's
+00:02:36.800 if there's like random fees here and
+00:02:38.080 there. I have that at $0, too. And
+00:02:39.840 miscellaneous fee percentage. Um, a lot
+00:02:42.560 of sellers put their sales tax in here,
+00:02:44.480 but for me, I add that all in. And,
+00:02:48.560 um, and then I just divide it by how
+00:02:50.400 many products they are, and I put it
+00:02:52.239 directly into this cost price. I don't
+00:02:54.800 really use this percentage at all. U,,
+00:02:57.680 but you can if you want. Let's say your
+00:02:58.959 sales tax in your city is 8%, you can
+00:03:00.560 put 8%. Just make sure when you're
+00:03:02.560 putting the cost price in here that
+00:03:04.000 you're not double adding it, right? But
+00:03:06.480 typically I would just put zero and
+00:03:08.959 let's say you know your total cost was
+00:03:10.720 $100 after tax then you just divide that
+00:03:13.040 by the amount and you'll get the
+00:03:14.400 accurate cost of the goods anyways. Um
+00:03:16.959 and then for the display you can have
+00:03:18.720 all these show the profit show the
+00:03:20.239 profit margin show the break even show
+00:03:22.560 the offer summary. Um and this is going
+00:03:24.800 to show it right here and all this but
+00:03:26.720 we'll kind of go over what that actually
+00:03:28.159 looks like. So that's the the settings
+00:03:30.799 here and everything like that. And then
+00:03:32.239 yeah, we're going to go over what the
+00:03:33.360 extension looks like on Amazon listing
+00:03:34.720 and kind of break it down as well. So
+00:03:36.560 now that we went through the settings,
+00:03:38.080 we're actually on an Amazon listing. And
+00:03:39.760 if you have the Chrome extension, it
+00:03:41.599 should automatically populate on this
+00:03:43.200 right side here. You can make it on the
+00:03:45.120 left side, oops, or on the right side or
+00:03:48.560 in the middle, but I like it on the
+00:03:49.920 right side. I think it's personal
+00:03:51.440 preference, but I'm going to go over
+00:03:52.959 what this actually means. So first,
+00:03:56.000 you're going to have the title here. Um,
+00:03:58.720 you're going to have the dimensions
+00:04:00.239 right there. That's good for measuring
+00:04:02.319 and estimating FBM cost if you're going
+00:04:04.000 to do FBM. Um, some of the description,
+00:04:06.560 the Amazon listing page, you know,
+00:04:08.080 that's the same thing, but you can have
+00:04:09.360 it automatically. This Google button to
+00:04:11.599 search it up on Google, that's going to
+00:04:12.799 be really good for the sourcing aspect,
+00:04:14.480 which is we're going to go down later in
+00:04:16.720 part of this video. Um, the SAS is is a
+00:04:20.478 bigger um view of the data.
+00:04:24.320 And you're going to have the AC in here.
+00:04:25.680 This is when you want to add it to your
+00:04:26.720 store. You're going to copy this and go
+00:04:28.000 into your seller central and add that.
+00:04:29.680 and you have the UPC as well, right? So,
+00:04:32.320 you're going to have the quick
+00:04:33.120 information here once you're logged into
+00:04:35.600 um seller central. It'll tell you if
+00:04:37.360 you're eligible to sell this product.
+00:04:39.120 You're going to have some of the alerts
+00:04:40.240 here. You know, Amazon if Amazon's uh on
+00:04:42.639 the buy box, if this listing is a
+00:04:44.400 private label, if there's some IP
+00:04:45.600 issues, whatnot, if it's a regular or
+00:04:48.320 oversized item, if it's multiple, if
+00:04:50.000 there's variations. So, make sure to
+00:04:51.360 look at that as well. for BSR. BSR just
+00:04:54.400 means u Amazon's ranking for this
+00:04:57.120 specific product in that specific
+00:04:58.960 category. So the lower the number, the
+00:05:00.960 better. So let's say the number one, if
+00:05:02.800 this this was a BSR number one, it'd be
+00:05:04.560 the best selling product in this
+00:05:05.600 category. This is in uh this is top
+00:05:08.720 20,000, which is actually really really
+00:05:10.960 high. Um this is a really really fast
+00:05:13.280 selling product.
+00:05:15.360 This is 20,000. So it's in the between
+00:05:17.840 fast selling and um okay selling. It's
+00:05:20.960 still in the top 1% of products because
+00:05:22.320 there's millions of products on Amazon
+00:05:23.600 and most of them don't sell that well.
+00:05:24.960 So, this one is selling pretty decently.
+00:05:28.080 Um, we got the estimated sales right
+00:05:29.680 here. It's 200 sales a month. That's
+00:05:31.759 really accurate. Amazon displays that as
+00:05:33.520 well. The max cost is what the max cost
+00:05:36.240 you could pay to hit your minimum
+00:05:38.720 minimum ROIs. So, for um if you click on
+00:05:42.080 this, it'll put in here. This is the
+00:05:43.919 minimum cost to hit 30% ROI and you'll
+00:05:46.560 make $14 profit um and everything like
+00:05:49.520 that. So, this uh cost price accounts
+00:05:52.320 all the Amazon fees, the shipping, the
+00:05:54.479 inbound shipping if you're doing FBA,
+00:05:56.240 all those fees before um you get the
+00:05:58.880 profit out. So, um Seller Amp does all
+00:06:02.000 the heavy lifting for you. So, you don't
+00:06:03.360 have to do it yourself. Yeah. And yeah,
+00:06:06.080 the break even price. The break even
+00:06:07.680 price just tells you what you know what
+00:06:09.919 you would be able to sell it at to make
+00:06:12.160 $0 profit, which is the break even,
+00:06:16.560 right? So, let's plug that back into
+00:06:18.240 $802.
+00:06:20.240 Offers, it tells you how many sellers
+00:06:21.600 are on there. There's 61 sellers on
+00:06:23.280 this. 19 of them are FBA. 42 of them are
+00:06:25.919 FBM. Alerts. Like I said, it's going to
+00:06:27.919 be on the quick information. But this
+00:06:29.759 also tells you whether Amazon shares the
+00:06:32.319 buy box. Right now, it says never. If
+00:06:34.080 this is a private label um that just
+00:06:36.479 tells you if there's low historical
+00:06:37.680 sellers. This one says unlikely. If
+00:06:39.039 there's any IP issues, no, no IP issues.
+00:06:41.280 Size standard size. If it's a melt or
+00:06:43.360 like chocolate, it'll tell you
+00:06:44.560 variations. There's, you know, different
+00:06:46.160 sizes or colors of this specific
+00:06:47.360 product. This one is no. The offers.
+00:06:50.240 This is going to tell you who's on this
+00:06:51.919 listing. Um, and and and you can open up
+00:06:55.600 their store just from selling up here.
+00:06:57.280 This is a great way to source. It's
+00:06:58.240 called reverse sourcing. Uh, as you can
+00:06:59.919 see, a lot of these guys are FBM sellers
+00:07:01.840 for some reason. And the uh typically
+00:07:03.759 FBM sellers are going to be lower than
+00:07:05.840 FBA sellers just because they're
+00:07:07.520 fighting just because they're fighting
+00:07:08.560 for the buy box and everything like
+00:07:09.840 that. Um, but you can see these guys are
+00:07:12.240 just regular sellers. This guy only has
+00:07:13.599 80 reviews. This guy's 28. This guy's
+00:07:16.479 15. So, they're just a regular guys
+00:07:17.759 reselling this product here. Um, and if
+00:07:19.919 you hit that Google button, I think you
+00:07:21.360 can find it just on the Jellyat website
+00:07:23.280 for 50 bucks. So, it's actually really,
+00:07:24.960 really close. Um, if you put 50 bucks in
+00:07:27.199 here, it's still 25% ROI, which is still
+00:07:30.240 pretty decent. You're still making $13
+00:07:31.919 profit on this specific item. So, that
+00:07:34.080 might be worth doing. It is doesn't hit
+00:07:35.759 it's red because it doesn't hit our
+00:07:37.440 settings earlier of 30% ROI. But maybe
+00:07:40.319 if a product you think might have less
+00:07:42.319 return rate, then you can kind of go for
+00:07:43.919 something like this. But it's really
+00:07:45.039 close anyways. But some products, like I
+00:07:47.680 said, are going to be better FBA versus
+00:07:49.440 FBM. So, make sure you can play around
+00:07:52.400 with the settings, too. We'll kind of go
+00:07:53.440 over that in a second. Um, this is the
+00:07:55.199 Keeper chart here. Um, you can look at
+00:07:57.440 the high price, low price here. Um, but
+00:08:00.080 in my opinion, you should probably
+00:08:01.360 download the Keepa app. That's a second
+00:08:03.680 mandatory software that I think is good.
+00:08:05.440 I'll definitely do a tutorial on this as
+00:08:07.120 well and you can see it on a bigger
+00:08:09.280 scale or you can see on the seller app
+00:08:12.240 um here as on the SAS web page. But in
+00:08:15.919 my opinion, the best ways to look at on
+00:08:18.319 the the keeper chart this way. So you
+00:08:19.840 can see the the price line the how the
+00:08:23.280 product performs over a period of time
+00:08:24.560 and everything like that. Um then you're
+00:08:27.840 going to have some u data here. This is
+00:08:30.240 going to tell you, you know, what the
+00:08:32.159 BSR is currently over 30 days, 90 days,
+00:08:35.279 180 days. So, you can kind of have a
+00:08:36.719 good uh inkling of what uh the the price
+00:08:40.719 line is, the lowest sellers, and
+00:08:42.240 everything like that. So, tells you the
+00:08:43.839 buy box, if Amazon's on it, what price
+00:08:45.839 they're at, lowest FBA, lowest FBM, if
+00:08:48.320 there's any price drops here on a 30 to
+00:08:50.560 90 day, 180 period. So, typically, I
+00:08:52.560 like to look at all of them to make a
+00:08:53.920 informed buying decision. You have all
+00:08:55.839 this data. Um, you shouldn't just use
+00:08:58.000 one piece. You should use every single
+00:08:59.519 one to really make an informed buy
+00:09:01.519 decision. This is what separates good
+00:09:03.519 sellers from just okay or bad sellers.
+00:09:07.200 Profit calculator. This is pretty
+00:09:08.959 important. This is the same thing up
+00:09:10.320 here, but um, this is mainly for
+00:09:12.560 toggling if you want to do FBA or FBM.
+00:09:14.640 So, FBA fees, if you open up this little
+00:09:16.720 thing right here, it's already all
+00:09:18.800 there. So, I mean, I can kind of go over
+00:09:20.320 it. You don't have to look at this too
+00:09:21.360 much, but referral fee is 15%. That's
+00:09:23.760 just that fee that Amazon charges you to
+00:09:26.160 sell um on their platform. So, let's say
+00:09:28.240 you did sell this item at $83.
+00:09:30.959 Uh Amazon would take a 15% referral fee.
+00:09:34.240 Um FBA fee, that's the fee that Amazon
+00:09:36.720 charges you to ship their items directly
+00:09:38.240 to the customer. So, it's going to be a
+00:09:40.240 flat fee of $7.39. This is based off the
+00:09:42.480 dimensional weight um above here.
+00:09:47.200 Uh and then there's the storage fees and
+00:09:49.200 closing fees. That's if your product is
+00:09:51.360 over 30 days old. If you're doing online
+00:09:53.440 arbitrage, typically that's not going to
+00:09:54.800 happen because you're going to, you
+00:09:55.839 know, sell it out, try to sell it by
+00:09:57.440 lowering the price a lot faster than
+00:09:58.640 that. Inbound shipping in our settings,
+00:10:01.040 if we wanted to ship this to Amazon,
+00:10:02.320 it's going to cost us 60 cents a pound
+00:10:04.399 on average. So, this um this product was
+00:10:06.800 half a pound. So, or or less, it's going
+00:10:08.720 to cost us around 36 cents a unit on
+00:10:10.880 this miscellaneous fees and whatnot. But
+00:10:13.200 if you're doing FBM, you really want to
+00:10:15.040 estimate your shipping cost uh really
+00:10:17.279 really well. So, um, the better you get
+00:10:20.320 at this, the better you can do FBM. So,
+00:10:22.480 with 9.6 ounces, I do have a FBM guide.
+00:10:25.279 I probably will drop it down in the
+00:10:26.720 description,
+00:10:28.480 but for F, uh, for, uh, 9.6 ounces,
+00:10:31.279 that's probably going to cost us around
+00:10:32.399 $5 a ship. So, we're actually making $15
+00:10:35.839 profit on this product here, um, with
+00:10:38.079 FBM. So, sometimes FBA is going to be
+00:10:39.920 more profitable, sometimes FBM is going
+00:10:41.519 to be more profitable. It kind of just
+00:10:42.640 depends on the product. That's probably
+00:10:43.760 why a lot of people are after this, um,
+00:10:45.760 at $83 here. But at FBM prices are86. So
+00:10:50.640 um and you can see the buy box. This is
+00:10:52.959 not a tutorial, but as you can see with
+00:10:55.600 the FBA buy box, this is $84, $89. So if
+00:10:59.680 you're doing this FBA, you probably can
+00:11:01.120 sell this for 89 and make $20 profit.
+00:11:03.839 But with FBM, you're making 83, but it
+00:11:06.320 is going to cost you a lot less to ship
+00:11:08.320 uh FBM. So that and then if you want to
+00:11:11.279 buy, so you have regular here. If you
+00:11:13.600 want to have the quantity, you can, you
+00:11:15.040 know, set it how many you want to buy.
+00:11:16.480 20, you have a,000, you know, cost you
+00:11:18.720 $1,000 if at a $50 cost.
+00:11:23.040 Um, you'll probably get around $1,600 in
+00:11:25.920 sales and make $300 profit on 20 units,
+00:11:27.920 right? The Google Sheets. So, let's say
+00:11:30.320 you were sourcing and this product was
+00:11:32.160 okay or you want to save it for later.
+00:11:34.240 Um, seller actually has Google Sheets
+00:11:36.399 here um in their thing. So, go up here.
+00:11:40.079 Sheets you can set up here um and create
+00:11:42.720 a new one. I already have a sourcing one
+00:11:44.160 and a buy sheet. So once you have that,
+00:11:45.920 maybe you can have one for your VA, you
+00:11:47.760 can have one for almost good or save for
+00:11:49.760 later and then export it there and it'll
+00:11:51.360 have it all set up in your buy sheet
+00:11:54.000 like that. Cool. And then variations,
+00:11:56.240 it'll show you if there's different
+00:11:57.279 variations. This one doesn't have one,
+00:11:58.880 so it's fine. You can add notes. Uh good
+00:12:01.519 product or whatever or bought from
+00:12:06.000 Jellyat, stuff like that. You can add
+00:12:08.160 notes.
+00:12:10.399 Um discounts. I don't really use this um
+00:12:12.240 because I just add here. and then you
+00:12:13.760 see uh when's the last time you looked
+00:12:15.760 up this item and whatnot. But that's
+00:12:17.760 pretty much um everything you need to
+00:12:20.639 know about the the features here. You're
+00:12:22.800 going to get really used to it by just
+00:12:24.240 working on it and and putting the reps
+00:12:26.560 that it takes to, you know, go through
+00:12:28.160 this and everything like that. But in
+00:12:29.200 the next video or next and in the next
+00:12:32.560 part of this video, I'll go over um how
+00:12:35.279 to actually make money using seller app
+00:12:37.120 and source product. There's two ways
+00:12:39.040 mainly um where you know you're doing
+00:12:42.000 this way uh by searching the Google
+00:12:44.320 button and then using storefront
+00:12:45.839 stocking by looking at who's selling
+00:12:47.279 this and what they're selling. So we'll
+00:12:48.959 go through that in the next part of this
+00:12:50.240 video. So now that you understand what
+00:12:52.639 seller app actually looks like between
+00:12:54.000 the settings, let's actually use seller
+00:12:56.000 app to make some money. So seller is
+00:12:57.920 really good for beginners to source
+00:12:59.519 product because if you're on a on a
+00:13:01.040 listing, you can see who's selling it
+00:13:02.639 and what they're selling and it makes
+00:13:03.680 sourcing really efficient. I don't
+00:13:05.200 recommend manual sourcing for beginners.
+00:13:07.360 Manual sourcing is like let's say you
+00:13:08.560 went on walmart.com and we're looking
+00:13:10.880 through all the products that's going to
+00:13:12.399 take you hundreds if not thousands of
+00:13:13.920 hours and you're probably not going to
+00:13:16.000 find products because you don't know
+00:13:17.040 what you're actually looking for. So
+00:13:18.880 when you're doing storefront stocking or
+00:13:20.320 using Cellam to s uh to source you
+00:13:22.240 really want to find an OA type of
+00:13:24.000 product. So Jellyat we know isn't being
+00:13:26.000 sold wholesale. So anyone that's selling
+00:13:27.839 it is doing on arbitrage as well. So
+00:13:30.000 what you can do is click on that Google
+00:13:31.760 button and it'll populate everyone
+00:13:33.680 that's selling it. You can also hit that
+00:13:34.959 Google shopping. Um, you can see that it
+00:13:37.440 is on Jellyat. We did look it up earlier
+00:13:39.040 for $50 right now. Um, you can also see
+00:13:41.760 if who else is selling it. Some other
+00:13:43.519 retailers usually sell Jellyat, too. I'm
+00:13:45.120 believe 60 bucks. It's not the same
+00:13:47.040 product, but we know that you can buy
+00:13:49.200 this for 50 bucks and, you know, at a
+00:13:50.959 five to $6 FPM cost, we can make $15 per
+00:13:54.720 unit. So, we sold even if we sold like
+00:13:56.800 10 of these, right?
+00:14:00.880 we would make
+00:14:04.399 um $150 $155 profit on just one product
+00:14:08.800 and we find 10 20 of these type of
+00:14:10.560 products a month we're making full-time
+00:14:12.000 income really really quick. So um and
+00:14:15.120 the second thing is if we find a product
+00:14:16.399 that other people are selling like these
+00:14:17.920 random guys in clicks and fulfillment we
+00:14:20.160 can open up their stores. So let's find
+00:14:22.560 anyone that's you know between one to
+00:14:24.320 100 reviews. These guys are just regular
+00:14:26.079 people like me and you. Anyone above 100
+00:14:28.160 200 reviews is probably a really good
+00:14:30.240 seller. But
+00:14:32.560 uh yeah, this one this guy has two
+00:14:34.160 reviews and this is going to really
+00:14:35.600 expand your knowledge about what brands
+00:14:37.760 other sellers are selling, what uh
+00:14:40.000 trends you start seeing and other
+00:14:42.240 products in that specific brand that you
+00:14:43.839 were looking for. So this random guy
+00:14:45.519 named Quicksand Fulfillment with 80
+00:14:47.360 reviews, he has 150 asens. And if you do
+00:14:49.839 the quick math, if he's making $50 per
+00:14:51.839 as um minimum he's making about $7,500 a
+00:14:55.920 month. He's probably making more than
+00:14:57.279 $50 on, but on on a conservative basis,
+00:15:00.880 he's making over $7,500 profit a month
+00:15:03.600 on 150 products. But he has 74 jelly
+00:15:06.800 listings. So, if you really want to
+00:15:07.760 source jelly, you really can. And you
+00:15:09.680 can go through um seller app doing this
+00:15:12.480 way. So, you can see what products here.
+00:15:14.720 These ones, you have to be really really
+00:15:16.320 efficient at this because you want to
+00:15:18.160 spend as least time as possible um
+00:15:20.160 looking through the best products. So,
+00:15:22.079 products like this where have no
+00:15:23.279 reviews, the keeper chart looks really
+00:15:24.800 really dead.
+00:15:26.240 I would avoid right away. This one has
+00:15:27.920 some decent reviews. 100 sales a month.
+00:15:29.920 That's pretty good. The keeper uh the
+00:15:31.519 keeper chart looking pretty stable here.
+00:15:33.600 So, I would I'm interested in this one.
+00:15:35.279 You can open up the Amazon listing right
+00:15:36.880 there. You can open that Google listing
+00:15:38.959 here. See, you see on Jellyat selling
+00:15:41.760 for $30 here. Um so, at $30, selling for
+00:15:45.120 45. That's not quite profitable here.
+00:15:47.199 You can kind of play around with FBA.
+00:15:49.440 It's probably going to cost us $4 to
+00:15:52.079 ship because it's really, really small.
+00:15:54.000 But as you can see, it's not that
+00:15:55.279 profitable at $45 sell price. We're
+00:15:57.759 buying for $30. So, either they bought
+00:15:59.839 it at a discount or they may use some
+00:16:02.399 other methods here, but we're going to
+00:16:03.680 be really for the sake of this video,
+00:16:05.279 we're going to be um faster. Uh if if a
+00:16:08.480 product is really close to making it
+00:16:10.079 work, you want to spend a little bit
+00:16:11.440 more time to see if you can find
+00:16:12.800 discount or whatever. Uh this one is
+00:16:15.360 pretty decent, too. 24 reviews, 100
+00:16:17.680 sales a month. People chart looks pretty
+00:16:19.680 decent here. So, I open up the Amazon
+00:16:21.680 listing.
+00:16:23.920 And then I can also with the Amazon
+00:16:25.839 listing, the seller app will populate
+00:16:27.680 here and I can look it up on Google like
+00:16:30.079 that.
+00:16:32.160 U see the Keepa here. We need it for
+00:16:34.079 about 25 bucks to make it work on
+00:16:36.800 Jellyat. It looks like it's out of stock
+00:16:39.440 at $28, but let's say it was in stock at
+00:16:42.399 $20. That's a little bit low for an ROI,
+00:16:44.880 but maybe with uh FBM shipping it might
+00:16:47.440 be better. So maybe it's going to
+00:16:48.880 probably cost us about $4 to ship to.
+00:16:51.440 That's about the same about ROI. So,
+00:16:52.959 it's close but not quite there. I think
+00:16:55.519 for products like this does have
+00:16:57.680 typically a lower return rate. So, you
+00:16:59.279 can maybe argue by, you know, selling
+00:17:01.920 something that's 20% ROI. If you're
+00:17:03.360 making $5 profit on unit on this and you
+00:17:05.119 sell, you know, only like 10 of these,
+00:17:06.959 something like that. But this one is
+00:17:10.079 okay. This paying one is 100 sales a
+00:17:12.079 month. It's probably similar to that. 14
+00:17:13.919 sales. Anything up under 50 sales, I
+00:17:16.000 kind of avoid. Um, and then for the
+00:17:18.799 estimated sales, this is probably under
+00:17:21.039 50 sales a month. Like I said, with this
+00:17:22.720 commission mark, you see that 642 is
+00:17:24.799 shared between all variations. So, you
+00:17:26.480 have to do the math to do that to figure
+00:17:28.559 that out. But you can see that he's
+00:17:30.640 selling Yeti. So, you can source some
+00:17:32.320 Yeti products here. You know, this one
+00:17:34.320 100 sales a month for $25. People are
+00:17:37.039 buying this cup for $43 right here. Or
+00:17:40.559 lowest price is 38. So, maybe you can
+00:17:42.640 open this and see and kind of build your
+00:17:45.120 knowledge about Yeti. you are reselling
+00:17:46.559 Yeti on Amazon for the lowest price
+00:17:49.200 right now is $38. So, let's see what we
+00:17:52.799 can buy for. So, on Dick Sporting Goods,
+00:17:55.200 it's um
+00:17:58.720 uh for $21.97.
+00:18:02.720 So, that's actually pretty close. So, we
+00:18:04.960 plug in 21 97 here. That is 29% ROI
+00:18:09.280 right there. So, that's really close to
+00:18:10.559 30%. that's something that we could
+00:18:11.840 probably go ahead and sell and just sell
+00:18:13.919 five to 10 of these and make some money
+00:18:15.679 here. That's, you know, they're going to
+00:18:16.559 be $30 to $50 profit. Um, and everything
+00:18:19.520 that you want to do this FBA, you can
+00:18:21.520 see that the FBA price is a little bit
+00:18:23.200 higher at $39.
+00:18:25.200 So, that's pretty good. And then with
+00:18:27.039 Seller Ramp, like we said, the best part
+00:18:29.039 is just finding other brands. So, you
+00:18:30.880 can, you know, open up these sellers,
+00:18:32.559 anyone that's, you know, relatively
+00:18:34.320 lower reviews,
+00:18:36.960 and then open up their source, too. You
+00:18:38.559 can really do this all day. And if you
+00:18:39.919 do this all day, there's just no way you
+00:18:41.600 won't be able to find products. It's
+00:18:43.120 just about actually doing the work
+00:18:44.559 necessary to find those products right
+00:18:46.320 here. So now you can get a little bit uh
+00:18:49.200 deeper knowledge. Let me move my camera.
+00:18:51.440 See right here. Now you can see see
+00:18:53.919 people selling video games. You can see
+00:18:56.000 people selling uh more video games. Um
+00:18:58.640 Under Armour shoes. So this would
+00:19:00.000 typically OA seller. You'll know this OA
+00:19:02.000 seller by the brands they sell. and you
+00:19:03.840 can build your knowledge with other
+00:19:04.960 brands that they're selling um and
+00:19:07.360 everything like that and really get
+00:19:08.960 really familiar with what trends um
+00:19:11.600 other sellers are going. So, this guy's
+00:19:14.080 selling Yeti 83 Yeti listings here. You
+00:19:16.480 can take the time to find the ones he's
+00:19:19.039 uh selling pretty profitably or you can
+00:19:22.000 look at his Hot Wheels um and everything
+00:19:24.640 like that, McFarland Toys, and see which
+00:19:28.240 ones uh you want to sell. Uh, typically
+00:19:31.120 sellers have a niche that they like to
+00:19:32.880 focus on. So, some people like to do
+00:19:34.160 toys, some people like to do clothing,
+00:19:35.840 shoes, um, you know, random random
+00:19:39.919 brands, groceries, and anything like
+00:19:41.760 that is is what sellers like to focus on
+00:19:44.640 when they really figure out how to find
+00:19:46.240 stuff profitably. Um, and everything
+00:19:48.640 that this guy is still selling some
+00:19:49.679 Halloween stuff, which is pretty crazy.
+00:19:52.960 Um, yeah. And then
+00:19:55.840 I I like to just bounce around. I want
+00:19:57.600 to spend my time really efficiently. So,
+00:20:00.799 these ones, Amazon's on the listing at
+00:20:02.640 really low prices. So, I don't even like
+00:20:04.160 to bother because for the most part,
+00:20:05.760 it's going to be really hard to find
+00:20:07.039 profitably here. Like I said, if you do
+00:20:09.760 do this all day, there's just no way
+00:20:11.520 you're not going to find products here.
+00:20:13.440 Um, people are selling these random toys
+00:20:15.440 for they're selling a thousand times a
+00:20:17.679 month for, you know, $33. So, this one's
+00:20:20.000 very interesting to me. This one's
+00:20:21.919 interesting to me, too. And I'm going to
+00:20:25.039 open these up and see which ones. In
+00:20:27.760 this video, we already found some
+00:20:28.720 profit. the brands on this one here, but
+00:20:30.080 they do sell out. And right now, the
+00:20:31.840 price is at 27.98.
+00:20:34.000 So, let's just open that up in Google.
+00:20:35.919 Here's my camera.
+00:20:38.880 And you can see that at let's try to
+00:20:41.840 match it to the same product. So, this
+00:20:43.440 is Sesame Street. So, at Target in
+00:20:47.679 Walmart, it's about $20. Here, you plug
+00:20:50.960 in 20. It's going to be really close.
+00:20:53.520 This would be It's really small to ship,
+00:20:55.679 though. So, this is probably going to
+00:20:57.360 cost us like $4 to ship. And we're
+00:20:59.520 actually really close. 23% of our,000
+00:21:01.679 sold per month at $4 profit. So, we're
+00:21:04.159 going to see typically if you're
+00:21:05.919 sourcing, you want to see if you can get
+00:21:07.840 some discounts on, you know, this random
+00:21:10.400 website here or, you know, Target. If
+00:21:13.520 Target has a gift card, um, you can use
+00:21:15.679 it for 10% off and get our close our
+00:21:18.240 price as close to 30% ROI as possible.
+00:21:20.960 But for the sake of this call, we're
+00:21:22.159 just going to do just a surface stock
+00:21:23.679 and see if we can find another product
+00:21:24.960 here that's profitable. We're looking at
+00:21:27.120 this this bridge one that's 5,000 times
+00:21:29.600 sold a month. So even if you sell like a
+00:21:30.880 100 of these probably be good. But
+00:21:33.039 Tony's is on there at 1994. So I'm
+00:21:35.520 pretty sure it's just not going to be
+00:21:38.080 feasible to make this profitable because
+00:21:40.080 the the retail cost is going to be too
+00:21:41.760 similar. But now we know that, you know,
+00:21:43.520 people are selling that one brand. So we
+00:21:45.039 kind of build that knowledge here.
+00:21:46.320 Fujifilm is another good brand that I've
+00:21:48.400 seen around um that you could probably
+00:21:50.640 find profitably if you really do the
+00:21:52.240 work because if some guy some random guy
+00:21:54.559 named Bahing made simp LLC could do
+00:21:57.039 this. I'm sure you can do this too. Paw
+00:22:00.240 Patrol like these guys are very toy
+00:22:02.159 heavy. Um I do like some of his toy
+00:22:04.559 listings here. Um let's see
+00:22:08.880 these I'm looking at these charts right
+00:22:10.159 here. These looks pretty decent to me.
+00:22:11.679 So, I'm open up some of these um and see
+00:22:15.520 what we can do. That's the wrong thing.
+00:22:18.240 So, it's 200 sales a month on this one.
+00:22:22.640 And let's see what the price would be
+00:22:24.320 at.
+00:22:26.320 So, it's probably on sale. Looks like
+00:22:28.480 it's $20 on Target. So, it's selling for
+00:22:30.960 $19. So, it's just not going to be
+00:22:32.320 profitable to find. Um but the thing
+00:22:35.039 about this is you can see who else is
+00:22:37.039 selling it. So random guys are selling
+00:22:38.400 five reviews, 35 reviews, 150 reviews.
+00:22:41.679 So the guys are just regular people like
+00:22:43.520 me and you reselling this um and you can
+00:22:48.159 open up their store. This guy does a lot
+00:22:49.520 of beauty, a lot of random stuff here.
+00:22:51.840 And the moral of the story is if you do
+00:22:54.000 this all day, you're bound to find
+00:22:55.840 products here. Um and that's I think
+00:22:58.640 going to wrap it up for the full seller
+00:23:00.960 tutorial. How to find products
+00:23:02.400 profitably. We found some profit with
+00:23:03.919 the Yeti stuff. Uh and one that's going
+00:23:06.240 to be a Walmart product here that people
+00:23:08.640 are buying for. It's really close
+00:23:10.559 selling for $24.99. It's, you know,
+00:23:12.880 selling for $1.98 there on on Walmart.
+00:23:15.440 Probably with a discount. It's going to
+00:23:16.640 be really good.
+00:23:18.480 But yes, this is the full seller app
+00:23:20.159 tutorial. All right, guys. That's going
+00:23:22.080 to wrap it up for our full seller app
+00:23:23.679 tutorial for 2026. I hope this video
+00:23:26.400 helped you out a lot. And if you're a
+00:23:27.679 beginner seller looking to start selling
+00:23:29.440 on Amazon and you need some extra help,
+00:23:31.520 please send me a message. I'm more than
+00:23:32.880 happy to help you start and scale your
+00:23:34.240 very own Amazon business in 2026.

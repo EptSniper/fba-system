@@ -1,0 +1,330 @@
+00:00 - [Fraser] Hello, everyone.
+00:01 Thank you so much for joining this session
+00:03 on how to build a RAG-based
+generative AI chatbot
+00:07 in 20 minutes using Amazon
+Bedrock Knowledge Bases.
+00:10 I'm Fraser Sequiera, a startup
+solutions architect at AWS,
+00:15 so let's get started.
+00:18 To equip a foundation model
+00:19 with up-to-date proprietary information,
+00:21 organizations turn to
+retrieval-augmented generation.
+00:24 It's a technique that
+involves fetching data
+00:26 from company data sources
+and enriching the prompt
+00:28 with that data to deliver more relevant
+00:30 and accurate responses.
+00:33 Knowledge Bases for Amazon Bedrock
+00:34 is a fully managed RAG
+capability that allows you
+00:37 to customize foundation model
+responses with contextual
+00:40 and relevant company data.
+00:42 Knowledge Bases automates
+the end-to-end RAG workflow,
+00:45 including ingestion, retrieval,
+and prompt augmentation,
+00:48 eliminating the need for
+you to write custom code
+00:50 to integrate data sources
+and manage queries.
+00:53 Session context management is built in
+00:55 so your app can support
+multi-turn conversations.
+00:58 All the information retrieved
+from Knowledge Bases comes
+01:01 with source citations to
+improve the transparency
+01:03 and minimize hallucination.
+01:06 Let's now head to the AWS console
+01:08 to build our RAG application.
+01:11 Here, within the AWS console,
+01:13 we are on the Amazon Bedrock service page.
+01:16 Amazon Bedrock offers a diverse
+range of foundation models,
+01:20 accessible via a single API
+01:22 without you having to host them on GPUs.
+01:24 With Bedrock, you just pay for the input
+01:25 and output tokens consumed
+as part of your request.
+01:30 You can click on model access
+01:31 and go through the list
+of models available
+01:33 on the Bedrock platform.
+01:35 Once access has been
+granted, you can then head
+01:38 to the Bedrock playground
+mode and try out these models.
+01:43 You can also compare
+various foundation models
+01:46 on the Bedrock platform.
+01:48 Let's start with an example.
+01:52 Let's select Anthropic Claude 3 Sonnet,
+01:55 and we could choose another model.
+01:58 Let's go with Anthropic Claude 3 Haiku,
+02:05 and let's try out a prompt.
+02:15 Okay, so Haiku gave us a quick response,
+02:19 and then Sonnet came back later.
+02:21 Here, we can see details on
+the input tokens consumed,
+02:24 the output tokens, and the latency.
+02:27 Similarly, we have the same
+metrics for Haiku as well.
+02:31 Now that we understand a bit
+about the Bedrock platform,
+02:33 let's build our RAG application
+02:35 with Bedrock Knowledge Bases.
+02:36 For that, you would need to
+click here on Knowledge Bases.
+02:40 Now, here, we have an option
+to chat with your document,
+02:42 which you could explore on your own,
+02:44 but our goal is to build a
+production-ready application
+02:47 where we have millions of documents
+02:48 that need to be searched and summarized,
+02:50 so for that, let's click
+on create knowledge base.
+02:54 Now, let's build a tax advice bot,
+02:57 so let's give our knowledge
+base a name, tax advice.
+03:01 Adding a description is optional,
+03:03 but let's add a description here.
+03:04 "This KBase contains some tax data."
+03:13 The next is IAM permissions.
+03:15 You will need to create a service role
+03:16 if you have not created one previously.
+03:19 This is for Amazon
+Bedrock to access services
+03:21 and APIs on your behalf.
+03:23 Now, we can select the default option
+03:26 to create and use a new service role.
+03:28 Next, we need to choose our data source.
+03:29 Now, we have a wide
+variety of data sources
+03:31 that we can choose from,
+but for this example,
+03:32 let's stick to S3, so I have
+all of my tax-related data
+03:36 in an Amazon S3 bucket.
+03:39 You have options to tag and set up logging
+03:40 for your knowledge base here.
+03:43 Let's hit next. Here, we
+configure data sources.
+03:46 We can attach up to five data sources
+03:48 with a single knowledge base.
+03:49 Here, I'll select my S3 bucket
+03:51 that contains all the
+tax-related information.
+03:56 Once we've done that, we then
+need to configure a chunking
+03:58 and parsing strategy.
+03:60 We could just go with the defaults
+04:01 or customize it as per our use case.
+04:03 Bedrock offers a parsing strategy
+04:05 to extract tabular data to keep it intact,
+04:07 and you could select a
+foundation model for doing so.
+04:09 It also offers a chunking strategy.
+04:11 Let's pick the fixed
+chunking strategy here,
+04:14 and let's select max tokens as 500
+04:17 and a chunk overlap percentage of 10.
+04:21 This overlap maintains some context
+04:23 and continuity between chunks.
+04:26 You could further customize
+the chunking behavior
+04:28 and the document metadata
+processing in a Lambda function
+04:32 and attach it here.
+04:34 The next thing to do is to
+select an embeddings model.
+04:37 There are multiple options available here.
+04:39 Let's go with the Embed
+English V3 model by Cohere here
+04:41 that offers 1024 dimensions.
+04:47 Now, this model will create
+the embeddings for our data,
+04:50 which will then be chunked and
+stored in our vector database
+04:52 as per our configuration.
+04:55 So the next step is to
+select a vector database
+04:58 where we store these embeddings.
+04:60 Vector databases store the
+numerical representation
+05:02 of our data, and this allows them
+05:03 to perform similarity searches
+on our stored documents.
+05:07 Here, we will go with
+a quick create option.
+05:10 An Amazon OpenSearch
+Serverless vector collection
+05:11 is created on your behalf.
+05:13 There are also other options
+that you could explore.
+05:17 We support third-party
+vector databases as well,
+05:20 such as Pinecone, MongoDB,
+Atlas, Redis Enterprise Cloud.
+05:26 Now, let's click next and
+review our KBase configuration.
+05:39 After you've validated the configuration,
+05:40 you can click on create knowledge base.
+05:42 Now, depending on which
+vector database you've chosen,
+05:44 it would take anywhere
+between 30 to 15 minutes
+05:46 to set up your knowledge base.
+05:47 Here, I'll pause the video
+05:49 and get back when my
+knowledge base is set up.
+05:55 So here, we have knowledge base created.
+05:58 It roughly took around 10 minutes
+05:60 to create this knowledge base.
+06:02 Now, let's look at what all
+Bedrock has created for us.
+06:05 So the first thing that we can look at
+06:06 is the Amazon OpenSearch
+Serverless vector database here,
+06:11 so Bedrock has created
+06:12 a serverless vector collection for us.
+06:15 Let's review that.
+06:17 Let's go to Amazon OpenSearch service,
+06:25 and here, let's look at
+serverless collections.
+06:31 Now, here, we have a
+Bedrock knowledge base.
+06:34 Let's click on this.
+06:36 Actually, let's click on
+the OpenSearch dashboard,
+06:40 and let's see if we have some data here
+06:43 in our vector database,
+06:44 so let's just fire this default query
+06:47 and see if it returns any results.
+06:53 So right now, we do not have any data
+06:55 in our vector database.
+06:58 Now, let's go back to our knowledge base,
+07:01 and let's click on the radio button next
+07:04 to our S3 data source.
+07:09 Let's click on sync.
+07:13 Syncing should take anywhere
+from a couple of minutes
+07:17 to a few hours, depending
+on the number of documents
+07:20 in your S3 bucket.
+07:21 Here, we have roughly
+five to six documents,
+07:25 so syncing should be faster.
+07:27 During the sync process,
+Amazon Bedrock Knowledge Base
+07:30 is fetching the data from the S3 bucket.
+07:33 It's then chunking the data
+07:34 as per our defined chunking strategy
+07:37 and then passing those
+chunks to our embedding model
+07:39 that's generating embeddings for our data.
+07:42 Once the embeddings are
+generated, it's then stored
+07:44 in our Amazon OpenSearch
+Serverless vector collection.
+07:50 So syncing the S3 data
+with the vector database
+07:52 took around five minutes.
+07:54 We can check the sync history
+07:55 by clicking on the data source,
+07:57 and it tells you that we had
+six source files, one failed,
+08:00 and five were added.
+08:02 We can further investigate the fail reason
+08:04 by clicking on view warnings.
+08:05 We can retry the sync once
+we've fixed the issue.
+08:08 Now, let's quickly head
+to our vector database
+08:10 and confirm that the data exists in there.
+08:14 So here, let's click on
+our vector collection,
+08:16 and let's go to indexes.
+08:18 Here, we have roughly 38 MB of
+data in our vector database,
+08:21 and around 2,000 chunks indexed.
+08:25 We can further check the configuration
+08:26 of the index created by
+the Bedrock Knowledge Base.
+08:31 So here, we can click on the index
+08:34 and look for additional configuration.
+08:37 So here, we have more information.
+08:39 It's using Faiss for
+nearest neighbor search,
+08:41 it's using Euclidean distance type,
+08:43 and the vector field has 1024 dimensions.
+08:45 Similarly, we have some
+additional metadata in here
+08:48 along with their data type.
+08:51 So it stores the source
+URI of the document,
+08:53 the page number, a
+unique ID, and much more.
+08:57 If you intend to deep dive,
+you could verify the data
+09:00 by going to OpenSearch dashboards
+09:02 and firing the default query.
+09:04 As you recall, previously, we
+didn't have any data in here,
+09:07 but now that we have ingested documents
+09:09 through Bedrock Knowledge Base,
+09:10 we can see our chunked
+and embedded data in here.
+09:14 This is our vector field on
+which similarity searches
+09:17 will be performed, and this
+is our passage, or chunk,
+09:21 that's used for source
+citations by the knowledge base.
+09:24 Now that we see the data in here,
+09:26 it's time to put our
+knowledge base to the test,
+09:28 so let's head back to our knowledge base,
+09:30 and let's select a foundation model.
+09:33 In this case, let's go
+with Claude 3 Haiku.
+09:52 As you can see, it's
+giving me relevant data.
+09:53 It's also giving me source details,
+09:55 which is very important for provenance,
+09:57 which is important, especially
+in legal and finance domains.
+10:00 So here, we have source details
+10:02 and the metadata
+associated with the chunk.
+10:04 Here, we can also see from
+which document this chunk
+10:06 or this data was summarized.
+10:09 In order to build a chat bot
+using Bedrock Knowledge Bases,
+10:13 you would have to interact
+with knowledge base APIs.
+10:16 The two prominent APIs that
+you would have to interact with
+10:19 is the retrieve API and the
+retrieve and generate API.
+10:23 The retrieve API is solely responsible
+10:25 for fetching the documents,
+10:26 fetching the data from
+your vector database,
+10:29 whereas the retrieve and
+generate API is responsible
+10:31 for fetching the data
+from the vector database
+10:34 as well as passing on that
+information to a foundation model
+10:37 and generating the
+response from that model
+10:40 and giving you the final output.
+10:44 Hope you enjoyed tuning in.
+That's all for today's video.
+10:48 Thanks for watching.

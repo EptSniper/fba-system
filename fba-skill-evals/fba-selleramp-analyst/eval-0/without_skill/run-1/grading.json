@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Gives SAS settings checklist (inbound + thresholds)",
+      "passed": true,
+      "evidence": "\u2026ny cost field (buy cost, inbound shipping, prep) is off,\u2026"
+    },
+    {
+      "text": "Catches the sales-tax double-count trap (bake into cost, not %)",
+      "passed": true,
+      "evidence": "\u2026or you** \u2014 you do it. So bake in a prep cost of about\u2026"
+    },
+    {
+      "text": "Cites 30% ROI / $3 profit gates",
+      "passed": true,
+      "evidence": "\u2026ROI threshold \u2192 set to **30%** Set the ROI target/thr\u2026"
+    },
+    {
+      "text": "Notes true landed cost must include shipping",
+      "passed": true,
+      "evidence": "\u2026field (buy cost, inbound shipping, prep) is off, the ROI i\u2026"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Recommends reverse sourcing / storefront stalking for a beginner",
+      "passed": true,
+      "evidence": "\u2026ner** \u2192 your method is **reverse sourcing (storefront sta\u2026"
+    },
+    {
+      "text": "Deal-first (source where the sale/cashback is)",
+      "passed": true,
+      "evidence": "\u2026le today: No single live sale to chase yet (you have n\u2026"
+    },
+    {
+      "text": "Produces a concrete plan / steps (not vague)",
+      "passed": true,
+      "evidence": "\u2026# FBA Sourcing Plan \u2014 Brand-New Beginner, $5\u2026"
+    },
+    {
+      "text": "Hands to deal-analyst / verify, no auto-buy",
+      "passed": true,
+      "evidence": "\u2026here is a *hypothesis to verify*, never a buy order \u2014 ev\u2026"
+    }
+  ]
+}

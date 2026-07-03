@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Identifies rising offer count as avoid/negative",
+      "passed": true,
+      "evidence": "\u2026Keepa Read: Offer Count Climbing, Buy Box Sliding  ##\u2026"
+    },
+    {
+      "text": "Connects rising offers to falling/tanking price",
+      "passed": true,
+      "evidence": "\u2026Count Climbing, Buy Box Sliding  ## The setup - Offer\u2026"
+    },
+    {
+      "text": "Verdict leans reject/caution on history",
+      "passed": true,
+      "evidence": "\u2026; >2-3 months to clear = pass.  ## Bottom line  A satu\u2026"
+    },
+    {
+      "text": "Hands off / verify / not a final buy",
+      "passed": true,
+      "evidence": "\u2026k read only \u2014 separately confirm eligibility before any b\u2026"
+    }
+  ]
+}

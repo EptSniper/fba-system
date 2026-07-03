@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  :root{
+    --bg:#e7e0cf;--panel:#f6f2e8;--panel-2:#efe8d8;--inset:#efe7d6;--field-bg:#fbf9f2;
+    --bd:rgba(32,30,24,0.92);--bd2:rgba(32,30,24,0.16);--bd3:rgba(32,30,24,0.44);
+    --chip:rgba(32,30,24,0.05);--dot:rgba(32,30,24,0.34);--grid:rgba(32,30,24,0.055);
+    --text:#201e18;--text-soft:#3c382e;--muted:#615c4e;--faint:#89826f;--faint2:#a49d88;
+    --acc:#e8531f;--acc-ink:#b23c15;--acc-tint:rgba(232,83,31,0.10);
+    --live:#1f7a4d;--live-tint:rgba(31,122,77,0.10);--warn:#b7791a;--warn-tint:rgba(183,121,26,0.12);--bad:#c0361f;--bad-tint:rgba(192,54,31,0.10);--info:#2a6f80;
+    --header-bg:#e7e0cf;
+  }
+  [data-theme="dark"]{
+    --bg:#141310;--panel:#1d1a14;--panel-2:#231f17;--inset:#1a1710;--field-bg:#100e0a;
+    --bd:rgba(240,233,216,0.82);--bd2:rgba(240,233,216,0.15);--bd3:rgba(240,233,216,0.36);
+    --chip:rgba(240,233,216,0.05);--dot:rgba(240,233,216,0.34);--grid:rgba(240,233,216,0.05);
+    --text:#f2ecdd;--text-soft:#d8d1c0;--muted:#a39c89;--faint:#7a7360;--faint2:#5e5849;
+    --acc:#f26a2e;--acc-ink:#f8935f;--acc-tint:rgba(242,106,46,0.14);
+    --live:#45c988;--live-tint:rgba(69,201,136,0.12);--warn:#e6a83a;--warn-tint:rgba(230,168,58,0.14);--bad:#ef6a4f;--bad-tint:rgba(239,106,79,0.12);--info:#57bcd0;
+    --header-bg:#141310;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  ::selection{background:var(--acc-tint)}
+  *{scrollbar-width:thin;scrollbar-color:var(--bd3) transparent}
+  *::-webkit-scrollbar{width:9px;height:9px}
+  *::-webkit-scrollbar-thumb{background:var(--bd3);border:2px solid transparent;background-clip:padding-box}
+  .nsb::-webkit-scrollbar{display:none}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit}
+  input[type=number]::-webkit-inner-spin-button{opacity:.35}
+  @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.3}}
+  @keyframes scan{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}
+  @keyframes rowin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</helmet>
+<div data-theme="{{ themeAttr }}" style="--acc:#e8531f;{{ rootVars }} position:relative;display:flex;height:100vh;width:100%;overflow:hidden;background:var(--bg);color:var(--text)">
+
+  <sc-if value="{{ showGrid }}" hint-placeholder-val="{{ true }}">
+    <div aria-hidden="true" style="position:absolute;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:22px 22px"></div>
+  </sc-if>
+
+  <!-- ───────────── SIDEBAR ───────────── -->
+  <aside style="position:relative;z-index:2;display:flex;flex-direction:column;width:238px;flex:none;height:100%;border-right:1.5px solid var(--bd);background:var(--panel)">
+    <div style="display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1.5px solid var(--bd)">
+      <div style="display:grid;place-items:center;width:36px;height:36px;border-radius:2px;background:var(--acc);color:#faf7ef;font:700 14px/1 'JetBrains Mono',monospace;letter-spacing:-.06em">OA</div>
+      <div style="display:flex;flex-direction:column;gap:3px">
+        <div style="font:700 13px/1 'JetBrains Mono',monospace;letter-spacing:.02em">CONTROL TERMINAL</div>
+        <div style="font:500 8px/1 'JetBrains Mono',monospace;letter-spacing:.24em;text-transform:uppercase;color:var(--faint)">agent · automations</div>
+      </div>
+    </div>
+
+    <nav class="nsb" style="flex:1;overflow-y:auto;padding:10px 10px;display:flex;flex-direction:column;gap:10px">
+      <sc-for list="{{ nav }}" as="grp" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <div style="display:flex;align-items:center;gap:8px;padding:4px 8px 8px"><span style="font:600 8px/1 'JetBrains Mono',monospace;letter-spacing:.22em;text-transform:uppercase;color:var(--faint2)">{{ grp.group }}</span><span style="flex:1;height:1px;background:var(--bd2)"></span></div>
+          <sc-for list="{{ grp.items }}" as="item" hint-placeholder-count="2">
+            <button onClick="{{ item.go }}" style="position:relative;display:flex;align-items:center;gap:11px;width:100%;border:none;border-radius:0;padding:7px 10px;text-align:left;background:transparent;color:var(--muted);font:500 13px/1 'Space Grotesk';transition:background .12s ease,color .12s ease;{{ item.activeCss }}">
+              <sc-if value="{{ item.active }}"><span style="position:absolute;inset:0;background:var(--acc-tint);z-index:0"></span></sc-if>
+              <sc-if value="{{ item.active }}"><span style="position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc);z-index:1"></span></sc-if>
+              <span style="position:relative;z-index:1;display:flex;flex:none">{{ item.icon }}</span>
+              <span style="position:relative;z-index:1;flex:1">{{ item.label }}</span>
+              <sc-if value="{{ item.badge }}"><span style="position:relative;z-index:1;min-width:18px;text-align:center;font:700 9px/1 'JetBrains Mono',monospace;color:{{ item.badgeColor }};background:{{ item.badgeBg }};border-radius:2px;padding:3px 5px">{{ item.badge }}</span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </sc-for>
+    </nav>
+
+    <div style="padding:10px 16px;border-top:1.5px solid var(--bd);display:flex;align-items:center;gap:10px">
+      <div style="display:grid;place-items:center;width:30px;height:30px;border-radius:2px;background:var(--chip);border:1.5px solid var(--bd3);font:700 11px/1 'JetBrains Mono';color:var(--acc-ink)">M</div>
+      <div style="flex:1;min-width:0">
+        <div style="font:600 12px/1.2 'Space Grotesk'">Mehmet</div>
+        <div style="font:500 9px/1.2 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">operator</div>
+      </div>
+      <span style="width:7px;height:7px;border-radius:50%;background:var(--live);animation:livepulse 1.8s ease-in-out infinite"></span>
+    </div>
+  </aside>
+
+  <!-- ───────────── MAIN ───────────── -->
+  <main class="nsb" style="position:relative;z-index:2;flex:1;min-width:0;height:100%;overflow-y:auto">
+    <header style="position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 20px;border-bottom:1.5px solid var(--bd);background:var(--header-bg)">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="font:500 8px/1 'JetBrains Mono',monospace;letter-spacing:.24em;text-transform:uppercase;color:var(--faint)">{{ viewEyebrow }}</div>
+        <h1 style="margin:0;font:700 20px/1 'Space Grotesk';letter-spacing:-.01em;text-transform:uppercase">{{ viewTitle }}</h1>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="display:flex;align-items:center;gap:13px">
+          <sc-for list="{{ statusPills }}" as="p" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="width:7px;height:7px;border-radius:50%;background:{{ p.color }};{{ p.pulse }}"></span>
+              <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">{{ p.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <span style="width:1.5px;height:22px;background:var(--bd2)"></span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onClick="{{ runScout }}" title="Run Scout Agent from anywhere" style="border:1.5px solid var(--acc);border-radius:2px;background:transparent;color:var(--acc-ink);padding:7px 11px;font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;transition:background .12s;{{ headerScoutDisabled }}" style-hover="background:var(--acc-tint)">⚡ {{ headerScoutLabel }}</button>
+          <button onClick="{{ goAutomations }}" title="Open automations" style="border:1.5px solid var(--bd3);border-radius:2px;background:var(--chip);color:var(--text);padding:7px 11px;font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;transition:border-color .12s" style-hover="border-color:var(--acc)">Automations</button>
+        </div>
+        <span style="width:1.5px;height:22px;background:var(--bd2)"></span>
+        <button onClick="{{ toggleTheme }}" title="Toggle paper / carbon" style="display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--bd3);border-radius:2px;background:var(--chip);color:var(--text);padding:7px 11px;font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;transition:border-color .12s ease" style-hover="border-color:var(--acc)">
+          <span style="display:flex">{{ themeIcon }}</span>{{ themeLabel }}
+        </button>
+        <div style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--faint)">{{ today }}</div>
+      </div>
+    </header>
+
+    <div style="padding:16px 20px 52px;max-width:1360px;margin:0 auto">
+
+      <!-- ════════ DASHBOARD ════════ -->
+      <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);border:1.5px solid var(--bd)">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:8px;border-right:1px solid var(--bd2);background:var(--panel);padding:11px 12px;min-height:86px">
+              <span style="font:600 8px/1.3 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">{{ k.label }}</span>
+              <div style="font:700 23px/1 'JetBrains Mono',monospace;letter-spacing:-.03em;{{ k.valStyle }}">{{ k.value }}</div>
+              <div style="font:500 10px/1.3 'JetBrains Mono';letter-spacing:.02em;color:{{ k.subColor }};margin-top:auto">{{ k.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1.32fr .68fr;gap:10px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <!-- AGENT SUMMARY -->
+            <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px;border-top:4px solid var(--acc)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="display:grid;place-items:center;width:46px;height:46px;flex:none;border:1.5px solid var(--bd);background:var(--acc-tint);color:var(--acc-ink)">{{ scoutIconBig }}</div>
+                  <div>
+                    <div style="display:flex;align-items:center;gap:9px"><h3 style="margin:0;font:600 16px/1 'Space Grotesk'">Scout Agent</h3><span style="font:700 8px/1 'JetBrains Mono';letter-spacing:.12em;text-transform:uppercase;color:{{ scoutChipColor }};border:1px solid {{ scoutChipColor }};border-radius:2px;padding:4px 6px">{{ scoutStatusLabel }}</span></div>
+                    <div style="margin-top:6px;font:500 12px/1.4 'JetBrains Mono';color:var(--muted)">{{ scoutSummaryLine }}</div>
+                  </div>
+                </div>
+                <button onClick="{{ goScout }}" style="border:1.5px solid var(--acc);border-radius:2px;background:var(--acc);color:#faf7ef;padding:11px 16px;font:700 10px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;transition:filter .12s" style-hover="filter:brightness(1.06)">Open agent →</button>
+              </div>
+            </section>
+
+            <!-- PIPELINE FLOW -->
+            <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">[01]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Pipeline flow</h3></div><span style="font:600 10px/1 'JetBrains Mono';color:var(--acc-ink)">{{ pipelineValue }} projected</span></div>
+              <div style="display:grid;grid-template-columns:repeat(6,1fr);border:1.5px solid var(--bd)">
+                <sc-for list="{{ funnel }}" as="col" hint-placeholder-count="6">
+                  <button onClick="{{ goPipeline }}" style="text-align:left;border:none;border-right:1px solid var(--bd2);background:transparent;padding:0">
+                    <div style="display:flex;align-items:center;gap:6px;padding:9px 10px;border-bottom:1px solid var(--bd2)"><span style="width:7px;height:7px;border-radius:50%;background:{{ col.color }}"></span><span style="font:600 8px/1 'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft)">{{ col.label }}</span></div>
+                    <div style="padding:14px 10px 6px"><div style="font:700 26px/1 'JetBrains Mono',monospace;color:var(--text)">{{ col.count }}</div></div>
+                    <div style="padding:0 10px 12px;font:500 9px/1 'JetBrains Mono';color:var(--faint)">{{ col.value }}</div>
+                  </button>
+                </sc-for>
+              </div>
+            </section>
+
+            <!-- ACTIVITY -->
+            <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">[02]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Activity log</h3></div><span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--faint)">{{ logCount }}</span></div>
+              <div class="nsb" style="max-height:230px;overflow-y:auto;display:flex;flex-direction:column">
+                <sc-for list="{{ activity }}" as="e" hint-placeholder-count="6">
+                  <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd2)">
+                    <span style="flex:none;font:700 7px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:{{ e.color }};border:1px solid {{ e.color }};border-radius:2px;padding:4px 6px;height:fit-content">{{ e.kind }}</span>
+                    <div style="flex:1;min-width:0"><div style="font:500 12px/1.4 'Space Grotesk';color:var(--text)">{{ e.text }}</div><div style="margin-top:3px;font:500 10px/1 'JetBrains Mono',monospace;color:var(--faint)">{{ e.time }}</div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">[03]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Automations</h3></div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:14px"><span style="font:700 30px/1 'JetBrains Mono';color:var(--text)">{{ autoLiveCount }}</span><span style="font:600 11px/1 'JetBrains Mono';color:var(--faint)">/ {{ autoTotal }} live · {{ autoRuns }} runs</span></div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <sc-for list="{{ autoMini }}" as="a" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--bd2);background:var(--inset);padding:6px 6px 6px 10px">
+                    <span style="width:7px;height:7px;flex:none;border-radius:50%;background:{{ a.dot }};{{ a.pulse }}"></span>
+                    <span style="flex:1;font:500 11px/1.2 'Space Grotesk';color:var(--text)">{{ a.name }}</span>
+                    <span style="font:600 9px/1 'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase;color:{{ a.statColor }}">{{ a.stat }}</span>
+                    <button onClick="{{ a.run }}" title="Run now" style="flex:none;border:1px solid var(--bd3);border-radius:2px;background:transparent;color:var(--acc-ink);padding:3px 7px;font:700 10px/1 'JetBrains Mono';transition:background .12s" style-hover="background:var(--acc-tint)">▶</button>
+                  </div>
+                </sc-for>
+              </div>
+              <button onClick="{{ goAutomations }}" style="margin-top:13px;width:100%;border:1.5px solid var(--bd);border-radius:2px;background:transparent;color:var(--text);padding:10px;font:700 10px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;transition:background .12s" style-hover="background:var(--chip)">Manage automations →</button>
+            </section>
+
+            <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--live)">[04]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Top opportunity</h3></div>
+              <sc-if value="{{ hasBest }}">
+                <div style="border:1px solid var(--bd2);background:var(--inset);padding:14px">
+                  <div style="font:600 14px/1.3 'Space Grotesk';color:var(--text)">{{ best.title }}</div>
+                  <div style="margin-top:4px;font:500 10px/1 'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase;color:var(--faint)">{{ best.meta }}</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:13px">
+                    <div><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">Profit / unit</div><div style="margin-top:6px;font:700 18px/1 'JetBrains Mono';color:var(--live)">{{ best.profit }}</div></div>
+                    <div><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">ROI</div><div style="margin-top:6px;font:700 18px/1 'JetBrains Mono';color:var(--text)">{{ best.roi }}</div></div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noBest }}"><div style="font-size:12px;color:var(--faint);padding:8px 0">Run the Scout Agent to surface picks.</div></sc-if>
+            </section>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ════════ SCOUT AGENT ════════ -->
+      <sc-if value="{{ isScout }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <!-- CONSOLE -->
+        <section style="border:1.5px solid var(--bd);background:var(--panel);border-top:4px solid var(--acc)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:13px 20px">
+            <div style="display:flex;align-items:center;gap:15px">
+              <div style="display:grid;place-items:center;width:50px;height:50px;flex:none;border:1.5px solid var(--bd);background:var(--acc-tint);color:var(--acc-ink)">{{ scoutIconBig }}</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:10px"><h2 style="margin:0;font:600 19px/1 'Space Grotesk'">Scout Agent</h2><span style="font:700 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:{{ scoutChipColor }};border:1px solid {{ scoutChipColor }};border-radius:2px;padding:5px 7px">{{ scoutStatusLabel }}</span></div>
+                <div style="margin-top:7px;font:500 12px/1.4 'JetBrains Mono';color:var(--muted)">{{ scoutSummaryLine }}</div>
+              </div>
+            </div>
+            <button onClick="{{ runScout }}" style="border:1.5px solid var(--acc);border-radius:2px;background:{{ scoutBtnBg }};color:{{ scoutBtnColor }};padding:13px 20px;font:700 11px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;transition:filter .12s;{{ scoutBtnDisabled }}" style-hover="filter:brightness(1.06)">{{ scoutBtnLabel }}</button>
+          </div>
+          <sc-if value="{{ scoutScanning }}">
+            <div style="height:3px;background:var(--bd2);overflow:hidden"><div style="height:100%;width:28%;background:var(--acc);animation:scan 1s linear infinite"></div></div>
+          </sc-if>
+          <div style="display:flex;flex-wrap:wrap;gap:0;border-top:1.5px solid var(--bd)">
+            <sc-for list="{{ scoutConfig }}" as="c" hint-placeholder-count="6">
+              <div style="flex:1;min-width:130px;border-right:1px solid var(--bd2);padding:11px 14px"><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">{{ c.label }}</div><div style="margin-top:6px;font:700 13px/1 'JetBrains Mono';color:var(--text)">{{ c.value }}</div></div>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- RESULTS -->
+        <sc-if value="{{ scoutHasRun }}">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid var(--bd)">
+            <sc-for list="{{ scoutStatTiles }}" as="t" hint-placeholder-count="4">
+              <div style="border-right:1px solid var(--bd2);background:var(--panel);padding:14px"><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">{{ t.label }}</div><div style="margin-top:8px;font:700 24px/1 'JetBrains Mono';color:{{ t.color }}">{{ t.value }}</div></div>
+            </sc-for>
+          </div>
+
+          <section style="border:1.5px solid var(--bd);background:var(--panel)">
+            <div style="display:flex;align-items:center;gap:9px;padding:14px 18px;border-bottom:1.5px solid var(--bd)"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">▸</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Ranked picks</h3><span style="font:500 9px/1 'JetBrains Mono';color:var(--faint)">scored against ruleset · buy-grade first</span><sc-if value="{{ scoutShowQueueAll }}"><button onClick="{{ queueAllBuy }}" style="margin-left:auto;border:1.5px solid var(--acc);border-radius:2px;background:var(--acc);color:#faf7ef;padding:7px 11px;font:700 9px/1 'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase;transition:filter .12s" style-hover="filter:brightness(1.06)">{{ scoutQueueAllLabel }}</button></sc-if></div>
+            <div style="display:grid;grid-template-columns:34px 1.7fr .9fr .8fr .7fr 1.1fr 96px;padding:9px 18px;border-bottom:1px solid var(--bd2);font:600 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">
+              <span>#</span><span>Product</span><span>Buy→Sell</span><span>Profit</span><span>ROI</span><span>Score / verdict</span><span></span>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ scoutPicks }}" as="p" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:34px 1.7fr .9fr .8fr .7fr 1.1fr 96px;align-items:center;gap:0;padding:12px 18px;border-bottom:1px solid var(--bd2);animation:rowin .25s ease both;{{ p.rowStyle }}">
+                  <span style="font:700 12px/1 'JetBrains Mono';color:var(--faint)">{{ p.rank }}</span>
+                  <div style="min-width:0;padding-right:10px"><div style="font:600 13px/1.25 'Space Grotesk';color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.title }}</div><div style="font:500 10px/1.2 'JetBrains Mono';color:var(--faint)">{{ p.sub }}</div></div>
+                  <span style="font:600 12px/1 'JetBrains Mono';color:var(--text-soft)">{{ p.buySell }}</span>
+                  <span style="font:700 13px/1 'JetBrains Mono';color:{{ p.profitColor }}">{{ p.profit }}</span>
+                  <span style="font:600 13px/1 'JetBrains Mono';color:var(--text)">{{ p.roi }}</span>
+                  <div style="padding-right:12px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px"><span style="font:700 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:{{ p.verdictColor }}">{{ p.verdict }}</span><span style="font:600 10px/1 'JetBrains Mono';color:var(--faint)">{{ p.score }}</span></div><div style="height:5px;background:var(--bd2);overflow:hidden"><div style="{{ p.scoreFill }}"></div></div></div>
+                  <div style="text-align:right"><sc-if value="{{ p.canQueue }}"><button onClick="{{ p.queue }}" style="border:1px solid var(--acc);border-radius:2px;background:transparent;color:var(--acc-ink);padding:6px 8px;font:700 8px/1 'JetBrains Mono';letter-spacing:.08em;text-transform:uppercase;transition:background .12s" style-hover="background:var(--acc-tint)">+ queue</button></sc-if><sc-if value="{{ p.rejected }}"><span style="font:600 9px/1.3 'JetBrains Mono';color:var(--bad)">{{ p.rejectReason }}</span></sc-if></div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-if>
+        <sc-if value="{{ scoutIdle }}">
+          <section style="border:1.5px dashed var(--bd3);background:var(--inset);padding:44px 20px;text-align:center">
+            <div style="display:inline-grid;place-items:center;width:52px;height:52px;border:1.5px solid var(--bd3);color:var(--faint);margin-bottom:14px">{{ scoutIconBig }}</div>
+            <div style="font:600 15px/1.3 'Space Grotesk';color:var(--text)">Agent is idle</div>
+            <div style="margin:8px auto 0;max-width:44ch;font-size:13px;line-height:1.5;color:var(--faint)">Hit <span style="color:var(--acc-ink);font-weight:600">Run scout</span> to scan the candidate pool, score every product against your buy criteria and guards, and rank the buy-grade opportunities.</div>
+          </section>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ════════ ANALYZER ════════ -->
+      <sc-if value="{{ isAnalyze }}">
+      <div style="display:grid;grid-template-columns:.82fr 1.18fr;gap:10px;align-items:start">
+        <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">[01]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Product inputs</h3></div>
+          <p style="margin:0 0 16px;font-size:12px;line-height:1.5;color:var(--faint)">Computed live on Amazon's 2025 US FBA fee schedule.</p>
+
+          <label style="display:block;font:600 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Product name</label>
+          <input value="{{ f.title }}" onChange="{{ h.title }}" placeholder="e.g. Crayola 64-ct crayons" style="width:100%;border:1.5px solid var(--bd3);border-radius:2px;background:var(--field-bg);padding:10px 12px;color:var(--text);font:500 13px/1 'Space Grotesk';outline:none;margin-bottom:14px" style-focus="border-color:var(--acc)">
+
+          <label style="display:block;font:600 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Category · referral rate</label>
+          <select value="{{ f.category }}" onChange="{{ h.category }}" style="width:100%;border:1.5px solid var(--bd3);border-radius:2px;background:var(--field-bg);padding:10px 12px;color:var(--text);font:500 13px/1 'Space Grotesk';outline:none;margin-bottom:14px" style-focus="border-color:var(--acc)">
+            <sc-for list="{{ categoryOpts }}" as="c" hint-placeholder-count="6"><option value="{{ c.value }}">{{ c.label }}</option></sc-for>
+          </select>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div><label style="display:block;font:600 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Buy cost</label><div style="display:flex;align-items:center;border:1.5px solid var(--bd3);border-radius:2px;background:var(--field-bg)"><span style="padding:0 4px 0 11px;font:600 13px 'JetBrains Mono';color:var(--faint)">$</span><input value="{{ f.cost }}" onChange="{{ h.cost }}" type="number" placeholder="0.00" style="width:100%;border:none;background:transparent;padding:10px 11px 10px 2px;color:var(--text);font:600 14px/1 'JetBrains Mono';outline:none"></div></div>
+            <div><label style="display:block;font:600 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Sell price</label><div style="display:flex;align-items:center;border:1.5px solid var(--bd3);border-radius:2px;background:var(--field-bg)"><span style="padding:0 4px 0 11px;font:600 13px 'JetBrains Mono';color:var(--faint)">$</span><input value="{{ f.sell }}" onChange="{{ h.sell }}" type="number" placeholder="0.00" style="width:100%;border:none;background:transparent;padding:10px 11px 10px 2px;color:var(--text);font:600 14px/1 'JetBrains Mono';outline:none"></div></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+            <div><label style="display:block;font:600 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Weight lb</label><input value="{{ f.weight }}" onChange="{{ h.weight }}" type="number" placeholder="1.0" style="width:100%;border:1.5px solid var(--bd3);border-radius:2px;background:var(--field-bg);padding:10px 11px;color:var(--text);font:600 13px/1 'JetBrains Mono';outline:none" style-focus="border-color:var(--acc)"></div>
+            <div><label style="display:block;font:600 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">BSR</label><input value="{{ f.bsr }}" onChange="{{ h.bsr }}" type="number" placeholder="120000" style="width:100%;border:1.5px solid var(--bd3);border-radius:2px;background:var(--field-bg);padding:10px 11px;color:var(--text);font:600 13px/1 'JetBrains Mono';outline:none" style-focus="border-color:var(--acc)"></div>
+            <div><label style="display:block;font:600 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Sellers</label><input value="{{ f.offers }}" onChange="{{ h.offers }}" type="number" placeholder="6" style="width:100%;border:1.5px solid var(--bd3);border-radius:2px;background:var(--field-bg);padding:10px 11px;color:var(--text);font:600 13px/1 'JetBrains Mono';outline:none" style-focus="border-color:var(--acc)"></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:.55fr 1fr;gap:10px">
+            <div><label style="display:block;font:600 8px/1 'JetBrains Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px">Qty</label><input value="{{ f.qty }}" onChange="{{ h.qty }}" type="number" style="width:100%;border:1.5px solid var(--bd3);border-radius:2px;background:var(--field-bg);padding:11px;color:var(--text);font:600 14px/1 'JetBrains Mono';outline:none" style-focus="border-color:var(--acc)"></div>
+            <div style="display:flex;flex-direction:column;justify-content:flex-end"><button onClick="{{ saveDeal }}" style="width:100%;border:1.5px solid var(--acc);border-radius:2px;background:var(--acc);color:#faf7ef;padding:12px;font:700 11px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;transition:filter .12s;{{ saveDisabled }}" style-hover="filter:brightness(1.06)">Save to pipeline →</button></div>
+          </div>
+          <sc-if value="{{ hasToast }}"><div style="margin-top:12px;font:600 10px/1.4 'JetBrains Mono';letter-spacing:.06em;color:var(--live);text-align:center">{{ toast }}</div></sc-if>
+        </section>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <section style="border:1.5px solid var(--bd);background:{{ res.verdictBg }};padding:20px 22px;border-left:5px solid {{ res.verdictColor }}">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+              <div><div style="font:700 9px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase;color:var(--faint)">Verdict</div><div style="margin-top:8px;font:700 34px/1 'Space Grotesk';letter-spacing:-.02em;color:{{ res.verdictColor }}">{{ res.verdictLabel }}</div><div style="margin-top:8px;font-size:13px;line-height:1.45;color:var(--text-soft);max-width:42ch">{{ res.verdictNote }}</div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--bd);flex:none">
+                <div style="border-right:1px solid var(--bd2);border-bottom:1px solid var(--bd2);padding:11px 16px;text-align:right"><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">Net / unit</div><div style="margin-top:6px;font:700 20px/1 'JetBrains Mono';color:{{ res.netColor }}">{{ res.net }}</div></div>
+                <div style="border-bottom:1px solid var(--bd2);padding:11px 16px;text-align:right"><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">ROI</div><div style="margin-top:6px;font:700 20px/1 'JetBrains Mono';color:{{ res.roiColor }}">{{ res.roi }}</div></div>
+                <div style="border-right:1px solid var(--bd2);padding:11px 16px;text-align:right"><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">Margin</div><div style="margin-top:6px;font:700 20px/1 'JetBrains Mono';color:var(--text)">{{ res.margin }}</div></div>
+                <div style="padding:11px 16px;text-align:right"><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">Total × qty</div><div style="margin-top:6px;font:700 20px/1 'JetBrains Mono';color:{{ res.netColor }}">{{ res.totalProfit }}</div></div>
+              </div>
+            </div>
+          </section>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start">
+            <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">[02]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Fee breakdown</h3></div>
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ res.breakdown }}" as="b" hint-placeholder-count="6"><div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd2);{{ b.rowStyle }}"><span style="font-size:13px;color:{{ b.labelColor }}">{{ b.label }}</span><span style="font:600 13px/1 'JetBrains Mono',monospace;color:{{ b.valueColor }}">{{ b.value }}</span></div></sc-for>
+              </div>
+            </section>
+            <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">[03]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Ruleset check</h3></div>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <sc-for list="{{ res.checks }}" as="c" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:10px"><span style="display:grid;place-items:center;width:18px;height:18px;flex:none;border-radius:2px;font:700 11px/1 'JetBrains Mono';color:#faf7ef;background:{{ c.iconBg }}">{{ c.icon }}</span><span style="flex:1;font:500 12px/1.3 'Space Grotesk';color:var(--text-soft)">{{ c.label }}</span><span style="font:600 11px/1 'JetBrains Mono';color:{{ c.valueColor }}">{{ c.value }}</span></div></sc-for>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ════════ AUTOMATIONS ════════ -->
+      <sc-if value="{{ isAutomations }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <section style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;border:1.5px solid var(--bd);background:var(--panel);padding:13px 20px">
+          <div style="display:flex;align-items:baseline;gap:20px">
+            <div><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--faint)">Live now</div><div style="margin-top:8px;font:700 30px/1 'JetBrains Mono';color:var(--live)">{{ autoLiveCount }}<span style="font:600 14px 'JetBrains Mono';color:var(--faint)"> / {{ autoTotal }}</span></div></div>
+            <div><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.16em;text-transform:uppercase;color:var(--faint)">Total runs</div><div style="margin-top:8px;font:700 30px/1 'JetBrains Mono';color:var(--text)">{{ autoRuns }}</div></div>
+            <div style="max-width:34ch;font-size:12px;line-height:1.5;color:var(--muted)">Every business & financial task in one place. Run any on demand, or flip it <span style="color:var(--live);font-weight:600">LIVE</span> to let it run on schedule.</div>
+          </div>
+          <button onClick="{{ runAllLive }}" style="border:1.5px solid var(--acc);border-radius:2px;background:var(--acc);color:#faf7ef;padding:12px 18px;font:700 10px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;transition:filter .12s" style-hover="filter:brightness(1.06)">▶ Run all live</button>
+        </section>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <sc-for list="{{ automations }}" as="a" hint-placeholder-count="6">
+            <section style="display:flex;flex-direction:column;border:1.5px solid var(--bd);background:var(--panel);{{ a.cardStyle }}">
+              <div style="display:flex;align-items:flex-start;gap:13px;padding:16px 16px 14px">
+                <span style="display:grid;place-items:center;width:38px;height:38px;flex:none;border:1.5px solid var(--bd2);background:var(--chip);color:var(--acc-ink)">{{ a.icon }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:center;gap:9px"><h3 style="margin:0;font:600 14px/1.2 'Space Grotesk';color:var(--text)">{{ a.name }}</h3><span style="font:700 7px/1 'JetBrains Mono';letter-spacing:.12em;text-transform:uppercase;color:{{ a.statColor }};border:1px solid {{ a.statColor }};border-radius:2px;padding:4px 5px">{{ a.statLabel }}</span></div>
+                  <p style="margin:6px 0 0;font-size:12px;line-height:1.45;color:var(--muted)">{{ a.desc }}</p>
+                </div>
+                <button onClick="{{ a.toggle }}" title="Toggle live" style="position:relative;width:42px;height:23px;flex:none;border-radius:2px;border:1.5px solid var(--bd3);transition:background .18s;{{ a.trackStyle }}"><span style="position:absolute;top:1.5px;left:1.5px;width:16px;height:16px;border-radius:1px;transition:transform .18s;{{ a.knobStyle }}"></span></button>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--bd2)">
+                <div style="border-right:1px solid var(--bd2);padding:11px 16px"><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">{{ a.metricLabel }}</div><div style="margin-top:6px;font:700 16px/1 'JetBrains Mono';color:var(--text)">{{ a.metric }}</div></div>
+                <div style="padding:11px 16px"><div style="font:600 8px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">Last run</div><div style="margin-top:6px;font:600 12px/1 'JetBrains Mono';color:var(--text-soft)">{{ a.lastRun }}</div></div>
+              </div>
+              <div style="display:flex;gap:0;border-top:1px solid var(--bd2)">
+                <button onClick="{{ a.run }}" style="flex:1;border:none;border-right:1px solid var(--bd2);background:transparent;color:var(--acc-ink);padding:12px;font:700 10px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;transition:background .12s" style-hover="background:var(--acc-tint)">▶ Run now</button>
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;font:500 10px/1 'JetBrains Mono';color:var(--faint)">{{ a.schedule }}</div>
+              </div>
+            </section>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ════════ PIPELINE ════════ -->
+      <sc-if value="{{ isPipeline }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <section style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1.5px solid var(--bd);background:var(--panel);padding:16px 18px">
+          <div style="display:flex;align-items:center;gap:9px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">▸</span><h3 style="margin:0;font:600 13px/1 'Space Grotesk'">{{ leadsTotalLabel }} leads · {{ pipelineValue }} projected profit</h3></div>
+          <div style="display:flex;gap:8px"><button onClick="{{ goScout }}" style="border:1.5px solid var(--bd);border-radius:2px;background:transparent;color:var(--text);padding:9px 14px;font:700 10px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;transition:background .12s" style-hover="background:var(--chip)">Scout picks</button><button onClick="{{ goAnalyze }}" style="border:1.5px solid var(--acc);border-radius:2px;background:var(--acc);color:#faf7ef;padding:9px 14px;font:700 10px/1 'JetBrains Mono';letter-spacing:.1em;text-transform:uppercase;transition:filter .12s" style-hover="filter:brightness(1.06)">+ Analyze</button></div>
+        </section>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:start">
+          <sc-for list="{{ pipelineCols }}" as="col" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;border:1.5px solid var(--bd);background:var(--panel);min-height:150px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:10px 11px;border-bottom:1.5px solid var(--bd)"><div style="display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:{{ col.color }}"></span><span style="font:600 9px/1 'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase;color:var(--text-soft)">{{ col.label }}</span></div><span style="font:700 11px/1 'JetBrains Mono';color:var(--faint)">{{ col.count }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:8px;padding:10px">
+                <sc-for list="{{ col.cards }}" as="c" hint-placeholder-count="1">
+                  <div style="border:1px solid var(--bd2);background:var(--inset);padding:9px 9px 8px">
+                    <div style="font:500 11px/1.3 'Space Grotesk';color:var(--text)">{{ c.title }}</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:7px"><span style="font:700 12px/1 'JetBrains Mono';color:{{ c.profitColor }}">{{ c.profit }}</span><span style="font:500 9px/1 'JetBrains Mono';color:var(--faint)">{{ c.meta }}</span></div>
+                    <div style="display:flex;align-items:center;gap:4px;margin-top:9px">
+                      <button onClick="{{ c.back }}" title="Back" style="flex:1;border:1px solid var(--bd2);background:transparent;color:var(--muted);padding:5px;font:700 11px/1 'JetBrains Mono';border-radius:2px;transition:border-color .12s" style-hover="border-color:var(--acc)">◀</button>
+                      <button onClick="{{ c.fwd }}" title="Forward" style="flex:1;border:1px solid var(--bd2);background:transparent;color:var(--muted);padding:5px;font:700 11px/1 'JetBrains Mono';border-radius:2px;transition:border-color .12s" style-hover="border-color:var(--acc)">▶</button>
+                      <button onClick="{{ c.del }}" title="Delete" style="border:1px solid var(--bd2);background:transparent;color:var(--faint);padding:5px 7px;font:700 11px/1 'JetBrains Mono';border-radius:2px;transition:color .12s,border-color .12s" style-hover="border-color:var(--bad);color:var(--bad)">✕</button>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ col.empty }}"><div style="text-align:center;padding:12px 4px;font:500 9px/1.4 'JetBrains Mono';color:var(--faint2)">empty</div></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ════════ MONEY ════════ -->
+      <sc-if value="{{ isMoney }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);border:1.5px solid var(--bd)">
+          <sc-for list="{{ pnlTiles }}" as="t" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:9px;border-right:1px solid var(--bd2);background:var(--panel);padding:15px"><span style="font:600 8px/1.3 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">{{ t.label }}</span><span style="font:700 23px/1 'JetBrains Mono',monospace;color:{{ t.color }}">{{ t.value }}</span><span style="font:500 9px/1.3 'JetBrains Mono';color:var(--faint)">{{ t.sub }}</span></div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:1.05fr .95fr;gap:10px;align-items:start">
+          <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">[01]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Realized sales</h3></div><span style="font:500 9px/1 'JetBrains Mono';color:var(--faint)">reconciled by payout automation</span></div>
+            <sc-if value="{{ hasSold }}">
+              <div style="display:flex;flex-direction:column">
+                <sc-for list="{{ soldRows }}" as="r" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--bd2)"><div style="flex:1;min-width:0"><div style="font:500 13px/1.3 'Space Grotesk';color:var(--text)">{{ r.title }}</div><div style="font:500 10px/1 'JetBrains Mono';color:var(--faint)">{{ r.meta }}</div></div><span style="font:700 13px/1 'JetBrains Mono';color:var(--live)">{{ r.profit }}</span></div></sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noSold }}"><div style="padding:20px 0;text-align:center;font-size:12px;color:var(--faint)">No sales reconciled yet. Move a lead to <span style="color:var(--text-soft)">Sold</span> in the pipeline.</div></sc-if>
+          </section>
+          <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">[02]</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Recurring tool spend</h3></div><span style="font:600 12px/1 'JetBrains Mono';color:var(--acc-ink)">{{ monthlySpend }}/mo</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ recurring }}" as="t" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:12px;border:1px solid var(--bd2);background:var(--inset);border-radius:2px;padding:11px 13px"><span style="flex:1;font:500 13px/1.3 'Space Grotesk';color:var(--text)">{{ t.name }}</span><span style="font:600 12px/1 'JetBrains Mono';color:var(--muted)">{{ t.cost }}</span><button onClick="{{ t.toggle }}" style="position:relative;width:42px;height:23px;border-radius:2px;border:1.5px solid var(--bd3);transition:background .18s;{{ t.trackStyle }}"><span style="position:absolute;top:1.5px;left:1.5px;width:16px;height:16px;border-radius:1px;transition:transform .18s;{{ t.knobStyle }}"></span></button></div></sc-for>
+            </div>
+            <p style="margin:13px 0 0;font-size:11px;line-height:1.5;color:var(--faint)">Net profit above already subtracts your live monthly tool spend.</p>
+          </section>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ════════ INVENTORY ════════ -->
+      <sc-if value="{{ isInventory }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid var(--bd)">
+          <sc-for list="{{ invTiles }}" as="t" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:8px;border-right:1px solid var(--bd2);background:var(--panel);padding:12px"><span style="font:600 8px/1.3 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)">{{ t.label }}</span><span style="font:700 22px/1 'JetBrains Mono',monospace;color:{{ t.color }}">{{ t.value }}</span></div>
+          </sc-for>
+        </div>
+        <section style="border:1.5px solid var(--bd);background:var(--panel)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:9px;padding:12px 16px;border-bottom:1.5px solid var(--bd)"><div style="display:flex;align-items:center;gap:9px"><span style="font:700 9px/1 'JetBrains Mono';color:var(--acc-ink)">▸</span><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">Stock on hand</h3></div><button onClick="{{ runRestock }}" style="border:1.5px solid var(--bd);border-radius:2px;background:transparent;color:var(--text);padding:7px 11px;font:700 9px/1 'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase;transition:background .12s" style-hover="background:var(--chip)">▶ Run restock monitor</button></div>
+          <sc-if value="{{ hasStock }}">
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ invRows }}" as="r" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:13px;padding:10px 16px;border-bottom:1px solid var(--bd2)">
+                  <div style="flex:1;min-width:0"><div style="font:500 13px/1.3 'Space Grotesk';color:var(--text)">{{ r.title }}</div><div style="font:500 10px/1 'JetBrains Mono';color:var(--faint)">{{ r.stage }}</div></div>
+                  <span style="font:700 13px/1 'JetBrains Mono';color:var(--text)">{{ r.qty }} units</span>
+                  <span style="font:600 12px/1 'JetBrains Mono';color:var(--muted)">{{ r.value }}</span>
+                  <sc-if value="{{ r.low }}"><span style="font:700 8px/1 'JetBrains Mono';letter-spacing:.08em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:2px;padding:4px 6px">low</span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noStock }}"><div style="padding:22px;text-align:center;font-size:12px;color:var(--faint)">No stock yet — move a lead to Buy or Ordered in the pipeline.</div></sc-if>
+        </section>
+      </div>
+      </sc-if>
+
+      <!-- ════════ SOURCES ════════ -->
+      <sc-if value="{{ isSources }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <section style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border:1.5px solid var(--bd);background:var(--panel);padding:13px 16px">
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:7px;height:7px;border-radius:50%;background:var(--live);animation:livepulse 1.8s ease-in-out infinite"></span><h3 style="margin:0;font:600 13px/1 'Space Grotesk'">Knowledge corpus — {{ corpusStats }}</h3></div>
+          <button onClick="{{ runKnowledge }}" style="border:1.5px solid var(--acc);border-radius:2px;background:var(--acc);color:#faf7ef;padding:8px 12px;font:700 9px/1 'JetBrains Mono';letter-spacing:.06em;text-transform:uppercase;transition:filter .12s" style-hover="filter:brightness(1.06)">▶ Run knowledge ingest</button>
+        </section>
+        <sc-for list="{{ docGroups }}" as="g" hint-placeholder-count="4">
+          <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px"><h3 style="margin:0;font:600 11px/1 'JetBrains Mono';letter-spacing:.18em;text-transform:uppercase">{{ g.type }}</h3><span style="font:500 9px/1 'JetBrains Mono';color:var(--faint)">{{ g.count }}</span></div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+              <sc-for list="{{ g.items }}" as="d" hint-placeholder-count="2">
+                <div style="border:1px solid var(--bd2);background:var(--inset);border-radius:2px;padding:10px 11px">
+                  <div style="font:500 13px/1.3 'Space Grotesk';color:var(--text)">{{ d.title }}</div>
+                  <div style="margin-top:5px;font:500 10px/1 'JetBrains Mono';color:var(--faint)">{{ d.tags }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- ════════ ASK ════════ -->
+      <sc-if value="{{ isAsk }}">
+      <div style="display:flex;flex-direction:column;gap:10px;max-width:900px;margin:0 auto;width:100%">
+        <section style="border:1.5px solid var(--bd);background:var(--panel);padding:15px 18px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--live);animation:livepulse 1.8s ease-in-out infinite"></span><h3 style="margin:0;font:600 15px/1 'Space Grotesk'">Ask the knowledge brain</h3></div>
+          <p style="margin:0 0 16px;font-size:12px;line-height:1.5;color:var(--faint)">The same brain the Scout Agent reads its rules from — fundamentals, playbooks, Amazon policy & SP-API docs, and 45 transcripts.</p>
+          <div style="display:flex;border:1.5px solid var(--bd)"><input value="{{ askValue }}" onChange="{{ setAsk }}" placeholder="Ask anything — e.g. can I sell this brand?" style="flex:1;border:none;background:var(--field-bg);padding:12px 14px;color:var(--text);font:500 14px/1 'Space Grotesk';outline:none"><button onClick="{{ runAsk }}" style="border:none;border-left:1.5px solid var(--bd);background:var(--acc);color:#faf7ef;padding:12px 20px;font:700 11px/1 'JetBrains Mono';letter-spacing:.12em;text-transform:uppercase;transition:filter .12s" style-hover="filter:brightness(1.06)">Search</button></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+            <sc-for list="{{ askSuggestions }}" as="s" hint-placeholder-count="5"><button onClick="{{ s.run }}" style="border:1px solid var(--bd2);border-radius:2px;background:var(--chip);color:var(--muted);padding:7px 12px;font:500 12px/1 'Space Grotesk';transition:all .12s" style-hover="border-color:var(--acc);color:var(--text)">{{ s.label }}</button></sc-for>
+          </div>
+        </section>
+        <sc-if value="{{ askHasResults }}">
+          <section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ askResults }}" as="r" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:13px;border:1px solid var(--bd2);background:var(--inset);border-radius:2px;padding:12px 13px"><span style="font:700 7px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--acc-ink);border:1px solid var(--bd2);border-radius:2px;padding:4px 6px;flex:none">{{ r.type }}</span><div style="flex:1;min-width:0"><div style="font:500 13px/1.3 'Space Grotesk';color:var(--text)">{{ r.title }}</div><div style="font:500 11px/1.3 'JetBrains Mono',monospace;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.tags }}</div></div></div></sc-for>
+            </div>
+          </section>
+        </sc-if>
+        <sc-if value="{{ askNoResults }}"><section style="border:1.5px solid var(--bd);background:var(--panel);padding:13px"><div style="text-align:center;padding:24px;color:var(--faint);font-size:13px">No matches. Try <span style="color:var(--text-soft)">keepa</span>, <span style="color:var(--text-soft)">ungating</span> or <span style="color:var(--text-soft)">fees</span>.</div></section></sc-if>
+        <div style="text-align:center;font:500 10px/1.5 'JetBrains Mono',monospace;color:var(--faint2)">{{ corpusStats }}</div>
+      </div>
+      </sc-if>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1440, &quot;height&quot;: 940 },
+  &quot;theme&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;light&quot;, &quot;options&quot;: [&quot;light&quot;, &quot;dark&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Theme&quot; },
+  &quot;accent&quot;: { &quot;editor&quot;: &quot;color&quot;, &quot;default&quot;: &quot;#e8531f&quot;, &quot;options&quot;: [&quot;#e8531f&quot;, &quot;#1f7a4d&quot;, &quot;#2a6f80&quot;, &quot;#b7791a&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Theme&quot; },
+  &quot;backdrop&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;grid&quot;, &quot;options&quot;: [&quot;grid&quot;, &quot;plain&quot;], &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Theme&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    view: 'dashboard',
+    log: [],
+    pipeline: [],
+    automations: [],
+    scoutStatus: 'idle',
+    scoutPicks: [],
+    scoutStats: null,
+    form: { title: '', category: 'toys', cost: '', sell: '', weight: '1', bsr: '', offers: '6', qty: '30' },
+    toast: '',
+    toolActive: { seller: true, keepa: true, selleramp: true },
+    corpus: 1224,
+    buybox: 71,
+    ask: '',
+    askResults: null,
+    seeded: false,
+  };
+
+  STAGES = ['idea', 'researching', 'buy', 'ordered', 'sold', 'passed'];
+  STAGE_META = {
+    idea: ['Idea', '#2a6f80'], researching: ['Research', '#b7791a'], buy: ['Buy', '#e8531f'],
+    ordered: ['Ordered', '#6f5bd0'], sold: ['Sold', '#1f7a4d'], passed: ['Passed', '#c0361f'],
+  };
+  criteria = { bsrMax: 200000, minRoi: 0.30, minProfit: 3.0, minOffers: 3, maxOffers: 25, priceMin: 8, priceMax: 60 };
+  guards = { amazonBB: 0.20, priceSpike: 1.5 };
+  friendly = ['Crayola', 'Jellycat', 'Yeti', 'Stanley', 'Crocs', 'LEGO', 'Owala', 'Hoka', 'Milwaukee', 'Tonies', "Mrs. Meyer's", 'New Balance'];
+  avoid = ['Nike', 'Adidas', 'Apple', 'Sony', 'Disney', 'Jordan'];
+  categories = [
+    { value: 'toys', label: 'Toys & Games — 15%', rate: 0.15 },
+    { value: 'grocery', label: 'Grocery — 8%', rate: 0.08 },
+    { value: 'health', label: 'Health & Household — 15%', rate: 0.15 },
+    { value: 'beauty', label: 'Beauty — 15%', rate: 0.15 },
+    { value: 'home', label: 'Home & Kitchen — 15%', rate: 0.15 },
+    { value: 'electronics', label: 'Electronics — 8%', rate: 0.08 },
+    { value: 'office', label: 'Office Products — 15%', rate: 0.15 },
+    { value: 'pet', label: 'Pet Supplies — 15%', rate: 0.15 },
+  ];
+  toolStack = [
+    { key: 'seller', name: 'Amazon Seller (Pro)', cost: 39.99 },
+    { key: 'keepa', name: 'Keepa', cost: 20 },
+    { key: 'selleramp', name: 'SellerAmp SAS', cost: 20 },
+    { key: 'ipalert', name: 'IP Alert', cost: 12 },
+  ];
+  documents = [
+    { title: 'Sourcing playbook (OA)', type: 'Playbook', tags: ['reverse-sourcing', 'keepa', 'criteria'] },
+    { title: 'Ungating playbook', type: 'Playbook', tags: ['ungating', 'invoices', 'target'] },
+    { title: 'Amazon fees explained', type: 'Fundamental', tags: ['fees', 'margin', 'roi'] },
+    { title: 'Field SOPs (distilled)', type: 'Playbook', tags: ['red-flags', 'keepa-rules', 'q4'] },
+    { title: 'FBA prohibited / hazmat', type: 'Policy', tags: ['restrictions', 'lithium', 'hazmat'] },
+    { title: 'Referral fee by category', type: 'Policy', tags: ['fees', 'category'] },
+    { title: 'SP-API: Listings Restrictions', type: 'API', tags: ['gating', 'eligibility'] },
+    { title: 'Keepa mastery (transcripts)', type: 'Transcript', tags: ['keepa', 'bsr', 'charts'] },
+    { title: 'SellerAmp full tutorials', type: 'Transcript', tags: ['selleramp', 'qvs'] },
+    { title: 'Brands, sources & tools', type: 'Reference', tags: ['brands', 'cashback'] },
+  ];
+  candidatePool = [
+    { title: 'Crayola 64-ct Crayons', brand: 'Crayola', category: 'toys', cost: 4.20, sell: 14.99, weight: 0.6, bsr: 3200, offers: 6, amzBB: 0.05, priceVsAvg: 1.02 },
+    { title: 'Owala FreeSip 24oz', brand: 'Owala', category: 'home', cost: 12.50, sell: 27.95, weight: 0.9, bsr: 1400, offers: 7, amzBB: 0.08, priceVsAvg: 0.98 },
+    { title: 'Jellycat Bashful Bunny', brand: 'Jellycat', category: 'toys', cost: 15.00, sell: 32.00, weight: 0.5, bsr: 8800, offers: 5, amzBB: 0.02, priceVsAvg: 1.05 },
+    { title: "Mrs. Meyer's Hand Soap 3pk", brand: "Mrs. Meyer's", category: 'health', cost: 9.10, sell: 18.49, weight: 1.4, bsr: 5200, offers: 9, amzBB: 0.10, priceVsAvg: 1.0 },
+    { title: 'Milwaukee M12 Battery', brand: 'Milwaukee', category: 'home', cost: 34.00, sell: 59.00, weight: 1.1, bsr: 2600, offers: 4, amzBB: 0.06, priceVsAvg: 1.03 },
+    { title: 'Tonies Audio Character', brand: 'Tonies', category: 'toys', cost: 8.90, sell: 14.99, weight: 0.3, bsr: 14500, offers: 11, amzBB: 0.09, priceVsAvg: 0.99 },
+    { title: 'Hoka Clifton Insoles', brand: 'Hoka', category: 'health', cost: 11.00, sell: 21.00, weight: 0.4, bsr: 42000, offers: 8, amzBB: 0.12, priceVsAvg: 1.01 },
+    { title: 'Stanley Quencher 40oz', brand: 'Stanley', category: 'home', cost: 22.00, sell: 34.00, weight: 1.9, bsr: 900, offers: 21, amzBB: 0.34, priceVsAvg: 1.1 },
+    { title: 'Nike Elite Socks 3pk', brand: 'Nike', category: 'office', cost: 12.00, sell: 24.00, weight: 0.5, bsr: 6000, offers: 12, amzBB: 0.04, priceVsAvg: 1.0 },
+    { title: 'Generic Phone Stand', brand: 'Aoni', category: 'electronics', cost: 3.50, sell: 8.99, weight: 0.4, bsr: 180000, offers: 27, amzBB: 0.05, priceVsAvg: 1.4 },
+    { title: 'LEGO Botanical Set', brand: 'LEGO', category: 'toys', cost: 28.00, sell: 49.99, weight: 1.6, bsr: 2100, offers: 6, amzBB: 0.07, priceVsAvg: 1.0 },
+    { title: 'Discounted Seasonal Mug', brand: 'HomeCo', category: 'home', cost: 6.00, sell: 11.00, weight: 1.2, bsr: 95000, offers: 5, amzBB: 0.03, priceVsAvg: 1.8 },
+  ];
+
+  componentDidMount() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('oaTerminalV4') || 'null'); } catch (e) {}
+    if (saved && saved.seeded && Array.isArray(saved.pipeline) && saved.pipeline.every(l => this.isSaneLead(l))) { this.setState(saved); return; }
+    this.seed();
+  }
+  isSaneLead(l) {
+    return l && typeof l.qty === 'number' && l.qty >= 0 && l.qty <= 500
+      && typeof l.weight === 'number' && l.weight > 0 && l.weight <= 60
+      && typeof l.cost === 'number' && l.cost >= 0 && l.cost <= 2000
+      && typeof l.sell === 'number' && l.sell >= 0 && l.sell <= 2000;
+  }
+  componentDidUpdate() {
+    const { view, log, pipeline, automations, scoutStatus, scoutPicks, scoutStats, form, toolActive, corpus, buybox, ask, askResults, seeded } = this.state;
+    try { localStorage.setItem('oaTerminalV4', JSON.stringify({ view, log, pipeline, automations, scoutStatus, scoutPicks, scoutStats, form, toolActive, corpus, buybox, ask, askResults, seeded })); } catch (e) {}
+  }
+
+  seed() {
+    const mk = (title, category, cost, sell, weight, qty, stage) => {
+      const fe = this.fees(cost, sell, weight, category, {});
+      return { id: 'l' + Math.random().toString(36).slice(2, 8), title, brand: '', category, cost, sell, weight, qty, stage, net: fe.net, roi: fe.roi };
+    };
+    const pipeline = [
+      mk('Crayola 64-ct Crayons', 'toys', 4.20, 14.99, 0.6, 40, 'sold'),
+      mk('Owala FreeSip 24oz', 'home', 12.50, 27.95, 0.9, 24, 'sold'),
+      mk('LEGO Botanical Set', 'toys', 28.00, 49.99, 1.6, 12, 'ordered'),
+      mk('Milwaukee M12 Battery', 'home', 34.00, 59.00, 1.1, 10, 'buy'),
+      mk('Jellycat Bashful Bunny', 'toys', 15.00, 32.00, 0.5, 18, 'researching'),
+      mk('Tonies Audio Character', 'toys', 8.90, 14.99, 0.3, 30, 'researching'),
+      mk('Stanley Quencher 40oz', 'home', 22.00, 34.00, 1.9, 0, 'passed'),
+    ];
+    const now = Date.now();
+    const t = (min) => new Date(now - min * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const automations = [
+      { id: 'scout', name: 'Scout sweep', icon: 'radar', desc: 'Scans the candidate pool, scores every product, queues buy-grade picks into the pipeline.', enabled: true, runs: 34, lastRun: t(22), metricLabel: 'Picks queued', metric: '5', schedule: 'every 6h' },
+      { id: 'repricer', name: 'Buy-box repricer', icon: 'tag', desc: 'Holds the buy box by nudging price within your margin floor.', enabled: true, runs: 128, lastRun: t(4), metricLabel: 'Buy-box win', metric: '71%', schedule: 'every 15m' },
+      { id: 'payout', name: 'Payout reconciliation', icon: 'money', desc: 'Reconciles Amazon settlements into realized P&L and net profit.', enabled: true, runs: 9, lastRun: t(70), metricLabel: 'Last payout', metric: '$0', schedule: 'daily' },
+      { id: 'restock', name: 'Restock monitor', icon: 'inventory', desc: 'Flags SKUs projected to stock out inside 14 days from sell-through.', enabled: false, runs: 5, lastRun: t(240), metricLabel: 'Alerts', metric: '0', schedule: 'daily' },
+      { id: 'deals', name: 'Deal-feed ingest', icon: 'deals', desc: 'Pulls retailer deal feeds and profitability-checks each before it reaches you.', enabled: false, runs: 0, lastRun: '—', metricLabel: 'Deals found', metric: '0', schedule: 'hourly' },
+      { id: 'knowledge', name: 'Knowledge ingest', icon: 'brain', desc: 'Embeds new transcripts & docs into the brain the agent reads from.', enabled: true, runs: 12, lastRun: t(180), metricLabel: 'Chunks', metric: '1,224', schedule: 'on upload' },
+    ];
+    const log = [
+      { kind: 'agent', text: 'Scout sweep queued 5 buy-grade picks', time: t(22), color: 'var(--acc-ink)' },
+      { kind: 'auto', text: 'Repricer held buy box on 4 SKUs', time: t(4), color: 'var(--info)' },
+      { kind: 'sale', text: 'Owala FreeSip — 24 units sold out', time: t(50), color: 'var(--live)' },
+      { kind: 'auto', text: 'Payout reconciliation posted settlement', time: t(70), color: 'var(--info)' },
+      { kind: 'move', text: 'LEGO Botanical Set → Ordered', time: t(120), color: 'var(--warn)' },
+    ];
+    this.setState({ pipeline, automations, log, seeded: true }, () => this.recomputePayoutMetric());
+  }
+
+  // ── fee engine ──
+  fees(cost, sell, weight, category, flags) {
+    cost = +cost || 0; sell = +sell || 0; weight = +weight || 0.5;
+    const cat = this.categories.find(c => c.value === category) || this.categories[0];
+    const referral = Math.max(sell * cat.rate, sell > 0 ? 0.30 : 0);
+    let ful;
+    if (weight <= 0.25) ful = 3.15; else if (weight <= 0.5) ful = 3.60; else if (weight <= 0.75) ful = 4.10;
+    else if (weight <= 1) ful = 4.60; else if (weight <= 1.5) ful = 5.10; else if (weight <= 2) ful = 5.55;
+    else if (weight <= 3) ful = 6.40; else ful = 6.40 + Math.ceil(weight - 3) * 0.40;
+    const prep = sell > 0 ? 0.75 : 0;
+    const storage = sell > 0 ? 0.15 : 0;
+    const totalFees = referral + ful + prep + storage;
+    const net = sell - cost - totalFees;
+    const roi = cost > 0 ? net / cost : 0;
+    const margin = sell > 0 ? net / sell : 0;
+    return { referral, ful, prep, storage, totalFees, net, roi, margin, rate: cat.rate };
+  }
+
+  gate(d) {
+    const fe = this.fees(d.cost, d.sell, d.weight, d.category, {});
+    const reasons = [];
+    if (this.avoid.some(a => (d.brand || '').toLowerCase() === a.toLowerCase())) reasons.push('avoid brand');
+    if (d.amzBB >= this.guards.amazonBB) reasons.push('Amazon buy box');
+    if (d.priceVsAvg > this.guards.priceSpike) reasons.push('price spike');
+    if (d.bsr > this.criteria.bsrMax) reasons.push('BSR too high');
+    if (fe.roi < this.criteria.minRoi) reasons.push('ROI < 30%');
+    if (fe.net < this.criteria.minProfit) reasons.push('profit < $3');
+    if (d.offers > this.criteria.maxOffers) reasons.push('too many sellers');
+    return { pass: reasons.length === 0, reasons, fe };
+  }
+
+  score(d, fe) {
+    const clamp = (x) => Math.max(0, Math.min(1, x));
+    const roiS = clamp(fe.roi / 1.0) * 35;
+    const profitS = clamp(fe.net / 8) * 25;
+    const velS = clamp((this.criteria.bsrMax - d.bsr) / this.criteria.bsrMax) * 20;
+    let offS = 10; if (d.offers < 3 || d.offers > 8) offS = 5; if (d.offers > 15) offS = 2;
+    const brandS = this.friendly.some(b => b.toLowerCase() === (d.brand || '').toLowerCase()) ? 10 : 4;
+    return Math.round(roiS + profitS + velS + offS + brandS);
+  }
+
+  // ── actions ──
+  go = (v) => () => this.setState({ view: v });
+  toggleTheme = () => this.setState(s => ({ theme: (s.theme ?? this.props.theme ?? 'light') === 'light' ? 'dark' : 'light' }));
+  hf = (k) => (ev) => this.setState(s => ({ form: { ...s.form, [k]: ev.target.value } }));
+  setAsk = (ev) => this.setState({ ask: ev.target.value });
+  askFor = (q) => () => this.setState({ ask: q }, () => this.runAsk());
+  now() { return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+  addLog(kind, text, color) { this.setState(s => ({ log: [{ kind, text, time: this.now(), color }, ...s.log].slice(0, 40) })); }
+  flash(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2600); }
+
+  runScout = () => {
+    if (this.state.scoutStatus === 'scanning') return;
+    this.setState({ scoutStatus: 'scanning' });
+    clearTimeout(this._scan);
+    this._scan = setTimeout(() => {
+      const scored = this.candidatePool.map(d => {
+        const g = this.gate(d);
+        return { d, ...g, score: g.pass ? this.score(d, g.fe) : 0 };
+      });
+      const passed = scored.filter(x => x.pass).sort((a, b) => b.score - a.score);
+      const rejected = scored.filter(x => !x.pass);
+      const picks = [...passed, ...rejected].map((x, i) => ({
+        title: x.d.title, brand: x.d.brand, category: x.d.category, cost: x.d.cost, sell: x.d.sell, weight: x.d.weight,
+        net: x.fe.net, roi: x.fe.roi, score: x.score, pass: x.pass, reasons: x.reasons,
+        verdict: x.pass ? (x.score >= 72 ? 'BUY' : x.score >= 55 ? 'WATCH' : 'THIN') : 'REJECT',
+      }));
+      const stats = { scanned: scored.length, buy: picks.filter(p => p.verdict === 'BUY').length, passed: passed.length, rejected: rejected.length };
+      this.setState({ scoutStatus: 'done', scoutPicks: picks, scoutStats: stats });
+      this.addLog('agent', `Scout scanned ${stats.scanned} products · ${stats.passed} passed · ${stats.buy} buy-grade`, 'var(--acc-ink)');
+    }, 950);
+  };
+
+  queuePick = (pick) => () => {
+    if (this.state.pipeline.some(l => l.title === pick.title)) { this.flash('Already in pipeline'); return; }
+    const lead = { id: 'l' + Math.random().toString(36).slice(2, 8), title: pick.title, brand: pick.brand, category: pick.category, cost: pick.cost, sell: pick.sell, weight: pick.weight, qty: 24, stage: 'researching', net: pick.net, roi: pick.roi };
+    this.setState(s => ({ pipeline: [lead, ...s.pipeline] }));
+    this.addLog('agent', `Queued "${pick.title}" → Research`, 'var(--acc-ink)');
+    this.flash('Queued to pipeline');
+  };
+
+  queueAllBuy = () => {
+    const buys = this.state.scoutPicks.filter(p => p.pass && p.verdict === 'BUY');
+    let added = 0;
+    buys.forEach(p => {
+      if (!this.state.pipeline.some(l => l.title === p.title)) {
+        const lead = { id: 'l' + Math.random().toString(36).slice(2, 8), title: p.title, brand: p.brand, category: p.category, cost: p.cost, sell: p.sell, weight: p.weight, qty: 24, stage: 'researching', net: p.net, roi: p.roi };
+        this.setState(s => ({ pipeline: [lead, ...s.pipeline] }));
+        added++;
+      }
+    });
+    if (added) { this.addLog('agent', `Queued ${added} buy-grade pick${added === 1 ? '' : 's'} from scout`, 'var(--acc-ink)'); this.flash(`Queued ${added} to pipeline`); }
+    else { this.flash('Nothing new to queue'); }
+  };
+
+  saveDeal = () => {
+    const f = this.state.form;
+    if (!f.title.trim() || !(+f.cost) || !(+f.sell)) { this.flash('Enter name, cost and sell price'); return; }
+    const clamp = (n, lo, hi, fallback) => { n = +n; return Number.isFinite(n) && n >= lo && n <= hi ? n : fallback; };
+    const cost = clamp(f.cost, 0.01, 2000, 0), sell = clamp(f.sell, 0.01, 2000, 0);
+    const weight = clamp(f.weight, 0.05, 60, 0.5), qty = clamp(f.qty, 1, 500, 1);
+    const fe = this.fees(cost, sell, weight, f.category, {});
+    const lead = { id: 'l' + Math.random().toString(36).slice(2, 8), title: f.title.trim(), brand: '', category: f.category, cost, sell, weight, qty, stage: fe.roi >= this.criteria.minRoi && fe.net >= this.criteria.minProfit ? 'buy' : 'researching', net: fe.net, roi: fe.roi };
+    this.setState(s => ({ pipeline: [lead, ...s.pipeline] }));
+    this.addLog('deal', `Analyzed "${lead.title}" → ${lead.stage}`, 'var(--acc-ink)');
+    this.flash('Saved to pipeline');
+  };
+
+  moveLead = (id, dir) => () => this.setState(s => ({
+    pipeline: s.pipeline.map(l => {
+      if (l.id !== id) return l;
+      const i = this.STAGES.indexOf(l.stage);
+      const ni = Math.max(0, Math.min(this.STAGES.length - 1, i + dir));
+      const stage = this.STAGES[ni];
+      if (stage !== l.stage) setTimeout(() => this.addLog('move', `${l.title} → ${this.STAGE_META[stage][0]}`, 'var(--warn)'), 0);
+      return { ...l, stage };
+    }),
+  }), () => this.recomputePayoutMetric());
+  delLead = (id) => () => this.setState(s => ({ pipeline: s.pipeline.filter(l => l.id !== id) }));
+
+  toggleTool = (k) => () => this.setState(s => ({ toolActive: { ...s.toolActive, [k]: !s.toolActive[k] } }));
+
+  toggleAuto = (id) => () => this.setState(s => ({
+    automations: s.automations.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a),
+  }), () => {
+    const a = this.state.automations.find(x => x.id === id);
+    this.addLog('auto', `${a.name} ${a.enabled ? 'set LIVE' : 'paused'}`, 'var(--info)');
+  });
+
+  recomputePayoutMetric() {
+    const sold = this.state.pipeline.filter(l => l.stage === 'sold');
+    const realized = sold.reduce((t, l) => t + l.net * l.qty, 0);
+    this.setState(s => ({ automations: s.automations.map(a => a.id === 'payout' ? { ...a, metric: this.money(realized) } : a) }));
+  }
+
+  runAuto = (id) => () => {
+    const set = (patch, logText, color) => {
+      this.setState(s => ({ automations: s.automations.map(a => a.id === id ? { ...a, runs: a.runs + 1, lastRun: this.now(), ...patch } : a) }));
+      if (logText) this.addLog('auto', logText, color || 'var(--info)');
+    };
+    if (id === 'scout') {
+      const scored = this.candidatePool.map(d => { const g = this.gate(d); return { d, ...g, score: g.pass ? this.score(d, g.fe) : 0 }; });
+      const buys = scored.filter(x => x.pass && this.score(x.d, x.fe) >= 55).sort((a, b) => b.score - a.score);
+      let added = 0;
+      buys.forEach(x => {
+        if (!this.state.pipeline.some(l => l.title === x.d.title) && added < 5) {
+          const lead = { id: 'l' + Math.random().toString(36).slice(2, 8), title: x.d.title, brand: x.d.brand, category: x.d.category, cost: x.d.cost, sell: x.d.sell, weight: x.d.weight, qty: 24, stage: 'researching', net: x.fe.net, roi: x.fe.roi };
+          this.setState(s => ({ pipeline: [lead, ...s.pipeline] })); added++;
+        }
+      });
+      set({ metric: String(buys.length) }, `Scout sweep queued ${added} new pick${added === 1 ? '' : 's'}`, 'var(--acc-ink)');
+    } else if (id === 'repricer') {
+      const nb = Math.min(98, this.state.buybox + 3 + Math.floor(Math.random() * 4));
+      this.setState({ buybox: nb });
+      set({ metric: nb + '%' }, `Repricer held buy box — now ${nb}%`);
+    } else if (id === 'payout') {
+      const realized = this.state.pipeline.filter(l => l.stage === 'sold').reduce((t, l) => t + l.net * l.qty, 0);
+      set({ metric: this.money(realized) }, `Reconciled settlements — ${this.money(realized)} realized`, 'var(--live)');
+    } else if (id === 'restock') {
+      const low = this.state.pipeline.filter(l => l.stage === 'sold').length;
+      set({ metric: String(low) }, `Restock monitor flagged ${low} SKU${low === 1 ? '' : 's'}`, 'var(--warn)');
+    } else if (id === 'deals') {
+      const found = 3 + Math.floor(Math.random() * 4);
+      const pool = ['Target clearance bundle', 'Walmart rollback 3pk', 'BestBuy open-box lot', 'Kohl\'s stacked coupon'];
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      const lead = { id: 'l' + Math.random().toString(36).slice(2, 8), title: pick, brand: '', category: 'home', cost: 9, sell: 19.99, weight: 1, qty: 12, stage: 'idea', net: this.fees(9, 19.99, 1, 'home', {}).net, roi: this.fees(9, 19.99, 1, 'home', {}).roi };
+      this.setState(s => ({ pipeline: [lead, ...s.pipeline] }));
+      set({ metric: String(found) }, `Deal-feed ingest found ${found} deals · added "${pick}"`);
+    } else if (id === 'knowledge') {
+      const add = 8 + Math.floor(Math.random() * 20);
+      const nc = this.state.corpus + add;
+      this.setState({ corpus: nc });
+      set({ metric: nc.toLocaleString() }, `Knowledge ingest embedded ${add} new chunks`);
+    }
+  };
+
+  runAllLive = () => {
+    this.state.automations.filter(a => a.enabled).forEach((a, i) => setTimeout(() => this.runAuto(a.id)(), i * 140));
+  };
+
+  runAsk = () => {
+    const q = (this.state.ask || '').toLowerCase().trim();
+    if (!q) { this.setState({ askResults: null }); return; }
+    const toks = q.split(/\s+/).filter(Boolean);
+    const res = this.documents.map(d => {
+      const hay = (d.title + ' ' + d.type + ' ' + d.tags.join(' ')).toLowerCase();
+      let sc = 0; toks.forEach(t => { if (hay.includes(t)) sc++; });
+      return { d, sc };
+    }).filter(x => x.sc > 0).sort((a, b) => b.sc - a.sc).slice(0, 6).map(x => x.d);
+    this.setState({ askResults: res });
+  };
+
+  money(n) { const neg = n < 0; return (neg ? '-$' : '$') + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  money0(n) { const neg = n < 0; return (neg ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US'); }
+  pct(n) { return Math.round(n * 100) + '%'; }
+
+  ic(name, s) {
+    s = s || 17;
+    const e = React.createElement;
+    const svg = (...k) => e('svg', { width: s, height: s, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }, ...k);
+    const p = (d) => e('path', { d, key: d });
+    const c = (cx, cy, r) => e('circle', { cx, cy, r, key: 'c' + cx + cy + r });
+    const r = (x, y, w, h) => e('rect', { x, y, width: w, height: h, key: 'r' + x + y });
+    switch (name) {
+      case 'dashboard': return svg(r(3, 3, 7, 7), r(14, 3, 7, 7), r(14, 14, 7, 7), r(3, 14, 7, 7));
+      case 'radar': return svg(c(12, 12, 9), c(12, 12, 4.5), p('M12 12 18 6'), p('M12 3v2'), c(12, 12, 1));
+      case 'calc': return svg(r(4, 3, 16, 18), p('M8 7h8'), p('M8 12h.01'), p('M12 12h.01'), p('M16 12h.01'), p('M8 16h.01'), p('M12 16h.01'), p('M16 16h4'));
+      case 'bolt': return svg(p('M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12z'));
+      case 'tag': return svg(p('M20.6 13.4 13 21l-9-9V4h8z'), c(7.5, 7.5, 1.1));
+      case 'pipeline': return svg(p('M9 6h12'), p('M9 12h12'), p('M9 18h12'), p('M4 6h.01'), p('M4 12h.01'), p('M4 18h.01'));
+      case 'money': return svg(r(2.5, 6, 19, 13), p('M2.5 10.5h19'), c(17, 14.5, 1.4));
+      case 'inventory': return svg(p('M21 8 12 3 3 8l9 5 9-5z'), p('M3 8v8l9 5 9-5V8'), p('M12 13v8'));
+      case 'deals': return svg(c(12, 12, 9), p('M12 7v10'), p('M14.5 9.3c-.6-.8-1.6-1.1-2.6-1.1-1.4 0-2.5.8-2.5 1.9 0 2.6 5.2 1.5 5.2 4.1 0 1.1-1.1 1.9-2.6 1.9-1.1 0-2.1-.4-2.7-1.2'));
+      case 'brain': return svg(c(12, 12, 2.4), p('M12 4.5V9'), p('M12 15v4.5'), p('M4.5 12H9'), p('M15 12h4.5'), p('M6.7 6.7 9.6 9.6'), p('M14.4 14.4l2.9 2.9'), p('M17.3 6.7 14.4 9.6'), p('M9.6 14.4l-2.9 2.9'));
+      case 'ask': return svg(p('M21 14a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'));
+      case 'sources': return svg(p('M4 5h6a2 2 0 0 1 2 2v13a2.4 2.4 0 0 0-2.2-1.4H4z'), p('M20 5h-6a2 2 0 0 0-2 2v13a2.4 2.4 0 0 1 2.2-1.4H20z'));
+      case 'sun': return svg(c(12, 12, 4), p('M12 2v2'), p('M12 20v2'), p('M2 12h2'), p('M20 12h2'), p('M4.9 4.9l1.4 1.4'), p('M17.7 17.7l1.4 1.4'), p('M19.1 4.9l-1.4 1.4'), p('M6.3 17.7l-1.4 1.4'));
+      case 'moon': return svg(p('M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8z'));
+      default: return svg(c(12, 12, 8));
+    }
+  }
+
+  renderVals() {
+    const v = this.state.view;
+    const acc = this.props.accent ?? '#e8531f';
+    const backdrop = this.props.backdrop ?? 'grid';
+    const theme = this.state.theme ?? this.props.theme ?? 'light';
+    const isLight = theme === 'light';
+    const P = this.state.pipeline;
+    const A = this.state.automations;
+
+    // pipeline aggregates
+    const byStage = {}; this.STAGES.forEach(st => byStage[st] = P.filter(l => l.stage === st));
+    const stageValue = (st) => byStage[st].reduce((t, l) => t + l.net * l.qty, 0);
+    const projected = P.filter(l => l.stage !== 'passed').reduce((t, l) => t + l.net * l.qty, 0);
+    const realized = byStage.sold.reduce((t, l) => t + l.net * l.qty, 0);
+    const revenue = byStage.sold.reduce((t, l) => t + l.sell * l.qty, 0);
+    const invested = P.filter(l => ['buy', 'ordered', 'sold'].includes(l.stage)).reduce((t, l) => t + l.cost * l.qty, 0);
+    const totalFees = byStage.sold.reduce((t, l) => t + (l.sell - l.cost - l.net) * l.qty, 0);
+    const activeLeads = P.filter(l => l.stage !== 'passed' && l.stage !== 'sold').length;
+    const monthlySpend = this.toolStack.reduce((t, x) => t + (this.state.toolActive[x.key] ? x.cost : 0), 0);
+    const netAfterTools = realized - monthlySpend;
+
+    const autoLive = A.filter(a => a.enabled).length;
+    const autoRuns = A.reduce((t, a) => t + a.runs, 0);
+
+    // nav
+    const navDef = [
+      ['Command', [['dashboard', 'Dashboard', 'dashboard']]],
+      ['Agent', [['scout', 'Scout Agent', 'radar'], ['analyze', 'Analyzer', 'calc']]],
+      ['Automate', [['automations', 'Automations', 'bolt'], ['pipeline', 'Pipeline', 'pipeline'], ['inventory', 'Inventory', 'inventory']]],
+      ['Finance', [['money', 'Money & P&L', 'money']]],
+      ['Knowledge', [['ask', 'Ask Brain', 'ask'], ['sources', 'Sources', 'sources']]],
+    ];
+    const nav = navDef.map(([group, items]) => ({
+      group,
+      items: items.map(([key, label, icon]) => {
+        let badge = '', badgeColor = 'var(--acc-ink)', badgeBg = 'var(--acc-tint)';
+        if (key === 'scout' && this.state.scoutStats) badge = String(this.state.scoutStats.buy);
+        if (key === 'automations') { badge = autoLive + '·' + A.length; }
+        if (key === 'pipeline' && activeLeads) badge = String(activeLeads);
+        if (key === 'inventory') { const low = P.filter(l => ['buy', 'ordered'].includes(l.stage) && l.qty < 15).length; if (low) { badge = String(low); badgeColor = 'var(--warn)'; badgeBg = 'var(--warn-tint)'; } }
+        return { key, label, icon: this.ic(icon), active: v === key, go: this.go(key), badge, badgeColor, badgeBg,
+          activeCss: v === key ? 'color:var(--text);font-weight:600' : 'color:var(--muted);font-weight:500' };
+      }),
+    }));
+
+    const metaMap = {
+      dashboard: ['Operator overview', 'Dashboard'], scout: ['Autonomous sourcing', 'Scout Agent'],
+      analyze: ['Deal profitability', 'Analyzer'], automations: ['Business & finance ops', 'Automations'],
+      pipeline: ['Lead flow', 'Pipeline'], money: ['Profit & loss', 'Money & P&L'], ask: ['Knowledge search', 'Ask Brain'],
+      inventory: ['Stock & restock', 'Inventory'], sources: ['Reference library', 'Sources'],
+    };
+    const [viewEyebrow, viewTitle] = metaMap[v];
+
+    const statusPills = [
+      { label: 'agent ' + (this.state.scoutStatus === 'scanning' ? 'scan' : this.state.scoutStatus === 'done' ? 'ready' : 'idle'), color: this.state.scoutStatus === 'idle' ? 'var(--dot)' : 'var(--live)', pulse: this.state.scoutStatus !== 'idle' ? 'animation:livepulse 1.8s ease-in-out infinite' : '' },
+      { label: autoLive + ' automations live', color: 'var(--live)', pulse: 'animation:livepulse 1.8s ease-in-out infinite' },
+      { label: 'brain synced', color: 'var(--live)', pulse: '' },
+    ];
+
+    // KPIs
+    const kpis = [
+      { label: 'Net profit', value: this.money0(netAfterTools), sub: 'realized − tools', valStyle: 'color:' + (netAfterTools >= 0 ? 'var(--live)' : 'var(--bad)'), subColor: 'var(--faint)' },
+      { label: 'Projected', value: this.money0(projected), sub: 'in pipeline', valStyle: 'color:var(--text)', subColor: 'var(--faint)' },
+      { label: 'Active leads', value: String(activeLeads), sub: 'being worked', valStyle: 'color:var(--text)', subColor: 'var(--faint)' },
+      { label: 'Automations', value: autoLive + '/' + A.length, sub: autoRuns + ' runs total', valStyle: 'color:var(--acc-ink)', subColor: 'var(--faint)' },
+      { label: 'Buy-box win', value: this.state.buybox + '%', sub: 'held by repricer', valStyle: 'color:var(--text)', subColor: 'var(--live)' },
+      { label: 'Knowledge', value: this.state.corpus.toLocaleString(), sub: 'chunks · live', valStyle: 'color:var(--text)', subColor: 'var(--live)' },
+    ];
+
+    const funnel = this.STAGES.map(st => ({ label: this.STAGE_META[st][0], color: this.STAGE_META[st][1], count: byStage[st].length, value: byStage[st].length ? this.money0(stageValue(st)) : '—' }));
+
+    // activity
+    const activity = this.state.log.map(e => ({ ...e, kind: e.kind }));
+
+    // best opportunity
+    const ranked = P.filter(l => l.stage !== 'passed' && l.stage !== 'sold').slice().sort((a, b) => b.net - a.net);
+    const best = ranked[0];
+
+    // automations view
+    const autoMini = A.map(a => ({ name: a.name, dot: a.enabled ? 'var(--live)' : 'var(--dot)', pulse: a.enabled ? 'animation:livepulse 1.8s ease-in-out infinite' : '', stat: a.enabled ? 'live' : 'paused', statColor: a.enabled ? 'var(--live)' : 'var(--faint)', run: this.runAuto(a.id) }));
+    const trackOn = (on) => on ? 'background:var(--live)' : 'background:var(--bd2)';
+    const knobOn = (on) => on ? 'transform:translateX(19px);background:var(--panel)' : 'transform:translateX(0);background:var(--faint)';
+    const automations = A.map(a => ({
+      name: a.name, desc: a.desc, icon: this.ic(a.icon, 18), schedule: a.enabled ? a.schedule : 'manual',
+      statLabel: a.enabled ? 'live' : 'paused', statColor: a.enabled ? 'var(--live)' : 'var(--faint)',
+      metricLabel: a.metricLabel, metric: a.metric, lastRun: a.lastRun,
+      cardStyle: a.enabled ? 'border-top:3px solid var(--live)' : 'border-top:3px solid var(--bd2)',
+      trackStyle: trackOn(a.enabled), knobStyle: knobOn(a.enabled),
+      toggle: this.toggleAuto(a.id), run: this.runAuto(a.id),
+    }));
+
+    // pipeline cards
+    const pipelineCols = this.STAGES.map(st => ({
+      label: this.STAGE_META[st][0], color: this.STAGE_META[st][1], count: byStage[st].length, empty: byStage[st].length === 0,
+      cards: byStage[st].map(l => ({
+        title: l.title, profit: this.money0(l.net * l.qty), profitColor: l.net >= 0 ? 'var(--live)' : 'var(--bad)',
+        meta: this.pct(l.roi) + ' · ' + l.qty + 'u', back: this.moveLead(l.id, -1), fwd: this.moveLead(l.id, 1), del: this.delLead(l.id),
+      })),
+    }));
+
+    // ── analyzer result ──
+    const f = this.state.form;
+    const fe = this.fees(f.cost, f.sell, f.weight, f.category, {});
+    const qty = +f.qty || 1;
+    const hasInputs = (+f.cost) > 0 && (+f.sell) > 0;
+    const g = this.gate({ cost: +f.cost, sell: +f.sell, weight: +f.weight, category: f.category, bsr: +f.bsr || 0, offers: +f.offers || 0, amzBB: 0, priceVsAvg: 1, brand: '' });
+    let verdictLabel = 'AWAITING', verdictColor = 'var(--faint)', verdictBg = 'var(--panel)', verdictNote = 'Enter a buy cost and sell price to compute the verdict.';
+    if (hasInputs) {
+      if (fe.roi >= this.criteria.minRoi && fe.net >= this.criteria.minProfit) { verdictLabel = 'BUY'; verdictColor = 'var(--live)'; verdictBg = 'var(--live-tint)'; verdictNote = 'Clears the ROI and profit floors. Save it to the pipeline as a buy.'; }
+      else if (fe.net >= this.criteria.minProfit || fe.roi >= 0.15) { verdictLabel = 'CAUTION'; verdictColor = 'var(--warn)'; verdictBg = 'var(--warn-tint)'; verdictNote = 'Marginal — below your ROI or profit floor. Only if velocity is strong.'; }
+      else { verdictLabel = 'REJECT'; verdictColor = 'var(--bad)'; verdictBg = 'var(--bad-tint)'; verdictNote = 'Fails the floors — fees eat the spread. Pass on this one.'; }
+    }
+    const catRate = (this.categories.find(c => c.value === f.category) || this.categories[0]).rate;
+    const res = {
+      verdictLabel, verdictColor, verdictBg, verdictNote,
+      net: hasInputs ? this.money(fe.net) : '—', netColor: fe.net >= 0 ? 'var(--live)' : 'var(--bad)',
+      roi: hasInputs ? this.pct(fe.roi) : '—', roiColor: fe.roi >= this.criteria.minRoi ? 'var(--live)' : fe.roi >= 0.15 ? 'var(--warn)' : 'var(--bad)',
+      margin: hasInputs ? this.pct(fe.margin) : '—',
+      totalProfit: hasInputs ? this.money0(fe.net * qty) : '—',
+      breakdown: [
+        { label: 'Sell price', value: hasInputs ? this.money(+f.sell) : '—', labelColor: 'var(--text-soft)', valueColor: 'var(--text)', rowStyle: '' },
+        { label: 'Buy cost', value: hasInputs ? '−' + this.money(+f.cost) : '—', labelColor: 'var(--muted)', valueColor: 'var(--text)', rowStyle: '' },
+        { label: 'Referral fee (' + Math.round(catRate * 100) + '%)', value: hasInputs ? '−' + this.money(fe.referral) : '—', labelColor: 'var(--muted)', valueColor: 'var(--text)', rowStyle: '' },
+        { label: 'FBA fulfillment', value: hasInputs ? '−' + this.money(fe.ful) : '—', labelColor: 'var(--muted)', valueColor: 'var(--text)', rowStyle: '' },
+        { label: 'Prep + inbound', value: hasInputs ? '−' + this.money(fe.prep) : '—', labelColor: 'var(--muted)', valueColor: 'var(--text)', rowStyle: '' },
+        { label: 'Storage', value: hasInputs ? '−' + this.money(fe.storage) : '—', labelColor: 'var(--muted)', valueColor: 'var(--text)', rowStyle: '' },
+        { label: 'Net profit / unit', value: hasInputs ? this.money(fe.net) : '—', labelColor: 'var(--text)', valueColor: fe.net >= 0 ? 'var(--live)' : 'var(--bad)', rowStyle: 'border-bottom:none;border-top:1.5px solid var(--bd);margin-top:4px;padding-top:12px' },
+      ],
+      checks: [
+        this.chk(hasInputs && fe.roi >= this.criteria.minRoi, 'ROI ≥ 30%', hasInputs ? this.pct(fe.roi) : '—'),
+        this.chk(hasInputs && fe.net >= this.criteria.minProfit, 'Profit ≥ $3.00', hasInputs ? this.money(fe.net) : '—'),
+        this.chk(hasInputs && (+f.bsr || 999999) <= this.criteria.bsrMax, 'BSR < 200k', f.bsr ? (+f.bsr).toLocaleString() : '—'),
+        this.chk(hasInputs && (+f.offers || 99) <= this.criteria.maxOffers && (+f.offers || 0) >= this.criteria.minOffers, 'Sellers 3–25', f.offers || '—'),
+        this.chk(hasInputs && (+f.sell) >= this.criteria.priceMin && (+f.sell) <= this.criteria.priceMax, 'Price $8–$60', hasInputs ? this.money(+f.sell) : '—'),
+        this.chk(hasInputs && fe.margin >= 0.15, 'Margin ≥ 15%', hasInputs ? this.pct(fe.margin) : '—'),
+      ],
+    };
+
+    // scout view
+    const scoutConfig = [
+      { label: 'BSR ceiling', value: '< 200k' }, { label: 'ROI floor', value: '≥ 30%' }, { label: 'Profit floor', value: '≥ $3.00' },
+      { label: 'Sellers', value: '3–25' }, { label: 'Amazon BB', value: 'reject ≥20%' }, { label: 'Price spike', value: 'reject >1.5×' },
+    ];
+    const st = this.state.scoutStats;
+    const scoutStatTiles = st ? [
+      { label: 'Scanned', value: String(st.scanned), color: 'var(--text)' },
+      { label: 'Passed gates', value: String(st.passed), color: 'var(--live)' },
+      { label: 'Buy-grade', value: String(st.buy), color: 'var(--acc-ink)' },
+      { label: 'Rejected', value: String(st.rejected), color: 'var(--bad)' },
+    ] : [];
+    const vColor = (verd) => verd === 'BUY' ? 'var(--live)' : verd === 'WATCH' ? 'var(--warn)' : verd === 'THIN' ? 'var(--muted)' : 'var(--bad)';
+    const scoutPicks = this.state.scoutPicks.map((p, i) => ({
+      rank: p.pass ? String(i + 1) : '—', title: p.title, sub: (p.brand || 'brand n/a') + ' · ' + (this.categories.find(c => c.value === p.category) || {}).value,
+      buySell: this.money0(p.cost) + '→' + this.money0(p.sell), profit: this.money(p.net), profitColor: p.net >= 0 ? 'var(--live)' : 'var(--bad)',
+      roi: this.pct(p.roi), verdict: p.verdict, verdictColor: vColor(p.verdict), score: p.pass ? p.score + '/100' : '—',
+      scoreFill: 'height:100%;width:' + (p.pass ? p.score : 0) + '%;background:' + vColor(p.verdict),
+      rowStyle: p.pass ? '' : 'opacity:.6', canQueue: p.pass, rejected: !p.pass, rejectReason: (p.reasons || [])[0] || 'rejected', queue: this.queuePick(p),
+    }));
+
+    // inventory
+    const stockLeads = P.filter(l => ['buy', 'ordered'].includes(l.stage));
+    const stockUnits = stockLeads.reduce((t, l) => t + l.qty, 0);
+    const stockValue = stockLeads.reduce((t, l) => t + l.cost * l.qty, 0);
+    const lowStockLeads = stockLeads.filter(l => l.qty < 15);
+    const invTiles = [
+      { label: 'Units in stock', value: String(stockUnits), color: 'var(--text)' },
+      { label: 'Stock value', value: this.money0(stockValue), color: 'var(--text)' },
+      { label: 'Active SKUs', value: String(stockLeads.length), color: 'var(--text)' },
+      { label: 'Low-stock flags', value: String(lowStockLeads.length), color: lowStockLeads.length ? 'var(--warn)' : 'var(--live)' },
+    ];
+    const invRows = stockLeads.map(l => ({ title: l.title, stage: this.STAGE_META[l.stage][0], qty: l.qty, value: this.money0(l.cost * l.qty), low: l.qty < 15 }));
+
+    // sources
+    const docByType = this.documents.reduce((acc, d) => { (acc[d.type] = acc[d.type] || []).push(d); return acc; }, {});
+    const docGroups = Object.entries(docByType).map(([type, items]) => ({ type, count: items.length, items: items.map(d => ({ title: d.title, tags: d.tags.join(' · ') })) }));
+
+    // money
+    const pnlTiles = [
+      { label: 'Invested', value: this.money0(invested), color: 'var(--text)', sub: 'buy→sold cost' },
+      { label: 'Revenue', value: this.money0(revenue), color: 'var(--text)', sub: 'sold units' },
+      { label: 'Amazon fees', value: this.money0(totalFees), color: 'var(--muted)', sub: 'referral + FBA' },
+      { label: 'Tool spend', value: this.money0(monthlySpend), color: 'var(--muted)', sub: 'per month' },
+      { label: 'Net profit', value: this.money0(netAfterTools), color: netAfterTools >= 0 ? 'var(--live)' : 'var(--bad)', sub: 'after tools' },
+    ];
+    const soldRows = byStage.sold.map(l => ({ title: l.title, meta: l.qty + ' units · ' + this.pct(l.roi) + ' ROI', profit: this.money0(l.net * l.qty) }));
+    const recurring = this.toolStack.map(x => { const on = !!this.state.toolActive[x.key]; return { name: x.name, cost: x.cost === 0 ? 'free' : this.money(x.cost), toggle: this.toggleTool(x.key), trackStyle: trackOn(on), knobStyle: knobOn(on) }; });
+
+    const ar = this.state.askResults;
+
+    return {
+      rootVars: `--acc:${acc};`, themeAttr: theme,
+      toggleTheme: this.toggleTheme, themeLabel: isLight ? 'Paper' : 'Carbon', themeIcon: isLight ? this.ic('sun', 14) : this.ic('moon', 14),
+      showGrid: backdrop !== 'plain',
+      today: 'JUN 29 · 2026', nav, viewEyebrow, viewTitle, statusPills,
+      isDash: v === 'dashboard', isScout: v === 'scout', isAnalyze: v === 'analyze', isAutomations: v === 'automations', isPipeline: v === 'pipeline', isMoney: v === 'money', isAsk: v === 'ask',
+      isInventory: v === 'inventory', isSources: v === 'sources',
+      goScout: this.go('scout'), goAnalyze: this.go('analyze'), goAutomations: this.go('automations'), goPipeline: this.go('pipeline'),
+      // dashboard
+      kpis, funnel, activity, logCount: this.state.log.length + ' events',
+      pipelineValue: this.money0(projected),
+      scoutIconBig: this.ic('radar', 22),
+      scoutStatusLabel: this.state.scoutStatus === 'scanning' ? 'scanning' : this.state.scoutStatus === 'done' ? 'ready' : 'idle',
+      scoutChipColor: this.state.scoutStatus === 'idle' ? 'var(--faint)' : this.state.scoutStatus === 'scanning' ? 'var(--warn)' : 'var(--live)',
+      scoutSummaryLine: st ? `Last run · ${st.scanned} scanned, ${st.buy} buy-grade, ${st.rejected} rejected by guards` : 'Not run yet · scores products against your full ruleset in one pass',
+      autoLiveCount: autoLive, autoTotal: A.length, autoRuns, autoMini,
+      hasBest: !!best, noBest: !best,
+      best: best ? { title: best.title, meta: this.STAGE_META[best.stage][0] + ' · ' + best.qty + ' units', profit: this.money(best.net), roi: this.pct(best.roi) } : {},
+      // scout
+      scoutConfig, scoutHasRun: this.state.scoutPicks.length > 0, scoutIdle: this.state.scoutPicks.length === 0, scoutScanning: this.state.scoutStatus === 'scanning',
+      runScout: this.runScout, scoutStatTiles, scoutPicks,
+      scoutBtnLabel: this.state.scoutStatus === 'scanning' ? 'Scanning…' : this.state.scoutPicks.length ? 'Re-run scout' : 'Run scout',
+      scoutBtnBg: this.state.scoutStatus === 'scanning' ? 'var(--chip)' : 'var(--acc)', scoutBtnColor: this.state.scoutStatus === 'scanning' ? 'var(--faint)' : '#faf7ef',
+      scoutBtnDisabled: this.state.scoutStatus === 'scanning' ? 'cursor:progress' : '',
+      headerScoutLabel: this.state.scoutStatus === 'scanning' ? 'Scanning…' : 'Run scout',
+      headerScoutDisabled: this.state.scoutStatus === 'scanning' ? 'opacity:.6;cursor:progress' : '',
+      queueAllBuy: this.queueAllBuy,
+      scoutShowQueueAll: this.state.scoutPicks.some(p => p.pass && p.verdict === 'BUY'),
+      scoutQueueAllLabel: '+ Queue all buy-grade (' + this.state.scoutPicks.filter(p => p.pass && p.verdict === 'BUY').length + ')',
+      // analyzer
+      f, h: { title: this.hf('title'), category: this.hf('category'), cost: this.hf('cost'), sell: this.hf('sell'), weight: this.hf('weight'), bsr: this.hf('bsr'), offers: this.hf('offers'), qty: this.hf('qty') },
+      categoryOpts: this.categories, res, saveDeal: this.saveDeal, saveDisabled: hasInputs ? '' : 'opacity:.5;cursor:not-allowed',
+      hasToast: !!this.state.toast, toast: this.state.toast,
+      // automations
+      automations, runAllLive: this.runAllLive,
+      // pipeline
+      pipelineCols, leadsTotalLabel: P.length,
+      // inventory
+      invTiles, hasStock: stockLeads.length > 0, noStock: stockLeads.length === 0, invRows, runRestock: this.runAuto('restock'),
+      // sources
+      docGroups, runKnowledge: this.runAuto('knowledge'),
+      // money
+      pnlTiles, hasSold: byStage.sold.length > 0, noSold: byStage.sold.length === 0, soldRows, recurring, monthlySpend: this.money0(monthlySpend),
+      // ask
+      askValue: this.state.ask, setAsk: this.setAsk, runAsk: this.runAsk,
+      askSuggestions: ['Can I sell Jellycat?', 'What ROI floor?', 'Ungate at Target', 'Read a Keepa chart', 'Q4 sourcing rules'].map(q => ({ label: q, run: this.askFor(q) })),
+      corpusStats: this.state.corpus.toLocaleString() + ' chunks · 78 docs · bge-base-en-v1.5 (768d)',
+      askResults: (ar || []).map(d => ({ title: d.title, type: d.type, tags: d.tags.join(' · ') })),
+      askHasResults: !!(ar && ar.length), askNoResults: !!(ar && ar.length === 0),
+    };
+  }
+
+  chk(ok, label, value) {
+    return { icon: ok ? '✓' : '✕', iconBg: ok ? 'var(--live)' : 'var(--bad)', label, value, valueColor: ok ? 'var(--live)' : 'var(--bad)' };
+  }
+}
+</script>
+</body>
+</html>

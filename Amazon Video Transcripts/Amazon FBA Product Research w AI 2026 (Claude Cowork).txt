@@ -1,0 +1,1990 @@
+00:00 A year ago, Amazon product research this
+00:02 
+
+00:02 deep would have taken me about 11 hours
+00:04 
+
+00:04 all in, or I would have had to pay a
+00:06 
+
+00:06 consultant about a thousand dollars to
+00:08 
+
+00:08 get this done. This is actually wild,
+00:11 
+
+00:11 because with Claude, I just got a full
+00:13 
+
+00:13 product development and market analysis
+00:15 
+
+00:15 plan including specific product designs
+00:18 
+
+00:18 that meet holes in the market where
+00:19 
+
+00:19 there's demand but no supply, detailed
+00:22 
+
+00:22 and accurate financial projections,
+00:24 
+
+00:24 pricing and margin modeling, features to
+00:26 
+
+00:26 include based on customer feedback
+00:28 
+
+00:28 analysis, and even supplier quotes from
+00:31 
+
+00:31 an AI
+00:34 
+
+00:34 agent-based tool called Claude Co-work.
+00:36 
+
+00:36 Now, this is not the popcorn McDonald's
+00:39 
+
+00:39 AI that you're used to. This is not
+00:41 
+
+00:41 ChatGPT. This is an agent-based AI, not
+00:44 
+
+00:44 a chat-based AI. And there's a big
+00:46 
+
+00:46 difference between the two. Chat-based
+00:48 
+
+00:48 AI that you're probably already used to
+00:49 
+
+00:49 with ChatGPT and Grok and similar tools
+00:52 
+
+00:52 like that is like talking to an advisor
+00:54 
+
+00:54 or a friend. It's like a very
+00:56 
+
+00:56 knowledgeable friend, but it's more like
+00:57 
+
+00:57 a conversation. You say something, then
+00:60 
+
+00:60 it says something back to you. Then you
+01:01 
+
+01:01 say something again, and it says
+01:02 
+
+01:02 something back to you. Agent-based AI is
+01:05 
+
+01:05 not like that at all. Agent-based AI is
+01:07 
+
+01:07 more like an employee. You give it
+01:09 
+
+01:09 complex responsibilities or tasks, and
+01:12 
+
+01:12 it goes and executes them. Sometimes it
+01:14 
+
+01:14 takes time to execute them, sometimes
+01:16 
+
+01:16 even hours to execute them because it
+01:18 
+
+01:18 will execute complex tasks that involve
+01:20 
+
+01:20 a lot of different moving parts. It can
+01:22 
+
+01:22 involve research online, it can involve
+01:25 
+
+01:25 going to websites and filling out forms.
+01:27 
+
+01:27 And these complex tasks can involve
+01:29 
+
+01:29 actually multiple agents. So,
+01:32 
+
+01:32 agent-based AI with Claude Co-work, what
+01:34 
+
+01:34 it actually is is agent orchestration.
+01:37 
+
+01:37 It's kind of like asking someone to do
+01:39 
+
+01:39 something with AI, but you're asking AI
+01:42 
+
+01:42 to do something with AI. So, Claude
+01:44 
+
+01:44 Co-work is the orchestrator and that it
+01:46 
+
+01:46 enlists a bunch of agents to do
+01:48 
+
+01:48 different things. It can even use your
+01:51 
+
+01:51 Chrome browser in live time while you're
+01:53 
+
+01:53 doing something else in another Chrome
+01:55 
+
+01:55 tab, just like a person working next to
+01:57 
+
+01:57 you at your desk. So, while you're
+01:58 
+
+01:58 working, Claude can actually be working
+02:00 
+
+02:00 alongside you on a similar project or
+02:02 
+
+02:02 the same project as sort of your
+02:04 
+
+02:04 companion. Now, there are so many
+02:06 
+
+02:06 applications for this, and this is
+02:07 
+
+02:07 totally game-changing for Amazon sellers
+02:09 
+
+02:09 and any e-commerce brand owner. I'm
+02:11 
+
+02:11 going to be making a lot more videos
+02:12 
+
+02:12 about this coming up in the next couple
+02:14 
+
+02:14 of weeks, but in this video we're
+02:15 
+
+02:15 talking about one specific application,
+02:17 
+
+02:17 which is product research and
+02:19 
+
+02:19 development. So, what I did and that I'm
+02:21 
+
+02:21 going to walk you through in this video
+02:22 
+
+02:22 is I used Claude Co-work to come up with
+02:25 
+
+02:25 a full and complete plan and financial
+02:28 
+
+02:28 model and analysis of a product that I
+02:30 
+
+02:30 want to launch in a particular niche.
+02:32 
+
+02:32 And what it came out with was actually
+02:35 
+
+02:35 really incredibly valuable. It truly was
+02:37 
+
+02:37 something that you would have to pay a
+02:39 
+
+02:39 product development consultant or firm a
+02:41 
+
+02:41 lot of money to produce because it
+02:43 
+
+02:43 required sifting through a lot of data,
+02:45 
+
+02:45 coming up with really deep insights and
+02:47 
+
+02:47 analysis based on that data, and then
+02:49 
+
+02:49 making decisions and doing research
+02:51 
+
+02:51 based on it. So, it found suppliers for
+02:53 
+
+02:53 me. It found the holes in the niche
+02:55 
+
+02:55 where the market was underserved um
+02:57 
+
+02:57 because there wasn't a much supply, but
+02:58 
+
+02:58 there was a lot of demand based on the
+02:59 
+
+02:59 keyword data. In order to do something
+03:01 
+
+03:01 like this, you need to know how to use
+03:03 
+
+03:03 Claude Co-work right, and I am going to
+03:05 
+
+03:05 be coming out with a video on the
+03:06 
+
+03:06 fundamentals of how to set this up, but
+03:08 
+
+03:08 you can actually get started right away
+03:10 
+
+03:10 without a super involved setup. All you
+03:11 
+
+03:11 have to do is download Claude AI for
+03:14 
+
+03:14 your desktop, then on the top you'll see
+03:16 
+
+03:16 a little switch that says Co-work. You
+03:18 
+
+03:18 move over to Co-work, and now you're
+03:20 
+
+03:20 using agentic AI where Claude is an
+03:23 
+
+03:23 orchestrator of multiple agents that
+03:25 
+
+03:25 work on your behalf. Now, you can
+03:27 
+
+03:27 connect things to Claude Co-work so that
+03:29 
+
+03:29 it can work on your behalf in particular
+03:31 
+
+03:31 tools that you live in like Slack, for
+03:32 
+
+03:32 example, it can start sending messages
+03:34 
+
+03:34 on your behalf, or Notion if you wanted
+03:36 
+
+03:36 to have access to your entire SOP
+03:38 
+
+03:38 library and be able to read it and
+03:40 
+
+03:40 update it in live time. There are a lot
+03:41 
+
+03:41 of connectors. We're not going to go
+03:43 
+
+03:43 through all that in this video. We're
+03:44 
+
+03:44 going to just do a quick start with this
+03:46 
+
+03:46 very impressive application, which is
+03:49 
+
+03:49 product research and development. So,
+03:51 
+
+03:51 first let's go through the results here,
+03:52 
+
+03:52 and then I'm going to walk through how
+03:53 
+
+03:53 we get the result, and it's actually a
+03:55 
+
+03:55 lot easier than you'd expect. But, you
+03:57 
+
+03:57 have to know how to do it right. With
+03:60 
+
+04:00 agentic AI, it's really all about
+04:02 
+
+04:02 context. Unlike a chat-based AI where I
+04:05 
+
+04:05 would just type in a little prompt or a
+04:07 
+
+04:07 question and get a response, when I'm
+04:08 
+
+04:08 giving essentially, you have to think
+04:10 
+
+04:10 about it like giving a person a job.
+04:12 
+
+04:12 When I'm giving this agentic AI a job, I
+04:15 
+
+04:15 need to give it the proper context and
+04:17 
+
+04:17 resources in order for it to do the job
+04:19 
+
+04:19 properly. So, for this project, I chose
+04:21 
+
+04:21 the niche of backseat covers for dogs
+04:24 
+
+04:24 just as an example to see what we could
+04:26 
+
+04:26 do in this space. We actually have a
+04:28 
+
+04:28 brand in our portfolio that already has
+04:29 
+
+04:29 products like this, and I just wanted to
+04:31 
+
+04:31 see what it would come up with so I
+04:32 
+
+04:32 could compare it to product that I'm
+04:35 
+
+04:35 already very familiar with. And what I
+04:37 
+
+04:37 got back was much more incredibly
+04:41 
+
+04:41 valuable than I really ever could have
+04:43 
+
+04:43 imagined, which was this very succinct
+04:46 
+
+04:46 but detailed report on if I'm going to
+04:49 
+
+04:49 develop another product in this space,
+04:51 
+
+04:51 what to focus on based on the actual
+04:54 
+
+04:54 opportunity there, along with financial
+04:56 
+
+04:56 projections, unit economics, supplier
+04:58 
+
+04:58 quotes from Alibaba, and a bunch of
+05:01 
+
+05:01 other really valuable stuff that would
+05:03 
+
+05:03 have cost me either over a thousand
+05:04 
+
+05:04 dollars or over 10 hours of my own time
+05:07 
+
+05:07 if I hadn't done this with Co-work. And
+05:09 
+
+05:09 with Co-work, I think it took a total of
+05:11 
+
+05:11 maybe about six or seven minutes,
+05:13 
+
+05:13 something like that in total for all of
+05:15 
+
+05:15 the the work that I had to do to put
+05:17 
+
+05:17 this together. [music] And take a look
+05:19 
+
+05:19 what we got here. I mean, we literally
+05:21 
+
+05:21 have market gaps where it's specifically
+05:24 
+
+05:24 telling me this is where there's demand
+05:27 
+
+05:27 but low supply based on analysis. Now,
+05:29 
+
+05:29 here's where I want to start telling you
+05:31 
+
+05:31 about the context that I gave it because
+05:33 
+
+05:33 this is really important. In order for
+05:35 
+
+05:35 Claude Co-work to do this job properly,
+05:37 
+
+05:37 I exported a big file of keyword
+05:41 
+
+05:41 research data from Helium 10. Now, this
+05:43 
+
+05:43 literally took me only two minutes. I
+05:45 
+
+05:45 just logged into Helium 10, which is a
+05:46 
+
+05:46 keyword research tool for Amazon
+05:48 
+
+05:48 sellers. I typed in dog back car seat
+05:51 
+
+05:51 bed, and I exported all the data. I
+05:53 
+
+05:53 didn't filter it at all. I didn't It was
+05:55 
+
+05:55 just a raw CSV file that I exported. I
+05:57 
+
+05:57 imported it into Claude. I knew that it
+05:60 
+
+05:60 would be able to do the data analysis,
+06:01 
+
+06:01 and it did it very well. Claude is very
+06:04 
+
+06:04 [music] good, much better at any of the
+06:06 
+
+06:06 other models, ChatGPT or any of the
+06:08 
+
+06:08 other ones, at data analysis. It's
+06:10 
+
+06:10 really, really good. In fact, it has a
+06:12 
+
+06:12 native plugin for Excel so that inside
+06:15 
+
+06:15 Excel you can actually work with Claude
+06:17 
+
+06:17 alongside it and have it manipulate your
+06:19 
+
+06:19 data in your spreadsheet as you're
+06:20 
+
+06:20 working. So, I gave it that context
+06:22 
+
+06:22 because that told it all of the insider
+06:25 
+
+06:25 data it needed to know about the search
+06:27 
+
+06:27 demand and the keyword data, which is
+06:29 
+
+06:29 highly related to the the actual demand
+06:31 
+
+06:31 in the market and the competitive data
+06:33 
+
+06:33 for the space. And then the rest of the
+06:34 
+
+06:34 research it did on its own through
+06:36 
+
+06:36 controlling my browser and through doing
+06:38 
+
+06:38 its own back-end research directly. And
+06:40 
+
+06:40 so, look at these insights. These are
+06:41 
+
+06:41 insights that I would have had to sift
+06:44 
+
+06:44 through hours of keyword research data
+06:46 
+
+06:46 and competitor reviews and all kinds of
+06:48 
+
+06:48 other stuff to really get these insights
+06:50 
+
+06:50 myself, but it found these market gaps.
+06:52 
+
+06:52 But I looked through the keyword
+06:53 
+
+06:53 research data myself just to validate
+06:55 
+
+06:55 this, and it is indeed true that these
+06:57 
+
+06:57 would be good products to launch. They
+06:58 
+
+06:58 have significant amounts of search
+07:00 
+
+07:00 volume across all the keywords that
+07:02 
+
+07:02 speak to these particular shopper
+07:04 
+
+07:04 intents, but they're really underserved
+07:07 
+
+07:07 on the market, and there's really not
+07:09 
+
+07:09 that many good offers for it. So, this
+07:12 
+
+07:12 insight is really critical. I mean, this
+07:14 
+
+07:14 is really the core decision when
+07:17 
+
+07:17 launching any new product is is this
+07:19 
+
+07:19 product going to be successful? Is it
+07:20 
+
+07:20 really speaking to a big market demand?
+07:22 
+
+07:22 Do I have some kind of unique spin that
+07:24 
+
+07:24 I can put on my product that gives me an
+07:26 
+
+07:26 edge? From the very beginning, we have
+07:28 
+
+07:28 that based on this analysis, but this is
+07:29 
+
+07:29 just the tip of the iceberg. So, let's
+07:31 
+
+07:31 scroll down here. Here we go a level
+07:33 
+
+07:33 deeper with keyword categories by search
+07:35 
+
+07:35 volume where we can see what underserved
+07:37 
+
+07:37 areas of the market by feature or by use
+07:40 
+
+07:40 case. So, we have C still here, large
+07:43 
+
+07:43 dogs vehicle specific, but we also have
+07:45 
+
+07:45 safety restraint. So, like the hookup to
+07:47 
+
+07:47 keep the dog safe while it's in the
+07:49 
+
+07:49 backseat. And then luxury premium is in
+07:51 
+
+07:51 here as well. Then we have some that are
+07:52 
+
+07:52 partially served like small dogs, for
+07:54 
+
+07:54 example. And then we have some that are
+07:56 
+
+07:56 well served like the hammock style. It
+07:58 
+
+07:58 correctly brought up the insight that
+08:00 
+
+08:00 the hammock style portion of the market
+08:02 
+
+08:02 is actually overserved. A lot of them
+08:05 
+
+08:05 focus on that. Probably means there's a
+08:06 
+
+08:06 lot of demand as well, but it's very
+08:09 
+
+08:09 overserved or well served in the market.
+08:11 
+
+08:11 So, that wouldn't be a differentiating
+08:13 
+
+08:13 factor for us, and it correctly pointed
+08:15 
+
+08:15 that out. Now, stick with me. This gets
+08:17 
+
+08:17 really crazy like further down where it
+08:18 
+
+08:18 actually goes and gets supplier quotes
+08:21 
+
+08:21 and adds them in here. And by the way, I
+08:23 
+
+08:23 checked these, and these are also
+08:24 
+
+08:24 accurate. And breakdown of the unit
+08:28 
+
+08:28 economics and margin modeling and all of
+08:30 
+
+08:30 that, but we're not there yet. Then we
+08:32 
+
+08:32 have the market analysis of the current
+08:34 
+
+08:34 landscape. Now, this is really valuable
+08:36 
+
+08:36 as well. So, we see some of the
+08:38 
+
+08:38 different categories that are currently
+08:39 
+
+08:39 all out there like hard bottom, elevated
+08:42 
+
+08:42 um booster seats. This is to make dogs
+08:46 
+
+08:46 higher up so they could see through the
+08:47 
+
+08:47 window, full coverage that go all the
+08:49 
+
+08:49 way across including doors, uh cargo
+08:51 
+
+08:51 trunk covers, convertible or
+08:53 
+
+08:53 multi-function ones. There's bench style
+08:56 
+
+08:56 ones, and it separated it out into these
+08:59 
+
+08:59 different categories so that I could
+09:01 
+
+09:01 know where the one that I'm thinking of
+09:03 
+
+09:03 doing would fit into this. Then we got
+09:05 
+
+09:05 into the price tiers so we could see
+09:06 
+
+09:06 where we'll be sitting on the scale.
+09:08 
+
+09:08 There's budget range of 20 to 50
+09:10 
+
+09:10 dollars, the mid-range of 50 to 100
+09:12 
+
+09:12 dollars, and then super premium ones at
+09:14 
+
+09:14 100 to 200 dollars. Now, here's another
+09:16 
+
+09:16 super valuable part. We get into top
+09:19 
+
+09:19 customer complaints. Through reviewing
+09:21 
+
+09:21 all of the reviews, Co-work was able to
+09:23 
+
+09:23 find what the biggest issues are with
+09:26 
+
+09:26 the product so that I can solve them
+09:28 
+
+09:28 from the get-go and use those as unique
+09:30 
+
+09:30 selling propositions and avoid bad
+09:32 
+
+09:32 reviews myself. So, it identified that
+09:34 
+
+09:34 seam failure, which is just an actual
+09:36 
+
+09:36 product defect or a product quality
+09:38 
+
+09:38 issue, is one of the main issues. That
+09:40 
+
+09:40 there's waterproofing failures, which of
+09:42 
+
+09:42 course is important with dogs cuz they
+09:44 
+
+09:44 pee and they're they step in mud and
+09:46 
+
+09:46 stuff. There's fit problems so I can
+09:48 
+
+09:48 make sure to include the dimensions in
+09:49 
+
+09:49 the image when I launch this product.
+09:51 
+
+09:51 There's lack of instructions, that's a
+09:53 
+
+09:53 super easy one to solve, just very
+09:55 
+
+09:55 visual, obvious instructions. So, all of
+09:57 
+
+09:57 these things are things I'm going to
+09:58 
+
+09:58 take into consideration when developing
+10:00 
+
+10:00 the product and working with the
+10:02 
+
+10:02 supplier and the sourcing agent to get
+10:04 
+
+10:04 this made in a way that I know has a
+10:06 
+
+10:06 high likelihood of success. And then
+10:08 
+
+10:08 here we dive deeper into the market gap
+10:10 
+
+10:10 analysis. So, we have the different
+10:11 
+
+10:11 segments, the large dog, which I it was
+10:14 
+
+10:14 one I totally agree with, the vehicle
+10:16 
+
+10:16 specific designs, which really mean
+10:18 
+
+10:18 truck and SUV, like this state specific
+10:21 
+
+10:21 vehicles, but what it came down to when
+10:23 
+
+10:23 I looked into the keyword data was
+10:24 
+
+10:24 actually like talking either truck or
+10:26 
+
+10:26 SUV. Those are the the that's the data
+10:28 
+
+10:28 that comes up a lot. But, you could even
+10:30 
+
+10:30 go as deep as having child variations
+10:33 
+
+10:33 that speak to specific cars that are
+10:35 
+
+10:35 really popular, like a Tesla, for
+10:36 
+
+10:36 example. The temperature regulation, I
+10:38 
+
+10:38 think is a good point, but I looked into
+10:40 
+
+10:40 it from a product design perspective, I
+10:42 
+
+10:42 think it would be impractical. So, I
+10:43 
+
+10:43 think this is a good insight, but it's
+10:45 
+
+10:45 not practical to actually implement. The
+10:47 
+
+10:47 senior dog is also possible, and that is
+10:50 
+
+10:50 a pretty big market. That's something
+10:52 
+
+10:52 that I would consider. And the Spanish
+10:53 
+
+10:53 language market, I think that's an an
+10:56 
+
+10:56 interesting insight, but it doesn't
+10:59 
+
+10:59 really affect the product development.
+11:01 
+
+11:01 So, that's more something that would
+11:02 
+
+11:02 come into play when it came into our
+11:03 
+
+11:03 advertising. Now, it ranked these unique
+11:06 
+
+11:06 sub niches for us, and I'd say that I
+11:09 
+
+11:09 don't really agree with the ranking
+11:10 
+
+11:10 completely. I would say the large dog
+11:12 
+
+11:12 and truck for sure, and then I would put
+11:13 
+
+11:13 senior dog up here, and then Spanish and
+11:15 
+
+11:15 temperature would be at the bottom. But,
+11:17 
+
+11:17 still it's it's actually pretty close to
+11:18 
+
+11:18 what I would agree with and what I think
+11:20 
+
+11:20 I would have probably come up with after
+11:22 
+
+11:22 a long time doing product research for
+11:24 
+
+11:24 developing this product myself before
+11:26 
+
+11:26 initiating any kind of deal with a
+11:28 
+
+11:28 supplier. So, it doesn't stop there.
+11:30 
+
+11:30 Then it makes its own decision, and I
+11:32 
+
+11:32 can choose to agree or disagree with
+11:34 
+
+11:34 this, of course, but it made the
+11:35 
+
+11:35 decision that this would be the most
+11:39 
+
+11:39 effective sub niche of this niche to
+11:41 
+
+11:41 launch, which is large dog premium hard
+11:45 
+
+11:45 bottom seat covers. And it got to this
+11:48 
+
+11:48 conclusion through actual data analysis.
+11:51 
+
+11:51 Now, I know I haven't even shown you
+11:53 
+
+11:53 guys how to generate this yet, and I'm
+11:54 
+
+11:54 going to get into that in just a second.
+11:56 
+
+11:56 But, we're just going to finish going
+11:56 
+
+11:56 through this first, and then I'll show
+11:57 
+
+11:57 you exactly how to do it. So, then we
+11:59 
+
+11:59 start getting into the modeling of how
+12:00 
+
+12:00 to actually make it happen and what the
+12:02 
+
+12:02 economics will look like once we make it
+12:03 
+
+12:03 happen. So, it went and found quotes
+12:06 
+
+12:06 from specific suppliers on Alibaba with
+12:09 
+
+12:09 their freight on board price for this
+12:12 
+
+12:12 particular product that it came up with
+12:15 
+
+12:15 that solves this particular unmet need
+12:17 
+
+12:17 in this particular niche. Pretty cool.
+12:20 
+
+12:20 Now, I went on Alibaba to validate these
+12:22 
+
+12:22 prices, and they are in fact in range.
+12:25 
+
+12:25 It even gave us a breakdown of the
+12:26 
+
+12:26 different components of the cost. So, if
+12:29 
+
+12:29 we wanted to tweak our cost by removing
+12:32 
+
+12:32 or adding a different feature, for
+12:34 
+
+12:34 example, the hardware or the non-slip
+12:36 
+
+12:36 bottom, we could see how that would
+12:37 
+
+12:37 affect the cost. Now, this is insight
+12:39 
+
+12:39 that you would not be able to get
+12:40 
+
+12:40 yourself unless you are grilling the
+12:42 
+
+12:42 manufacturer, and even then a lot of
+12:44 
+
+12:44 times they're very shy to kind of fork
+12:47 
+
+12:47 up this information. It then did
+12:48 
+
+12:48 financial modeling for us so that we
+12:50 
+
+12:50 know what our per unit margin is going
+12:52 
+
+12:52 to be. Now, this I think it was a little
+12:54 
+
+12:54 bit too liberal with this. I would have
+12:56 
+
+12:56 been more conservative. I think the COGS
+12:58 
+
+12:58 is going to be higher for the premium
+12:60 
+
+12:60 tier of this product, for example. Uh it
+13:02 
+
+13:02 took into consideration the shipping
+13:04 
+
+13:04 fee, but I think it was under quoted,
+13:06 
+
+13:06 and it also didn't include land delivery
+13:09 
+
+13:09 uh in the US, and it didn't include the
+13:11 
+
+13:11 fee that you pay Amazon to receive the
+13:14 
+
+13:14 delivery or any kind of inventory
+13:15 
+
+13:15 storage fee. So, there was some stuff
+13:17 
+
+13:17 missing here, but it got I would say it
+13:20 
+
+13:20 got it like 70 to 80% right, and it was
+13:22 
+
+13:22 a good estimate uh in general to kind of
+13:25 
+
+13:25 get an idea of where you're at, and it's
+13:26 
+
+13:26 starting place so that you can then just
+13:28 
+
+13:28 tweak it. And this is the case a lot of
+13:30 
+
+13:30 the times with AI where it gets you like
+13:31 
+
+13:31 most of the way there, and then you
+13:33 
+
+13:33 really just have to check and alter it
+13:35 
+
+13:35 to get it the last like 10 to 20% of all
+13:37 
+
+13:37 the way home to make it really
+13:39 
+
+13:39 practical. But, this was a really good
+13:41 
+
+13:41 starting place. It did a model of the
+13:43 
+
+13:43 total initial investment required,
+13:45 
+
+13:45 including the first production run, the
+13:48 
+
+13:48 custom setup and molding fee, the
+13:51 
+
+13:51 engineering fee, product photography,
+13:52 
+
+13:52 which you could avoid by using AI, of
+13:55 
+
+13:55 course, if you really wanted to, and the
+13:57 
+
+13:57 PPC that you would have to pay. Now, I
+13:60 
+
+13:60 again would say that to actually get
+14:02 
+
+14:02 this product profitable, it's going to
+14:04 
+
+14:04 take you longer than this report is
+14:07 
+
+14:07 assuming. So, I would be again a little
+14:10 
+
+14:10 bit more conservative with this, meaning
+14:12 
+
+14:12 I would probably end up with a budget
+14:13 
+
+14:13 higher than this, but I don't think it's
+14:15 
+
+14:15 too far off. In all honesty, I think
+14:17 
+
+14:17 it's up it's a pretty good initial it's
+14:21 
+
+14:21 in the ballpark. It's in the ballpark,
+14:23 
+
+14:23 and I would I would tweak this a bit to
+14:25 
+
+14:25 come up with my my full budget for
+14:27 
+
+14:27 launch for this product, and I
+14:28 
+
+14:28 personally would be more conservative
+14:30 
+
+14:30 with how long it would take to get to
+14:31 
+
+14:31 profitability of it, to get enough
+14:32 
+
+14:32 reviews, and to get enough sales
+14:34 
+
+14:34 velocity to start ranking. But, still it
+14:36 
+
+14:36 wouldn't be so far It's not like in
+14:38 
+
+14:38 another dimension. It's not going to be
+14:40 
+
+14:40 like 10 times this. It's just going to
+14:42 
+
+14:42 be maybe a little higher than this. Then
+14:44 
+
+14:44 it even created a plan of action. So, it
+14:47 
+
+14:47 talked through exactly what to do to
+14:49 
+
+14:49 contact the suppliers, what steps to
+14:51 
+
+14:51 take with the supplier to do the product
+14:53 
+
+14:53 development and all the customization,
+14:55 
+
+14:55 how many units to order. Now, this I
+14:57 
+
+14:57 would also disagree with this. I tend to
+14:59 
+
+14:59 order more units up front just so that I
+15:01 
+
+15:01 have enough to push really hard for
+15:03 
+
+15:03 ranking. But, these are more expensive
+15:06 
+
+15:06 products per unit, so this may actually
+15:08 
+
+15:08 be a realistic unit level depending on
+15:11 
+
+15:11 the level of the seller who's actually
+15:13 
+
+15:13 launching this. But, again, this is a
+15:15 
+
+15:15 really great starting place, and a lot
+15:17 
+
+15:17 of this data, especially the keyword
+15:19 
+
+15:19 data and the market niche analysis and
+15:21 
+
+15:21 the gaps in the market, this is stuff
+15:23 
+
+15:23 that it would have taken a long time to
+15:25 
+
+15:25 really get a handle on. Because you
+15:27 
+
+15:27 might observe gaps in the market
+15:29 
+
+15:29 yourself by doing keyword research data
+15:31 
+
+15:31 and market analysis, but you're not
+15:33 
+
+15:33 going to have all of the data all at
+15:35 
+
+15:35 once in your head. So, you might be
+15:37 
+
+15:37 biased for the keywords that you see
+15:39 
+
+15:39 first. You might have seen some keywords
+15:40 
+
+15:40 about senior dogs, for example, and then
+15:43 
+
+15:43 you get obsessed with that, and you
+15:44 
+
+15:44 think that's a really great idea,
+15:45 
+
+15:45 whereas that might have been an
+15:46 
+
+15:46 opportunity, but there's another one
+15:48 
+
+15:48 that's a much bigger opportunity, like
+15:49 
+
+15:49 in our case large dogs, or it's the dog
+15:52 
+
+15:52 beds for specific cars, like trucks or
+15:55 
+
+15:55 SUVs. Now, let's get into how I actually
+15:57 
+
+15:57 generated this report, and you're going
+15:59 
+
+15:59 to find it fairly simple and very easy
+16:03 
+
+16:03 to do. I didn't have to use a bunch of
+16:05 
+
+16:05 different connectors, and I'm going to
+16:07 
+
+16:07 do a whole video on how to set up Claude
+16:10 
+
+16:10 CoWork properly for an Amazon seller in
+16:12 
+
+16:12 the future. But, for now we're just
+16:13 
+
+16:13 keeping it really simple. All I did to
+16:16 
+
+16:16 generate this very detailed useful
+16:18 
+
+16:18 product development research report was
+16:21 
+
+16:21 a single prompt, and I uploaded the
+16:23 
+
+16:23 keyword research report from Helium 10
+16:25 
+
+16:25 for the product. So, I said I'm
+16:27 
+
+16:27 launching a new product on Amazon, it'll
+16:28 
+
+16:28 be a dog back car seat cover for a car.
+16:31 
+
+16:31 I need you to research all beds that are
+16:32 
+
+16:32 available on Amazon, then
+16:33 
+
+16:33 cross-reference it with the keyword
+16:35 
+
+16:35 research analysis I'm providing from
+16:36 
+
+16:36 Helium 10, then find holes in the market
+16:38 
+
+16:38 where there's a keyword research for a
+16:39 
+
+16:39 particular shopper intent that's not
+16:41 
+
+16:41 being filled in the market currently.
+16:42 
+
+16:42 Then come up with a product that would
+16:44 
+
+16:44 fill that need, find suppliers for the
+16:45 
+
+16:45 product for the best possible price. You
+16:47 
+
+16:47 can put all of this information into one
+16:49 
+
+16:49 report for me to review. That was the
+16:51 
+
+16:51 full prompt. I'll copy it in the
+16:52 
+
+16:52 description of this video if you want to
+16:54 
+
+16:54 paste it in and try it out yourself,
+16:56 
+
+16:56 which I highly recommend. You can watch
+16:58 
+
+16:58 all the videos you want on AI, but if
+16:60 
+
+16:60 you don't just start playing with it and
+17:02 
+
+17:02 actually utilizing it, you're never
+17:03 
+
+17:03 going to actually learn it. Watch it.
+17:06 
+
+17:06 You The breakdown is usually spend 90%
+17:08 
+
+17:08 of your time on learning a new thing by
+17:10 
+
+17:10 actually doing that new thing, and 10%
+17:13 
+
+17:13 of your time watching videos or reading
+17:15 
+
+17:15 books or learning about that new thing.
+17:17 
+
+17:17 If you want to surf, you got to spend
+17:18 
+
+17:18 all your time in the water surfing, not
+17:20 
+
+17:20 all your time reading books about
+17:22 
+
+17:22 surfing. That's just how it works. So,
+17:24 
+
+17:24 I'd recommend if you're watching this
+17:25 
+
+17:25 video, do this now. Just download Claude
+17:27 
+
+17:27 on your desktop and try this exact same
+17:30 
+
+17:30 prompt, but do it for your product
+17:32 
+
+17:32 category. And what I did with this was I
+17:34 
+
+17:34 uploaded a keyword research report from
+17:36 
+
+17:36 Helium 10. For those of you guys not
+17:38 
+
+17:38 familiar with Helium 10, Helium 10 is a
+17:41 
+
+17:41 tool for Amazon sellers to do keyword
+17:43 
+
+17:43 research and market analysis and keyword
+17:46 
+
+17:46 rank tracking and things like that. So,
+17:48 
+
+17:48 the tool within Helium 10 is called
+17:50 
+
+17:50 Cerebro. Helium 10 has free trials, by
+17:52 
+
+17:52 the way, and there are also other tools
+17:53 
+
+17:53 that do this. You don't have to use
+17:55 
+
+17:55 Helium 10. There are lots of tools that
+17:56 
+
+17:56 do keyword research for Amazon sales.
+17:58 
+
+17:58 Many of them are free or have free
+17:60 
+
+17:60 trials, so I'm not married to Helium 10.
+18:02 
+
+18:02 You could use any tool you want, but I
+18:04 
+
+18:04 used Helium 10, and all I literally did
+18:06 
+
+18:06 was go to Cerebro, type in dog back seat
+18:08 
+
+18:08 cover. I said get keywords, and then it
+18:11 
+
+18:11 produced this list, and the list was a
+18:13 
+
+18:13 lot. It was like 11,000 keywords, and
+18:15 
+
+18:15 you could see if I order it by keyword
+18:18 
+
+18:18 search volume, there was actually a lot
+18:20 
+
+18:20 of keywords in here that were not
+18:21 
+
+18:21 relevant, like iPhone 17 Pro Max, and uh
+18:25 
+
+18:25 car accessories is is not super
+18:27 
+
+18:27 relevant, but it would fit in there. Dog
+18:29 
+
+18:29 bed hammock, um a lot of irrelevant
+18:31 
+
+18:31 stuff. Uh and that's because I ordered
+18:33 
+
+18:33 by search volume, but the point is I
+18:34 
+
+18:34 didn't do any filtering or vetting of
+18:37 
+
+18:37 this whatsoever. I just let Claude do it
+18:40 
+
+18:40 all, and Claude has the context and the
+18:42 
+
+18:42 ability to analyze data such that it
+18:45 
+
+18:45 doesn't need it to be clean. I literally
+18:47 
+
+18:47 just clicked export data to a CSV file,
+18:50 
+
+18:50 downloaded that, and then I uploaded it
+18:53 
+
+18:53 to Claude with my prompt. And this was
+18:55 
+
+18:55 the key to how I got actually good
+18:57 
+
+18:57 results from this. When I uploaded the
+18:59 
+
+18:59 proper context and I had a detailed
+19:02 
+
+19:02 prompt, I got the information that I
+19:04 
+
+19:04 need from it, and it generated this
+19:06 
+
+19:06 report for me, which turned out to be
+19:08 
+
+19:08 fairly accurate and very useful. Now,
+19:11 
+
+19:11 one thing you do have to do is set up
+19:14 
+
+19:14 your desktop folder, because Claude
+19:16 
+
+19:16 CoWork, unlike chat-based AI, it
+19:19 
+
+19:19 actually runs on your desktop. It's
+19:22 
+
+19:22 using your desktop hardware. It's not
+19:24 
+
+19:24 using cloud hardware. It's using your
+19:26 
+
+19:26 hardware. So, it's running on your
+19:28 
+
+19:28 computer. Like if you shut your computer
+19:29 
+
+19:29 down, it would stop the task. And now it
+19:32 
+
+19:32 doesn't end there. Once I got that
+19:34 
+
+19:34 report and I made some decisions about
+19:35 
+
+19:35 it about what product I want to launch,
+19:37 
+
+19:37 I'm going to continue the entire process
+19:40 
+
+19:40 with Claude CoWork now. This is just how
+19:42 
+
+19:42 to run an e-commerce business in 2026
+19:45 
+
+19:45 now. Things have changed so dramatically
+19:47 
+
+19:47 so fast. So, what I did was I asked what
+19:49 
+
+19:49 are all of the keywords related to large
+19:52 
+
+19:52 dogs and their associated search volume
+19:54 
+
+19:54 so that I could start putting together
+19:56 
+
+19:56 my campaigns, my PPC campaigns for when
+19:59 
+
+19:59 my product comes into play. I'm going to
+20:01 
+
+20:01 do the same thing for every element of
+20:03 
+
+20:03 this product development and launch is
+20:05 
+
+20:05 work with Claude alongside me while I'm
+20:08 
+
+20:08 doing the product launch. And this type
+20:10 
+
+20:10 of co-working alongside AI is how we're
+20:13 
+
+20:13 starting to do everything inside our
+20:16 
+
+20:16 portfolio. And this is what every Amazon
+20:18 
+
+20:18 seller is going to have to do. You're
+20:19 
+
+20:19 seeing stories of left and right of
+20:21 
+
+20:21 17-year-olds starting e-commerce brands
+20:23 
+
+20:23 that they own they have no employees and
+20:25 
+
+20:25 they just use AI and then they rocket up
+20:27 
+
+20:27 super fast and they're already competing
+20:29 
+
+20:29 with years-long entrenched competitors.
+20:31 
+
+20:31 This is happening now. And if you're
+20:33 
+
+20:33 still doing things the old way, you're
+20:34 
+
+20:34 just choosing to do things in a way that
+20:37 
+
+20:37 takes 10 times more time or 100 times
+20:39 
+
+20:39 more time than somebody else who has
+20:40 
+
+20:40 adopted these tools. So, if you're a
+20:42 
+
+20:42 person who's been kind of putting this
+20:44 
+
+20:44 off, I recommend you download and start
+20:45 
+
+20:45 trying it. I'm going to be coming out
+20:47 
+
+20:47 with some more advanced videos in the
+20:49 
+
+20:49 next couple of weeks with a lot of the
+20:51 
+
+20:51 other things that we're doing with
+20:52 
+
+20:52 Claude co-work and with agent-based AI
+20:55 
+
+20:55 inside e-commerce brands. So, look out
+20:56 
+
+20:56 for that. And if you want this
+20:58 
+
+20:58 particular report that I was just going
+20:59 
+
+20:59 through so that you could upload it to
+21:01 
+
+21:01 Claude and have it generate the same
+21:02 
+
+21:02 report for you, I put a link to download
+21:05 
+
+21:05 the report in the description of this
+21:06 
+
+21:06 video so you could tap the link there.
+21:08 
+
+21:08 It won't stop this video. You could tap
+21:09 
+
+21:09 it now, download the exact report I got,
+21:12 
+
+21:12 upload it to Claude co-work and ask it
+21:14 
+
+21:14 to create the exact same one for you.
+21:17 
+
+21:17 Now, here's where we get meta. When I
+21:18 
+
+21:18 went about making this YouTube video,
+21:21 
+
+21:21 just for shits and giggles, I asked
+21:23 
+
+21:23 Claude to write the script for me. And
+21:25 
+
+21:25 you can see
+21:26 
+
+21:26 as you could see in the beginning of the
+21:28 
+
+21:28 script, [music] it's actually pretty
+21:30 
+
+21:30 similar to how I started this video.
+21:31 
+
+21:31 Now, does that make me just a meat
+21:33 
+
+21:33 puppet for AI at this point? Hell no.
+21:36 
+
+21:36 The robot overlords have not gotten me
+21:39 
+
+21:39 yet. I ended up just riffing for this
+21:40 
+
+21:40 video because I don't like following
+21:42 
+
+21:42 scripts anyway and I didn't agree with a
+21:44 
+
+21:44 lot of the stuff that it said. But I
+21:45 
+
+21:45 just wanted to see what it would come up
+21:46 
+
+21:46 with and it actually was quite good. Had
+21:49 
+
+21:49 some good points and I will some and the
+21:52 
+
+21:52 beginning hook that I had for this video
+21:53 
+
+21:53 was similar to what it came up with. So,
+21:56 
+
+21:56 it's really crazy. I think this is going
+21:58 
+
+21:58 to be a year that just changes
+21:59 
+
+21:59 everything about how we work as
+22:02 
+
+22:02 entrepreneurs, especially in the
+22:03 
+
+22:03 e-commerce space and everyone will have
+22:06 
+
+22:06 to adapt this one time or another. So,
+22:08 
+
+22:08 if you haven't done it now, this is a
+22:10 
+
+22:10 very easy, simple first task that you
+22:13 
+
+22:13 can do to start using Claude co-work and
+22:16 
+
+22:16 agent-based AI in your business.
+22:18 
+
+22:18 >> [music]
+22:18 
+
+22:18 >> I recommend you try this particular
+22:19 
+
+22:19 exercise that we just did. And if you're
+22:21 
+
+22:21 really interested in utilizing AI to run
+22:23 
+
+22:23 Amazon brands, check out this video
+22:25 
+
+22:25 where I walk through how to use Google's
+22:28 
+
+22:28 AI image generator to generate
+22:30 
+
+22:30 production quality, high conversion rate
+22:32 
+
+22:32 and high click-through rate images for
+22:34 
+
+22:34 your product essentially for free or
+22:36 
+
+22:36 near free that would have cost hundreds
+22:39 
+
+22:39 or thousands of dollars just last year.
+22:41 
+
+22:41 So, check out that video here and I'll
+22:43 
+
+22:43 see you over there.

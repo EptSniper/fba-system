@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FBA Operator Toolkit</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#080b10; --bg2:#0b0f16; --panel:#0f1620; --panel2:#0c121b; --raise:#141d29;
+  --line:#1b2532; --line2:#27323f;
+  --ink:#e9eef5; --dim:#94a2b3; --faint:#5f6e7e;
+  --grn:#27e07a; --grn-deep:#0e7a42; --grn-glow:rgba(39,224,122,.16);
+  --red:#ff5d52; --amber:#ffb13d; --cyan:#4cc9ff;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --r:8px; --r-sm:6px;
+  --t-label:11px; --t-xs:12px; --t-sm:14px; --t-base:16px; --t-lg:20px; --t-xl:28px; --t-2xl:38px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:var(--t-sm);line-height:1.55;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(900px 480px at 85% -12%,rgba(39,224,122,.05),transparent 60%)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lab{font:600 var(--t-label)/1 var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+.pos{color:var(--grn)}.neg{color:var(--red)}.warn{color:var(--amber)}
+a{color:var(--cyan);text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--grn);outline-offset:2px;border-radius:4px}
+
+.app{display:grid;grid-template-columns:208px 1fr;grid-template-rows:52px 1fr;min-height:100vh}
+.top{grid-column:1/-1;display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--bg2);position:sticky;top:0;z-index:30}
+.brand{display:flex;align-items:center;gap:10px;font:700 var(--t-sm)/1 var(--mono);letter-spacing:.05em}
+.tick{width:9px;height:9px;border-radius:50%;background:var(--grn);box-shadow:0 0 0 0 var(--grn-glow);animation:pulse 2.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--grn-glow)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.top .meta{margin-left:auto;color:var(--faint);font:500 var(--t-label)/1 var(--mono)}
+.nav{border-right:1px solid var(--line);background:var(--bg2);padding:12px 10px;display:flex;flex-direction:column;gap:3px;position:sticky;top:52px;height:calc(100vh - 52px)}
+.nav button{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);color:var(--dim);font-weight:600;font-size:var(--t-sm);border:1px solid transparent;background:none;text-align:left;width:100%;transition:.15s}
+.nav button:hover{color:var(--ink);background:var(--panel)}
+.nav button.on{color:var(--ink);background:var(--panel);border-color:var(--line2)}
+.nav button.on::before{content:"";position:absolute;margin-left:-22px;width:3px;height:18px;border-radius:3px;background:var(--grn);box-shadow:0 0 10px var(--grn)}
+.nav .navlab{margin:14px 12px 4px;color:var(--faint)}
+.nav .foot{margin-top:auto;font:500 var(--t-label)/1.5 var(--mono);color:var(--faint);padding:10px 12px;border-top:1px solid var(--line)}
+.main{padding:22px 26px 60px;overflow-x:hidden}
+@media(max-width:760px){.app{grid-template-columns:1fr}.nav{position:static;height:auto;flex-direction:row;flex-wrap:wrap}.nav .navlab,.nav .foot{display:none}}
+
+h1.page{font:700 var(--t-lg)/1.1 var(--sans);letter-spacing:-.01em}
+.sub{color:var(--dim);font-size:var(--t-sm);margin:2px 0 18px;max-width:70ch}
+.grid{display:grid;gap:14px}
+.cols-2{grid-template-columns:1fr 1fr}.cols-3{grid-template-columns:repeat(3,1fr)}.cols-4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1000px){.cols-3,.cols-4{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.cols-2,.cols-3,.cols-4{grid-template-columns:1fr}}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.card h3{font:600 var(--t-label)/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+label.f{display:block;font:600 var(--t-xs)/1 var(--sans);color:var(--dim);margin:0 0 6px}
+input,select{width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--ink);border-radius:var(--r-sm);padding:10px 11px;font:500 var(--t-sm)/1 var(--mono)}
+input:focus,select:focus{outline:none;border-color:var(--grn-deep)}
+.field{margin-bottom:12px}
+.kpi{border:1px solid var(--line);border-radius:var(--r);background:var(--panel2);padding:13px 15px}
+.kpi .v{font:700 var(--t-xl)/1 var(--mono);letter-spacing:-.02em}
+.kpi .l{font-size:var(--t-xs);color:var(--dim);margin-top:7px}
+.verdict{border-radius:var(--r);padding:16px 18px;border:1px solid var(--line2);background:var(--panel2);text-align:center}
+.vbig{font:700 26px/1 var(--mono);letter-spacing:-.01em}
+.chip{display:inline-block;padding:3px 9px;border-radius:99px;font:600 var(--t-label)/1 var(--mono);letter-spacing:.07em;text-transform:uppercase}
+.chip.g{background:var(--grn-glow);color:var(--grn)}.chip.r{background:rgba(255,93,82,.13);color:var(--red)}.chip.a{background:rgba(255,177,61,.13);color:var(--amber)}.chip.n{background:#0d1620;color:var(--dim);border:1px solid var(--line2)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 15px;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--panel);color:var(--ink);font:700 var(--t-sm)/1 var(--sans)}
+.btn.primary{background:var(--grn);color:#04210f;border-color:transparent;box-shadow:0 0 0 1px var(--grn-deep)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost:hover{border-color:var(--grn-deep)}
+table{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
+th{text-align:left;font:600 var(--t-label)/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:9px 10px;border-bottom:1px solid var(--line2)}
+td{padding:10px;border-bottom:1px solid var(--line)}
+td.num,th.num{text-align:right;font-family:var(--mono)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.note{font-size:var(--t-xs);color:var(--faint);line-height:1.5;margin-top:10px}
+.bd{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);font-size:var(--t-sm)}
+.bd:last-child{border-bottom:0}
+.bd .v{font-family:var(--mono)}
+.check{display:flex;gap:11px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{width:17px;height:17px;margin-top:2px;accent-color:#27e07a;flex:none}
+.check .t{font-size:var(--t-sm)}
+.check.done .t{color:var(--faint);text-decoration:line-through}
+.demoTag{display:inline-block;margin-left:8px;font:600 var(--t-label)/1 var(--mono);letter-spacing:.1em;color:var(--amber);border:1px solid rgba(255,177,61,.3);background:rgba(255,177,61,.08);padding:3px 8px;border-radius:99px}
+.banner{border:1px solid rgba(255,177,61,.3);background:rgba(255,177,61,.07);color:#f0dcb6;border-radius:var(--r);padding:11px 14px;font-size:var(--t-xs);line-height:1.5;margin-bottom:16px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand"><span class="tick"></span> FBA TOOLKIT</div>
+    <div class="meta" id="topmeta">2026 fees · local-only</div>
+  </div>
+  <nav class="nav" id="nav"></nav>
+  <div class="main" id="view"></div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- store ---------- */
+var LS="fba_toolkit_v1";
+var DEF={ deals:[], checks:{}, settings:{fuel:0.035} };
+function clone(o){return JSON.parse(JSON.stringify(o));}
+var S, OK=true;
+try{ var raw=localStorage.getItem(LS); S = raw? Object.assign(clone(DEF),JSON.parse(raw)) : clone(DEF); }
+catch(e){ OK=false; S=clone(DEF); }
+function save(){ try{ localStorage.setItem(LS,JSON.stringify(S)); }catch(e){ OK=false; } }
+function n(v,d){ var x=parseFloat(v); return isFinite(x)?x:(d||0); }
+function esc(s){ var t=document.createElement("div"); t.textContent=s==null?"":String(s); return t.innerHTML; }
+function $(id){ return document.getElementById(id); }
+function money(x){ return "$"+n(x).toFixed(2); }
+function pct(x){ return (x*100).toFixed(0)+"%"; }
+
+/* ---------- 2026 fee engine ---------- */
+var CATS={ "Home & Kitchen":0.15,"Beauty":0.15,"Pet Supplies":0.15,"Toys & Games":0.15,"Office":0.15,
+  "Health & Household":0.15,"Sports & Outdoors":0.15,"Baby":0.15,"Tools":0.15,"Garden":0.15,
+  "Electronics":0.08,"Grocery":0.08,"Other (15%)":0.15 };
+function fba(weight){
+  var w=n(weight,1), b;
+  if(w<=0.75)b=3.22; else if(w<=1)b=4.65; else if(w<=1.5)b=5.50; else if(w<=2)b=6.10;
+  else if(w<=2.5)b=6.63; else if(w<=3)b=6.75; else b=6.75+0.16*((w-3)/0.5);
+  return b*(1+(S.settings.fuel||0.035));
+}
+function referral(sell,rate){ return Math.max(n(sell)*rate, n(sell)>0?0.30:0); }
+
+/* ---------- nav / router ---------- */
+var TABS=[
+  ["deal","◎","Deal calc"],["fees","▤","FBA fees"],["restock","↻","Restock"],
+  ["capital","◇","Capital"],["ppc","▷","PPC budget"],["check","✓","Checklists"],
+  ["live","◉","Live (demo)"]
+];
+var route="deal";
+function renderNav(){
+  var h='<div class="navlab lab">Tools</div>';
+  TABS.forEach(function(t){ h+='<button class="'+(route===t[0]?"on":"")+'" data-r="'+t[0]+'"><span aria-hidden="true">'+t[1]+'</span> '+t[2]+'</button>'; });
+  h+='<div class="foot">Pre-launch mode<br>fees verified 2026</div>';
+  $("nav").innerHTML=h;
+  Array.prototype.forEach.call($("nav").querySelectorAll("button"),function(b){ b.onclick=function(){ route=b.dataset.r; render(); }; });
+}
+function render(){ renderNav(); ({deal:vDeal,fees:vFees,restock:vRestock,capital:vCapital,ppc:vPPC,check:vCheck,live:vLive}[route]||vDeal)(); }
+
+/* ---------- DEAL CALCULATOR ---------- */
+function vDeal(){
+  $("view").innerHTML=
+  '<h1 class="page">Deal calculator</h1><p class="sub">Paste a product’s numbers — get 2026 fees, profit, ROI and a buy/pass verdict using the online-arbitrage rules (ROI ≥ 30%, profit ≥ $3, sells fast enough, Buy Box winnable). Works with no Amazon account.</p>'+
+  '<div class="grid cols-2">'+
+    '<div class="card"><h3>Inputs</h3>'+
+      '<div class="row2"><div class="field"><label class="f">Buy cost (COGS) $</label><input id="d_cogs" type="number" step="0.01" value="6.00"></div>'+
+      '<div class="field"><label class="f">Sell price $</label><input id="d_sell" type="number" step="0.01" value="24.99"></div></div>'+
+      '<div class="row2"><div class="field"><label class="f">Category</label><select id="d_cat"></select></div>'+
+      '<div class="field"><label class="f">Weight (lb)</label><input id="d_w" type="number" step="0.1" value="0.6"></div></div>'+
+      '<div class="row2"><div class="field"><label class="f">Best Sellers Rank (BSR)</label><input id="d_bsr" type="number" value="45000"></div>'+
+      '<div class="field"><label class="f"># sellers (offers)</label><input id="d_off" type="number" value="6"></div></div>'+
+      '<div class="row2"><div class="field"><label class="f">Prep + ship $/unit</label><input id="d_prep" type="number" step="0.01" value="1.50"></div>'+
+      '<div class="field"><label class="f">Amazon on the listing?</label><select id="d_amz"><option value="0">No</option><option value="1">Yes — avoid</option></select></div></div>'+
+    '</div>'+
+    '<div class="card"><h3>Verdict</h3><div id="d_out"></div></div>'+
+  '</div>'+
+  '<div class="card" style="margin-top:16px"><h3>Saved deals ('+S.deals.length+')</h3><div id="d_tbl"></div></div>';
+  var cat=$("d_cat"); cat.innerHTML=Object.keys(CATS).map(function(c){return '<option>'+c+'</option>';}).join("");
+  ["d_cogs","d_sell","d_cat","d_w","d_bsr","d_off","d_prep","d_amz"].forEach(function(id){ $(id).addEventListener("input",calcDeal); });
+  calcDeal(); dealTable();
+}
+function readDeal(){
+  return { cogs:n($("d_cogs").value), sell:n($("d_sell").value), cat:$("d_cat").value,
+    w:n($("d_w").value), bsr:n($("d_bsr").value), off:n($("d_off").value), prep:n($("d_prep").value), amz:$("d_amz").value==="1" };
+}
+function computeDeal(d){
+  var rate=CATS[d.cat]!=null?CATS[d.cat]:0.15;
+  var ref=referral(d.sell,rate), ful=fba(d.w);
+  var fees=ref+ful;
+  var profit=d.sell - d.cogs - fees - d.prep;
+  var invested=d.cogs+d.prep;
+  var roi=invested>0?profit/invested:0;
+  var margin=d.sell>0?profit/d.sell:0;
+  var beAcos=d.sell>0?(profit)/d.sell:0; // pre-ad profit as % of price
+  var flags=[];
+  if(d.amz) flags.push(["Amazon is on the listing — don’t compete","r"]);
+  if(roi<0.30) flags.push(["ROI under 30% target","a"]);
+  if(profit<3) flags.push(["Profit under $3/unit","a"]);
+  if(d.bsr>200000) flags.push(["BSR over 200k — sells slowly","a"]);
+  if(d.off>15) flags.push(["Crowded ("+d.off+" sellers) — price war risk","a"]);
+  if(d.off<2) flags.push(["Only "+d.off+" seller(s) — may be private label/gated","a"]);
+  var verdict, cls;
+  if(d.amz || profit<1 || roi<0.10){ verdict="REJECT"; cls="r"; }
+  else if(roi>=0.45 && profit>=5 && d.bsr<=120000 && !flags.length){ verdict="STRONG BUY"; cls="g"; }
+  else if(roi>=0.30 && profit>=3 && d.bsr<=200000){ verdict=flags.length?"BUY — verify":"BUY"; cls="g"; }
+  else { verdict="PASS / REVIEW"; cls="a"; }
+  return {ref:ref,ful:ful,fees:fees,profit:profit,roi:roi,margin:margin,beAcos:beAcos,flags:flags,verdict:verdict,cls:cls};
+}
+function calcDeal(){
+  var d=readDeal(), c=computeDeal(d);
+  $("d_out").innerHTML=
+    '<div class="verdict" style="margin-bottom:14px"><span class="chip '+c.cls+'">'+c.verdict+'</span>'+
+      '<div class="vbig '+(c.profit>=0?"pos":"neg")+'" style="margin-top:10px">'+money(c.profit)+'<span style="color:var(--dim);font-size:14px"> /unit</span></div></div>'+
+    '<div class="grid cols-3">'+
+      '<div class="kpi"><div class="v '+(c.roi>=0.3?"pos":"warn")+'">'+pct(c.roi)+'</div><div class="l">ROI on cash</div></div>'+
+      '<div class="kpi"><div class="v">'+pct(c.margin)+'</div><div class="l">Net margin</div></div>'+
+      '<div class="kpi"><div class="v">'+pct(c.beAcos)+'</div><div class="l">Break-even ACoS</div></div>'+
+    '</div>'+
+    '<div style="margin-top:12px">'+
+      '<div class="bd"><span>Referral fee</span><span class="v">'+money(c.ref)+'</span></div>'+
+      '<div class="bd"><span>FBA fulfillment (+'+pct(S.settings.fuel)+' fuel)</span><span class="v">'+money(c.ful)+'</span></div>'+
+      '<div class="bd"><span>Your cost + prep</span><span class="v">'+money(d.cogs+d.prep)+'</span></div>'+
+    '</div>'+
+    '<div style="margin-top:12px">'+(c.flags.length?c.flags.map(function(f){return '<span class="chip '+f[1]+'" style="margin:0 6px 6px 0;text-transform:none;letter-spacing:0">'+esc(f[0])+'</span>';}).join(""):'<span class="chip g" style="text-transform:none;letter-spacing:0">No red flags</span>')+'</div>'+
+    '<button class="btn primary" id="d_save" style="margin-top:14px">Save deal</button>'+
+    '<p class="note">Estimates only. Confirm the real ROI/fees in SellerAmp + Amazon’s Revenue Calculator, and check gating/IP before buying.</p>';
+  $("d_save").onclick=function(){ S.deals.push({d:d,c:{profit:c.profit,roi:c.roi,verdict:c.verdict},t:Date.now()}); save(); vDeal(); };
+}
+function dealTable(){
+  var el=$("d_tbl");
+  if(!S.deals.length){ el.innerHTML='<p class="note">No saved deals yet. Tweak the inputs and hit Save deal.</p>'; return; }
+  el.innerHTML='<table><thead><tr><th>Cat</th><th class="num">Sell</th><th class="num">Profit</th><th class="num">ROI</th><th>Verdict</th><th></th></tr></thead><tbody>'+
+    S.deals.slice().reverse().map(function(x,i){ var idx=S.deals.length-1-i; return '<tr><td>'+esc(x.d.cat)+'</td><td class="num">'+money(x.d.sell)+'</td><td class="num '+(x.c.profit>=0?"pos":"neg")+'">'+money(x.c.profit)+'</td><td class="num">'+pct(x.c.roi)+'</td><td><span class="chip '+(x.c.verdict.indexOf("BUY")>=0?"g":x.c.verdict.indexOf("REJECT")>=0?"r":"a")+'" style="font-size:10px">'+esc(x.c.verdict)+'</span></td><td><button class="btn ghost" style="padding:4px 8px;font-size:11px" onclick="window.__del('+idx+')">✕</button></td></tr>'; }).join("")+'</tbody></table>';
+}
+window.__del=function(i){ S.deals.splice(i,1); save(); vDeal(); };
+
+/* ---------- FBA FEE CALCULATOR ---------- */
+function vFees(){
+  $("view").innerHTML='<h1 class="page">FBA fee calculator</h1><p class="sub">2026 US schedule. Fulfillment scales by shipping weight; referral by category; the 3.5% fuel surcharge is included. Storage is per cubic foot per month.</p>'+
+  '<div class="grid cols-2"><div class="card"><h3>Inputs</h3>'+
+    '<div class="field"><label class="f">Sell price $</label><input id="fz_sell" type="number" step="0.01" value="29.99"></div>'+
+    '<div class="row2"><div class="field"><label class="f">Category</label><select id="fz_cat"></select></div>'+
+    '<div class="field"><label class="f">Weight (lb)</label><input id="fz_w" type="number" step="0.1" value="0.8"></div></div>'+
+    '<div class="row2"><div class="field"><label class="f">Cubic feet (storage)</label><input id="fz_cf" type="number" step="0.01" value="0.05"></div>'+
+    '<div class="field"><label class="f">Season</label><select id="fz_season"><option value="0.87">Jan–Sep ($0.87/cu ft)</option><option value="2.25">Q4 Oct–Dec ($2.25/cu ft)</option></select></div></div>'+
+  '</div><div class="card"><h3>Fees per unit</h3><div id="fz_out"></div></div></div>';
+  $("fz_cat").innerHTML=Object.keys(CATS).map(function(c){return '<option>'+c+'</option>';}).join("");
+  ["fz_sell","fz_cat","fz_w","fz_cf","fz_season"].forEach(function(id){ $(id).addEventListener("input",calcFees); });
+  calcFees();
+}
+function calcFees(){
+  var sell=n($("fz_sell").value), cat=$("fz_cat").value, w=n($("fz_w").value), cf=n($("fz_cf").value), srate=n($("fz_season").value);
+  var rate=CATS[cat]!=null?CATS[cat]:0.15; var ref=referral(sell,rate), ful=fba(w), store=cf*srate;
+  var total=ref+ful+store;
+  $("fz_out").innerHTML=
+    '<div class="kpi" style="margin-bottom:12px"><div class="v">'+money(total)+'</div><div class="l">total Amazon fees / unit ('+pct(total/(sell||1))+' of price)</div></div>'+
+    '<div class="bd"><span>Referral ('+pct(rate)+')</span><span class="v">'+money(ref)+'</span></div>'+
+    '<div class="bd"><span>FBA fulfillment</span><span class="v">'+money(ful*0+ful)+'</span></div>'+
+    '<div class="bd"><span>↳ incl. fuel surcharge '+pct(S.settings.fuel)+'</span><span class="v" style="color:var(--faint)">'+money(ful-fba(w)/(1+S.settings.fuel))+'</span></div>'+
+    '<div class="bd"><span>Storage / month</span><span class="v">'+money(store)+'</span></div>'+
+    '<p class="note">Fulfillment uses standard-size tiers by weight. Oversize and low-inventory/aged-inventory fees aren’t included — confirm a real SKU in Amazon’s Revenue Calculator.</p>';
+}
+
+/* ---------- RESTOCK PLANNER ---------- */
+function vRestock(){
+  $("view").innerHTML='<h1 class="page">Restock planner</h1><p class="sub">Plan reorders so you never stock out (penalty + lost rank) or overstock (storage + aged-inventory fees). Works on your planned numbers — no live account needed.</p>'+
+  '<div class="grid cols-2"><div class="card"><h3>Inputs</h3>'+
+    '<div class="row2"><div class="field"><label class="f">Sales / month (units)</label><input id="r_vel" type="number" value="200"></div>'+
+    '<div class="field"><label class="f">On hand (units)</label><input id="r_on" type="number" value="180"></div></div>'+
+    '<div class="row2"><div class="field"><label class="f">Lead time (days)</label><input id="r_lead" type="number" value="30"></div>'+
+    '<div class="field"><label class="f">Safety buffer (days)</label><input id="r_safe" type="number" value="14"></div></div>'+
+    '<div class="field"><label class="f">Cover per order (days)</label><input id="r_cover" type="number" value="60"></div>'+
+  '</div><div class="card"><h3>Plan</h3><div id="r_out"></div></div></div>';
+  ["r_vel","r_on","r_lead","r_safe","r_cover"].forEach(function(id){ $(id).addEventListener("input",calcRestock); });
+  calcRestock();
+}
+function calcRestock(){
+  var vel=n($("r_vel").value), on=n($("r_on").value), lead=n($("r_lead").value), safe=n($("r_safe").value), cover=n($("r_cover").value);
+  var perDay=vel/30;
+  var reorderPoint=Math.round(perDay*(lead+safe));
+  var daysCover=perDay>0?Math.round(on/perDay):0;
+  var orderUnits=Math.max(0,Math.round(perDay*cover));
+  var daysToReorder=perDay>0?Math.round((on-reorderPoint)/perDay):0;
+  var urgent=on<=reorderPoint;
+  $("r_out").innerHTML=
+    '<div class="grid cols-2" style="margin-bottom:8px">'+
+      '<div class="kpi"><div class="v '+(urgent?"neg":"pos")+'">'+daysCover+'<span style="font-size:14px;color:var(--dim)">d</span></div><div class="l">days of cover left</div></div>'+
+      '<div class="kpi"><div class="v">'+reorderPoint+'</div><div class="l">reorder point (units)</div></div>'+
+    '</div>'+
+    '<div class="verdict" style="margin:8px 0"><span class="chip '+(urgent?"r":"g")+'">'+(urgent?"REORDER NOW":"OK FOR NOW")+'</span>'+
+      '<div style="margin-top:8px;font-size:13px;color:var(--dim)">'+(urgent?"You’re at/below the reorder point — place an order today.":"Reorder in ~<b style='color:var(--ink)'>"+daysToReorder+" days</b>.")+'</div></div>'+
+    '<div class="bd"><span>Order quantity ('+cover+'d cover)</span><span class="v">'+orderUnits+' units</span></div>'+
+    '<div class="bd"><span>Daily velocity</span><span class="v">'+perDay.toFixed(1)+'/day</span></div>'+
+    '<p class="note">Rule of thumb: reorder at 45–60 days of supply so manufacturing + freight (your lead time) lands before you run dry. Ship into Q4 by September to dodge peak storage.</p>';
+}
+
+/* ---------- CAPITAL / CASH-FLOW ---------- */
+function vCapital(){
+  $("view").innerHTML='<h1 class="page">Capital & cash-flow</h1><p class="sub">What it takes to start, and how much cash each reorder ties up. Online arbitrage can start small; the trap is running out of cash mid-cycle.</p>'+
+  '<div class="grid cols-2"><div class="card"><h3>Inputs</h3>'+
+    '<div class="row2"><div class="field"><label class="f">Total budget $</label><input id="c_bud" type="number" value="2000"></div>'+
+    '<div class="field"><label class="f">Landed cost / unit $</label><input id="c_unit" type="number" step="0.01" value="7.50"></div></div>'+
+    '<div class="row2"><div class="field"><label class="f">Sell price / unit $</label><input id="c_sell" type="number" step="0.01" value="24.99"></div>'+
+    '<div class="field"><label class="f">Tools / mo $ (Keepa, SellerAmp…)</label><input id="c_tools" type="number" value="60"></div></div>'+
+    '<div class="field"><label class="f">Cash-back rate % (credit card/portals)</label><input id="c_cb" type="number" step="0.5" value="3"></div>'+
+  '</div><div class="card"><h3>Plan</h3><div id="c_out"></div></div></div>';
+  ["c_bud","c_unit","c_sell","c_tools","c_cb"].forEach(function(id){ $(id).addEventListener("input",calcCapital); });
+  calcCapital();
+}
+function calcCapital(){
+  var bud=n($("c_bud").value), unit=n($("c_unit").value), sell=n($("c_sell").value), tools=n($("c_tools").value), cb=n($("c_cb").value)/100;
+  var forInv=Math.max(0,bud-tools);
+  var units=unit>0?Math.floor(forInv/unit):0;
+  var tied=units*unit;
+  var cbBack=tied*cb;
+  var revenue=units*sell;
+  $("c_out").innerHTML=
+    '<div class="grid cols-2" style="margin-bottom:8px">'+
+      '<div class="kpi"><div class="v">'+units+'</div><div class="l">units you can buy</div></div>'+
+      '<div class="kpi"><div class="v">'+money(tied)+'</div><div class="l">cash tied up / cycle</div></div>'+
+    '</div>'+
+    '<div class="bd"><span>Budget for inventory (after tools)</span><span class="v">'+money(forInv)+'</span></div>'+
+    '<div class="bd"><span>Cash-back earned ('+pct(cb)+')</span><span class="v pos">+'+money(cbBack)+'</span></div>'+
+    '<div class="bd"><span>Sell-through revenue</span><span class="v">'+money(revenue)+'</span></div>'+
+    '<p class="note">Amazon pays out roughly every 2 weeks but holds a reserve, so your cash is locked from purchase until payout — keep a buffer and reinvest, don’t over-extend on one order. Cash-back stacking is real margin in OA.</p>';
+}
+
+/* ---------- PPC BUDGET ---------- */
+function vPPC(){
+  $("view").innerHTML='<h1 class="page">PPC budget planner</h1><p class="sub">Ads matter once you list. Plan a launch push and a steady-state budget, and know your break-even ACoS so you never overspend.</p>'+
+  '<div class="grid cols-2"><div class="card"><h3>Inputs</h3>'+
+    '<div class="row2"><div class="field"><label class="f">Launch units</label><input id="p_units" type="number" value="300"></div>'+
+    '<div class="field"><label class="f">Sell price $</label><input id="p_sell" type="number" step="0.01" value="24.99"></div></div>'+
+    '<div class="row2"><div class="field"><label class="f">Net margin % (before ads)</label><input id="p_margin" type="number" value="30"></div>'+
+    '<div class="field"><label class="f">Target monthly revenue $</label><input id="p_rev" type="number" value="6000"></div></div>'+
+  '</div><div class="card"><h3>Plan</h3><div id="p_out"></div></div></div>';
+  ["p_units","p_sell","p_margin","p_rev"].forEach(function(id){ $(id).addEventListener("input",calcPPC); });
+  calcPPC();
+}
+function calcPPC(){
+  var units=n($("p_units").value), sell=n($("p_sell").value), margin=n($("p_margin").value)/100, rev=n($("p_rev").value);
+  var invValue=units*sell;
+  var launchLo=invValue*0.30, launchHi=invValue*0.50;
+  var ongoingLo=rev*0.10, ongoingHi=rev*0.15;
+  $("p_out").innerHTML=
+    '<div class="kpi" style="margin-bottom:12px"><div class="v '+(margin>=0.2?"pos":"warn")+'">'+pct(margin)+'</div><div class="l">break-even ACoS (spend up to this and still break even)</div></div>'+
+    '<div class="bd"><span>Launch budget (over ~60 days)</span><span class="v">'+money(launchLo)+'–'+money(launchHi)+'</span></div>'+
+    '<div class="bd"><span>Ongoing ads / month</span><span class="v">'+money(ongoingLo)+'–'+money(ongoingHi)+'</span></div>'+
+    '<div class="bd"><span>Inventory retail value</span><span class="v">'+money(invValue)+'</span></div>'+
+    '<p class="note">Launch spend ~30–50% of inventory retail value over the first 60 days to drive rank; then settle to ~10–15% of revenue. Track <b>TACoS</b> (total ad spend ÷ total sales), not just ACoS — it tells you if ads are subsidizing organic.</p>';
+}
+
+/* ---------- CHECKLISTS ---------- */
+var LISTS={
+  setup:["Decide Individual vs Professional plan ($39.99/mo — Pro once selling >40/mo)","Register the seller account (need ID, bank, tax info — you must be 18+)","Set up 2-step verification","Install Keepa + SellerAmp browser extensions","Get a prep/ship plan (FBA labels, poly bags, boxes)","Open a cash-back card + sign up for rebate portals (Rakuten, etc.)"],
+  launch:["Run the product through the Deal calculator (ROI ≥ 30%, profit ≥ $3)","Confirm you’re ungated for the brand/category","Check Keepa: stable rank, no Amazon on Buy Box, sane offer count","Buy a small test batch first","Create the FBA shipment via Partnered Carrier (cuts placement fees)","List, then verify it’s live + priced to win the Buy Box"],
+  ungating:["Check gating in the Amazon Seller app (‘Add a product’ → shows restrictions)","Find a distributor/wholesaler that gives a real invoice","Buy 10+ units on one invoice (name+address must match your account)","Submit the invoice for approval in Seller Central","Avoid IP-risky brands (Nike, Adidas, etc.) entirely","Keep invoices on file for future inauthentic/IP complaints"]
+};
+function vCheck(){
+  var names={setup:"Account setup",launch:"First-product launch",ungating:"Ungating a brand/category"};
+  var h='<h1 class="page">FBA checklists</h1><p class="sub">The steps that actually get you from zero to a first sale. Ticks save locally.</p><div class="grid cols-3">';
+  Object.keys(LISTS).forEach(function(k){
+    h+='<div class="card"><h3>'+names[k]+'</h3>';
+    LISTS[k].forEach(function(item,i){ var id=k+":"+i; var on=!!S.checks[id];
+      h+='<label class="check '+(on?"done":"")+'"><input type="checkbox" data-c="'+id+'" '+(on?"checked":"")+'><span class="t">'+esc(item)+'</span></label>'; });
+    h+='</div>';
+  });
+  h+='</div>';
+  $("view").innerHTML=h;
+  Array.prototype.forEach.call($("view").querySelectorAll("input[data-c]"),function(cb){
+    cb.onchange=function(){ S.checks[cb.dataset.c]=cb.checked; save(); cb.closest(".check").classList.toggle("done",cb.checked); };
+  });
+}
+
+/* ---------- LIVE (DEMO) ---------- */
+function vLive(){
+  $("view").innerHTML='<h1 class="page">Live account <span class="demoTag">SAMPLE DATA</span></h1>'+
+  '<div class="banner">These numbers are a <b>demo</b>. They turn real once you have an Amazon Professional seller account and connect Amazon’s <b>SP-API</b> (sales, inventory, fees, payouts) and <b>Ads API</b> (PPC). Pre-launch there’s nothing to show yet — this is what it’ll look like.</div>'+
+  '<div class="grid cols-4">'+
+    '<div class="kpi"><div class="v pos">$0</div><div class="l">Net profit · MTD</div></div>'+
+    '<div class="kpi"><div class="v">$0</div><div class="l">Cash in inventory</div></div>'+
+    '<div class="kpi"><div class="v">—</div><div class="l">Blended ROI</div></div>'+
+    '<div class="kpi"><div class="v">0</div><div class="l">Units at FBA</div></div>'+
+  '</div>'+
+  '<div class="grid cols-2" style="margin-top:14px">'+
+    '<div class="card"><h3>What SP-API would unlock</h3>'+
+      '<div class="bd"><span>Live units, revenue, sessions, conversion</span><span class="chip n">SP-API</span></div>'+
+      '<div class="bd"><span>Real per-SKU fees + net profit</span><span class="chip n">SP-API</span></div>'+
+      '<div class="bd"><span>FBA inventory, restock, stockout alerts</span><span class="chip n">SP-API</span></div>'+
+      '<div class="bd"><span>Settlements / payouts</span><span class="chip n">SP-API</span></div>'+
+      '<div class="bd"><span>Returns + account health</span><span class="chip n">SP-API</span></div>'+
+      '<div class="bd"><span>PPC spend, ACoS, TACoS, search terms</span><span class="chip n">Ads API</span></div>'+
+    '</div>'+
+    '<div class="card"><h3>Connect later (3 steps)</h3>'+
+      '<div class="check"><span class="t"><b>1.</b> Open a Professional seller account ($39.99/mo) once you’re ready to sell.</span></div>'+
+      '<div class="check"><span class="t"><b>2.</b> Register an SP-API app (LWA client id/secret + refresh token) and an Ads API app.</span></div>'+
+      '<div class="check"><span class="t"><b>3.</b> Paste the tokens into the scout backend — it already has SP-API/Ads connector stubs ready to wire.</span></div>'+
+      '<p class="note">Until then, the Deal calc, Restock, Capital and PPC planners run entirely on your own inputs — no account required.</p>'+
+    '</div>'+
+  '</div>';
+}
+
+if(!OK){ var b=document.createElement("div"); b.className="banner"; b.textContent="⚠ Your browser is blocking local storage (private mode?) — saved deals/checklists won’t persist this session."; document.body.insertBefore(b,document.querySelector(".app")); }
+render();
+})();
+</script>
+</body>
+</html>
+    

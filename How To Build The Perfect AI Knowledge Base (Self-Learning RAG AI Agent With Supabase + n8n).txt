@@ -1,0 +1,1963 @@
+00:00 In this video, I'm going to show you how
+00:02 
+
+00:02 to build the perfect knowledge base
+00:03 
+
+00:03 using AI and how to build a perfect rag
+00:06 
+
+00:06 AI agent that can answer any question by
+00:08 
+
+00:08 searching for anything in your Rag
+00:10 
+
+00:10 knowledge base. Even better, it will be
+00:12 
+
+00:12 self-improving. I'll walk you through
+00:14 
+
+00:14 step by step through my NAN workflows to
+00:16 
+
+00:16 add information both manually and
+00:18 
+
+00:18 automatically and demos of me quering my
+00:21 
+
+00:21 knowledge base in action to both voice
+00:23 
+
+00:23 and text. By the end of this video,
+00:25 
+
+00:25 you'll learn what type of knowledge base
+00:27 
+
+00:27 is best for you and how to set it up. I
+00:29 
+
+00:29 had this NAN template in my free school
+00:31 
+
+00:31 community, the AI Avengers down below.
+00:34 
+
+00:34 And if you want to scale your business
+00:35 
+
+00:35 and double your booked appointments with
+00:37 
+
+00:37 AI agents, book a free discovery call
+00:39 
+
+00:39 with me down below. Let's get right into
+00:41 
+
+00:41 it. So, what is a knowledge base? First,
+00:44 
+
+00:44 we'll start off with the definitions.
+00:45 
+
+00:45 So, knowledge base is basically your
+00:47 
+
+00:47 business's digital library. It's where
+00:49 
+
+00:49 you keep all your information like FAQs,
+00:51 
+
+00:51 product guides, policies, instructions,
+00:54 
+
+00:54 and if you're a restaurant, like the
+00:55 
+
+00:55 restaurant menu. So your team or your AI
+00:58 
+
+00:58 agent can find and use it to help
+00:59 
+
+00:59 customers or staff. So think of it as
+01:02 
+
+01:02 like a bookshelf for your business with
+01:04 
+
+01:04 all the books neatly organized for you
+01:06 
+
+01:06 to uh grab and refer to when you need
+01:08 
+
+01:08 it. And uh what is rag? So rag stands
+01:12 
+
+01:12 for retrieval augmented generation. So
+01:14 
+
+01:14 it's a very fancy name, but don't let it
+01:16 
+
+01:16 scare you. It's it just means that your
+01:18 
+
+01:18 AI doesn't make things up. So instead,
+01:21 
+
+01:21 when somebody asks a question, the AI
+01:23 
+
+01:23 looks up the answer in your knowledge
+01:25 
+
+01:25 base and then explains it in a friendly
+01:27 
+
+01:27 way. So it's like having a super smart
+01:29 
+
+01:29 librarian who always checks your books
+01:31 
+
+01:31 before answering a question. So this
+01:34 
+
+01:34 just ensures that AI grabs the right
+01:36 
+
+01:36 knowledge and provides the right correct
+01:38 
+
+01:38 knowledge. So uh why does the knowledge
+01:41 
+
+01:41 base quality matter? Well, it's just
+01:43 
+
+01:43 like your house, just like um your
+01:45 
+
+01:45 workplace, just like your desk. So, if
+01:47 
+
+01:47 it's messy and unorganized, it's going
+01:49 
+
+01:49 to be very hard to find what you're
+01:51 
+
+01:51 looking for. And if you rely on outdated
+01:54 
+
+01:54 information from like 100 years ago,
+01:56 
+
+01:56 well, you'll be wrong. Well, that's the
+01:58 
+
+01:58 same with a knowledge base. So, if your
+02:00 
+
+02:00 knowledge base is messy, outdated, or if
+02:03 
+
+02:03 it's full of random information, your
+02:05 
+
+02:05 AI's answers will be very confusing or
+02:08 
+
+02:08 even wrong. But if your information is
+02:10 
+
+02:10 clear, up-to-date, and organized, your
+02:12 
+
+02:12 AI will always give better and more
+02:14 
+
+02:14 reliable answers. So in short, garbage
+02:16 
+
+02:16 in equals garbage out. So make sure that
+02:19 
+
+02:19 you're feeding the AI with the right
+02:21 
+
+02:21 information. So you might be thinking,
+02:23 
+
+02:23 when should I use a simple knowledge
+02:25 
+
+02:25 base? When should I just use um a single
+02:27 
+
+02:27 like PDF file versus when should I use a
+02:30 
+
+02:30 superbase vector store? Well, the answer
+02:33 
+
+02:33 is it depends. So if your business
+02:35 
+
+02:35 information is very simple, so just like
+02:38 
+
+02:38 uh for example just a few pages of FAQs
+02:40 
+
+02:40 or instructions or a restaurant menu,
+02:43 
+
+02:43 then a basic knowledge base of just one
+02:45 
+
+02:45 PDF file will be all you need. That will
+02:48 
+
+02:48 be enough for you. So you can just
+02:49 
+
+02:49 simply upload the document uh onto your
+02:52 
+
+02:52 N AI agent or onto retail if you're
+02:55 
+
+02:55 using voice agents or just like paste in
+02:57 
+
+02:57 your information and you're good to go.
+02:59 
+
+02:59 But if you have a lot of documents, a
+03:01 
+
+03:01 lot of detailed guides, SOPs or like you
+03:04 
+
+03:04 have very long like privacy policies or
+03:06 
+
+03:06 your information is just scattered
+03:08 
+
+03:08 across many uh different files, then
+03:10 
+
+03:10 it's time for an upgrade. So that's
+03:12 
+
+03:12 where Superbase comes in. And uh
+03:14 
+
+03:14 Superbase is used by a lot of um
+03:16 
+
+03:16 enterprise companies. So you might be
+03:18 
+
+03:18 thinking what is Superbase? Well,
+03:21 
+
+03:21 Superbase, it's a modern easy to use
+03:23 
+
+03:23 back-end platform. So, it's kind of like
+03:25 
+
+03:25 a supercharged version of Google Sheets,
+03:28 
+
+03:28 but it's built for businesses and
+03:29 
+
+03:29 developers. So, it helps you secure your
+03:32 
+
+03:32 data, uh, manage user accounts, and most
+03:34 
+
+03:34 importantly, gives your AI a place to
+03:37 
+
+03:37 quickly search through and find the
+03:38 
+
+03:38 right answers in your knowledge base.
+03:40 
+
+03:40 So, when we use Superbase as a vector
+03:43 
+
+03:43 store, it means we're not just saving
+03:44 
+
+03:44 your business information. We're also
+03:46 
+
+03:46 creating smart cheat sheets for the AI,
+03:49 
+
+03:49 like special notes that help it
+03:50 
+
+03:50 understand what each document is about.
+03:53 
+
+03:53 So when somebody asks a question, your
+03:55 
+
+03:55 AI can instantly find the best answer,
+03:58 
+
+03:58 even if the question and the document
+03:60 
+
+03:60 use different words. So you can think of
+04:02 
+
+04:02 Superbase like a super organized digital
+04:05 
+
+04:05 filing cabinet for your business. So not
+04:08 
+
+04:08 only does it keep all your documents
+04:09 
+
+04:09 safe and in order, but also lets your AI
+04:12 
+
+04:12 assistant flip through the right folders
+04:13 
+
+04:13 at lightning speed, no matter how many
+04:16 
+
+04:16 you have. So start simple. if you grow
+04:19 
+
+04:19 or things get more complicated or if
+04:21 
+
+04:21 you're already um a very big company,
+04:23 
+
+04:23 Superbase has you covered. So if your
+04:25 
+
+04:25 intended knowledge base is short and
+04:27 
+
+04:27 simple, so under 10 pages, then you can
+04:29 
+
+04:29 just get away with using a uh PDF file
+04:32 
+
+04:32 and you can just upload it to retail
+04:35 
+
+04:35 here. So um here you can add your
+04:37 
+
+04:37 knowledge base. So on knowledge base
+04:39 
+
+04:39 here you can just click plus and then
+04:41 
+
+04:41 you can enter like knowledge base and
+04:45 
+
+04:45 then you can enter documents. So, you
+04:47 
+
+04:47 could add a web page. You could add your
+04:49 
+
+04:49 website here. You could upload uh some
+04:51 
+
+04:51 files and you could um or you could just
+04:53 
+
+04:53 add uh text here manually. You could add
+04:55 
+
+04:55 your website here, but uh that isn't
+04:57 
+
+04:57 optimal. You can use bio call to get
+04:59 
+
+04:59 more optimal results, but I won't cover
+05:01 
+
+05:01 that in this video. But yeah, you can
+05:03 
+
+05:03 just select your file here and just
+05:04 
+
+05:04 upload your knowledge base and it will
+05:06 
+
+05:06 appear here. But anyways, you can make
+05:08 
+
+05:08 your knowledge base better than just
+05:10 
+
+05:10 uploading a PDF file. So, what you can
+05:12 
+
+05:12 do is you can turn this PDF file into a
+05:15 
+
+05:15 questions and answer format. So it makes
+05:17 
+
+05:17 it easier for the AI to search and um
+05:19 
+
+05:19 better understand and uh find answers
+05:22 
+
+05:22 quicker like a FAQ document. So you want
+05:26 
+
+05:26 to do that with chat GPT here. I'm now
+05:28 
+
+05:28 on chat GPT. So I'll just uh paste this
+05:31 
+
+05:31 prompt here. So basically um context. So
+05:34 
+
+05:34 you want to put all your information
+05:36 
+
+05:36 here. You could just um attach it as a
+05:38 
+
+05:38 PDF file. You can just uh get rid of
+05:40 
+
+05:40 this and just tell it that it's the
+05:41 
+
+05:41 attachment and then your example. So
+05:44 
+
+05:44 yeah just yeah keep it as it is and yeah
+05:47 
+
+05:47 this is just an example of how it should
+05:49 
+
+05:49 return. So basically the output it's
+05:52 
+
+05:52 going to be like topic question and
+05:55 
+
+05:55 answer. So this is like category
+05:57 
+
+05:57 subcategory and then yeah here's the
+05:60 
+
+05:60 actual answer that uh chat that that the
+06:03 
+
+06:03 AI agent will actually look for and the
+06:05 
+
+06:05 instructions is just create a structured
+06:07 
+
+06:07 FAQ list based on the attachment or the
+06:09 
+
+06:09 context by following this example a
+06:12 
+
+06:12 structured format and then yeah the
+06:14 
+
+06:14 output format should be like this topic
+06:16 
+
+06:16 question and answer. So I have attached
+06:19 
+
+06:19 the PDF file as an attachment. So, uh,
+06:21 
+
+06:21 under context, I'll just tell it to, uh,
+06:24 
+
+06:24 see attached file and then I'll enter.
+06:28 
+
+06:28 And then let's watch, uh, chat GPT turn
+06:31 
+
+06:31 it into, um, a Q&A
+06:34 
+
+06:34 format. So, as you can see, it just
+06:36 
+
+06:36 finished converting it into a Q&A
+06:38 
+
+06:38 format. It might have uh, lost some
+06:40 
+
+06:40 things uh, during the conversion because
+06:43 
+
+06:43 that file that I just showed you was 27
+06:45 
+
+06:45 pages. So, make sure that if you're
+06:47 
+
+06:47 going to do this, make sure the PDF file
+06:49 
+
+06:49 is like fewer than 10 pages because
+06:52 
+
+06:52 otherwise you risk losing some
+06:54 
+
+06:54 information. But anyways, for this
+06:56 
+
+06:56 video, let's just um ask it to um yeah,
+06:59 
+
+06:59 turn it into a PDF file so I can
+07:03 
+
+07:03 download. So, now it just finished uh
+07:05 
+
+07:05 converting this into a PDF file. So, you
+07:08 
+
+07:08 can just uh download this and put it
+07:10 
+
+07:10 into your retail knowledge base over
+07:13 
+
+07:13 here and then you're good to go. But
+07:15 
+
+07:15 this is only effective if you only have
+07:17 
+
+07:17 like a small amount of things to put in
+07:19 
+
+07:19 your knowledge base. So um under 10
+07:21 
+
+07:21 pages of an A4 PDF file. But like I
+07:24 
+
+07:24 said, if you need more than 10 pages,
+07:26 
+
+07:26 then I do recommend going for a vector
+07:28 
+
+07:28 store database on Superbase. So there
+07:30 
+
+07:30 are four different workflows in this one
+07:33 
+
+07:33 NAN workflow. You can download this down
+07:35 
+
+07:35 below in the AI Avengers free school
+07:37 
+
+07:37 community down below. So uh first this
+07:40 
+
+07:40 is the voice agent rag. So uh when this
+07:42 
+
+07:42 is a function for uh retail AI. So uh
+07:46 
+
+07:46 when I ask a question, it's going to uh
+07:48 
+
+07:48 query the knowledge base through a web
+07:50 
+
+07:50 hook. It's going to grab the answer from
+07:52 
+
+07:52 uh superbase and then respond with a web
+07:54 
+
+07:54 hook and going to respond to me with the
+07:57 
+
+07:57 answer. And then here's uh the AI rag
+07:59 
+
+07:59 agent. So this basically has the same
+08:01 
+
+08:01 function as the voice agent rag except
+08:03 
+
+08:03 that this is through chat. So I will
+08:05 
+
+08:05 just type in my question. It's going to
+08:07 
+
+08:07 grab the answer from the superbase
+08:09 
+
+08:09 vector store. And then uh there's add to
+08:12 
+
+08:12 knowledge base manually. So this is
+08:13 
+
+08:13 where I add uh knowledge to the
+08:16 
+
+08:16 superbase uh vector store manually and
+08:19 
+
+08:19 this is uh Google Drive auto update. So
+08:21 
+
+08:21 this is the self-learning mechanism of
+08:24 
+
+08:24 the AI agent. So it updates the
+08:26 
+
+08:26 knowledge base by itself through uh
+08:28 
+
+08:28 Google Drive. So basically how it works
+08:31 
+
+08:31 is when you upload a file onto Google
+08:34 
+
+08:34 Drive, whether it's an audio file or an
+08:36 
+
+08:36 image or a PDF file, it will
+08:38 
+
+08:38 automatically update the vector store as
+08:41 
+
+08:41 necessary. So first we'll start off with
+08:44 
+
+08:44 this workflow. So uh adding to the
+08:46 
+
+08:46 knowledge base manually. So uh I have
+08:48 
+
+08:48 this all set up for you, but in case you
+08:50 
+
+08:50 want to create it yourself, you just
+08:51 
+
+08:51 click on the plus here, type in
+08:53 
+
+08:53 superbase, and you always press a
+08:55 
+
+08:55 superbase vector store. So um anyways
+08:58 
+
+08:58 you want to go in here and then you want
+08:60 
+
+08:60 to uh connect your credentials. So to
+09:02 
+
+09:02 connect your credentials uh you simply
+09:05 
+
+09:05 uh try to connect. So you'll need the
+09:07 
+
+09:07 host link. So you will need this and you
+09:09 
+
+09:09 will need the um service ro secret. So
+09:12 
+
+09:12 just go on to superbase.com and create
+09:15 
+
+09:15 an account. So uh you can start off
+09:17 
+
+09:17 free. So uh the free plan is extremely
+09:20 
+
+09:20 generous. So unlimited API requests, 500
+09:22 
+
+09:22 megabytes of uh data. So this is a very
+09:25 
+
+09:25 good deal for um a free plan and for 25
+09:28 
+
+09:28 a month uh you don't need this at the
+09:30 
+
+09:30 start unless you already are a big
+09:33 
+
+09:33 company. So just start off with a free
+09:35 
+
+09:35 plan for now. You will be in uh here on
+09:37 
+
+09:37 the dashboards go on to the left click
+09:39 
+
+09:39 on project settings and then you want to
+09:41 
+
+09:41 go down to uh data API. So uh what you
+09:44 
+
+09:44 want to do here is you want to uh copy
+09:47 
+
+09:47 this URL here and then you want to uh
+09:50 
+
+09:50 paste it into here into host and then
+09:53 
+
+09:53 for uh service uh ro secret. So um you
+09:57 
+
+09:57 want to uh copy this and you want to
+09:59 
+
+09:59 paste it in here. So I've already done
+10:01 
+
+10:01 that. Once you connect it you uh go on
+10:03 
+
+10:03 to here. So insert documents. So you
+10:06 
+
+10:06 will have to select the table name. So
+10:08 
+
+10:08 uh where the AI agent will get its data
+10:11 
+
+10:11 from. So the vector store. So to get
+10:14 
+
+10:14 started you have to create a table. So
+10:16 
+
+10:16 in order to do that just go on to uh
+10:19 
+
+10:19 superbase here. So go on to uh open docs
+10:21 
+
+10:21 here and then uh go on to vector
+10:24 
+
+10:24 database uh scroll down click on quick
+10:28 
+
+10:28 start to get uh started. So so you want
+10:31 
+
+10:31 to copy this code and then you want to
+10:33 
+
+10:33 go on to your uh superbase go on to SQL
+10:36 
+
+10:36 editor and then you want to uh paste it
+10:38 
+
+10:38 in here. So you just have to uh click uh
+10:41 
+
+10:41 click run and then it will create a
+10:43 
+
+10:43 vector uh store for you. So if you want
+10:46 
+
+10:46 to uh change the name well you can
+10:49 
+
+10:49 simply change uh documents here. So this
+10:51 
+
+10:51 will be the name of the vector store. So
+10:53 
+
+10:53 if you want to change it to something
+10:54 
+
+10:54 else like knowledge base or something
+10:56 
+
+10:56 you can but I'm just going to leave it
+10:58 
+
+10:58 to default for now. I've already done
+10:60 
+
+10:60 this so I'll show you uh where it is. Um
+11:03 
+
+11:03 if you go on to database here go on to
+11:05 
+
+11:05 tables you'll see documents here. Okay.
+11:08 
+
+11:08 And then yeah, you could also go to
+11:10 
+
+11:10 table editors and you can see all the
+11:12 
+
+11:12 rows here. So I've already added this as
+11:14 
+
+11:14 uh part of the demo. But anyways, I will
+11:17 
+
+11:17 uh continue to demonstrate more
+11:18 
+
+11:18 throughout this video. So yeah, anyways,
+11:21 
+
+11:21 once you've created the table name, you
+11:22 
+
+11:22 want to uh select the table name here
+11:25 
+
+11:25 and then yeah batch size, you can just
+11:27 
+
+11:27 leave this as default and then um here.
+11:31 
+
+11:31 So yeah, what you want to do is um under
+11:33 
+
+11:33 document. So yeah, click on plus and
+11:36 
+
+11:36 then click on the default data loader.
+11:38 
+
+11:38 So I'll just connect this back again.
+11:41 
+
+11:41 And then when you go on here, so this
+11:43 
+
+11:43 will depend if you're um uploading a
+11:45 
+
+11:45 file onto your Superbase vector store,
+11:48 
+
+11:48 then you want to select binary. But
+11:50 
+
+11:50 since here we're adding it manually, we
+11:52 
+
+11:52 want to select JSON. And then we want to
+11:54 
+
+11:54 leave this as default. And then you'll
+11:57 
+
+11:57 have to add a text splitter. So I'll
+11:59 
+
+11:59 just delete this. And um yeah, so you
+12:02 
+
+12:02 can split it by tokens, you can split by
+12:04 
+
+12:04 character. Um yeah, you could split by
+12:07 
+
+12:07 recursive. So uh recursive, this is like
+12:10 
+
+12:10 default. This works most of the time. So
+12:11 
+
+12:11 just uh select this one. And then you
+12:14 
+
+12:14 have connect it back again. And rec and
+12:17 
+
+12:17 chunk size. So uh this will be split up
+12:20 
+
+12:20 by um the so this will be split up by
+12:23 
+
+12:23 the number of characters. Uh and each um
+12:27 
+
+12:27 and each split will be called a chunk.
+12:29 
+
+12:29 So basically it's like 1,000 characters
+12:32 
+
+12:32 each. So if your document has 10,000
+12:34 
+
+12:34 characters, well it's going to have uh
+12:36 
+
+12:36 10 chunks. So uh yeah, the default is
+12:40 
+
+12:40 1,000. You can change this depending on
+12:42 
+
+12:42 the size of the document that you have.
+12:44 
+
+12:44 And if you're unsure of the chunk size
+12:46 
+
+12:46 that you want to put in here, you can u
+12:49 
+
+12:49 upload your PDF onto uh chat GPT and
+12:52 
+
+12:52 then ask it for an appropriate chunk
+12:54 
+
+12:54 size. That's what I usually do. So the
+12:56 
+
+12:56 uh chunk overlap here, it's the default
+12:58 
+
+12:58 is usually zero, but I put 200. So think
+13:02 
+
+13:02 of this as a buffer. So um some
+13:05 
+
+13:05 information it might get cut off in the
+13:06 
+
+13:06 middle. So let's say I'm adding a list
+13:09 
+
+13:09 of FAQs to superbase, right? So I'm on
+13:12 
+
+13:12 question number six and the question
+13:14 
+
+13:14 number six is what are your opening
+13:16 
+
+13:16 hours? And it might get cut off in the
+13:18 
+
+13:18 middle of of the question six. So it
+13:20 
+
+13:20 might cut off at like your just before
+13:23 
+
+13:23 opening hours. So this is just an
+13:26 
+
+13:26 overlap. So just like a buffer just in
+13:28 
+
+13:28 case something like that does happen. So
+13:30 
+
+13:30 yeah, I usually like to put something
+13:32 
+
+13:32 like 150 200 in here. And then yeah, you
+13:35 
+
+13:35 can yeah, just like leave it like this.
+13:37 
+
+13:37 And then for embedding here. So yeah,
+13:39 
+
+13:39 I'll just disconnect this again. And
+13:41 
+
+13:41 then here. So embeddings. So you want to
+13:44 
+
+13:44 select open AI and the model is small by
+13:48 
+
+13:48 default. So there are three different
+13:49 
+
+13:49 embedding methods by Open AI. So ADA,
+13:52 
+
+13:52 this is just like the old one. So yeah,
+13:54 
+
+13:54 just ignore this one. Don't use it.
+13:56 
+
+13:56 There's small and large. So small, this
+13:58 
+
+13:58 works uh most of the time like 80 90% of
+14:01 
+
+14:01 use cases. So it's uh good for simple
+14:04 
+
+14:04 search, basic rag, and large data. And
+14:06 
+
+14:06 it's the fastest and cheapest as well.
+14:09 
+
+14:09 So it's good enough for most business
+14:11 
+
+14:11 needs. So it will be uh good enough for
+14:13 
+
+14:13 most u businesses like solo, home
+14:15 
+
+14:15 services, restaurants, etc. But if
+14:18 
+
+14:18 you're looking um for something with
+14:21 
+
+14:21 very critical information like um like
+14:23 
+
+14:23 medical information uh legal information
+14:25 
+
+14:25 things like that you would want to
+14:27 
+
+14:27 select large. This is where uh you
+14:29 
+
+14:29 require deep search advanced drag and
+14:32 
+
+14:32 nuance really matters. So I would just
+14:34 
+
+14:34 select uh small in most of the cases
+14:36 
+
+14:36 which I will for this demo. So that was
+14:38 
+
+14:38 it for setting up superbase vector
+14:40 
+
+14:40 store. So uh you want to add knowledge
+14:43 
+
+14:43 uh manually. So like for example, so
+14:45 
+
+14:45 you're adding this knowledge into the
+14:46 
+
+14:46 database in a question and answer
+14:48 
+
+14:48 format. So I will uh run this
+14:53 
+
+14:53 quickly and as you can see uh the data
+14:56 
+
+14:56 was uploaded into uh superbase. So I'll
+14:59 
+
+14:59 quickly uh refresh this page right
+15:03 
+
+15:03 now. And as you can see the content was
+15:07 
+
+15:07 uploaded here as you can see. So do you
+15:09 
+
+15:09 open on public holidays? And here's some
+15:11 
+
+15:11 metadata uh for the AI agent to refer to
+15:14 
+
+15:14 when looking for the information. So if
+15:16 
+
+15:16 you want to add uh information to the
+15:18 
+
+15:18 knowledge base manually well um just add
+15:21 
+
+15:21 whatever knowledge that you want to put
+15:23 
+
+15:23 in here. So like ABCD EFG and then uh
+15:27 
+
+15:27 click test workflow and then yeah it
+15:29 
+
+15:29 will be uploaded to your superbase
+15:31 
+
+15:31 vector store. Now we're going on to the
+15:33 
+
+15:33 fun part. So this is where AI agents are
+15:36 
+
+15:36 learning by itself by automatically
+15:38 
+
+15:38 updating its knowledge base. So, the way
+15:39 
+
+15:39 this works is when you upload a file
+15:42 
+
+15:42 onto um a Google Drive folder that you
+15:44 
+
+15:44 have, it will download the file, it will
+15:47 
+
+15:47 um determine whether it's an audio, an
+15:50 
+
+15:50 image, or a PDF file. If it's an audio
+15:52 
+
+15:52 or image, it transcribes the recording
+15:54 
+
+15:54 or analyzes the image and then stores
+15:57 
+
+15:57 the information into the vector store.
+15:59 
+
+15:59 And if it is a PDF file that was
+16:02 
+
+16:02 uploaded onto the Google Drive, it will
+16:04 
+
+16:04 directly upload it to the vector store
+16:06 
+
+16:06 database straight away. So, I'll just
+16:09 
+
+16:09 quickly go over this. By the way, this
+16:11 
+
+16:11 doesn't cover the document uh file type
+16:14 
+
+16:14 here. So, I should have added it, but I
+16:15 
+
+16:15 only have PDF in this uh in this
+16:18 
+
+16:18 template. So, just keep that in mind.
+16:20 
+
+16:20 So, first you want to start off with a
+16:22 
+
+16:22 Google trigger. So, how you add a Google
+16:25 
+
+16:25 trigger is by clicking on the plus here,
+16:27 
+
+16:27 look for Google Drive, and then uh
+16:30 
+
+16:30 scroll down to the bottom uh go to
+16:32 
+
+16:32 triggers and then click on uh on changes
+16:34 
+
+16:34 involving a uh specific folder. So once
+16:37 
+
+16:37 you have done that every minute here it
+16:39 
+
+16:39 just means the interval that n checks
+16:42 
+
+16:42 the Google drive for any new uh files.
+16:44 
+
+16:44 So yeah just uh customize this as you
+16:47 
+
+16:47 need to. So yeah how often you want to
+16:49 
+
+16:49 update the knowledge base. So anyways uh
+16:53 
+
+16:53 go on trigger uh change this to
+16:55 
+
+16:55 involving a specific folder and then you
+16:57 
+
+16:57 select your folder here the knowledge
+16:58 
+
+16:58 base and then yeah look look out for
+17:01 
+
+17:01 file updated. So this is what you want
+17:03 
+
+17:03 to select and then yeah you go on to
+17:07 
+
+17:07 downloading the file. So you want to
+17:09 
+
+17:09 download the file. So this is the unique
+17:11 
+
+17:11 ID of the file that was downloaded and
+17:14 
+
+17:14 then uh after this step you want to go
+17:17 
+
+17:17 to switch. So this is where it
+17:19 
+
+17:19 determines the file type. So it
+17:21 
+
+17:21 determines whether it's an audio file or
+17:23 
+
+17:23 a JPEG or um a PDF file. And by the way
+17:26 
+
+17:26 there can be more uh file extensions for
+17:29 
+
+17:29 an image. So yeah, unfortunately for uh
+17:33 
+
+17:33 switch there can only be one condition
+17:34 
+
+17:34 here. So if you want to add um more
+17:37 
+
+17:37 conditions. So like let's just say for
+17:40 
+
+17:40 example um if the file extension is
+17:44 
+
+17:44 equal to um like uh PNG, this could be
+17:48 
+
+17:48 another um image file for example. So
+17:51 
+
+17:51 yeah just add this and then um yeah. So
+17:54 
+
+17:54 here this is the new thing. So yeah,
+17:56 
+
+17:56 just um uh go connect this to image
+17:60 
+
+17:60 here. So if it's audio, it goes here. If
+18:02 
+
+18:02 it's image here and if it's a PDF file,
+18:04 
+
+18:04 it goes here. So let's start with the
+18:07 
+
+18:07 recording. So uh what we want to do is
+18:09 
+
+18:09 we want to add note uh open AI and then
+18:13 
+
+18:13 go down to um transcribe a recording. So
+18:17 
+
+18:17 this is what I have here. And then yeah,
+18:20 
+
+18:20 transcribe recording audio data. Yeah,
+18:22 
+
+18:22 just leave it all as a default. And then
+18:24 
+
+18:24 we're going straight on to superbase. So
+18:27 
+
+18:27 yeah, just keep it all as default here.
+18:29 
+
+18:29 Insert document doc uh from yeah select
+18:32 
+
+18:32 your table and then yeah go to default
+18:35 
+
+18:35 data loader. So you you want to select
+18:37 
+
+18:37 this as JSON because we're not actually
+18:39 
+
+18:39 uploading a file. We're actually um
+18:42 
+
+18:42 inserting the output from this node
+18:44 
+
+18:44 here. And then uh for for character you
+18:47 
+
+18:47 can just leave it at 1,000.
+18:50 
+
+18:50 And yeah, we don't have to worry about
+18:52 
+
+18:52 chunk overlap because like the
+18:54 
+
+18:54 transcribe recording as you can see here
+18:56 
+
+18:56 uh it's only 25 megabytes of audio. So
+18:60 
+
+18:60 this would be about 10 minutes max. So
+19:02 
+
+19:02 anyways um let's go on to analyze image.
+19:06 
+
+19:06 So yeah on here you just want to select
+19:08 
+
+19:08 uh GPT40 and then text input. So you
+19:12 
+
+19:12 could put a better prompt here, but I
+19:14 
+
+19:14 just put describe the content of this
+19:16 
+
+19:16 image and explain what this means. So
+19:21 
+
+19:21 yeah, the input type is going to be a uh
+19:23 
+
+19:23 binary file or if you want to uh put in
+19:25 
+
+19:25 like an image URL, you can you can
+19:27 
+
+19:27 change it here. And then this will um be
+19:30 
+
+19:30 entered into the superbase vector store
+19:32 
+
+19:32 in the same method. So uh we're just
+19:34 
+
+19:34 going to connect it here as well. And
+19:36 
+
+19:36 then for PDF, so we're just downloading
+19:38 
+
+19:38 the PDF and inserting it straight into
+19:40 
+
+19:40 the Superbase vector store. So, uh, yep,
+19:44 
+
+19:44 same settings. And then for default data
+19:46 
+
+19:46 loader. So, this is what you want to do
+19:48 
+
+19:48 differently. So, go on to here. And then
+19:50 
+
+19:50 for type of data, you want to select
+19:51 
+
+19:51 binary. So, just remember if you're
+19:54 
+
+19:54 uploading a file, then select binary. If
+19:57 
+
+19:57 you're uploading something from the NAN
+19:59 
+
+19:59 workflow like um when I was uploading
+20:02 
+
+20:02 data manually or if I'm was uploading
+20:04 
+
+20:04 like analysis of the image I will select
+20:07 
+
+20:07 JSON. So yeah just keep that in mind. So
+20:09 
+
+20:09 now I will show you the knowledge base
+20:12 
+
+20:12 being updated by itself and the AI agent
+20:14 
+
+20:14 self-learning in action. So I'll go on
+20:17 
+
+20:17 to my Google Drive folder here the
+20:18 
+
+20:18 knowledge base. So, I have uploaded a
+20:21 
+
+20:21 PDF file here, soul fried chicken menu,
+20:23 
+
+20:23 a Korean fried chicken restaurants. And
+20:25 
+
+20:25 this is a fictional restaurant, by the
+20:27 
+
+20:27 way. So, don't try to look it up. So,
+20:28 
+
+20:28 now we're back on NAN and we're going to
+20:31 
+
+20:31 test the workflow. So, it's going to see
+20:32 
+
+20:32 the PDF file that was uploaded to the
+20:35 
+
+20:35 knowledgebased folder. So, I'll show you
+20:37 
+
+20:37 it in action right
+20:42 
+
+20:42 now. Yes. So, as you can see the um it
+20:46 
+
+20:46 was uploaded. So if you look at the logs
+20:49 
+
+20:49 here, so um recursive. Yep. So this is
+20:52 
+
+20:52 the input. So this was the content of
+20:54 
+
+20:54 the PDF file. And if you scroll down
+20:57 
+
+20:57 output. So yeah, it's just this is all
+20:60 
+
+20:60 metadata for the AI to refer to. So
+21:02 
+
+21:02 yeah, we won't know what any of these
+21:03 
+
+21:03 mean. So you can see that it outputed
+21:05 
+
+21:05 five items, meaning that it outputed
+21:07 
+
+21:07 five chunks. There will be five new rows
+21:10 
+
+21:10 in the superbase. And as you just saw,
+21:12 
+
+21:12 these um new rows just appeared, which
+21:15 
+
+21:15 are from the soul fried chicken menu
+21:16 
+
+21:16 here. So yeah, as you can see, uh food
+21:19 
+
+21:19 item snowing, uh snowing fried chicken,
+21:22 
+
+21:22 um food item, Korean beer, uh category
+21:25 
+
+21:25 dessert. So as you can see, this updated
+21:28 
+
+21:28 the uh Superbase uh vector store
+21:30 
+
+21:30 database uh successfully. So I just
+21:32 
+
+21:32 showed you how the knowledge base is
+21:34 
+
+21:34 learning by itself by being updated
+21:36 
+
+21:36 automatically. So basically just upload
+21:39 
+
+21:39 whatever file or document that you have
+21:41 
+
+21:41 onto a designated Google drive folder
+21:44 
+
+21:44 and then it will automatically update by
+21:46 
+
+21:46 itself. You just upload the file and it
+21:48 
+
+21:48 does everything for you. So now we are
+21:51 
+
+21:51 here with the actual agents uh using
+21:53 
+
+21:53 rack. So this is for the voice agent. So
+21:56 
+
+21:56 the way this works is uh when the caller
+21:59 
+
+21:59 asks for information the AI agent will
+22:02 
+
+22:02 call a function which will u send the
+22:05 
+
+22:05 information over to web hook. So the
+22:08 
+
+22:08 question that was asked by the caller,
+22:10 
+
+22:10 it will get uh the AI agent to do a
+22:12 
+
+22:12 query to find the answer and then
+22:14 
+
+22:14 respond to the web hook. So what you
+22:16 
+
+22:16 want to do here is just uh create a web
+22:18 
+
+22:18 hook. So yeah, change the HTTP method to
+22:21 
+
+22:21 uh post and then go to production URL,
+22:24 
+
+22:24 copy this, and then um yeah, you want to
+22:27 
+
+22:27 create a function here. So I've already
+22:29 
+
+22:29 created one, knowledge base, paste it
+22:30 
+
+22:30 into here. Um yeah, just put a brief
+22:33 
+
+22:33 description. and use this function to
+22:35 
+
+22:35 find answers to answer the customer's
+22:36 
+
+22:36 question and parameters. So this is
+22:39 
+
+22:39 optional but I just like put it in here
+22:41 
+
+22:41 because I just like to standardize
+22:43 
+
+22:43 things. So property question question
+22:45 
+
+22:45 asked by the caller required question.
+22:48 
+
+22:48 So yeah that's basically it. And then um
+22:51 
+
+22:51 yeah let's go back to the AI agent
+22:53 
+
+22:53 itself. I put in a prompt here. So it's
+22:56 
+
+22:56 a very simple prompt. So you're a
+22:58 
+
+22:58 helpful AI assistant. So the caller has
+23:00 
+
+23:00 just asked about this question. Your job
+23:03 
+
+23:03 is to answer the question by searching
+23:05 
+
+23:05 the company's knowledge base. And yeah,
+23:07 
+
+23:07 if you can't find the right answer, just
+23:08 
+
+23:08 say, "I'm sorry, I don't have that
+23:10 
+
+23:10 information right now." Be concise,
+23:11 
+
+23:11 accurate, friendly, and yeah, just
+23:14 
+
+23:14 choose uh the most clearest answer or
+23:16 
+
+23:16 summarize it. It's a very simple prompt,
+23:18 
+
+23:18 very quick. You'll find this in the
+23:20 
+
+23:20 template. So yeah anyways um yeah what
+23:23 
+
+23:23 you want to do here is uh go to search
+23:25 
+
+23:25 um yeah type in um superbase vector
+23:28 
+
+23:28 store and then um yeah you want to
+23:32 
+
+23:32 retrieve document you you want to name
+23:34 
+
+23:34 this something like knowledge base
+23:35 
+
+23:35 doesn't really matter um knowledge base
+23:38 
+
+23:38 um find the right info I mean like yeah
+23:44 
+
+23:44 I've already done this so I'll just
+23:45 
+
+23:45 delete it I'll just show you what I
+23:46 
+
+23:46 wrote so search the knowledge base for
+23:48 
+
+23:48 the best answer to the question provided
+23:50 
+
+23:50 by the user for web hook, always set
+23:52 
+
+23:52 this to resp using respond to web hook
+23:54 
+
+23:54 node. So yeah, that's it for the voice
+23:57 
+
+23:57 agent rag. And as for the chat one, so
+23:59 
+
+23:59 it's basically um the same thing except
+24:02 
+
+24:02 the trigger is uh different. So what
+24:04 
+
+24:04 I'll do right now is I'll demonstrate to
+24:06 
+
+24:06 you a demo of it in action. So I'll just
+24:09 
+
+24:09 open chat and this is uh me with the
+24:11 
+
+24:11 chat bot. So uh the n chatbot. So I'll
+24:14 
+
+24:14 just say um what time do you guys open
+24:20 
+
+24:20 And then yeah, you can see the AI agent
+24:23 
+
+24:23 uh querying it and looking for the
+24:24 
+
+24:24 answer. So it just gave me an answer.
+24:26 
+
+24:26 Our operating hours are Monday to
+24:28 
+
+24:28 Friday. And you can see um it querying
+24:31 
+
+24:31 uh the vectors store database looking
+24:33 
+
+24:33 through the um different um rows looking
+24:37 
+
+24:37 for the right information to answer my
+24:39 
+
+24:39 question which was what time do you guys
+24:41 
+
+24:41 open? And if you go down to open AAI
+24:43 
+
+24:43 chat model here, you can see it
+24:44 
+
+24:44 processing all the information that it
+24:46 
+
+24:46 found um in the knowledge base and
+24:48 
+
+24:48 providing me a an output that is clear
+24:51 
+
+24:51 and concise. So operating hours are
+24:53 
+
+24:53 Monday to Friday, 8:00 a.m. to 6:00 p.m.
+24:55 
+
+24:55 So I'll show you the voice agent in
+24:56 
+
+24:56 action right now. So this is the same
+24:58 
+
+24:58 agent that I have used for my restaurant
+25:01 
+
+25:01 receptionist tutorial that I uploaded to
+25:04 
+
+25:04 YouTube a few months ago. So if you
+25:05 
+
+25:05 haven't seen that yet, just uh check it
+25:07 
+
+25:07 out up here. Hi, this is Soul Fried
+25:09 
+
+25:09 Chicken. and you are speaking with
+25:10 
+
+25:10 Susie. How can I help you today? Uh, hi
+25:13 
+
+25:13 Susie. Can you please tell me more about
+25:16 
+
+25:16 uh what cocktails you have at Soul Fried
+25:18 
+
+25:18 Chicken? Apologize, but I don't have
+25:19 
+
+25:19 specific information about cocktails at
+25:21 
+
+25:21 Soul Fried Chicken at the moment.
+25:23 
+
+25:23 However, I can tell you that.
+25:27 
+
+25:27 So, as you can see, it was able to catch
+25:29 
+
+25:29 that it doesn't have any cocktail in its
+25:31 
+
+25:31 menu, and it was able to tell me
+25:32 
+
+25:32 honestly that it didn't have any. And if
+25:34 
+
+25:34 you look in the executions log here, you
+25:37 
+
+25:37 can see that it was uh querying uh the
+25:39 
+
+25:39 superbase vector store and the output
+25:42 
+
+25:42 was I'm sorry, I don't have any
+25:43 
+
+25:43 information about cocktails because
+25:45 
+
+25:45 there was no information about cocktails
+25:47 
+
+25:47 in the vector database. So you can
+25:49 
+
+25:49 clearly see that it was successful in
+25:51 
+
+25:51 being able to determine whether we have
+25:53 
+
+25:53 this information or not and being honest
+25:55 
+
+25:55 about it.

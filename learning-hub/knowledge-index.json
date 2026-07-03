@@ -1,0 +1,662 @@
+{
+  "$comment": "Machine-readable manifest of Mehmet's Amazon Learning Hub. Built so the AI we're building (and a future control-center website) can load the whole knowledge base as context. Keep updated as files change.",
+  "meta": {
+    "owner": "Mehmet",
+    "created": "2026-06-19",
+    "updated": "2026-07-01",
+    "status": "beginner — learning fundamentals",
+    "hub_root": "learning-hub/",
+    "amazon_marketplace": "US (verify if selling elsewhere)"
+  },
+  "knowledge_stats": {
+    "$comment": "The documents[] list below indexes the hub's curated notes plus a sample of transcripts. These are the live totals as of the updated date; prefer them when counts disagree.",
+    "transcripts": 51,
+    "rag_documents": 97,
+    "rag_chunks": 1316,
+    "rag_embeddings": "BAAI/bge-base-en-v1.5 (768-dim), uploaded to Supabase pgvector"
+  },
+  "key_facts": {
+    "experience": "complete beginner",
+    "chosen_model": "online arbitrage (start) -> wholesale/private label (later)",
+    "model_status": "tentative; confirm with mentor",
+    "mentor": "dad's friend, online arbitrage since 2017, available to ask",
+    "first_focus": "learn the fundamentals",
+    "tracking_style": "full knowledge base + capture everything",
+    "startup_budget": "~$80/mo tools + $500-$2,000 inventory",
+    "must_be_18_plus": true
+  },
+  "tools": [
+    {
+      "name": "Amazon Seller Central",
+      "url": "sell.amazon.com",
+      "cost": "$40/mo Pro or $0.99/item Individual",
+      "role": "seller account"
+    },
+    {
+      "name": "Keepa",
+      "url": "keepa.com",
+      "cost": "~$20/mo",
+      "role": "price & BSR history; powers scout"
+    },
+    {
+      "name": "SellerAmp SAS",
+      "url": "selleramp.com",
+      "cost": "~$20/mo (14-day trial)",
+      "role": "sourcing + profit calculator; research front-end for the AI"
+    },
+    {
+      "name": "Amazon Revenue Calculator",
+      "url": "in Seller Central",
+      "cost": "free",
+      "role": "final fee/profit check before buying"
+    }
+  ],
+  "documents": [
+    {
+      "path": "README.md",
+      "title": "Hub home & index",
+      "type": "index",
+      "tags": [
+        "start-here",
+        "overview"
+      ]
+    },
+    {
+      "path": "fundamentals/01-how-amazon-selling-works.md",
+      "title": "How selling on Amazon works",
+      "type": "lesson",
+      "tags": [
+        "fundamentals",
+        "fba",
+        "buy-box",
+        "beginner"
+      ]
+    },
+    {
+      "path": "fundamentals/02-business-models-compared.md",
+      "title": "Business models compared",
+      "type": "lesson",
+      "tags": [
+        "fundamentals",
+        "online-arbitrage",
+        "private-label",
+        "decision"
+      ]
+    },
+    {
+      "path": "fundamentals/03-fees-explained-simply.md",
+      "title": "Amazon fees explained",
+      "type": "lesson",
+      "tags": [
+        "fundamentals",
+        "fees",
+        "2026",
+        "margin",
+        "roi"
+      ]
+    },
+    {
+      "path": "fundamentals/04-glossary.md",
+      "title": "Glossary of seller terms",
+      "type": "reference",
+      "tags": [
+        "fundamentals",
+        "glossary",
+        "terms"
+      ]
+    },
+    {
+      "path": "fundamentals/05-beginner-roadmap.md",
+      "title": "Beginner roadmap (OA start)",
+      "type": "plan",
+      "tags": [
+        "fundamentals",
+        "roadmap",
+        "phases",
+        "action"
+      ]
+    },
+    {
+      "path": "playbooks/sourcing-playbook.md",
+      "title": "Sourcing playbook (OA)",
+      "type": "playbook",
+      "tags": [
+        "sourcing",
+        "reverse-sourcing",
+        "keepa-finder",
+        "selleramp",
+        "criteria"
+      ]
+    },
+    {
+      "path": "playbooks/ungating-playbook.md",
+      "title": "Ungating playbook",
+      "type": "playbook",
+      "tags": [
+        "ungating",
+        "gating",
+        "invoices",
+        "target",
+        "boxem"
+      ]
+    },
+    {
+      "path": "playbooks/operations-playbook.md",
+      "title": "Operations playbook (setup/ship/returns)",
+      "type": "playbook",
+      "tags": [
+        "operations",
+        "account-setup",
+        "shipping",
+        "returns",
+        "supplies"
+      ]
+    },
+    {
+      "path": "playbooks/brands-and-sources.md",
+      "title": "Brands, sources & tools",
+      "type": "reference",
+      "tags": [
+        "brands",
+        "retailers",
+        "cashback",
+        "seed-data"
+      ]
+    },
+    {
+      "path": "playbooks/field-sops.md",
+      "title": "Field SOPs (criteria, red flags, Keepa/SellerAmp settings)",
+      "type": "playbook",
+      "tags": [
+        "sops",
+        "criteria",
+        "red-flags",
+        "keepa",
+        "selleramp"
+      ]
+    },
+    {
+      "path": "ai-system/vision-and-requirements.md",
+      "title": "AI vision & requirements",
+      "type": "spec",
+      "tags": [
+        "ai",
+        "vision",
+        "scout",
+        "selleramp",
+        "finance",
+        "inventory"
+      ]
+    },
+    {
+      "path": "ai-system/product-research-template.md",
+      "title": "Buy/no-buy research template",
+      "type": "template",
+      "tags": [
+        "ai",
+        "buy-no-buy",
+        "selleramp",
+        "checklist",
+        "labels"
+      ]
+    },
+    {
+      "path": "ai-system/control-center-blueprint.md",
+      "title": "Control center blueprint",
+      "type": "spec",
+      "tags": [
+        "control-center",
+        "dashboard",
+        "design",
+        "non-slop"
+      ]
+    },
+    {
+      "path": "ai-system/ingestion-pipeline.md",
+      "title": "Ingestion pipeline (feed -> everything updates)",
+      "type": "spec",
+      "tags": [
+        "ingestion",
+        "ai-brain",
+        "single-source"
+      ]
+    },
+    {
+      "path": "ai-system/deal-sourcing-system.md",
+      "title": "Deal-sourcing system (always-on tracker)",
+      "type": "spec",
+      "tags": [
+        "deals",
+        "sourcing",
+        "deal-apis",
+        "alerts"
+      ]
+    },
+    {
+      "path": "ai-system/knowledge-rag-pipeline.md",
+      "title": "Knowledge RAG pipeline",
+      "type": "spec",
+      "tags": [
+        "rag",
+        "search",
+        "compliance",
+        "embeddings"
+      ]
+    },
+    {
+      "path": "ai-system/ai-architecture.md",
+      "title": "AI architecture (agent roster + two-DB spec)",
+      "type": "spec",
+      "tags": [
+        "ai",
+        "architecture",
+        "supabase",
+        "agents"
+      ]
+    },
+    {
+      "path": "ai-system/reliability-intelligence-roadmap.md",
+      "title": "Reliability & intelligence roadmap",
+      "type": "spec",
+      "tags": [
+        "reliability",
+        "ask",
+        "roadmap",
+        "staged"
+      ]
+    },
+    {
+      "path": "ai-system/ai-upgrade-plan.md",
+      "title": "AI upgrade plan (priority-ordered)",
+      "type": "plan",
+      "tags": [
+        "ai",
+        "upgrade",
+        "priorities"
+      ]
+    },
+    {
+      "path": "tracking/session-archive.md",
+      "title": "Session archive (every chat)",
+      "type": "log",
+      "tags": [
+        "capture",
+        "memory",
+        "chronological"
+      ]
+    },
+    {
+      "path": "tracking/links-and-assets.md",
+      "title": "Links & assets index",
+      "type": "index",
+      "tags": [
+        "capture",
+        "links",
+        "screenshots"
+      ]
+    },
+    {
+      "path": "tracking/questions-for-mentor.md",
+      "title": "Questions for mentor",
+      "type": "worksheet",
+      "tags": [
+        "mentor",
+        "oa",
+        "questions"
+      ]
+    },
+    {
+      "path": "tracking/product-leads.md",
+      "title": "Product leads pipeline",
+      "type": "tracker",
+      "tags": [
+        "products",
+        "pipeline",
+        "leads"
+      ]
+    },
+    {
+      "path": "tracking/finances.md",
+      "title": "Finances (ledger + P&L)",
+      "type": "tracker",
+      "tags": [
+        "finance",
+        "pnl",
+        "costs",
+        "payouts"
+      ]
+    },
+    {
+      "path": "tracking/inventory.md",
+      "title": "Inventory tracker",
+      "type": "tracker",
+      "tags": [
+        "inventory",
+        "fba",
+        "restock"
+      ]
+    },
+    {
+      "path": "tracking/decisions-and-milestones.md",
+      "title": "Decisions & milestones",
+      "type": "log",
+      "tags": [
+        "decisions",
+        "milestones",
+        "rationale"
+      ]
+    },
+    {
+      "path": "tracking/tools-and-resources.md",
+      "title": "Tools & resources",
+      "type": "reference",
+      "tags": [
+        "tools",
+        "keepa",
+        "selleramp",
+        "resources"
+      ]
+    },
+    {
+      "path": "transcripts/README.md",
+      "title": "Transcript intake guide",
+      "type": "guide",
+      "tags": [
+        "transcripts",
+        "learning",
+        "process"
+      ]
+    },
+    {
+      "path": "transcripts/insights.md",
+      "title": "Distilled transcript insights",
+      "type": "knowledge",
+      "tags": [
+        "transcripts",
+        "insights",
+        "ai-feed"
+      ]
+    },
+    {
+      "path": "transcripts/Complete Amazon Online Arbitrage for Beginners Guide 2026 (FREE COURSE) - Video Transcript.txt",
+      "title": "OA Beginners Guide 2026 (course transcript)",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/HJes4bs2d64",
+      "tags": [
+        "transcripts",
+        "online-arbitrage",
+        "keepa",
+        "selleramp",
+        "sourcing"
+      ]
+    },
+    {
+      "path": "transcripts/If I Had $100, This Is How I Would Start Selling On Amazon In 2026 with Online Arbitrage.txt",
+      "title": "The $100 Start",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/A9JIrrL6AaI",
+      "tags": [
+        "transcripts",
+        "fbm",
+        "grocery",
+        "low-capital"
+      ]
+    },
+    {
+      "path": "transcripts/How To Get Ungated on Amazon in 2026 (Online Arbitrage Ungate Master Guide).txt",
+      "title": "Ungate Master Guide 2026",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/cAKdhzKFIzE",
+      "tags": [
+        "transcripts",
+        "ungating",
+        "target",
+        "invoices"
+      ]
+    },
+    {
+      "path": "transcripts/Amazon Online Arbitrage 2025 Q4 Guide (10 Must-Do Rules To Follow).txt",
+      "title": "Q4 Guide (10 Rules)",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/IqpFt2AKPr0",
+      "tags": [
+        "transcripts",
+        "q4",
+        "seasonal",
+        "shipping"
+      ]
+    },
+    {
+      "path": "transcripts/Full Tutorial on SellerAmp SAS For a Complete Beginner Amazon Seller (2026).txt",
+      "title": "SellerAmp Full Tutorial",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/G_pGhjkWNY4",
+      "tags": [
+        "transcripts",
+        "selleramp",
+        "settings",
+        "reverse-sourcing"
+      ]
+    },
+    {
+      "path": "transcripts/How To Use SellerAmp Full Tutorial (Complete Breakdown for Beginners).txt",
+      "title": "SellerAmp Breakdown",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/lJFMU4FAjEw",
+      "tags": [
+        "transcripts",
+        "selleramp",
+        "buy-box-analysis"
+      ]
+    },
+    {
+      "path": "transcripts/Back to School Sale Live Sourcing for Beginners + Live Q and A.txt",
+      "title": "Back-to-School Live + Q&A",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/QULKMGY6iqc",
+      "tags": [
+        "transcripts",
+        "live-sourcing",
+        "unit-formula",
+        "qa"
+      ]
+    },
+    {
+      "path": "transcripts/Back To School LIVE Amazon Online Arbitrage Product Research.txt",
+      "title": "Back-to-School LIVE Research",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/TKLHQt_1w_Q",
+      "tags": [
+        "transcripts",
+        "keepa-product-finder",
+        "filters"
+      ]
+    },
+    {
+      "path": "transcripts/Amazon Online Arbitrage Sourcing Marathon ($1000 in Profit).txt",
+      "title": "Sourcing Marathon ($1000)",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/V6xFrt3pcC8",
+      "tags": [
+        "transcripts",
+        "live-sourcing",
+        "keepa-reading"
+      ]
+    },
+    {
+      "path": "transcripts/I Don't Stop Sourcing Product Until I hit $10,000 in Profit with Amazon Online Arbitrage.txt",
+      "title": "$10,000 Sourcing Session",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/7RO-QI3R3tw",
+      "tags": [
+        "transcripts",
+        "live-sourcing",
+        "reverse-sourcing",
+        "brands"
+      ]
+    },
+    {
+      "path": "transcripts/How Peter Sold $72,000 on Amazon in a Single Month as a High School Student (Online Arbitrage).txt",
+      "title": "Peter — $72k/mo HS student",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/R_OAzlNQdtU",
+      "tags": [
+        "transcripts",
+        "case-study",
+        "fbm",
+        "q4"
+      ]
+    },
+    {
+      "path": "transcripts/How King Went From Unemployed to Full-Time Amazon Seller ($15,000 Profit Per Month).txt",
+      "title": "King — unemployed to $15k/mo",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/96WQshn4LAo",
+      "tags": [
+        "transcripts",
+        "case-study",
+        "scaling",
+        "credit"
+      ]
+    },
+    {
+      "path": "transcripts/How a Full-Time College Student went from $0-100,000 Through Amazon FBA.txt",
+      "title": "Josh — college $0 to $100k",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/N6t61fVR2uA",
+      "tags": [
+        "transcripts",
+        "case-study",
+        "demand",
+        "credit"
+      ]
+    },
+    {
+      "path": "transcripts/Amazon Online Arbitrage Product Sourcing MASTERCLASS For 2026.txt",
+      "title": "OA Sourcing Masterclass — Miles",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/1kgp13McYLc",
+      "tags": [
+        "transcripts",
+        "sourcing",
+        "boxem",
+        "ungating",
+        "manufacturing-margin"
+      ]
+    },
+    {
+      "path": "transcripts/FREE Amazon FBA Course 12 Hour FULL Step by Step Tutorial 2026.txt",
+      "title": "12-Hour FBA Course (private label)",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/LegZUuOVZ9Y",
+      "tags": [
+        "transcripts",
+        "account-setup",
+        "private-label"
+      ]
+    },
+    {
+      "path": "transcripts/Complete Amazon Online Arbitrage Guide 2026 0 to 10KMonth.txt",
+      "title": "OA Guide: $0 to $10K/Month",
+      "type": "transcript",
+      "source_url": "https://www.youtube.com/watch/epwgYf2W3n8",
+      "tags": [
+        "transcripts",
+        "operations",
+        "supplies",
+        "shipping"
+      ]
+    },
+    {
+      "path": "transcripts/How To Start Amazon Online Arbitrage For Beginners (FREE Course).txt",
+      "title": "How To Start OA For Beginners (sourcing)",
+      "type": "transcript",
+      "tags": [
+        "transcripts",
+        "sourcing",
+        "ip-alert",
+        "deal-first",
+        "red-flags"
+      ]
+    },
+    {
+      "path": "assets/README.md",
+      "title": "Assets guide",
+      "type": "guide",
+      "tags": [
+        "assets",
+        "screenshots"
+      ]
+    },
+    {
+      "path": "assets/2026-06-19_startup-tools-stack.md",
+      "title": "Startup tools stack (screenshot)",
+      "type": "asset",
+      "tags": [
+        "screenshot",
+        "tools",
+        "costs"
+      ]
+    }
+  ],
+  "related_existing_work": [
+    {
+      "path": "../01_research_brief.md",
+      "title": "FBA operator brief (deep, sourced)",
+      "focus": "private label",
+      "note": "advanced reference; upgrade path"
+    },
+    {
+      "path": "../04_limitations.md",
+      "title": "What this does NOT do",
+      "note": "honesty/limits — read before trusting outputs"
+    },
+    {
+      "path": "../scout/",
+      "title": "Product scout (minimal)",
+      "note": "Keepa + rule score + learning loop; needs paid Keepa key"
+    },
+    {
+      "path": "../scout_pro/",
+      "title": "Product scout (full stack)",
+      "note": "gates -> ML -> review queue -> retrain"
+    },
+    {
+      "path": "../tracker/",
+      "title": "Learning tracker site",
+      "note": "static; candidate base for the control center"
+    }
+  ],
+  "ai_capabilities": {
+    "find_items": {
+      "status": "OA brand-seeded",
+      "where": "scout/ (keepa_client brand-seeds + brands.py); scout_pro/",
+      "note": "search aimed at known-good brands from brands-and-sources.md; hard-gated brands excluded"
+    },
+    "buy_no_buy_verdict": {
+      "status": "v1 OA-tuned (SCOUT_MODE=OA)",
+      "where": "scout/scoring.py score_product_oa + oa_hard_reject; criteria from playbooks/sourcing-playbook.md",
+      "note": "BSR<=200k, ROI>=30%, >=$3 profit, seller-count band, hard-reject Amazon Buy Box"
+    },
+    "track_finances": {
+      "status": "manual now",
+      "where": "tracking/finances.md; control-center Operator Log (/log) captures decisions & outcomes to data/events.jsonl",
+      "future": "SP-API"
+    },
+    "manage_inventory": {
+      "status": "manual now",
+      "where": "tracking/inventory.md; control-center Operator Log (/log) writes units to data/inventory.json",
+      "future": "SP-API"
+    },
+    "learn_from_chat": {
+      "status": "active",
+      "where": "tracking/ + this manifest + append-only data/events.jsonl ledger"
+    },
+    "control_center": {
+      "status": "implemented (read + local capture)",
+      "where": "control-center/ (Next.js 15 app, branded 'FBA Center')",
+      "note": "reads scout/finances/inventory/brain/RAG; /log captures leads, decisions, inventory, outcomes locally. SP-API live data still pending."
+    }
+  },
+  "capture_rule": "Every session, link, and screenshot is logged: session-archive.md (chats), links-and-assets.md + assets/ (links/files), fundamentals or transcripts/insights.md (lessons), decisions-and-milestones.md (decisions). Defaults on; no need to ask."
+}

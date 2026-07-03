@@ -1,0 +1,46 @@
+{
+  "date": "2026-06-30",
+  "note": "YouTube videos/courses queued for transcription. Run knowledge-rag/fetch_transcripts.py to pull transcripts; the next daily run ingests them.",
+  "videos": [
+    {
+      "videoId": "OUGc0aiT7l4",
+      "title": "Amazon Online Arbitrage Product Sourcing 101 (2026 Beginners Guide)",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=OUGc0aiT7l4",
+      "topic": "fba_oa_mastery",
+      "why": "Fresh 2026 beginner sourcing walkthrough; useful baseline for what-to-look-for and current tool workflow.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "pP-zQ4-u370",
+      "title": "The Online Arbitrage Strategy That's Creating Sustainable Cash Flow in 2026 | Amazon FBA",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=pP-zQ4-u370",
+      "topic": "fba_oa_mastery",
+      "why": "Cash-flow-first framing of OA; complements the finance/bookkeeping gap in the corpus.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "MAFpI4Wdd4w",
+      "title": "How To Use Keepa For Online Arbitrage in 2026 | Amazon FBA Analysis Tool",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=MAFpI4Wdd4w",
+      "topic": "fba_oa_mastery",
+      "why": "2026-dated Keepa walkthrough; checks whether prior Keepa rules still hold under current UI.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "TBFh9vFBq7k",
+      "title": "Online Arbitrage Sourcing Using Keepa (ADVANCED TACTICS)",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=TBFh9vFBq7k",
+      "topic": "fba_oa_mastery",
+      "why": "Advanced Keepa Product Finder filtering tactics beyond the beginner tutorials already in the corpus.",
+      "isLongCourse": false,
+      "status": "queued"
+    }
+  ]
+}

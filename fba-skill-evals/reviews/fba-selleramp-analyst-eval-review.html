@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "fba-selleramp-analyst", "runs": [{"id": "eval-0-with_skill-run-1", "prompt": "what SAS settings before I start? weird ROI numbers", "eval_id": 0, "outputs": [{"name": "analysis.md", "type": "text", "content": "# SellerAmp (SAS) Setup \u2014 get the ROI numbers trustworthy before you source\n\nShort version: weird ROI almost always means a settings problem, not a math problem. SellerAmp is the human verification front end of this operation \u2014 there's no live SAS API, so a correct manual setup is what makes every profit number you read afterward trustworthy. Set these once, then your ROI will stop jumping around.\n\n## The settings to put in (one-time, in SAS settings)\n\n| Setting | Value | Why |\n|---|---|---|\n| **Inbound shipping** | **~$0.60/lb** (range $0.50\u20130.80) | Your cost to ship units into Amazon FBA. If this is blank or wrong, ROI is off on every item. Re-check the rate after each real FBA shipment. |\n| **Min BSR / Max BSR** | **Min 0% / Max 2%** | Targets the top 2% of the category so you only see things that actually sell. |\n| **Min profit** | **$3.00 / unit** | Our floor \u2014 thinner deals aren't worth the time. |\n| **Min ROI** | **30%** (\u224825% acceptable only for non-returnable grocery) | The gate SAS colors the deal against. |\n| **Prep fee** | **Your real per-unit prep-center fee** (use $0.50/unit if you self-prep / no center) | Amazon no longer preps/labels US FBA, so this is a real cost. |\n| **Sales tax** | **Leave the % field OFF \u2014 bake tax into the cost price instead** (see below) | This is the #1 cause of weird ROI. |\n\n## The most likely cause of your \"weird ROI numbers\": tax double-counting\n\nThis is the trap. SellerAmp has a **sales-tax % field** AND it uses the **cost price** you type in. If you enter your buy price *and* turn on the tax %, SAS adds tax on top of a number that, depending on how you entered it, may already include tax \u2014 so it's counting tax twice and crushing your ROI. Then on the next item you enter it differently and ROI swings the other way. That inconsistency is the \"weird numbers.\"\n\n**Fix \u2014 pick ONE method and always do it the same way:**\n- **Recommended:** turn the tax % field OFF and **bake tax into the cost price**: `cost price = total receipt / number of units`. That single landed number is exact and never double-counts.\n- Do **not** also use the % field once you've baked it in.\n\n## The second most likely cause: shipping not in the landed cost\n\nTrue landed cost **must include inbound + the cost to get the item to you**. A $10 item with $9.95 shipping is a **$20 cost**, and 100% ROI becomes break-even. Make sure the inbound-shipping setting above is filled, and enter the item's true delivered cost (or bake delivery into the cost price the same way you do tax).\n\n## After you fix the settings \u2014 reading the panel\n\n- **Profit / ROI / Margin** \u2014 the headline. Compare against the **$3 / 30%** gates. ROI = profit / landed cost. With tax and shipping correct, these stop swinging.\n- **Breakeven** \u2014 the sell price where profit hits $0. Your downside marker.\n- **Max Cost \u2014 use it as a reverse calculator.** This is the most you can pay per unit and still hit 30% ROI. **This is the number to take shopping.** If you can land below Max Cost after stacking discounts (coupons, cashback, discounted gift cards), the deal works.\n- **Estimated sales / rank** \u2014 sanity-check against Keepa. An **\"!\"** means the figure is shared across variations, so trust it less.\n- **Eligibility & IP alert** \u2014 SAS shows gated/eligible and an IP flag. **Trust the IP Alert tool over the SAS IP flag** unless the SAS one is RED. Eligibility still has to be confirmed by **listing the ASIN in Seller Central before you buy** \u2014 SAS can't grant real account-specific eligibility.\n\n## Quick self-test\nRun one item you already know. If ROI looks sane and the same item gives the same ROI twice in a row, your tax/shipping setup is fixed. If it's still swinging, you're still entering tax inconsistently \u2014 go back to \"bake it into cost price, % field OFF.\"\n\n---\n\n```\nSELLERAMP READ \u2014 [setup, no ASIN yet]\n- Settings sanity: fix needed -> set inbound shipping ~$0.60/lb; Max BSR 2%; Min profit $3; Min ROI 30%; prep = real fee; TAX baked into cost price, % field OFF (this is your weird-ROI cause)\n- Profit / ROI / Margin vs gates ($3 / 30%) -> reliable only after the tax + shipping fixes above\n- Breakeven = downside marker; Max Cost = the number to take shopping (land below it after stacking)\n- Eligibility: confirm by list-before-you-buy in Seller Central; IP: trust IP Alert over the SAS flag unless SAS is RED\n- Read: settings first -> once ROI is stable and repeatable, the panel is trustworthy\nHand-off: confirm demand in fba-keepa-analyst; final gate run in fba-deal-analyst. SAS is verification, not a buy order. No money moves without your approval.\n```\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Gives SAS settings checklist (inbound + thresholds)", "passed": true, "evidence": "\u2026Why | |---|---|---| | **Inbound shipping** | **~$0.60/lb\u2026"}, {"text": "Catches the sales-tax double-count trap (bake into cost, not %)", "passed": true, "evidence": "\u2026a real cost. | | **Sales tax** | **Leave the % field\u2026"}, {"text": "Cites 30% ROI / $3 profit gates", "passed": true, "evidence": "\u2026ime. | | **Min ROI** | **30%** (\u224825% acceptable only\u2026"}, {"text": "Notes true landed cost must include shipping", "passed": true, "evidence": "\u2026---|---|---| | **Inbound shipping** | **~$0.60/lb** (range\u2026"}]}}, {"id": "eval-0-without_skill-run-1", "prompt": "what SAS settings before I start? weird ROI numbers", "eval_id": 0, "outputs": [{"name": "analysis.md", "type": "text", "content": "# SellerAmp (SAS) Settings \u2014 Set These Once, Correctly\n\nWeird ROI numbers almost always come from SellerAmp's **cost inputs being wrong or empty**, not from a SAS bug. ROI = profit / your-cost, so if any cost field (buy cost, inbound shipping, prep) is off, the ROI it shows is off. Set the fields below once in **Settings**, and the panel will match your real economics on every listing.\n\n## The settings that actually move your ROI\n\n### 1. Cost price / buy cost\nThis is the single biggest cause of \"weird ROI.\" If you leave the cost field blank or let it default, SAS will compute ROI against $0 or against the live Amazon price, and you'll see absurd numbers (like 900% or a blank/negative ROI). **Always type in your real net buy cost** \u2014 and type the cost *after* discounts/cashback/gift-card stacking, because that is the number your ROI is actually earned against.\n\n### 2. Inbound shipping (cost to ship to Amazon)\nSet this to roughly **$0.30\u2013$0.50 per lb** (use your real rate if you know it). If this is left at $0, your profit and ROI will read too high. This is a per-item-weight cost, so make sure SAS is pulling the product weight (check the weight field looks sane).\n\n### 3. Prep & label cost \u2014 easy one to miss\nSince **January 2026, Amazon no longer preps/labels US FBA for you** \u2014 you do it. So bake in a prep cost of about **$0.50\u2013$1.00 per unit** in SAS. If your SAS prep cost is still $0, every deal will look ~$0.50\u2013$1.00/unit more profitable than reality. This is a very common reason SAS ROI disagrees with your own hand math.\n\n### 4. Minimum ROI threshold \u2192 set to **30%**\nSet the ROI target/threshold that drives the color and the \"Max Cost\" calc to **30%**. This makes the green/amber/red verdict match your actual buy rule, so you're not eyeballing it.\n\n### 5. Minimum profit \u2192 set to **$3.00 per unit**\nBelow ~$3/unit the fees and your time aren't worth it. Setting this makes SAS flag thin deals for you automatically.\n\n### 6. VAT / tax settings (US seller)\nIf you're a US seller, make sure VAT is **off / set to 0%** in the SAS profile. A VAT setting left on (common if the account defaulted to a UK/EU profile) will quietly distort profit and ROI. This is another classic \"weird numbers\" culprit.\n\n### 7. Sales-volume / BSR reference\nConfirm your **storage/marketplace is set to the US (amazon.com)** and that SAS is reading BSR + estimated monthly sales. A wrong marketplace skews fees and the sales estimate.\n\n## Quick reference \u2014 what to enter\n\n| Field | Set it to |\n|---|---|\n| Cost price | Your **net** buy cost after cashback/discount/gift-card stacking |\n| Inbound shipping | ~$0.30\u2013$0.50 per lb |\n| Prep cost | ~$0.50\u2013$1.00 per unit (you prep US FBA yourself since Jan 2026) |\n| Minimum ROI | 30% |\n| Minimum profit | $3.00 / unit |\n| VAT / tax | 0% (US seller) |\n| Marketplace | amazon.com (US) |\n\n## Why your ROI keeps looking weird \u2014 the checklist\n\nRun down this list when a number looks off:\n\n1. **Cost field blank or auto-filled** \u2192 ROI computed against $0 or the live price. Type your real cost.\n2. **Prep cost still $0** \u2192 every deal reads ~$0.50\u2013$1.00/unit too good.\n3. **Inbound shipping at $0** \u2192 profit/ROI inflated.\n4. **VAT still on** \u2192 profit silently reduced/distorted.\n5. **You entered shelf price, not net cost** \u2192 ROI looks bad because you haven't applied your discount stack yet. Re-enter the post-stack cost. (\"You make products profitable by lowering the buy cost.\")\n6. **Wrong marketplace / weight** \u2192 fees and FBA fulfillment cost wrong, so ROI wrong.\n\n## Pro tip: use \"Max Cost\" as a reverse calculator\nOnce your ROI target is set to 30%, SAS shows a **Max Cost** \u2014 the most you can pay for the unit and still hit 30% ROI. Instead of guessing, source toward that number: if Max Cost is $9.40, any net buy price at or under that clears your rule. This is the fastest way to turn SAS from a checker into a buying tool.\n\n---\n\n*Sourced from this project's OA brain and field SOPs \u2014 criteria: minimum ROI 30%, minimum profit $3/unit, prep cost ~$0.50/unit, inbound shipping ~$0.30\u2013$0.50/lb (learning-hub/data/ai-brain.json and learning-hub/playbooks/field-sops.md). SellerAmp tells you if a deal is profitable TODAY; pair it with Keepa for whether it's been profitable over time. Always confirm eligibility/gating before buying, and keep purchase approval with you \u2014 nothing here auto-buys.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Gives SAS settings checklist (inbound + thresholds)", "passed": true, "evidence": "\u2026ny cost field (buy cost, inbound shipping, prep) is off,\u2026"}, {"text": "Catches the sales-tax double-count trap (bake into cost, not %)", "passed": true, "evidence": "\u2026or you** \u2014 you do it. So bake in a prep cost of about\u2026"}, {"text": "Cites 30% ROI / $3 profit gates", "passed": true, "evidence": "\u2026ROI threshold \u2192 set to **30%** Set the ROI target/thr\u2026"}, {"text": "Notes true landed cost must include shipping", "passed": true, "evidence": "\u2026field (buy cost, inbound shipping, prep) is off, the ROI i\u2026"}]}}, {"id": "eval-1-with_skill-run-1", "prompt": "SAS: profit $4.20, ROI 28%, breakeven $19.50, max cost $14, sell $26, cost $15 \u2014 good?", "eval_id": 1, "outputs": [{"name": "analysis.md", "type": "text", "content": "SELLERAMP READ \u2014 (no ASIN given)\n\n- Settings sanity: Cannot fully confirm from what you pasted. Before trusting this panel, verify in SAS: inbound shipping ~$0.60/lb, prep fee = your real per-unit prep cost, and that sales tax is baked into the cost price (total \u00f7 units) and NOT also entered in the % field (double-counting tax silently inflates ROI). If those are right, the math below holds.\n\n- Profit $4.20 / ROI 28% / Margin ~16% (4.20 \u00f7 26 sell) vs gates ($3 / 30%) \u2192 MIXED.\n  - Profit $4.20 \u2265 $3.00 \u2192 PASS.\n  - ROI 28% < 30% \u2192 FAIL. The ~25% floor only applies to non-returnable grocery; nothing here says this is grocery, so hold it to 30%.\n\n- Breakeven $19.50 \u00b7 Max Cost $14 (land below this \u2014 after stacking \u2014 to make it work).\n  - You're paying $15. That is $1 ABOVE the $14 Max Cost. That single dollar is exactly why SAS shows 28% instead of 30%. Max Cost is the price you can pay and still hit the 30% target \u2014 buy at or under $14 and the deal clears the ROI gate; buy at $15 and it doesn't.\n  - Breakeven $19.50 is your downside marker: if the Buy Box drops to $19.50 you make $0; below that you lose money. With a $26 current price that's a ~$6.50 cushion before you're underwater \u2014 okay, but check Keepa that $26 isn't a spike (price > 1.5\u00d7 the 90-day average reverts, and FBA's ~2-week lag makes that brutal).\n\n- Eligibility: NOT confirmed here \u2014 SAS panel eligibility/IP not provided. List the ASIN in Seller Central BEFORE buying to confirm you're ungated, and read the Buy Box IP Alert (trust IP Alert over the SAS IP flag unless the SAS flag is RED).\n\n- Read: BORDERLINE / fix the buy price before committing.\n  - At your current $15 cost: it FAILS the ROI gate (28% < 30%). Not a buy as-is.\n  - The fix is on the buy side, not the listing: get the landed cost under $14 (Max Cost) by stacking \u2014 coupon/signup code, cashback (treat as cushion, don't bake into COGS), discounted gift card, Subscribe & Save. Land it at ~$13\u2013$14 and ROI moves to/above 30% and it becomes worth verifying.\n  - Profit-per-unit is fine; the only failing number is ROI, and it fails by a hair driven entirely by overpaying $1 vs Max Cost.\n\nWHAT'S MISSING before any buy (this is a SAS read, not a verdict):\n- Demand check: BSR \u2264 200k, est. monthly sales \u2265 50 (Keepa yellow \"sold\" line), offer count 3\u201325, Amazon NOT on the Buy Box. None given \u2014 confirm in Keepa.\n- Spike/pile-in guards: is $26 a spike vs 90-day avg? Are new offers rising (> 1.4\u00d7 90-day avg)?\n\nHand-off: confirm demand and the spike/offer guards in fba-keepa-analyst; run the final BUY/NO-BUY gate in fba-deal-analyst. SAS is verification, not a buy order \u2014 no money moves without a human approval. Bottom line: not good at $15; get the landed cost under the $14 Max Cost (via stacking) and re-run.\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Flags ROI 28% as below the 30% gate", "passed": true, "evidence": "\u2026s.  - Profit $4.20 / ROI 28% / Margin ~16% (4.20 \u00f7 2\u2026"}, {"text": "Notes cost $15 exceeds Max Cost $14", "passed": true, "evidence": "\u2026%.  - Breakeven $19.50 \u00b7 Max Cost $14 (land below this \u2014 a\u2026"}, {"text": "Verdict borderline / reject (not a clean buy)", "passed": true, "evidence": "\u2026- Profit $4.20 \u2265 $3.00 \u2192 PASS.   - ROI 28% < 30% \u2192 FAI\u2026"}, {"text": "Hands off (keepa/deal-analyst) \u2014 SAS isn't a buy order", "passed": true, "evidence": "\u2026ore trusting this panel, verify in SAS: inbound shipping\u2026"}]}}, {"id": "eval-1-without_skill-run-1", "prompt": "SAS: profit $4.20, ROI 28%, breakeven $19.50, max cost $14, sell $26, cost $15 \u2014 good?", "eval_id": 1, "outputs": [{"name": "analysis.md", "type": "text", "content": "# SellerAmp Deal Check \u2014 Verdict: PASS (no buy) at $15 cost\n\n## Your numbers\n| Field | Value |\n|---|---|\n| Sell price | $26.00 |\n| Your cost | $15.00 |\n| SAS Profit | $4.20 |\n| SAS ROI | 28% |\n| SAS Breakeven | $19.50 |\n| SAS Max Cost | $14.00 |\n\n## Short answer\n**Not at $15. Pass \u2014 or get the cost down to $14 or below.**\n\nThe single most important line on that SellerAmp panel is **Max Cost = $14.00**. Max Cost is SellerAmp's reverse calculation: the highest price you can pay and still hit your target ROI. Your cost of $15 is **$1.00 ABOVE that ceiling**, which is exactly why your ROI landed at 28% instead of 30%. SellerAmp is telling you \"you overpaid by a dollar.\"\n\n## Why this fails the gate\nThe operation's buy criteria (single source of truth, ai-brain.json) require:\n- **Minimum ROI: 30%** \u2014 you are at **28%**. FAIL.\n- Minimum profit/unit: $3.00 \u2014 you are at $4.20. Pass.\n- Price band $8\u2013$60 \u2014 $26 sell price. Pass.\n\nROI is the binding constraint. 28% < 30%, so this is a **PASS** under the project's own rules. It's close, not crazy \u2014 but the whole point of the Max Cost field is to stop you buying at exactly this kind of \"just barely under\" cost.\n\n## The fix: buy at $14, not $15\n- At **$14 cost** you hit the SAS Max Cost and clear the 30% ROI gate (~$5.20 profit, ~30%+ ROI).\n- Every dollar off the cost flows straight to profit and ROI. Look for a coupon, cashback (Rakuten/TopCashback), a discounted gift card, or a sale to manufacture that extra margin \u2014 the operation's standard stacking play.\n- If you genuinely cannot get below $14, this is a pass. Don't talk yourself into a 28% deal; that's the trap Max Cost exists to prevent.\n\n## Sanity check on the SAS figures (they're consistent)\n- Profit $4.20 = $26 sell \u2212 $15 cost \u2212 **~$6.80 total fees** (referral + FBA fulfillment). Consistent.\n- ROI 28% = $4.20 / $15. Correct.\n- Margin = $4.20 / $26 = **16.2%** \u2014 thin; little cushion if fees rise or you must drop price.\n- Breakeven $19.50 means price can fall ~25% before you lose money \u2014 a decent buffer, but breakeven only protects against price drops; it does nothing about the cost being too high.\n\n## What this check does NOT cover\nSellerAmp profitability is only half a buy decision. Before buying you still need the **demand and eligibility** read, none of which is in these numbers:\n- **BSR / monthly sales** \u2014 will it sell? (gate: BSR \u2264 200k, \u2265 50 sales/mo)\n- **Offer count** \u2014 3\u201325 sellers (avoid 1\u20132 = IP risk; 25+ = race to the bottom)\n- **Buy Box / Amazon-on-listing** \u2014 hard reject if Amazon holds the Buy Box\n- **Keepa history** \u2014 is $26 the real price or a spike? Are offers rising?\n- **Eligibility / IP risk** \u2014 ungated? brand a complaint-filer? hazmat/meltable?\n\nA green-ish SellerAmp panel with weak demand or an IP-risky brand is still a no-buy.\n\n## Bottom line\nGood price to sell at, but you're paying **$1 too much**. At $15 it's a 28% ROI deal that fails the 30% gate. **Get the cost to $14 or below and it clears.** No purchase is approved here \u2014 that decision stays with you.\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Flags ROI 28% as below the 30% gate", "passed": true, "evidence": "\u2026it | $4.20 | | SAS ROI | 28% | | SAS Breakeven | $19\u2026"}, {"text": "Notes cost $15 exceeds Max Cost $14", "passed": true, "evidence": "\u2026eakeven | $19.50 | | SAS Max Cost | $14.00 |  ## Short ans\u2026"}, {"text": "Verdict borderline / reject (not a clean buy)", "passed": true, "evidence": "\u2026mp Deal Check \u2014 Verdict: PASS (no buy) at $15 cost  ##\u2026"}, {"text": "Hands off (keepa/deal-analyst) \u2014 SAS isn't a buy order", "passed": true, "evidence": "\u2026on holds the Buy Box - **Keepa history** \u2014 is $26 the r\u2026"}]}}, {"id": "eval-2-with_skill-run-1", "prompt": "buy box $32, most I can pay to still hit my ROI?", "eval_id": 2, "outputs": [{"name": "analysis.md", "type": "text", "content": "# SellerAmp Read \u2014 Max Cost reverse calculation\n\n**Your question:** Buy Box is $32 \u2014 what's the most I can pay and still hit my ROI?\n\nIn SellerAmp this is exactly what the **Max Cost** field is for: it runs the profit math *backwards* from your target ROI and tells you the highest landed cost you can pay per unit and still clear the bar. Land below Max Cost (after stacking discounts) and the deal works; pay above it and you fall under target.\n\n## The catch: I need one more number\n\nMax Cost moves with the **FBA fulfillment fee**, which depends on the item's size/weight tier \u2014 and you haven't given me the product. So I've run it for the two most common tiers. Find your item's real FBA fee in the SellerAmp panel (or Amazon's Revenue Calculator) and use the matching row.\n\nAll figures use your project defaults: referral 15%, fuel surcharge 3.5% of the FBA fee, prep $0.50/unit, inbound shipping $0.60/unit, **target ROI 30%**.\n\n## Max Cost at $32 sell price (30% ROI target)\n\n| Size tier | FBA fee | **Max Cost (most you can pay, landed)** |\n|---|---|---|\n| Small standard | $3.20 | **$17.53** |\n| Large standard | $6.60 | **$14.82** |\n\nSo the answer is roughly **$15\u2013$17.50 per unit, all-in**, depending on size tier. To be safe before you know the exact fee, treat the **large-standard $14.82** as the conservative ceiling and only stretch toward $17.53 once SAS confirms a small-standard fee.\n\nFor reference, if this is **non-returnable grocery** (the only case where ~25% ROI is acceptable), Max Cost rises to **$18.23** (small standard) / **$15.42** (large standard).\n\n## Read this number correctly \u2014 \"landed cost\"\n\nMax Cost is **true landed cost**, not the shelf price. It already has to cover everything that gets the unit to Amazon. The shipping-to-you and any sales tax come out of that ceiling:\n\n- **Bake sales tax into the cost** (total paid \u00f7 units) \u2014 do *not* also use the SAS % tax field, or you double-count.\n- A $10 item with $9.95 shipping is a $20 cost \u2014 that would blow past this ceiling.\n- Cashback is a **cushion**, not part of COGS \u2014 don't lower your cost with it. The stack you *can* use to get under Max Cost: coupon/signup codes, discounted gift cards, Subscribe & Save, free-shipping thresholds.\n\n## Settings sanity (so the math doesn't lie)\n\nConfirm these in SAS before trusting any Max Cost it shows you:\n\n- Inbound shipping ~$0.60/lb \u00b7 Min profit $3 \u00b7 **Min ROI 30%** \u00b7 Prep = your real prep-center fee.\n- Min BSR 0% / Max BSR 2%.\n- Sales tax baked into cost price, **not** also in the % field.\n\n## SELLERAMP READ \u2014 [ASIN not provided]\n\n- **Settings sanity:** confirm 30% ROI target, $0.60 inbound, prep fee, tax-in-cost (not double-counted).\n- **Sell price $32.00** \u2014 inside the $8\u2013$60 OA band. Good.\n- **Max Cost @ 30% ROI:** **$17.53** (small-standard FBA) / **$14.82** (large-standard FBA) \u2014 land below this, after stacking, to make it work.\n- **Take-shopping number:** ~**$15\u2013$17.50 landed**. Use $14.82 as the safe ceiling until SAS confirms the FBA size tier.\n- **Read:** I can give you the *price you can pay*, but not a buy verdict \u2014 that needs the rest of the panel (BSR, offer count, monthly sales, eligibility, IP, Buy-Box history).\n\n## What this does NOT tell you\n\nThis is the price ceiling only. It is **not** a buy decision. Before any money moves you still need:\n\n- **Demand & stability** from Keepa (BSR <= 200k, >= ~50 sales/mo, offer count 3\u201325, no price spike, no IP cliff) -> hand to fba-keepa-analyst.\n- **Eligibility + IP** \u2014 list the ASIN in Seller Central *before* you buy; trust the IP Alert. SAS eligibility is a hint, not permission.\n- **Amazon not on the Buy Box** (hard reject if it is, or rotates in >= 20% of the time).\n- **Final gate run** in fba-deal-analyst, then human approval.\n\n> Estimate only \u2014 confirm the exact FBA fee in SellerAmp / Amazon's Revenue Calculator before buying. SAS is verification, not a buy order.\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Explains Max Cost as the reverse calculator / most you can pay", "passed": true, "evidence": "\u2026# SellerAmp Read \u2014 Max Cost reverse calculation  **Y\u2026"}, {"text": "Needs FBA fee / size-weight to compute", "passed": true, "evidence": "\u2026ch depends on the item's size/weight tier \u2014 and you ha\u2026"}, {"text": "Ties it to the 30% ROI target", "passed": true, "evidence": "\u2026can pay and still hit my ROI?  In SellerAmp this is e\u2026"}, {"text": "Mentions stacking / landing below the number", "passed": true, "evidence": "\u2026till clear the bar. Land below Max Cost (after stacking\u2026"}]}}, {"id": "eval-2-without_skill-run-1", "prompt": "buy box $32, most I can pay to still hit my ROI?", "eval_id": 2, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Max Cost for a $32 Buy Box at 30% ROI\n\n**Short answer:** Your maximum buy cost is roughly **$15-$18 per unit**, depending on the item's shipping weight. For a typical small-and-light item it's about **$16-$17**.\n\nThis is the SellerAmp \"Max Cost\" concept worked backwards: holding the sell price at the $32 buy box and your ROI target fixed, solve for the highest cost you can pay and still clear the target.\n\n## Your ROI target\n\nFrom the project brain (`learning-hub/data/ai-brain.json`, `criteria.minRoi`), the minimum ROI gate is **30%**. The numbers below are calculated to hit exactly that floor. ROI here = net profit / buy cost (the project's definition in `scout/scoring.py`).\n\n## The math (project's own fee model)\n\nUsing the exact fee assumptions the scout uses (`scout/config.py` + `scoring.py`):\n\n- Sell price: **$32.00**\n- Referral fee: 15% -> **$4.80**\n- FBA fulfillment: by weight tier, plus 3.5% fuel surcharge\n- Prep cost: **$0.50/unit** (since Jan 2026 the seller preps/labels US FBA)\n- ROI target: **30%**\n\nFormula inverted for Max Cost:\n\n```\nMaxCost = (price - referral - fulfillment - prep) / (1 + ROI_target)\n```\n\n## Max Cost by item weight\n\n| Item weight        | FBA fulfill (incl. fuel) | **Max Cost** | Net profit | ROI |\n|--------------------|--------------------------|--------------|------------|-----|\n| <= 12 oz (0.75 lb) | $3.33                    | **$17.97**   | $5.39      | 30% |\n| 12-16 oz (1.0 lb)  | $4.81                    | **$16.84**   | $5.05      | 30% |\n| 1.5 lb             | $5.69                    | **$16.16**   | $4.85      | 30% |\n| 2.0 lb             | $6.31                    | **$15.68**   | $4.70      | 30% |\n| 2.5 lb (common)    | $6.86                    | **$15.26**   | $4.58      | 30% |\n| 3.0 lb             | $6.99                    | **$15.16**   | $4.55      | 30% |\n\n**The single number you probably want:** if it's a light item (under ~1 lb), don't pay more than about **$16.84**. If you don't know the weight yet, **$15.26** (the common 2.5 lb tier) is a safe conservative ceiling.\n\n## Important caveats\n\n1. **Weight drives the answer.** Fulfillment fee is the biggest swing factor. Get the real shipping weight/size tier before committing - heavier or oversize items push Max Cost down fast.\n2. **Referral rate varies by category.** I used the standard 15%. Some categories differ (e.g. some are 8%, some 17%), which shifts Max Cost. Confirm the category's actual referral %.\n3. **The $3/unit profit floor.** The project also requires >= $3 net profit per unit (`minProfitPerUnit`). At these Max Costs you clear $4.50+, so the 30% ROI gate is the binding constraint here, not the profit floor.\n4. **This is a pre-buy estimate.** These fees are approximations from the project's model. **Confirm the exact Max Cost in SellerAmp / Amazon's Revenue Calculator for the specific ASIN before buying** - real dimensions, category fees, and any storage/return costs can move it.\n5. **Eligibility is separate.** Hitting ROI doesn't mean you're allowed to sell it. Check gating, IP/brand risk, hazmat/meltable, and that Amazon doesn't hold/rotate the buy box before you source.\n\n## If you want more cushion\n\nThe 30% figure is the floor. If you'd rather target a safer 40-50% ROI (more buffer for returns and price drops), your Max Cost drops accordingly - e.g. at 40% ROI on the 1 lb tier, Max Cost falls from $16.84 to about **$15.65**. Tell me your target ROI and the item's weight/category and I'll give you the exact single number.\n"}], "grading": {"summary": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4}, "expectations": [{"text": "Explains Max Cost as the reverse calculator / most you can pay", "passed": true, "evidence": "\u2026# Max Cost for a $32 Buy Box at 30%\u2026"}, {"text": "Needs FBA fee / size-weight to compute", "passed": true, "evidence": "\u2026g on the item's shipping weight. For a typical small-and\u2026"}, {"text": "Ties it to the 30% ROI target", "passed": true, "evidence": "\u2026ost for a $32 Buy Box at 30% ROI  **Short answer:** Y\u2026"}, {"text": "Mentions stacking / landing below the number", "passed": false, "evidence": "\u2026is **30%**. The numbers below are calculated to hit ex\u2026"}]}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "fba-selleramp-analyst", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-06-30T02:57:53Z", "evals_run": [0, 1, 2], "runs_per_configuration": 3}, "runs": [{"eval_id": 0, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 92.52, "tokens": 47284, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Gives SAS settings checklist (inbound + thresholds)", "passed": true, "evidence": "\u2026Why | |---|---|---| | **Inbound shipping** | **~$0.60/lb\u2026"}, {"text": "Catches the sales-tax double-count trap (bake into cost, not %)", "passed": true, "evidence": "\u2026a real cost. | | **Sales tax** | **Leave the % field\u2026"}, {"text": "Cites 30% ROI / $3 profit gates", "passed": true, "evidence": "\u2026ime. | | **Min ROI** | **30%** (\u224825% acceptable only\u2026"}, {"text": "Notes true landed cost must include shipping", "passed": true, "evidence": "\u2026---|---|---| | **Inbound shipping** | **~$0.60/lb** (range\u2026"}], "notes": []}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 63.702, "tokens": 40181, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags ROI 28% as below the 30% gate", "passed": true, "evidence": "\u2026s.  - Profit $4.20 / ROI 28% / Margin ~16% (4.20 \u00f7 2\u2026"}, {"text": "Notes cost $15 exceeds Max Cost $14", "passed": true, "evidence": "\u2026%.  - Breakeven $19.50 \u00b7 Max Cost $14 (land below this \u2014 a\u2026"}, {"text": "Verdict borderline / reject (not a clean buy)", "passed": true, "evidence": "\u2026- Profit $4.20 \u2265 $3.00 \u2192 PASS.   - ROI 28% < 30% \u2192 FAI\u2026"}, {"text": "Hands off (keepa/deal-analyst) \u2014 SAS isn't a buy order", "passed": true, "evidence": "\u2026ore trusting this panel, verify in SAS: inbound shipping\u2026"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 90.348, "tokens": 42188, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Explains Max Cost as the reverse calculator / most you can pay", "passed": true, "evidence": "\u2026# SellerAmp Read \u2014 Max Cost reverse calculation  **Y\u2026"}, {"text": "Needs FBA fee / size-weight to compute", "passed": true, "evidence": "\u2026ch depends on the item's size/weight tier \u2014 and you ha\u2026"}, {"text": "Ties it to the 30% ROI target", "passed": true, "evidence": "\u2026can pay and still hit my ROI?  In SellerAmp this is e\u2026"}, {"text": "Mentions stacking / landing below the number", "passed": true, "evidence": "\u2026till clear the bar. Land below Max Cost (after stacking\u2026"}], "notes": []}, {"eval_id": 0, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 88.359, "tokens": 42287, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Gives SAS settings checklist (inbound + thresholds)", "passed": true, "evidence": "\u2026ny cost field (buy cost, inbound shipping, prep) is off,\u2026"}, {"text": "Catches the sales-tax double-count trap (bake into cost, not %)", "passed": true, "evidence": "\u2026or you** \u2014 you do it. So bake in a prep cost of about\u2026"}, {"text": "Cites 30% ROI / $3 profit gates", "passed": true, "evidence": "\u2026ROI threshold \u2192 set to **30%** Set the ROI target/thr\u2026"}, {"text": "Notes true landed cost must include shipping", "passed": true, "evidence": "\u2026field (buy cost, inbound shipping, prep) is off, the ROI i\u2026"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 84.405, "tokens": 37387, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags ROI 28% as below the 30% gate", "passed": true, "evidence": "\u2026it | $4.20 | | SAS ROI | 28% | | SAS Breakeven | $19\u2026"}, {"text": "Notes cost $15 exceeds Max Cost $14", "passed": true, "evidence": "\u2026eakeven | $19.50 | | SAS Max Cost | $14.00 |  ## Short ans\u2026"}, {"text": "Verdict borderline / reject (not a clean buy)", "passed": true, "evidence": "\u2026mp Deal Check \u2014 Verdict: PASS (no buy) at $15 cost  ##\u2026"}, {"text": "Hands off (keepa/deal-analyst) \u2014 SAS isn't a buy order", "passed": true, "evidence": "\u2026on holds the Buy Box - **Keepa history** \u2014 is $26 the r\u2026"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4, "time_seconds": 86.703, "tokens": 62203, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Explains Max Cost as the reverse calculator / most you can pay", "passed": true, "evidence": "\u2026# Max Cost for a $32 Buy Box at 30%\u2026"}, {"text": "Needs FBA fee / size-weight to compute", "passed": true, "evidence": "\u2026g on the item's shipping weight. For a typical small-and\u2026"}, {"text": "Ties it to the 30% ROI target", "passed": true, "evidence": "\u2026ost for a $32 Buy Box at 30% ROI  **Short answer:** Y\u2026"}, {"text": "Mentions stacking / landing below the number", "passed": false, "evidence": "\u2026is **30%**. The numbers below are calculated to hit ex\u2026"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 1.0, "stddev": 0.0, "min": 1.0, "max": 1.0}, "time_seconds": {"mean": 82.19, "stddev": 16.0479, "min": 63.702, "max": 92.52}, "tokens": {"mean": 43217.6667, "stddev": 3661.7362, "min": 40181, "max": 47284}}, "without_skill": {"pass_rate": {"mean": 0.9167, "stddev": 0.1443, "min": 0.75, "max": 1.0}, "time_seconds": {"mean": 86.489, "stddev": 1.9857, "min": 84.405, "max": 88.359}, "tokens": {"mean": 47292.3333, "stddev": 13143.3818, "min": 37387, "max": 62203}}, "delta": {"pass_rate": "+0.08", "time_seconds": "-4.3", "tokens": "-4075"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

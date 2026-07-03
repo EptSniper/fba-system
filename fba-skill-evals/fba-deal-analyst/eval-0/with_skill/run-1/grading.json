@@ -1,0 +1,35 @@
+{
+  "summary": {
+    "pass_rate": 0.6,
+    "passed": 3,
+    "failed": 2,
+    "total": 5
+  },
+  "expectations": [
+    {
+      "text": "Recommends BUY (not NO-BUY/REVIEW)",
+      "passed": false,
+      "evidence": "- fba fulfillment fee (driven by package size/weight). this is the single number"
+    },
+    {
+      "text": "Suggests a small test quantity (5-10 units)",
+      "passed": false,
+      "evidence": "(not found)"
+    },
+    {
+      "text": "Computes ROI/profit numbers",
+      "passed": true,
+      "evidence": "\u2026$20.00 landed = +$1.08/unit, ROI ~5%, margin ~4%   - Likely case (large-stand\u2026"
+    },
+    {
+      "text": "Flags account eligibility separately from profit",
+      "passed": true,
+      "evidence": "\u2026friendly hint \u2014 commonly auto-ungated/resellable). this is a disc\u2026"
+    },
+    {
+      "text": "Includes verify-before-buy / human-approval caveat",
+      "passed": true,
+      "evidence": "\u2026sign of amazon rotation, but confirm on keepa]   - ip cliff [ok \u2014\u2026"
+    }
+  ]
+}

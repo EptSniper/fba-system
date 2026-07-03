@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OA Terminal</title>
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#080b10; --bg2:#0b0f16; --panel:#0f1620; --panel2:#0c121b; --raise:#141d29;
+  --line:#1b2532; --line2:#27323f;
+  --ink:#e9eef5; --dim:#94a2b3; --faint:#5f6e7e;
+  --grn:#27e07a; --grn-deep:#0e7a42; --grn-glow:rgba(39,224,122,.16);
+  --red:#ff5d52; --amber:#ffb13d; --cyan:#4cc9ff;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r:7px; --r-sm:5px;
+  --t-label:11px; --t-xs:12px; --t-sm:14px; --t-base:16px; --t-lg:20px; --t-xl:28px; --t-2xl:40px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:var(--t-sm);
+  line-height:1.55; -webkit-font-smoothing:antialiased;
+  background-image:
+    linear-gradient(transparent 0,transparent calc(100% - 1px),rgba(255,255,255,.015) 100%),
+    radial-gradient(900px 500px at 80% -10%, rgba(39,224,122,.05), transparent 60%);
+  background-size:100% 28px, 100% 100%;
+}
+::selection{background:var(--grn-glow)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lab{font:600 var(--t-label)/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.pos{color:var(--grn)} .neg{color:var(--red)} .warn{color:var(--amber)}
+a{color:var(--cyan);text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--grn);outline-offset:2px;border-radius:4px}
+
+/* shell ---------------------------------------------------------------*/
+.app{display:grid;grid-template-columns:212px 1fr;grid-template-rows:52px 1fr;min-height:100vh}
+.top{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--bg2);position:sticky;top:0;z-index:40}
+.brand{display:flex;align-items:center;gap:10px;font:700 var(--t-sm)/1 var(--mono);letter-spacing:.06em}
+.brand .tick{width:9px;height:9px;border-radius:50%;background:var(--grn);box-shadow:0 0 0 0 var(--grn-glow);animation:pulse 2.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 var(--grn-glow)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.top .sep{width:1px;height:20px;background:var(--line2)}
+.ticker{flex:1;display:flex;gap:22px;overflow:hidden;color:var(--dim);font:500 var(--t-xs)/1 var(--mono)}
+.ticker b{color:var(--ink)}
+.top .gear{margin-left:auto;display:flex;gap:8px}
+.iconbtn{display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--line2);background:var(--panel);border-radius:var(--r-sm);color:var(--dim);transition:.15s ease}
+.iconbtn:hover{color:var(--ink);border-color:var(--grn-deep);transform:translateY(-1px)}
+
+.nav{border-right:1px solid var(--line);background:var(--bg2);padding:12px 10px;display:flex;flex-direction:column;gap:3px;position:sticky;top:52px;height:calc(100vh - 52px)}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--r-sm);color:var(--dim);font-weight:600;font-size:var(--t-sm);border:1px solid transparent;transition:.15s ease;position:relative}
+.nav a svg{width:18px;height:18px;flex:none}
+.nav a:hover{color:var(--ink);background:var(--panel)}
+.nav a.on{color:var(--ink);background:var(--panel);border-color:var(--line2)}
+.nav a.on::before{content:"";position:absolute;left:-10px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--grn);box-shadow:0 0 12px var(--grn)}
+.nav .navlab{margin:14px 12px 6px;color:var(--faint)}
+.nav .foot{margin-top:auto;font:500 var(--t-label)/1.5 var(--mono);color:var(--faint);padding:10px 12px;border-top:1px solid var(--line)}
+
+.main{padding:22px 26px 60px;overflow-x:hidden}
+.view{display:none;animation:in .22s ease}
+.view.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+h1.page{font:700 var(--t-lg)/1.1 var(--sans);letter-spacing:-.01em;margin-bottom:2px}
+.sub{color:var(--dim);font-size:var(--t-sm);margin-bottom:20px}
+
+/* grid + cards --------------------------------------------------------*/
+.grid{display:grid;gap:14px}
+.cols-3{grid-template-columns:repeat(3,1fr)}
+.cols-4{grid-template-columns:repeat(4,1fr)}
+.cols-2{grid-template-columns:repeat(2,1fr)}
+@media(max-width:1100px){.cols-4,.cols-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){.app{grid-template-columns:1fr}.nav{display:none}.cols-4,.cols-3,.cols-2{grid-template-columns:1fr}.botnav{display:flex}}
+.card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card.hl{border-color:var(--line2)}
+.kpi .lab{margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.kpi .val{font:700 var(--t-2xl)/1 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi .val.dimv{color:var(--faint)}
+.kpi .meta{margin-top:8px;font-size:var(--t-xs);color:var(--dim)}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:99px;font:600 var(--t-label)/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.chip.g{background:var(--grn-glow);color:var(--grn)}
+.chip.r{background:rgba(255,93,82,.12);color:var(--red)}
+.chip.a{background:rgba(255,177,61,.12);color:var(--amber)}
+.chip.n{background:#0d1620;color:var(--dim);border:1px solid var(--line2)}
+
+/* hero ----------------------------------------------------------------*/
+.hero{position:relative;overflow:hidden;background:
+   radial-gradient(600px 200px at 90% 0%, var(--grn-glow), transparent 70%),
+   linear-gradient(180deg,#0f1a16,#0d141b);
+  border:1px solid var(--grn-deep);border-radius:var(--r);padding:22px 24px;margin-bottom:14px}
+.hero .lab{color:var(--grn)}
+.hero h2{font:700 var(--t-xl)/1.12 var(--sans);letter-spacing:-.015em;margin:8px 0 4px;max-width:46ch}
+.hero p{color:var(--dim);max-width:60ch;margin-bottom:16px}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:11px 18px;border-radius:var(--r-sm);border:1px solid transparent;font:700 var(--t-sm)/1 var(--sans)}
+.btn.primary{background:var(--grn);color:#04210f;box-shadow:0 0 0 1px var(--grn-deep),0 8px 24px -10px var(--grn)}
+.btn.primary:hover{transform:translateY(-1px);filter:brightness(1.07)}
+.btn.primary:active{transform:scale(.985)}
+.btn.ghost{background:var(--panel);border-color:var(--line2);color:var(--ink)}
+.btn.ghost:hover{border-color:var(--grn-deep)}
+.btn svg{width:16px;height:16px}
+
+/* checklist -----------------------------------------------------------*/
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:14px;padding:14px 4px;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:0}
+.step .num{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line2);color:var(--dim);font:700 var(--t-xs)/1 var(--mono)}
+.step.done .num{background:var(--grn);color:#04210f;border-color:var(--grn)}
+.step .t{font-weight:600}
+.step .d{color:var(--dim);font-size:var(--t-xs)}
+.step.done .t{color:var(--dim)}
+.step .go{margin-left:auto;align-self:center}
+
+/* table / pipeline ----------------------------------------------------*/
+.pipe{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:900px){.pipe{grid-template-columns:1fr 1fr}}
+.col{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);min-height:160px;display:flex;flex-direction:column}
+.col h3{font:600 var(--t-label)/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
+.col .body{padding:12px 14px;color:var(--faint);font-size:var(--t-xs);flex:1;display:grid;place-items:center;text-align:center}
+.lead{background:var(--raise);border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px;margin:8px;font-size:var(--t-xs)}
+
+table{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
+th{ text-align:left;font:600 var(--t-label)/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding:10px 12px;border-bottom:1px solid var(--line2)}
+td{padding:11px 12px;border-bottom:1px solid var(--line)}
+tr:hover td{background:var(--panel)}
+
+/* forms ---------------------------------------------------------------*/
+label.f{display:block;font:600 var(--t-xs)/1 var(--sans);color:var(--dim);margin-bottom:7px}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--line2);color:var(--ink);border-radius:var(--r-sm);padding:11px 12px;font:500 var(--t-sm)/1 var(--mono);transition:.15s}
+input:focus,select:focus,textarea:focus{border-color:var(--grn-deep)}
+.field{margin-bottom:13px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.switch input{width:auto}
+.verdict{border-radius:var(--r);padding:18px;border:1px solid var(--line2);background:var(--panel2)}
+.verdict.buy{border-color:var(--grn-deep);background:radial-gradient(400px 120px at 0 0,var(--grn-glow),transparent)}
+.verdict.pass{border-color:rgba(255,93,82,.4)}
+.verdict h3{font:700 var(--t-xl)/1 var(--mono);letter-spacing:.02em}
+.reasons{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:7px}
+.reasons li{display:flex;gap:9px;font-size:var(--t-sm);color:var(--dim)}
+.reasons li b{color:var(--ink);font-weight:600}
+.dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:7px}
+.dot.g{background:var(--grn)} .dot.r{background:var(--red)} .dot.a{background:var(--amber)}
+
+/* ask -----------------------------------------------------------------*/
+.askbar{display:flex;gap:10px;margin-bottom:12px}
+.askbar input{font-family:var(--sans);font-size:var(--t-base)}
+.qchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.qchip{padding:8px 13px;border:1px solid var(--line2);background:var(--panel);border-radius:99px;color:var(--dim);font-size:var(--t-xs);transition:.15s}
+.qchip:hover{color:var(--ink);border-color:var(--grn-deep);transform:translateY(-1px)}
+.answer{background:var(--panel);border:1px solid var(--line2);border-left:3px solid var(--grn);border-radius:var(--r);padding:18px 20px;font-size:var(--t-base);line-height:1.65;white-space:pre-wrap}
+.answer .src{margin-top:14px;font:500 var(--t-xs)/1.5 var(--mono);color:var(--faint)}
+.skeleton{height:14px;border-radius:4px;background:linear-gradient(90deg,var(--line),var(--line2),var(--line));background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+
+/* settings drawer -----------------------------------------------------*/
+.scrim{position:fixed;inset:0;background:rgba(2,4,8,.62);backdrop-filter:blur(2px);z-index:60;display:none}
+.scrim.on{display:block}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(460px,94vw);background:var(--bg2);border-left:1px solid var(--line2);z-index:61;transform:translateX(100%);transition:transform .24s ease;overflow-y:auto;padding:20px}
+.drawer.on{transform:none}
+.drawer h2{font:700 var(--t-lg)/1 var(--sans);margin-bottom:4px}
+.drawer .sec{margin-top:22px}
+.drawer .sec h4{font:600 var(--t-label)/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.kv{display:flex;justify-content:space-between;padding:7px 0;font-size:var(--t-xs);color:var(--dim);border-bottom:1px solid var(--line)}
+.kv b{color:var(--ink);font-family:var(--mono)}
+.learnlog{font-size:var(--t-xs);color:var(--dim);max-height:170px;overflow:auto;padding-right:6px}
+.learnlog div{padding:7px 0;border-bottom:1px solid var(--line)}
+.note{font-size:var(--t-xs);color:var(--faint);margin-top:8px}
+
+.botnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--bg2);border-top:1px solid var(--line2)}
+.botnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0;color:var(--faint);font:600 9px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em}
+.botnav a svg{width:19px;height:19px}
+.botnav a.on{color:var(--grn)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- top bar -->
+  <header class="top">
+    <div class="brand"><span class="tick"></span> OA&nbsp;TERMINAL</div>
+    <div class="sep"></div>
+    <div class="ticker mono" id="ticker"></div>
+    <div class="gear">
+      <button class="iconbtn" id="syncBtn" title="Re-sync from the knowledge base" aria-label="Sync">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-6.7-3M3 12a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3"/><path d="M21 3v6h-6M3 21v-6h6"/></svg>
+      </button>
+      <button class="iconbtn" id="setBtn" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7H1a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V7a1.6 1.6 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- left nav -->
+  <nav class="nav">
+    <div class="lab navlab">Command</div>
+    <a data-view="today" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg> Today</a>
+    <a data-view="find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg> Find</a>
+    <a data-view="pipe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h7v14H3zM14 5h7v9h-7z"/></svg> Pipeline</a>
+    <a data-view="money"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20"/><path d="M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.6 7 6.5 9 9.4 12 10s5 1.6 5 3.5-2.2 3-5 3-5-1.1-5-3"/></svg> Money</a>
+    <a data-view="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Ask</a>
+    <div class="foot" id="navfoot">knowledge&nbsp;·&nbsp;loading…</div>
+  </nav>
+
+  <!-- main -->
+  <main class="main">
+    <!-- ====== TODAY ====== -->
+    <section class="view on" id="v-today">
+      <h1 class="page">Today</h1>
+      <div class="sub">One question: what do I do right now to make money?</div>
+
+      <div class="hero" id="hero"></div>
+
+      <div class="grid cols-3" style="margin-bottom:14px">
+        <div class="card kpi"><div class="lab">Today's candidates <span class="chip n" id="c-src">scout</span></div><div class="val dimv" id="k-cand">—</div><div class="meta" id="k-cand-m">Run the scout to surface buys.</div></div>
+        <div class="card kpi"><div class="lab">Pipeline value</div><div class="val dimv" id="k-pipe">—</div><div class="meta" id="k-pipe-m">Profit waiting in items you're testing.</div></div>
+        <div class="card kpi"><div class="lab">Cash to reinvest</div><div class="val dimv" id="k-cash">—</div><div class="meta" id="k-cash-m">Set a starting bankroll in Money.</div></div>
+      </div>
+
+      <div class="grid cols-2">
+        <div class="card hl">
+          <div class="lab" style="margin-bottom:14px">Get to your first sale — 3 steps</div>
+          <div class="steps" id="steps"></div>
+        </div>
+        <div class="card hl">
+          <div class="lab" style="margin-bottom:12px">Today's top candidates</div>
+          <div id="candlist" style="color:var(--faint);font-size:var(--t-sm);text-align:center;padding:34px 8px">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" style="opacity:.5;margin-bottom:10px"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <div>No candidates yet. Once the scout runs, your best buys land here — ranked, with the math done.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== FIND ====== -->
+    <section class="view" id="v-find">
+      <h1 class="page">Find</h1>
+      <div class="sub">Check any product against your rules before you spend a dollar.</div>
+      <div class="grid cols-2">
+        <div class="card">
+          <div class="lab" style="margin-bottom:14px">Product check</div>
+          <div class="row"><div class="field"><label class="f">Your cost ($)</label><input id="i-cost" type="number" value="12.00" step="0.01"></div>
+            <div class="field"><label class="f">Sells for ($)</label><input id="i-sell" type="number" value="27.00" step="0.01"></div></div>
+          <div class="row"><div class="field"><label class="f">Best Sellers Rank</label><input id="i-bsr" type="number" value="45000"></div>
+            <div class="field"><label class="f"># of FBA sellers</label><input id="i-off" type="number" value="6"></div></div>
+          <div class="field"><label class="switch"><input id="i-amz" type="checkbox"> <span>Amazon is selling it too (in the Buy Box)</span></label></div>
+          <button class="btn primary" id="rateBtn" style="width:100%;justify-content:center">Run the numbers</button>
+          <div class="note">Fees are estimated (15% referral + an FBA size/weight estimate + $0.50 prep). Confirm exact fees in SellerAmp before buying.</div>
+        </div>
+        <div>
+          <div id="verdict"></div>
+          <div class="card" style="margin-top:14px">
+            <div class="lab" style="margin-bottom:12px">Scout status</div>
+            <div id="scoutStatus" style="display:flex;align-items:center;gap:10px;font-size:var(--t-sm)">
+              <span class="chip r">Offline</span>
+              <span style="color:var(--dim)">Connect Keepa in Settings to auto-find products while you sleep.</span>
+            </div>
+            <div class="lab" style="margin:18px 0 10px">Your rules</div>
+            <div id="rulesList" class="mono" style="font-size:var(--t-xs);color:var(--dim);line-height:1.9"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lab" style="margin:22px 2px 12px">Sourcing tools — use these today</div>
+      <div class="grid cols-3">
+        <div class="card">
+          <div class="lab" style="margin-bottom:12px">Brand risk check</div>
+          <div class="field"><input id="i-brand" placeholder="type a brand, e.g. Jellycat"></div>
+          <button class="btn ghost" id="brandBtn" style="width:100%;justify-content:center">Check brand</button>
+          <div id="brandOut" style="margin-top:12px;font-size:var(--t-sm)"></div>
+        </div>
+        <div class="card">
+          <div class="lab" style="margin-bottom:12px">Storefront stalking</div>
+          <p style="color:var(--dim);font-size:var(--t-xs);margin-bottom:10px">Paste a proven competitor's ASINs or links — one per line. The scout sources the same items cheaper at retail.</p>
+          <textarea id="i-stalk" rows="3" placeholder="B0XXXXXXXX&#10;B0YYYYYYYY"></textarea>
+          <button class="btn ghost" id="stalkBtn" style="width:100%;justify-content:center;margin-top:10px">Add to scout queue</button>
+          <div id="stalkOut" class="note"></div>
+        </div>
+        <div class="card">
+          <div class="lab" style="margin-bottom:12px">Ungating — what you need</div>
+          <ul class="reasons" style="margin-top:0">
+            <li><span class="dot g"></span><span>2–3 <b>wholesale invoices</b> from a real distributor (not Target/Walmart receipts).</span></li>
+            <li><span class="dot g"></span><span>Usually <b>10+ units</b> of the brand on the invoice.</span></li>
+            <li><span class="dot g"></span><span>Business name &amp; address that <b>match your seller account</b>.</span></li>
+            <li><span class="dot a"></span><span>Check the gate in the Seller app <b>before</b> you buy.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== PIPELINE ====== -->
+    <section class="view" id="v-pipe">
+      <h1 class="page">Pipeline</h1>
+      <div class="sub">Every product from "maybe" to "sold" in one place — candidates, testing, bought, sold.</div>
+      <div class="pipe">
+        <div class="col"><h3>Candidates <span id="p1">0</span></h3><div class="body">Picks the scout or your checks approve show up here first.</div></div>
+        <div class="col"><h3>Testing <span id="p2">0</span></h3><div class="body">Small first buys you're validating (did it sell, at what price?).</div></div>
+        <div class="col"><h3>Bought <span id="p3">0</span></h3><div class="body">Re-orders you committed to after a winning test.</div></div>
+        <div class="col"><h3>Sold <span id="p4">0</span></h3><div class="body">Closed out — real profit lands in Money.</div></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="lab" style="margin-bottom:10px">How the loop works</div>
+        <p style="color:var(--dim);font-size:var(--t-sm);max-width:74ch">Buy a few units to <b style="color:var(--ink)">test</b> a candidate, not a whole case. If it sells at your target price, move it to <b style="color:var(--ink)">Bought</b> and re-order bigger. Every outcome (sold fast / sat / tanked) is remembered, so over time the scout learns what actually makes you money — not just what looks good on paper.</p>
+      </div>
+    </section>
+
+    <!-- ====== MONEY ====== -->
+    <section class="view" id="v-money">
+      <h1 class="page">Money</h1>
+      <div class="sub">Cash in, profit out, and how much you can safely reinvest.</div>
+      <div class="grid cols-4" style="margin-bottom:14px">
+        <div class="card kpi"><div class="lab">Net profit</div><div class="val dimv" id="m-prof">—</div><div class="meta">After fees &amp; cost of goods.</div></div>
+        <div class="card kpi"><div class="lab">Cash to reinvest</div><div class="val dimv" id="m-cash">—</div><div class="meta">Bankroll minus open buys.</div></div>
+        <div class="card kpi"><div class="lab">Avg ROI</div><div class="val dimv" id="m-roi">—</div><div class="meta">Across sold items.</div></div>
+        <div class="card kpi"><div class="lab">Next payout</div><div class="val dimv" id="m-pay">—</div><div class="meta">Amazon settles every 2 weeks.</div></div>
+      </div>
+      <div class="card">
+        <div class="lab" style="margin-bottom:12px">Set your starting bankroll</div>
+        <div class="row" style="max-width:460px">
+          <div class="field"><label class="f">Cash you're starting with ($)</label><input id="i-bank" type="number" placeholder="500" step="1"></div>
+          <div class="field" style="align-self:end"><button class="btn ghost" id="bankBtn" style="width:100%;justify-content:center">Save bankroll</button></div>
+        </div>
+        <p class="note">Beginner rule from your courses: keep test buys small (a few units), never sink more than ~20% of cash into one unproven product, and roll profit back in. Real numbers fill these tiles as you log buys in Pipeline.</p>
+      </div>
+
+      <div class="lab" style="margin:22px 2px 12px">Planners — math you can run today, no account needed</div>
+      <div class="grid cols-2">
+        <div class="card">
+          <div class="lab" style="margin-bottom:12px">Cash-flow planner</div>
+          <div class="row"><div class="field"><label class="f">Starting cash ($)</label><input id="cf-cash" type="number" value="500"></div>
+            <div class="field"><label class="f">Avg ROI %</label><input id="cf-roi" type="number" value="35"></div></div>
+          <div class="row"><div class="field"><label class="f">Days per flip</label><input id="cf-days" type="number" value="30"></div>
+            <div class="field"><label class="f">Months</label><input id="cf-mo" type="number" value="6"></div></div>
+          <button class="btn ghost" id="cfBtn" style="width:100%;justify-content:center">Project growth</button>
+          <div id="cfOut" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="lab" style="margin-bottom:12px">Restock planner</div>
+          <div class="row"><div class="field"><label class="f">Units in stock</label><input id="rs-stock" type="number" value="20"></div>
+            <div class="field"><label class="f">Units sold / day</label><input id="rs-vel" type="number" value="2" step="0.1"></div></div>
+          <div class="field"><label class="f">Restock lead time (days)</label><input id="rs-lead" type="number" value="14"></div>
+          <button class="btn ghost" id="rsBtn" style="width:100%;justify-content:center">Plan restock</button>
+          <div id="rsOut" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="lab" style="margin-bottom:12px">FBA fee &amp; profit breakdown</div>
+          <div class="row"><div class="field"><label class="f">Your cost ($)</label><input id="fz-cost" type="number" value="12"></div>
+            <div class="field"><label class="f">Sells for ($)</label><input id="fz-sell" type="number" value="27"></div></div>
+          <button class="btn ghost" id="fzBtn" style="width:100%;justify-content:center">Break it down</button>
+          <div id="fzOut" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <div class="lab" style="margin-bottom:12px">PPC budget planner <span class="chip n">for later</span></div>
+          <div class="row"><div class="field"><label class="f">Price ($)</label><input id="pp-price" type="number" value="27"></div>
+            <div class="field"><label class="f">Target ACoS %</label><input id="pp-acos" type="number" value="25"></div></div>
+          <div class="field"><label class="f">Conversion rate %</label><input id="pp-cvr" type="number" value="12"></div>
+          <button class="btn ghost" id="ppBtn" style="width:100%;justify-content:center">Suggest bid &amp; budget</button>
+          <div id="ppOut" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div class="lab" style="margin:22px 2px 12px">Live account insights</div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div class="lab">Top products by profit</div><span class="chip a">Sample · fills in when you're selling</span>
+        </div>
+        <table>
+          <thead><tr><th>Product</th><th>Units</th><th>Net profit</th><th>ROI</th></tr></thead>
+          <tbody style="opacity:.55">
+            <tr><td>Sample — Jellycat Bashful Bunny</td><td class="mono">14</td><td class="mono pos">$118</td><td class="mono">41%</td></tr>
+            <tr><td>Sample — Crayola 64 Pack</td><td class="mono">22</td><td class="mono pos">$96</td><td class="mono">33%</td></tr>
+            <tr><td>Sample — Hot Wheels 20-Car</td><td class="mono">9</td><td class="mono pos">$54</td><td class="mono">37%</td></tr>
+          </tbody>
+        </table>
+        <p class="note">Real sales, fees, payouts, returns and account health appear here once your Amazon account is connected (SP-API) — after you're selling. Shown as a sample so the screen never looks dead.</p>
+      </div>
+    </section>
+
+    <!-- ====== LEARN ====== -->
+    <section class="view" id="v-learn">
+      <h1 class="page">Ask</h1>
+      <div class="sub" id="learnsub">Ask anything about selling on Amazon — answered from your own courses, in plain English.</div>
+      <div class="askbar">
+        <input id="askIn" placeholder="e.g. How do I get ungated in a brand?" autocomplete="off">
+        <button class="btn primary" id="askBtn">Ask</button>
+      </div>
+      <div class="qchips" id="qchips"></div>
+      <div id="answer"></div>
+    </section>
+  </main>
+</div>
+
+<!-- bottom nav (mobile) -->
+<nav class="botnav">
+  <a data-view="today" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>Today</a>
+  <a data-view="find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Find</a>
+  <a data-view="pipe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h7v14H3zM14 5h7v9h-7z"/></svg>Pipe</a>
+  <a data-view="money"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="M17 6.5C17 4.6 14.8 3.5 12 3.5S7 4.6 7 6.5s2 2.9 5 3.5 5 1.6 5 3.5-2.2 3-5 3-5-1.1-5-3"/></svg>Money</a>
+  <a data-view="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Ask</a>
+</nav>
+
+<!-- settings / brain drawer -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <h2>Settings</h2>
+  <div class="sub" style="margin-bottom:0">Keys, rules, and what your assistant has learned. The plumbing lives here — not on your home screen.</div>
+
+  <div class="sec">
+    <h4>Connections</h4>
+    <div class="field"><label class="f">Keepa API key</label><input id="s-keepa" placeholder="paste to bring the scout online"></div>
+    <button class="btn ghost" id="saveKeys" style="width:100%;justify-content:center">Save &amp; connect</button>
+    <div id="connState" class="note"></div>
+  </div>
+
+  <div class="sec">
+    <h4>Buy / no-buy rules</h4>
+    <div class="row"><div class="field"><label class="f">Max BSR</label><input id="r-bsr" type="number"></div>
+      <div class="field"><label class="f">Min ROI %</label><input id="r-roi" type="number"></div></div>
+    <div class="row"><div class="field"><label class="f">Min profit $</label><input id="r-prof" type="number" step="0.5"></div>
+      <div class="field"><label class="f">Sellers min–max</label><input id="r-off" placeholder="3-25"></div></div>
+    <button class="btn ghost" id="saveRules" style="width:100%;justify-content:center">Save rules</button>
+  </div>
+
+  <div class="sec">
+    <h4>Knowledge (auto-synced)</h4>
+    <div class="kv"><span>Video courses fed in</span><b id="b-vids">—</b></div>
+    <div class="kv"><span>Total guides &amp; docs</span><b id="b-docs">—</b></div>
+    <div class="kv"><span>Searchable notes</span><b id="b-chunks">—</b></div>
+    <div class="kv"><span>Live source</span><b id="b-live">checking…</b></div>
+    <div class="note" id="syncNote"></div>
+  </div>
+
+  <div class="sec">
+    <h4>What I've learned</h4>
+    <div class="learnlog" id="learnlog"></div>
+  </div>
+</aside>
+
+<script>
+"use strict";
+/* ---------- inlined snapshot (auto-updates live from Supabase when available) ---------- */
+const SNAP = {
+  videos: 45, docs: 78, chunks: 1224,
+  breakdown: "45 video courses + 8 fundamentals + 13 API/data docs + policy, listing & decision rules",
+  rules: { bsr:200000, roiPct:30, profit:3, offMin:3, offMax:25, amazonBB:true },
+  learned: [
+    "Jun 26 · Loaded all 45 of your video courses into the assistant — 1,224 searchable notes.",
+    "Jun 26 · Your knowledge now lives in a fast database, so answers stay quick as it grows.",
+    "Jun 25 · Added field guides: reading Keepa, SellerAmp settings, storefront stalking, stacking discounts.",
+    "Jun 23 · The scout learned to skip products where Amazon rotates into the Buy Box, plus the 2026 prep-fee change.",
+    "Jun 23 · Split the assistant in two: 'can I profit?' and 'am I allowed to sell it?'."
+  ]
+};
+const SUPA_REF = "cakbzcvtqhdtxfjuxstd";
+const SUPA_TOOL = "mcp__ed5518d9-cdfd-46c0-b4d3-40041340177c__execute_sql";
+
+/* curated, plain-English knowledge for the Ask (no jargon, no "chunks") */
+const KB = [
+ {t:"Getting ungated",k:"ungate ungating approved approval gated brand category restricted apply",a:"Ungating means getting Amazon's approval to sell a brand or category. Usually you submit a few invoices from a real wholesale/distributor showing you bought genuine stock (often 10+ units), plus the brand on the invoice. Retail receipts (Target, Walmart) usually don't work for ungating. Check the gate before you buy: in the Amazon Seller app, tap the product → 'Sell this product' → it tells you if you're approved or what's needed."},
+ {t:"What BSR is good",k:"bsr rank best sellers rank sales fast slow how good rank number",a:"Best Sellers Rank tells you how fast something sells in its category — lower is faster. Your rule is BSR under 200,000. Under ~50k is very fast; 100–200k is okay if the rest of the deal is strong; over 200k usually sits too long and ties up your cash. Always judge BSR inside its own category, not across the whole store."},
+ {t:"Reading a Keepa chart",k:"keepa chart read graph price history green orange buy box drops 90 day average",a:"Keepa shows price and sales history. The green line is the sales-rank trend (more drops = more sales). The price lines show what it actually sold for over time — use the 90-day average, not today's spiky price. A flat, stable price with frequent rank drops is the green flag. A price that just jumped up is a trap: it'll likely fall back."},
+ {t:"Profit and ROI math",k:"profit roi margin fees referral fba cost math money make minimum",a:"Profit = sell price − your cost − Amazon's referral fee (~15%) − the FBA fulfillment fee − ~$0.50 prep. ROI = profit ÷ your cost. Your floor is 30% ROI and at least $3 profit per unit. Below that, fees and the odd return eat the deal. Always run the exact numbers in SellerAmp before buying — estimates are just a first filter."},
+ {t:"How many sellers",k:"offers sellers competition fba crowded how many split price war",a:"You want 3–25 other FBA sellers. Too few (under 3) can mean it's gated, risky, or a fluke. Too many (over 25) means the Buy Box rotates thin and price wars break out. The sweet spot is enough demand to share without a race to the bottom."},
+ {t:"Amazon in the Buy Box",k:"amazon buy box selling competes against amazon skip avoid 1p",a:"If Amazon itself is selling the item, skip it. You almost never win the Buy Box against Amazon, so your units just sit. Even if a third-party holds the Buy Box right now, check Keepa — if Amazon pops in and out (rotates), treat it as risky."},
+ {t:"Storefront stalking",k:"storefront stalking copy competitor seller find products method sourcing reverse",a:"Storefront stalking = find a successful FBA seller, then look at the products in their storefront and source the same ones cheaper at retail. Keepa's Product Finder and SellerAmp's tools speed this up. It's one of the fastest ways to find proven products, because you're copying what already sells instead of guessing."},
+ {t:"SellerAmp (SAS)",k:"selleramp sas tool analyze scan calculate fees roi extension how use",a:"SellerAmp is the calculator you run on every product: paste the Amazon link or scan the barcode and it shows fees, profit, ROI, BSR, offer count, and gating in one panel. It's where you confirm a deal after Keepa makes you curious. Set it to your buy rules so green = go."},
+ {t:"Brand / IP risk",k:"ip complaint brand risk nike adidas avoid gated lawsuit takedown safe brands",a:"Some brands file complaints that can get your listing pulled or account dinged — big athletic and electronics brands are the usual offenders (Nike, Adidas, Apple, Sony). Stick to arbitrage-friendly brands and use an IP-alert list. When unsure, a brand that's easy to ungate and rarely complains beats a flashy risky one."},
+ {t:"Q4 and seasonal",k:"q4 holiday christmas seasonal fourth quarter prep stock toys peak",a:"Q4 (Oct–Dec) is the big season — prices and demand spike, especially toys and gifts. Send inventory in early (warehouses get slammed), avoid items that only sell in December unless you can clear them, and don't overpay at the peak. A product that's strong year-round beats a one-week holiday spike."},
+ {t:"Stacking discounts",k:"discount stack cashback coupon gift card rakuten capital one savings cheaper margin",a:"Your edge over other sellers is buying cheaper. Stack a store sale + cashback (Rakuten, Capital One Shopping, TopCashback) + discounted gift cards + coupons. Each layer adds margin nobody else has. Source where the best deal is that day, not just your favorite store."},
+ {t:"FBA restrictions / hazmat",k:"restricted prohibited hazmat meltable expiration batteries lithium can i send fba eligible",a:"Some things need extra approval or can't go FBA easily: anything with lithium batteries, aerosols/flammables (hazmat), meltables like chocolate, and short-dated/expiration items. Check FBA eligibility before buying — a great-looking deal you can't actually send in is worth $0."},
+ {t:"How many units to buy",k:"how many units buy quantity test order first time risk inventory",a:"Test first: buy a small batch (often just a handful) to confirm it sells at your target price and isn't gated for you. If it sells through, re-order bigger. Tie buy quantity to how fast it sells (BSR) and never put a big share of your cash into one unproven product."},
+ {t:"Price spikes",k:"price spike inflated current price trap reverts average fake deal",a:"If today's price is way above the 90-day average, be careful — it'll probably drop back, and your profit math built on the spike disappears. Always base your sell price on Keepa's average, not the highest recent point."},
+ {t:"What to source / friendly brands",k:"what source brands friendly jellycat lego crocs yeti stanley good brands toys",a:"Beginner-friendly, arbitrage-tolerant brands include toys and everyday names like LEGO, Hot Wheels, Crayola, Jellycat, Crocs, Yeti, and Stanley. They're widely available at retail, sell steadily, and rarely nuke sellers. Build a list of brands that treat you well and mine them repeatedly."},
+ {t:"Starting with a little cash",k:"start beginner 100 500 first steps how begin little money bankroll",a:"With a small bankroll, keep buys tiny and turn cash fast. Pick a couple of friendly, ungated brands, find proven products (storefront stalking + Keepa), buy a few units that clear your 30% ROI / $3 rule, ship them in, and reinvest every dollar of profit. Speed of turning your cash matters more than any single big win."}
+];
+
+/* ---------- state ---------- */
+const LS="oa_terminal_v1";
+const state=Object.assign({keepa:"",bank:null,rules:Object.assign({},SNAP.rules),done:{keepa:false,scout:false,review:false}}, load());
+function load(){try{return JSON.parse(localStorage.getItem(LS))||{}}catch(e){return{}}}
+function save(){localStorage.setItem(LS,JSON.stringify(state))}
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const money=n=>"$"+Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
+function arrow(){return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'}
+function check(){return '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12l5 5L20 6"/></svg>'}
+function go(view){
+  $$(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+view));
+  $$(".nav a,.botnav a").forEach(a=>a.classList.toggle("on",a.dataset.view===view));
+}
+$$(".nav a,.botnav a").forEach(a=>a.addEventListener("click",()=>go(a.dataset.view)));
+
+/* ---------- TODAY ---------- */
+function renderToday(){
+  // next action follows onboarding state
+  let h;
+  if(!state.done.keepa){
+    h={tag:"Step 1 of 3 · do this now",title:"Connect Keepa to switch the scout on",
+       body:"Your scout can't find products until it can read price history. Paste your Keepa key once and it starts surfacing buys that already pass your rules.",
+       cta:"Connect Keepa",act:()=>openDrawer()};
+  }else if(!state.done.scout){
+    h={tag:"Step 2 of 3 · do this now",title:"Run your first scout pass",
+       body:"Keepa's connected. Kick off a scan and the scout will rank products that clear your BSR, ROI, profit and seller rules — math already done.",
+       cta:"Run the scout",act:()=>{state.done.scout=true;save();renderToday();go('find')}};
+  }else if(!state.done.review){
+    h={tag:"Step 3 of 3 · do this now",title:"Review your candidates and make a test buy",
+       body:"Open the candidates, pick one that clears your rules, and buy a small test batch. Log it in Pipeline so the system starts learning what sells.",
+       cta:"Review candidates",act:()=>{state.done.review=true;save();renderToday();go('pipe')}};
+  }else{
+    h={tag:"You're set up",title:"Find today's buys and keep the cash turning",
+       body:"Run a fresh scout pass, review candidates, test the best one, and reinvest profit. Repeat daily — that's the whole game.",
+       cta:"Open Find",act:()=>go('find')};
+  }
+  $("#hero").innerHTML=`<div class="lab">${h.tag}</div><h2>${h.title}</h2><p>${h.body}</p>
+    <button class="btn primary" id="heroCta">${arrow()} ${h.cta}</button>`;
+  $("#heroCta").onclick=h.act;
+
+  const steps=[
+    {k:"keepa",t:"Connect Keepa",d:"Bring the scout online (Settings → Connections).",act:openDrawer,go:"Connect"},
+    {k:"scout",t:"Run the scout",d:"Scan for products that pass your rules.",act:()=>{if(state.done.keepa){state.done.scout=true;save();renderToday()}else openDrawer()},go:"Run"},
+    {k:"review",t:"Review your picks",d:"Test-buy the best candidate and log it.",act:()=>{state.done.review=true;save();renderToday();go('pipe')},go:"Open"}
+  ];
+  $("#steps").innerHTML=steps.map((s,i)=>`<div class="step ${state.done[s.k]?'done':''}">
+    <div class="num">${state.done[s.k]?check():i+1}</div>
+    <div><div class="t">${s.t}</div><div class="d">${s.d}</div></div>
+    <div class="go">${state.done[s.k]?'<span class="chip g">done</span>':`<button class="btn ghost" data-step="${i}" style="padding:7px 12px">${s.go}</button>`}</div>
+  </div>`).join("");
+  $$("#steps [data-step]").forEach(b=>b.onclick=()=>steps[+b.dataset.step].act());
+
+  $("#k-cash").textContent = state.bank!=null?money(state.bank):"—";
+  $("#k-cash").classList.toggle("dimv",state.bank==null);
+  if(state.bank!=null)$("#k-cash-m").textContent="Starting bankroll. Log buys to track what's free.";
+  $("#c-src").textContent = state.done.keepa?"live":"scout";
+}
+
+/* ---------- FIND: rater ---------- */
+function fbaFee(p){return p<=10?3.22:p<=15?3.40:p<=20?3.65:p<=30?4.55:p<=40?5.45:6.30}
+function rate(){
+  const cost=+$("#i-cost").value, sell=+$("#i-sell").value, bsr=+$("#i-bsr").value,
+        off=+$("#i-off").value, amz=$("#i-amz").checked, R=state.rules;
+  const ref=sell*0.15, fee=fbaFee(sell), prep=0.5;
+  const profit=sell-cost-ref-fee-prep, roi=cost>0?profit/cost*100:0;
+  const reasons=[]; let ok=true;
+  const add=(good,txt,warn)=>{reasons.push({good,txt,warn});if(!good&&!warn)ok=false};
+  add(bsr<=R.bsr, bsr<=R.bsr?`<b>BSR ${bsr.toLocaleString()}</b> — sells fast enough.`:`<b>BSR ${bsr.toLocaleString()}</b> is too slow — want under ${R.bsr.toLocaleString()}. It'll sit.`);
+  add(roi>=R.roiPct, roi>=R.roiPct?`<b>${roi.toFixed(0)}% ROI</b> — clears your ${R.roiPct}% floor.`:`<b>${roi.toFixed(0)}% ROI</b> is under your ${R.roiPct}% floor.`);
+  add(profit>=R.profit, profit>=R.profit?`<b>${money(profit)} profit</b> per unit.`:`Only <b>${profit>=0?money(profit):'-'+money(-profit)} profit</b> — under your ${money(R.profit)} minimum.`);
+  add(off>=R.offMin&&off<=R.offMax, off>=R.offMin&&off<=R.offMax?`<b>${off} sellers</b> — healthy competition.`:`<b>${off} sellers</b> — want ${R.offMin}–${R.offMax} (too ${off<R.offMin?'few':'crowded'}).`);
+  if(amz){ok=false;reasons.push({good:false,txt:`<b>Amazon's in the Buy Box</b> — skip, you can't win it.`});}
+  else reasons.push({good:true,txt:`<b>Amazon's out</b> of the Buy Box — open lane.`});
+  const v=$("#verdict");
+  v.innerHTML=`<div class="verdict ${ok?'buy':'pass'}">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <h3 class="${ok?'pos':'neg'}">${ok?'BUY':'PASS'}</h3>
+      <div class="mono" style="text-align:right"><div class="lab">est. profit / roi</div>
+      <div style="font-size:var(--t-lg)" class="${profit>=0?'pos':'neg'}">${profit>=0?money(profit):'-'+money(-profit)} · ${roi.toFixed(0)}%</div></div>
+    </div>
+    <ul class="reasons">${reasons.map(r=>`<li><span class="dot ${r.good?'g':r.warn?'a':'r'}"></span><span>${r.txt}</span></li>`).join("")}</ul>
+  </div>`;
+  if(!state.done.review&&ok){/* nudge: a real buy still logs in pipeline */}
+}
+
+/* ---------- LEARN: ask ---------- */
+function topMatches(q){
+  const w=q.toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>2);
+  return KB.map(e=>{let s=0;const hay=(e.t+" "+e.k).toLowerCase();w.forEach(t=>{if(hay.includes(t))s++});return{e,s}})
+    .filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,3).map(x=>x.e);
+}
+function textOf(out){
+  if(out==null)return"";
+  if(typeof out==="string")return out;
+  if(Array.isArray(out))return out.map(textOf).join("");
+  if(typeof out==="object"){
+    if(typeof out.text==="string")return out.text;
+    if(typeof out.content==="string")return out.content;
+    if(Array.isArray(out.content))return out.content.map(p=>(p&&(p.text||p.content))||"").join("");
+    if(out.message)return textOf(out.message.content||out.message);
+    for(const k of["completion","output_text","answer","response","result","output","data"])if(typeof out[k]==="string")return out[k];
+    for(const k in out)if(typeof out[k]==="string"&&out[k].length>2)return out[k];
+  }
+  return"";
+}
+async function ask(q){
+  q=(q||$("#askIn").value).trim(); if(!q)return;
+  go('learn'); $("#askIn").value=q;
+  const box=$("#answer");
+  box.innerHTML=`<div class="answer"><div class="skeleton" style="width:80%"></div><div class="skeleton" style="width:95%;margin-top:8px"></div><div class="skeleton" style="width:60%;margin-top:8px"></div></div>`;
+  const hits=topMatches(q);
+  const srcLine=hits.length?`From your courses: ${hits.map(h=>h.t).join(" · ")}`:"From your seller playbooks";
+  const fallback=hits[0]?hits[0].a:"I don't have a note on that yet — try ungating, Keepa, ROI, number of sellers, or how to find products.";
+  let text="";
+  try{
+    if(window.cowork&&window.cowork.askClaude&&hits.length){
+      const prompt=`You are a plain-spoken Amazon online-arbitrage mentor talking to a beginner. Answer in plain English, 2-5 short sentences, no jargon, concrete and practical. Question: "${q}". Base your answer only on these notes (do not mention them):\n`+hits.map(h=>"- "+h.t+": "+h.a).join("\n");
+      text=textOf(await window.cowork.askClaude(prompt,hits.map(h=>h.a))).trim();
+    }
+  }catch(e){}
+  box.innerHTML=`<div class="answer">${escapeHtml(text||fallback)}<div class="src">${srcLine}</div></div>`;
+}
+function escapeHtml(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}
+
+/* ---------- settings drawer ---------- */
+function openDrawer(){$("#drawer").classList.add("on");$("#scrim").classList.add("on")}
+function closeDrawer(){$("#drawer").classList.remove("on");$("#scrim").classList.remove("on")}
+$("#setBtn").onclick=openDrawer; $("#scrim").onclick=closeDrawer;
+
+/* ---------- knowledge numbers (snapshot now, live from Supabase if available) ---------- */
+function paintKnowledge(k,live){
+  $("#b-vids").textContent=k.videos; $("#b-docs").textContent=k.docs;
+  $("#b-chunks").textContent=k.chunks.toLocaleString();
+  $("#b-live").textContent=live?"your database (live)":"last saved";
+  $("#navfoot").innerHTML=`knowledge&nbsp;·&nbsp;<b style="color:var(--ink)">${k.videos}</b> videos&nbsp;·&nbsp;<b style="color:var(--ink)">${k.chunks.toLocaleString()}</b> notes`;
+  $("#learnsub").textContent=`Ask anything about selling on Amazon — answered from your ${k.videos} courses, in plain English.`;
+  $("#ticker").innerHTML=`KNOWLEDGE <b>${k.videos} videos</b> · <b>${k.chunks.toLocaleString()} notes</b>  ·  SCOUT <b class="${state.done.keepa?'pos':'warn'}">${state.done.keepa?'online':'offline'}</b>  ·  RULES <b>BSR&lt;${(state.rules.bsr/1000)}k · ROI&ge;${state.rules.roiPct}%</b>`;
+  $("#syncNote").textContent=live?"Numbers pulled live from your database just now.":"Showing the last known counts. They refresh live when the database is reachable.";
+}
+async function liveSync(silent){
+  paintKnowledge(SNAP,false);
+  if(!(window.cowork&&window.cowork.callMcpTool))return;
+  try{
+    const r=await window.cowork.callMcpTool(SUPA_TOOL,{project_id:SUPA_REF,
+      query:"select (select count(*) from documents) docs,(select count(*) from document_chunks) chunks,(select count(*) from documents where category='Transcripts') videos"});
+    let raw=r&&(r.structuredContent??(r.content&&r.content[0]&&r.content[0].text)??r);
+    let rows=Array.isArray(raw)?raw:(()=>{const m=String(raw).match(/\[\s*\{[\s\S]*?\}\s*\]/);return m?JSON.parse(m[0]):null})();
+    if(rows&&rows[0]){const o=rows[0];paintKnowledge({videos:+o.videos,docs:+o.docs,chunks:+o.chunks},true);}
+  }catch(e){/* keep snapshot */}
+}
+$("#syncBtn").onclick=()=>{const b=$("#syncBtn");b.style.transform="rotate(360deg)";b.style.transition="transform .6s";setTimeout(()=>{b.style.transform="";b.style.transition="";},650);liveSync();};
+
+/* ---------- bindings ---------- */
+function paintRules(){
+  const R=state.rules;
+  $("#rulesList").innerHTML=[
+    `BSR ≤ ${R.bsr.toLocaleString()}`,`ROI ≥ ${R.roiPct}%`,`Profit ≥ ${money(R.profit)}/unit`,
+    `${R.offMin}–${R.offMax} sellers`,`Skip if Amazon's in the Buy Box`
+  ].map(x=>"› "+x).join("<br>");
+  $("#r-bsr").value=R.bsr;$("#r-roi").value=R.roiPct;$("#r-prof").value=R.profit;$("#r-off").value=R.offMin+"-"+R.offMax;
+}
+$("#rateBtn").onclick=rate;
+$("#askBtn").onclick=()=>ask();
+$("#askIn").addEventListener("keydown",e=>{if(e.key==="Enter")ask()});
+$("#bankBtn").onclick=()=>{const v=+$("#i-bank").value;if(v>0){state.bank=v;save();$("#m-cash").textContent=money(v);$("#m-cash").classList.remove("dimv");renderToday();}};
+$("#saveKeys").onclick=()=>{state.keepa=$("#s-keepa").value.trim();state.done.keepa=!!state.keepa;save();
+  $("#connState").textContent=state.keepa?"Keepa connected — scout can come online.":"No key yet.";
+  $("#scoutStatus").innerHTML=state.keepa?`<span class="chip g">Online</span><span style="color:var(--dim)">Scout can scan for products that pass your rules.</span>`:`<span class="chip r">Offline</span><span style="color:var(--dim)">Connect Keepa to auto-find products.</span>`;
+  renderToday();liveSync();};
+$("#saveRules").onclick=()=>{const m=($("#r-off").value.match(/(\d+)\D+(\d+)/)||[]);
+  state.rules={bsr:+$("#r-bsr").value||200000,roiPct:+$("#r-roi").value||30,profit:+$("#r-prof").value||3,offMin:+(m[1]||3),offMax:+(m[2]||25),amazonBB:true};
+  save();paintRules();renderToday();liveSync();};
+
+$("#qchips").innerHTML=["How do I get ungated?","Is a 120,000 BSR good?","How do I read a Keepa chart?","What ROI is safe?","How many units should I buy first?","How do I find products to sell?"]
+  .map(q=>`<button class="qchip">${q}</button>`).join("");
+$$("#qchips .qchip").forEach(b=>b.onclick=()=>ask(b.textContent));
+
+$("#learnlog").innerHTML=SNAP.learned.map(x=>`<div>${x}</div>`).join("");
+$("#s-keepa").value=state.keepa||"";
+if(state.bank!=null){$("#m-cash").textContent=money(state.bank);$("#m-cash").classList.remove("dimv");}
+if(state.done.keepa)$("#scoutStatus").innerHTML=`<span class="chip g">Online</span><span style="color:var(--dim)">Scout can scan for products that pass your rules.</span>`;
+
+/* ---------- sourcing tools ---------- */
+const FRIENDLY=["jellycat","crocs","yeti","stanley","crayola","elmer","monster jam","lego","hot wheels","pokemon","sunny angel","owala","gap","nautica","carter","under armour","new balance","hoka","mrs. meyer","native","milwaukee","dji","fancy feast","makeup by mario","puma","cuddle duds","stafford","frontier co-op","tonies"];
+const AVOID=["nike","adidas","jordan","yeezy","apple","sony","disney"];
+$("#brandBtn").onclick=()=>{
+  const b=$("#i-brand").value.trim().toLowerCase(); if(!b)return;
+  let v,cls,msg;
+  if(AVOID.some(x=>b.includes(x))){v="AVOID";cls="r";msg="Known to file IP complaints — one can suspend you. Skip unless you're ungated and sure.";}
+  else if(FRIENDLY.some(x=>b.includes(x))){v="FRIENDLY";cls="g";msg="Arbitrage-tolerant and steady. Good to mine repeatedly.";}
+  else {v="UNKNOWN";cls="a";msg="Not on your lists yet. Check ungating and recent complaints before buying deep.";}
+  $("#brandOut").innerHTML=`<span class="chip ${cls}">${v}</span> <span style="color:var(--dim)">${msg}</span>`;
+};
+$("#stalkBtn").onclick=()=>{
+  const lines=$("#i-stalk").value.split(/\s+/).filter(x=>x.length>3);
+  if(!lines.length){$("#stalkOut").textContent="Paste at least one ASIN or link.";return;}
+  state.queue=(state.queue||[]).concat(lines); save();
+  $("#stalkOut").textContent=`${lines.length} added — ${state.queue.length} waiting in the scout queue. Checked on the next scout run.`;
+  $("#i-stalk").value="";
+};
+
+/* ---------- planners (pure math, no account needed) ---------- */
+$("#cfBtn").onclick=()=>{
+  const cash=+$("#cf-cash").value, roi=+$("#cf-roi").value/100, days=+$("#cf-days").value||30, mo=+$("#cf-mo").value||6;
+  const flips=Math.max(1,Math.round(mo*30/days)); let c=cash;
+  for(let i=0;i<flips;i++)c*=(1+roi);
+  $("#cfOut").innerHTML=`<div class="verdict"><div class="lab">after ${flips} flips · ${mo} mo</div>
+    <div class="mono pos" style="font-size:var(--t-xl)">${money(c)}</div>
+    <div style="color:var(--dim);font-size:var(--t-xs);margin-top:6px">From ${money(cash)}, reinvesting every dollar at ${(roi*100).toFixed(0)}% ROI per ~${days}-day flip. Real life is lumpier — treat it as a ceiling, not a promise.</div></div>`;
+};
+$("#rsBtn").onclick=()=>{
+  const stock=+$("#rs-stock").value, vel=+$("#rs-vel").value, lead=+$("#rs-lead").value;
+  const cover=vel>0?stock/vel:Infinity, reorderAt=Math.ceil(vel*lead), qty=Math.ceil(vel*lead*2), soon=cover<=lead;
+  $("#rsOut").innerHTML=`<div class="verdict ${soon?'pass':''}"><div class="lab">days of stock left</div>
+    <div class="mono ${soon?'warn':'pos'}" style="font-size:var(--t-xl)">${isFinite(cover)?cover.toFixed(0)+' days':'plenty'}</div>
+    <ul class="reasons"><li><span class="dot ${soon?'a':'g'}"></span><span>Reorder when you hit <b>${reorderAt} units</b> (covers the ${lead}-day lead time).</span></li>
+    <li><span class="dot g"></span><span>Suggested reorder size: <b>${qty} units</b> ≈ ${(qty/(vel||1)).toFixed(0)} days of cover.</span></li></ul></div>`;
+};
+$("#fzBtn").onclick=()=>{
+  const cost=+$("#fz-cost").value, sell=+$("#fz-sell").value, ref=sell*0.15, fee=fbaFee(sell), prep=0.5;
+  const profit=sell-cost-ref-fee-prep, roi=cost>0?profit/cost*100:0, margin=sell>0?profit/sell*100:0;
+  const r=(l,v,c)=>`<li><span class="dot ${c||'g'}"></span><span>${l}: <b>${v}</b></span></li>`;
+  $("#fzOut").innerHTML=`<div class="verdict ${profit>=3?'buy':'pass'}"><ul class="reasons" style="margin-top:0">
+    ${r("Sells for",money(sell))}${r("− Referral (15%)","-"+money(ref),"a")}${r("− FBA fee","-"+money(fee),"a")}${r("− Prep","-"+money(prep),"a")}${r("− Your cost","-"+money(cost),"a")}
+    <li style="border-top:1px solid var(--line);margin-top:6px;padding-top:9px"><span class="dot ${profit>=0?'g':'r'}"></span><span><b class="${profit>=0?'pos':'neg'}">${profit>=0?money(profit):'-'+money(-profit)} profit · ${roi.toFixed(0)}% ROI · ${margin.toFixed(0)}% margin</b></span></li>
+  </ul></div>`;
+};
+$("#ppBtn").onclick=()=>{
+  const price=+$("#pp-price").value, acos=+$("#pp-acos").value/100, cvr=+$("#pp-cvr").value/100;
+  const maxCPC=price*acos*cvr, daily=Math.max(5,Math.round(maxCPC*30));
+  $("#ppOut").innerHTML=`<div class="verdict"><ul c

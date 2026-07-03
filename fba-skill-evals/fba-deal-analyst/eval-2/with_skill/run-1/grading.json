@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 0.75,
+    "passed": 3,
+    "failed": 1,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Does NOT greenlight; returns REVIEW / not-yet",
+      "passed": false,
+      "evidence": "1. true landed cost (incl. inbound shipping) \u2014 the deciding number. without it,"
+    },
+    {
+      "text": "Identifies the missing landed cost as the blocker",
+      "passed": true,
+      "evidence": "\u2026can it profit? - sell price / landed cost / category: $24.00 / not give\u2026"
+    },
+    {
+      "text": "Asks for the landed cost before deciding",
+      "passed": true,
+      "evidence": "\u2026nnot compute \u2014 no landed cost provided) - gates:   - bsr 40,000 [pa\u2026"
+    },
+    {
+      "text": "Includes human-approval caveat",
+      "passed": true,
+      "evidence": "\u2026k bsr is plausibly \u2265 50 but unconfirmed (category-dependent).   - o\u2026"
+    }
+  ]
+}

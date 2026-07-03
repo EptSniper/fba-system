@@ -1,0 +1,18 @@
+# Core
+keepa>=1.3            # sanctioned Amazon data layer (REQUIRES a paid Keepa key)
+requests>=2.31        # Discord webhook posting
+python-dotenv>=1.0    # load .env
+
+# Optional learning layer (scout runs on the rule score without these,
+# but train.py / the model need them)
+scikit-learn>=1.3
+joblib>=1.3
+numpy>=1.24
+
+# Optional: LLM analyst pass (Scout Agent Build Plan Prompt S1/S3) — skips gracefully without
+# an ANTHROPIC_API_KEY even if installed.
+anthropic>=0.39
+
+# Optional: read-only operator MCP server (Scout Agent Build Plan Prompt S4).
+# REQUIRES Python 3.10+ — `pip install mcp` fails on Python 3.9 with no matching distribution.
+# mcp>=1.0 ; python_version >= "3.10"

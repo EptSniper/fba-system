@@ -1,0 +1,461 @@
+{
+  "$comment": "SINGLE SOURCE OF TRUTH for the AI's brain. Both the item finder/rater (scout/) and the control center read this. When Mehmet feeds new info and Claude distills it, this file is updated -> the scout and the dashboard both update. See ai-system/ingestion-pipeline.md.",
+  "updated": "2026-07-02",
+  "model": "online arbitrage (OA)",
+  "criteria": {
+    "bsrMax": 200000,
+    "minMonthlySales": 50,
+    "minOffers": 3,
+    "maxOffers": 25,
+    "minRoi": 0.3,
+    "minProfitPerUnit": 3.0,
+    "priceMin": 8.0,
+    "priceMax": 60.0,
+    "rejectIfAmazonBuyBox": true,
+    "exceptions": {
+      "groceryMinRoi": 0.25,
+      "source": "Non-returnable grocery can clear the ROI gate at 25% instead of 30% — profit is locked once sold, no return risk. (field-sops.md / sourcing-playbook.md)"
+    },
+    "source": "SINGLE SOURCE — scout/config.py loads these criteria from here; playbooks/sourcing-playbook.md explains them"
+  },
+  "guards": {
+    "priceSpikeRatio": 1.5,
+    "offersRiseRatio": 1.4,
+    "amazonBuyBoxShareMax": 0.2,
+    "pennyWar": {
+      "windowDays": 30,
+      "bbStdPctFlag": 0.04,
+      "status": "proposed default — tune after live Keepa history is available (Phase 2, Prompt 2.1)"
+    },
+    "restrictionKeywords": {
+      "hazmat/flammable": ["battery", "batteries", "lithium", "spray", "aerosol", "flammable", "paint", "bleach", "cleaner", "disinfect", "sanitizer", "nail polish", "perfume", "cologne", "fragrance", "magnet", "lighter", "butane", "propane"],
+      "prohibited": ["tire", "gift card", "alcohol", "beer", "wine", "vodka", "whiskey"],
+      "expiration-dated": ["supplement", "vitamin", "protein", "snack", "coffee", "tea", "cereal", "formula", "lotion", "cream", "shampoo", "soap", "sunscreen", "cosmetic", "makeup", "serum", " point-after-opening", "pao"],
+      "meltable": ["chocolate", "gummy", "gummies", "jelly", "wax", "candle", "lip balm", "crayon"]
+    },
+    "currentVsAvg90PriceCaution": 1.15,
+    "source": "SINGLE SOURCE — scout/config.py loads these learned red-flag thresholds from here. priceSpikeRatio: reject/penalize when current price > 1.5x its 90-day avg (likely to revert). offersRiseRatio: flag when new-offer count > 1.4x its 90-day avg (seller spike -> price tank). amazonBuyBoxShareMax: hard-reject when Amazon wins the Buy Box >= 20% of the time (rotation), even if a 3P holds it now. pennyWar: proposed threshold for a Buy-Box price-war detector — not yet wired to real data (needs Keepa history=True, Phase 2). restrictionKeywords: moved here from a hardcoded dict in scout/scoring.py (_RESTRICTION_KEYWORDS) so both the scout AND the control-center Find page read the identical heuristic word-boundary list — a hint, never an eligibility verdict; always verify FBA restrictions/hazmat/expiration/meltable status in Seller Central before buying. currentVsAvg90PriceCaution: Scout Agent Build Plan (2026-07-02) sec 4.1 — a SOFTER, non-gate caution adjustment (small point penalty) at 1.15x avg90, distinct from and evaluated separately from priceSpikeRatio's 1.5x HARD flag; gives an earlier warning without touching the existing gate."
+  },
+  "fees": {
+    "referralRates": {
+      "toys": 0.15,
+      "home": 0.15,
+      "kitchen": 0.15,
+      "grocery": 0.08,
+      "beauty": 0.15,
+      "health": 0.15,
+      "clothing": 0.17,
+      "shoes": 0.15,
+      "office": 0.15,
+      "pet": 0.15,
+      "sports": 0.15,
+      "tools": 0.15,
+      "baby": 0.15,
+      "electronics_accessories": 0.15,
+      "default": 0.15
+    },
+    "minReferralFee": 0.3,
+    "source": "Category referral rates simplified from Amazon's real fee table (knowledge-rag/sources/amazon/selling-fees.md, collected 2026-06-23 from sell.amazon.com/pricing). Several categories are tiered by price (clothing 5% <=$15 / 10% $15-20 / 17% >$20; grocery 8% <=$15 / 15% above; baby 8% <=$10 / 15% above; electronics accessories 15% <=$100 / 8% above) — the value stored here is the rate that applies across most of the $8-$60 OA price band (criteria.priceMin/priceMax). Consult the source doc before trusting an edge-case price point. 'default' (0.15) covers any category not listed; $0.30 minReferralFee applies to all categories per Amazon policy."
+  },
+  "scoring": {
+    "preferredOffers": {
+      "min": 5,
+      "max": 7,
+      "bonus": 5,
+      "source": "The 5-7 seller 'goldilocks' offer band is a scoring BONUS, not a gate — the hard offer band stays criteria.minOffers/maxOffers (3-25) and is unaffected. (learning-hub/transcripts/insights.md #9)"
+    }
+  },
+  "seasonality": {
+    "backToSchool": {
+      "months": [6, 7, 8],
+      "brands": ["Puma", "Cuddle Duds", "Gap", "Carter's"]
+    },
+    "q4": {
+      "months": [9, 10, 11, 12],
+      "brands": ["Stanley", "Yeti", "LEGO", "Hot Wheels", "Pokemon", "Jellycat", "Tonies"]
+    },
+    "buyLeadWeeks": [6, 8],
+    "source": "Seasonal buy windows from learning-hub/playbooks/field-sops.md's seasonal calendar. buyLeadWeeks = how many weeks ahead of a brand's peak-demand window to buy so inventory lands in time for the seasonal BSR hump."
+  },
+  "discovery": {
+    "productFinderStack": {
+      "bsrMax": 200000,
+      "amazonOutOfStock": true,
+      "minOffers": 4,
+      "sortHint": "90-day price-drop % (surface value buys)",
+      "source": "The scout's default Keepa Product Finder recipe per friendly brand: BSR <= 200k (top ~1% of category), Amazon out of stock (leaves the Buy Box open to 3P sellers), >= 4 offers (confirms real OA competition, not a single-seller wholesale/PL listing). (learning-hub/playbooks/sourcing-playbook.md reverse-sourcing method; learning-hub/transcripts/insights.md #8)"
+    }
+  },
+  "brands": {
+    "friendly": [
+      "Jellycat",
+      "Crocs",
+      "Yeti",
+      "Stanley",
+      "Crayola",
+      "Elmer's",
+      "Monster Jam",
+      "LEGO",
+      "Hot Wheels",
+      "Pokemon",
+      "Sunny Angels",
+      "Owala",
+      "Gap",
+      "Nautica",
+      "Carter's",
+      "Under Armour",
+      "New Balance",
+      "Hoka",
+      "Mrs. Meyer's",
+      "Native",
+      "Milwaukee",
+      "DJI",
+      "Fancy Feast",
+      "Makeup by Mario",
+      "Puma",
+      "Cuddle Duds",
+      "Stafford",
+      "Frontier Co-op",
+      "Tonies"
+    ],
+    "avoid": [
+      "Nike",
+      "Adidas",
+      "Jordan",
+      "Yeezy",
+      "Apple",
+      "Sony",
+      "Disney"
+    ],
+    "source": "scout/brands.py (seeded from playbooks/brands-and-sources.md)"
+  },
+  "tools": [
+    "Amazon Seller Central",
+    "Keepa",
+    "SellerAmp SAS",
+    "IP Alert",
+    "Boxem",
+    "cardbear.com",
+    "raise.com",
+    "Capital One Shopping",
+    "Rakuten",
+    "TopCashback",
+    "Coupert",
+    "RevROI",
+    "BrickSeek",
+    "Slickdeals",
+    "Tactical Arbitrage",
+    "ProfitPath",
+    "BuyBotPro"
+  ],
+  "learning": {
+    "minLabeledRows": 30,
+    "source": "System Blueprint Prompt 3.1 — the label builder (scout/labels.py) refuses to assemble a training table below this many labeled rows (with both positive and negative outcomes represented). Below it, the scout runs on the transparent rule score alone; this is a floor for even ATTEMPTING calibration, not a promotion threshold — scout_pro's champion/challenger gate (PROMOTION_MIN_GAIN) is the separate, stricter bar for actually replacing the rule engine."
+  },
+  "dealSourcing": {
+    "principle": "Source where the best SALE / cashback / coupon is TODAY (e.g. Target BOGO today, Walgreens BOGO tomorrow) — then stack cashback + discount gift cards + coupons (manufacturing margin) for a moat nobody else has.",
+    "retailers": [
+      "Target",
+      "Walmart",
+      "Walgreens",
+      "Best Buy",
+      "Home Depot",
+      "Lowe's",
+      "Ace Hardware",
+      "Kohl's",
+      "Grocery Outlet"
+    ],
+    "dealAggregatorAPIs": [
+      "FMTC",
+      "LinkMyDeals",
+      "Takedeals"
+    ],
+    "dealTools": [
+      "BrickSeek (retail stock/clearance)",
+      "Slickdeals (community)",
+      "Tactical Arbitrage (1,400+ site scan)",
+      "ProfitPath Dealwatch",
+      "BuyBotPro (1-click deal analysis)"
+    ],
+    "ipRisk": "IP Alert flags brands that file IP complaints; confirm with the Keepa 'cliff' + brand-on-listing + seller-spike checks.",
+    "status": "DESIGNED (see ai-system/deal-sourcing-system.md). Not live yet — needs deal-API keys / SP-API. Control center has a Deals module reading data/deals.json (honest empty until connected)."
+  },
+  "dealFinder": {
+    "sources": {
+      "slickdeals": {
+        "enabled": true,
+        "feeds": ["https://slickdeals.net/newsearch.php?rss=1&mode=frontpage"],
+        "pollIntervalHours": 6
+      },
+      "bestbuy": {
+        "enabled": true,
+        "categories": [],
+        "pageSize": 100,
+        "maxPages": 1,
+        "note": "Empty categories = all onSale items (no category filter). Requires BESTBUY_API_KEY (developer.bestbuy.com signups from free-email domains like Gmail are rejected — a domain email is needed; see Deal Finder Build Plan sec 5.1). pageSize/maxPages are deliberately conservative until real rate limits (unconfirmed: ~5 req/s / 50k/day commonly cited) are observed and recorded here."
+      }
+    },
+    "confidenceBands": {
+      "autoAccept": 0.9,
+      "review": 0.6,
+      "source": "Deal Finder Build Plan (2026-07-02) sec 3, step 5 — composite match confidence >= autoAccept flows straight into the scout's existing gates as a source=\"deal-finder\" candidate; [review, autoAccept) goes to the control-center match-review queue; below review is discarded (kept as a negative example for the gold set)."
+    },
+    "priceSanity": {
+      "maxAmazonToRetailRatio": 3.0,
+      "source": "Deal Finder Build Plan sec 3, step 5 — a practitioner heuristic, not yet tuned on our own data: if the matched Amazon price is >= 3x the retail deal price, suspect a pack-count/size mismatch rather than a genuine flip. Tune once real matched pairs exist."
+    },
+    "discountStack": {
+      "Target": {"cashbackPct": null, "giftCardPct": null},
+      "Walmart": {"cashbackPct": null, "giftCardPct": null},
+      "Walgreens": {"cashbackPct": null, "giftCardPct": null},
+      "Best Buy": {"cashbackPct": null, "giftCardPct": null},
+      "Home Depot": {"cashbackPct": null, "giftCardPct": null},
+      "Lowe's": {"cashbackPct": null, "giftCardPct": null},
+      "source": "MANUAL weekly table, deliberately left NULL until Mehmet fills it in with real observed rates — no API exists for cashback/gift-card rates (Rakuten/TopCashback/CardCash have no public developer APIs; Deal Finder Build Plan sec 2). scout/deals/brain_config.discount_stack() treats a null/missing entry as 0% stack, never a fabricated default. Check Rakuten/TopCashback/cardbear.com weekly (build plan sec 5.4) and record real rates here."
+    },
+    "status": "PARTIALLY IMPLEMENTED 2026-07-02 (Deal Finder Build Plan Prompt D1): Supabase deals/deal_matches schema written (scout/db/migrations/003_deals_and_matches.sql, NOT YET APPLIED — pending with 001/002), attribute normalizer + Slickdeals RSS + Best Buy API connectors built and tested (53 new scout tests: 22 normalizer, 16 sources, 10 db, 5 collect orchestrator; full existing 97-test suite still green, 150/150 total). NOT live: no BESTBUY_API_KEY yet (connector honestly no-ops without one), no AI matcher (Prompt D2), no runner/control-center wiring (Prompt D3), no Tier-2 affiliate sources (Prompt D4)."
+  },
+  "operations": {
+    "triage": {
+      "formula": "expected_profit * monthly_velocity / buy_cost, at a STRESSED price",
+      "stressedPriceFactor": 0.9,
+      "reviewOrder": ["eligibility", "speed", "downside"],
+      "manualReviewBuyRate": "0.04-0.06 baseline (published practitioner estimate, not our own measured rate yet)",
+      "source": "Scout Agent Build Plan (2026-07-02) sec 3.2 — orders the review queue/digest by expected payback SPEED under a stressed (competed-down) price rather than headline ROI, so limited review time goes to what deserves it first. scoring.triage_score() implements this; it is a ranking signal only, never a gate."
+    },
+    "seasonal2026": {
+      "primeDayWindow": {"start": "2026-06-23", "end": "2026-06-26", "role": "sourcing window, not a selling event, for OA"},
+      "backToSchoolBuyWindow": "late June - mid August",
+      "q4ArrivalDeadline": "2026-10-30",
+      "q4StopSpeculativeBuysAfterWeek": 46,
+      "toysBuyWindows": ["Feb-Mar clearance", "October"],
+      "januaryReturnsWave": true,
+      "biasQ4TowardLowReturnCategories": true,
+      "source": "Scout Agent Build Plan sec 3.5 — 2026-specific dates (Prime Day moved to June 23-26) distilled from practitioner research; overlaps with and extends the existing top-level `seasonality` block's brand/month windows (Q4 brands, back-to-school brands) rather than replacing it — `seasonality` = WHICH brands, `operations.seasonal2026` = WHEN to act on the calendar."
+    },
+    "bankroll": {
+      "cashReservePct": 0.2,
+      "cutLossDays": 60,
+      "agedSurchargeDay": 181,
+      "reorderFormula": "weekly_velocity * lead_time + buffer",
+      "buckets": ["winners", "tests", "seasonalReserve"],
+      "source": "Scout Agent Build Plan sec 3.6 — published practitioner guardrails. agedSurchargeDay 181 reflects Amazon's 2026 aged-inventory surcharge start (moved earlier from 271 days) — a real policy fact, cite policy2026 below for the source citation on that specific number."
+    },
+    "kpis": {
+      "sellThrough90Target": 3,
+      "turnsFloor": 6,
+      "trackRealizedVsEstimatedRoiGap": true,
+      "profitPerReviewHour": true,
+      "source": "Scout Agent Build Plan sec 3.7 — weekly ops targets (90-day sell-through >=3, 6-12x/yr turns floor, and honestly tracking the realized-vs-estimated ROI gap: expect 10-20% realized net margins in 2026 vs 30%+ pre-buy estimates). scout/ops_report.py computes what Supabase data actually supports; profitPerReviewHour is NOT currently computable (no review-hour logging exists anywhere in this repo) and the report says so honestly rather than fabricating a number."
+    }
+  },
+  "policy2026": {
+    "payoutHoldDaysAfterDelivery": 7,
+    "payoutHoldEffective": "2026-03",
+    "comminglingEnded": true,
+    "comminglingEndedEffective": "2026-03",
+    "feeIncreasePerUnit": 0.08,
+    "feeIncreaseEffective": "2026-01",
+    "source": "Scout Agent Build Plan sec 3.8 — mid-2026 Amazon policy facts from practitioner research, not yet cross-checked against an official Amazon fee-change announcement page in the RAG corpus (flagged as a follow-up for knowledge-rag ingestion). Distinct from the existing fees.referralRates / OA_PREP_COST / FUEL_SURCHARGE, which are already wired into the fee math — these are cash-flow-timing and policy facts, not fee-calculation inputs, and nothing in scout/config.py or scoring.py consumes them yet (informational for now; ops_report.py surfaces them as context)."
+  },
+  "knowledge": {
+    "transcripts": 53,
+    "playbooks": [
+      "sourcing",
+      "ungating",
+      "operations",
+      "brands-and-sources"
+    ],
+    "fundamentals": 5,
+    "lastDistilled": "2026-07-02",
+    "ragCorpus": {
+      "documents": 99,
+      "chunks": 1340,
+      "approxTokens": 875905,
+      "supabase": "SYNCED 2026-07-02 — 99 docs / 1,340 chunks live in Supabase (ref cakbzcvtqhdtxfjuxstd), vector(768), LOCAL embeddings BAAI/bge-base-en-v1.5 via fastembed ($0). Upload is resumable (only the 24 new chunks were embedded this run, not the whole corpus). Grew from 97/1,316 (2026-07-01 dedup baseline) after ingesting 2 new YouTube transcripts (ungating guide + SellerAmp SAS tutorial) queued via the daily research pipeline. Retrieval spot-checked live (ask.py correctly surfaced the new ungating transcript as the top cited match).",
+      "categories": [
+        "Policy",
+        "FBA operations",
+        "Listing rules",
+        "Arbitrage decision rules",
+        "APIs and data",
+        "Fundamentals",
+        "Transcripts",
+        "Research articles"
+      ],
+      "location": "knowledge-rag/ (ingest.py -> corpus/, build_index.py -> FAISS)",
+      "amazonDocs": "PULLED (public, ingested): FBA overview + full referral-fee-by-category table (sell.amazon.com) + 6 SP-API guides (Listings Restrictions = 'can I list this ASIN', FBA Inventory, Fulfillment Inbound/Send-to-Amazon, Finances, Catalog Items, Notifications). SP-API full set indexed via developer-docs.amazon.com/llms.txt (fetch-on-demand). Login-gated Seller Central policy pages (restricted products, IP, condition, invoices) confirmed NOT publicly fetchable -> manual export required (ToS). See knowledge-rag/sources/manifest.json.",
+      "answers": "'am I allowed?' (policy/gating/IP/FBA eligibility) — complements the scout's 'can I profit?'"
+    }
+  },
+  "ingestionLog": [
+    {
+      "date": "2026-06-19",
+      "type": "screenshot",
+      "item": "Startup tools & costs",
+      "effect": "logged tool stack + startup budget"
+    },
+    {
+      "date": "2026-06-19",
+      "type": "transcript",
+      "item": "OA Beginners Guide 2026 (FREE COURSE)",
+      "effect": "seeded fundamentals + buy/no-buy red flags + glossary"
+    },
+    {
+      "date": "2026-06-20",
+      "type": "transcripts",
+      "item": "12 OA videos (SellerAmp, ungating, Q4, sourcing, case studies)",
+      "effect": "built sourcing + ungating playbooks; encoded OA criteria into the scout"
+    },
+    {
+      "date": "2026-06-20",
+      "type": "transcripts",
+      "item": "3 more (Masterclass + 2 mega-courses)",
+      "effect": "operations playbook; Boxem/cardbear; brand seed/avoid lists into the scout"
+    },
+    {
+      "date": "2026-06-20",
+      "type": "criteria",
+      "item": "Brand knowledge wired into the finder",
+      "effect": "scout now seeds search by friendly brands + hard-rejects avoid brands"
+    },
+    {
+      "date": "2026-06-20",
+      "type": "screenshots",
+      "item": "Glossary + extensions + ungating slides (Beginners course)",
+      "effect": "reaffirmed glossary, cashback tools, ungating steps"
+    },
+    {
+      "date": "2026-06-20",
+      "type": "transcript",
+      "item": "How To Start Amazon OA For Beginners (sourcing course)",
+      "effect": "added IP Alert tool + avoid-order-cancels + 'source where the deal is today' + storefront-stalking refinements"
+    },
+    {
+      "date": "2026-06-20",
+      "type": "document",
+      "item": "PDF: Building an Automated Arbitrage Sourcing System",
+      "effect": "designed the deal-sourcing system (deal APIs -> profitability -> alerts); added deal tools to the brain"
+    },
+    {
+      "date": "2026-06-20",
+      "type": "document",
+      "item": "PDF: Plan for ingesting Amazon help docs (RAG)",
+      "effect": "designed a compliance-aware RAG pipeline; scaffolded a local-docs indexer"
+    },
+    {
+      "date": "2026-06-20",
+      "type": "criteria",
+      "item": "Applied all learnings to the rater",
+      "effect": "scout now reads its criteria from THIS file (single source) + detects/penalizes price spikes via the Keepa 90-day average"
+    },
+    {
+      "date": "2026-06-23",
+      "type": "code",
+      "item": "Scout: offer-trend detection + test suite",
+      "effect": "added the 'seller spike -> price tank' guard (offers vs 90-day avg) and a 15-test suite (scout/tests/test_scoring.py) locking the scorer/gates/brands"
+    },
+    {
+      "date": "2026-06-23",
+      "type": "code",
+      "item": "Scout: Amazon Buy-Box SHARE guard (rotation)",
+      "effect": "reads Amazon's Buy-Box win % from Keepa (buybox=True); hard-rejects when Amazon wins >=20% of the time even if a 3P holds it now, penalizes/flags smaller shares. Guard thresholds single-sourced from the new 'guards' block above."
+    },
+    {
+      "date": "2026-06-23",
+      "type": "rag",
+      "item": "Amazon FBA RAG knowledge base built",
+      "effect": "ingested every owned doc (38 docs -> 903 chunks, categorized + cited) via knowledge-rag/ingest.py; added system instruction, answer flow (can-I-profit vs am-I-allowed), update job, and sources/manifest.json (the Amazon-docs coverage program incl. SP-API llms.txt index). Retrieval-augmented, not fine-tuned."
+    },
+    {
+      "date": "2026-06-23",
+      "type": "rag",
+      "item": "Pulled public Amazon docs into the corpus",
+      "effect": "fetched + ingested the FBA overview and the full referral-fee-by-category table from sell.amazon.com (corpus now 40 docs / 911 chunks). Confirmed login-gated Seller Central policy pages are not publicly fetchable -> manual export. SP-API guide .md pages need exact slugs from llms.txt (next batch)."
+    },
+    {
+      "date": "2026-06-23",
+      "type": "rag",
+      "item": "Pulled SP-API guide pages",
+      "effect": "fetched + ingested 4 SP-API guides (Listings Restrictions, FBA Inventory, Fulfillment Inbound, Finances) from developer-docs.amazon.com/.md — corpus now 44 docs / 917 chunks. These map the automation path: gating checks, live inventory, Send-to-Amazon, and realized fees for the scout's learning loop."
+    },
+    {
+      "date": "2026-06-23",
+      "type": "code",
+      "item": "Propagated the Jan-2026 prep/label rule into the scout",
+      "effect": "learned from the Fulfillment Inbound doc that Amazon no longer preps/labels US FBA -> added OA_PREP_COST ($0.50/unit default) to config.py and subtracted it in scoring.estimate_oa_profit_roi (tests still 15/15). Also documented in operations-playbook.md. This is the INSIGHT (not just the doc) fed into the rater + the playbook."
+    },
+    {
+      "date": "2026-06-23",
+      "type": "rag",
+      "item": "Pulled 2 more SP-API guides (Catalog Items, Notifications)",
+      "effect": "corpus now 46 docs / 919 chunks. Catalog Items = authoritative category/dimensions/identifiers/BSR for accurate fees; Notifications = push events to make the dashboard live."
+    },
+    {
+      "date": "2026-06-23",
+      "type": "policy",
+      "item": "Mehmet manually exported FBA product-restrictions + lithium/hazmat docs",
+      "effect": "ingested 2 gated Seller Central policy pages (FBA prohibited/hazmat/expiration/meltable + lithium-battery US Wh thresholds & SDS/UN38.3 documentation). Corpus now 48 docs / 929 chunks. This is the high-value 'am I allowed' content that can't be auto-fetched."
+    },
+    {
+      "date": "2026-06-23",
+      "type": "code",
+      "item": "Propagated restrictions into the scout (not just RAG)",
+      "effect": "added _fba_restriction_hint to scoring.py: word-boundary keyword scan of title/brand flags likely hazmat/expiration/meltable/prohibited items with a 'verify FBA eligibility before buying' warning (e.g. Lithium Battery->hazmat, Chocolate->meltable, Face Cream->expiration; Jellycat correctly NOT flagged). 15/15 tests pass."
+    },
+    {
+      "date": "2026-06-25",
+      "type": "rag",
+      "item": "Fed in 28 new transcripts (Keepa, storefront-stalking, SellerAmp, AI/RAG)",
+      "effect": "Mehmet uploaded the YouTube transcripts from the study shortlist. Copied into learning-hub/transcripts (now 45 videos) + re-ingested -> corpus 76 docs / 1209 chunks (~808k tokens). The dashboard Ask now searches the full expanded corpus, incl. Keepa mastery, storefront stalking, SellerAmp, and AI/RAG-build videos. Also fixed ingest.py to use stable rel-path doc ids."
+    },
+    {
+      "date": "2026-06-25",
+      "type": "infra",
+      "item": "Built the Supabase 'sourcing brain' database",
+      "effect": "created the oa-sourcing-brain Supabase project (ref cakbzcvtqhdtxfjuxstd, free tier) with the two-DB schema: knowledge (documents + document_chunks pgvector + match_chunks function) and business (leads, keepa_snapshots, discounts, decisions, outcomes, storefronts), RLS locked. Wrote knowledge-rag/upload_to_supabase.py (embed+fill) and scout/db.py (lead/decision/outcome logging). Activates once an OpenAI key + the Supabase service key are added. See knowledge-rag/SUPABASE-SETUP.md."
+    },
+    {
+      "date": "2026-06-25",
+      "type": "rag",
+      "item": "Distilled transcripts into structured field SOPs",
+      "effect": "added learning-hub/playbooks/field-sops.md (criteria, red flags, Keepa rules, SellerAmp settings, discount stacking, storefront/brand-mining SOPs, Q4, buy-qty/risk) + ai-system/ai-architecture.md (agent roster + two-DB spec). Corpus 79 docs / 1234 chunks; dashboard Ask republished."
+    },
+    {
+      "date": "2026-06-26",
+      "type": "infra",
+      "item": "Filled the Supabase knowledge DB (local embeddings)",
+      "effect": "embedded all 1,224 chunks (verified: 78 docs / 1,224 chunks) and loaded them into Supabase document_chunks (vector(768)); match_chunks RPC verified working (self-similarity 1.0). Used a LOCAL model (BAAI/bge-base-en-v1.5 via fastembed, EMBED_PROVIDER=local) because Google retired text-embedding-004 on 2026-01-14 and gemini-embedding-001's free tier 429s on bulk and won't clear. Made upload_to_supabase.py resumable + paced/retry; added run_upload.bat (double-click runner) and ask.py (live cited semantic search via the publishable key). Granted anon EXECUTE on match_chunks for a future frontend."
+    },
+    {
+      "date": "2026-07-01",
+      "type": "transcripts+articles",
+      "item": "Daily research pipeline: 6 YouTube transcripts + 12 research articles/papers into corpus + Supabase",
+      "effect": "Transcripts 45->51 (OA Sourcing 101, Cash-Flow Strategy, Keepa-for-OA, Reverse-Sourcing Masterclass, Storefront Stalking Reveal, Start-OA-2026); new 'Research articles' category (12 docs / 25 chunks: 2026 fee update, IP policy, restricted products, Keepa Finder filters, FBA fees+surcharge, SellerAmp masterguide, SP-API Listings Restrictions, FBA bookkeeping, 4 RAG papers). Corpus 78->97 docs / 1,224->1316 chunks; uploaded to Supabase (66 new chunks embedded, verified live). ingest.py now also reads knowledge-rag/sources/research/. Dedupe DONE same day (user-approved): 78 stale docs + 1,224 old chunks deleted; live = 97/1,316, matches corpus 1:1."
+    },
+    {
+      "date": "2026-07-01",
+      "type": "criteria",
+      "item": "Scout + Deal-Finder Expert Upgrade Brief — Phase 1, Prompt 1.1: expert thresholds",
+      "effect": "Added 6 new brain blocks (each with its own source: line), none yet consumed by code (Prompt 1.2/1.3 wire them): criteria.exceptions.groceryMinRoi (0.25, non-returnable grocery ROI exception); guards.pennyWar (proposed Buy-Box price-war thresholds, awaiting Phase 2 Keepa history); fees.referralRates (14-category rate map replacing the flat 15% assumption, sourced from knowledge-rag/sources/amazon/selling-fees.md); scoring.preferredOffers (5-7 offer 'goldilocks' bonus, +5 pts, does not touch the 3-25 hard gate); seasonality (back-to-school + Q4 brand/month windows + buyLeadWeeks); discovery.productFinderStack (the scout's default Keepa Product Finder recipe: BSR<=200k, Amazon OOS, offers>=4). Validated JSON parses; scout's existing 15/15 scoring tests + 2/2 pipeline-memory tests still pass unchanged (nothing reads these keys yet). Bundled control-center/hub-data/ai-brain.json re-synced to match."
+    },
+    {
+      "date": "2026-07-02",
+      "type": "code+criteria",
+      "item": "Deal Finder Build Plan — Prompt D1: deals foundation (schema, normalizer, 2 free sources)",
+      "effect": "New scout/deals/ package: normalize.py (regex attribute extractor -- brand/core_title/pack_count/size_value/size_unit -- with a pluggable LLM-fallback hook for Prompt D2, never called here), brain_config.py (single-sourced dealFinder reader), sources/slickdeals.py (official RSS, no key needed) and sources/bestbuy.py (Products API, honest no-op without BESTBUY_API_KEY), collect.py (orchestrator -> db.upsert_deal). db.py gained upsert_deal() (idempotent on retailer+sku+price_current+day, same graceful-degrade convention as leads/keepa_snapshots). Wrote scout/db/migrations/003_deals_and_matches.sql (deals + deal_matches tables) -- NOT YET APPLIED, same blocked-pending-human-review status as 001/002. Added the dealFinder brain block above (sources config, confidenceBands 0.90/0.60, priceSanity 3.0x, discountStack left NULL pending Mehmet's manual weekly fill-in -- no cashback/GC-rate API exists). 53 new tests (normalize, sources, db, collect), all passing; scout's full existing suite unaffected. Bundled control-center/hub-data/ai-brain.json re-synced to match. Not done: matching (D2, needs ANTHROPIC_API_KEY+KEEPA_KEY), runner/UI wiring (D3), Tier-2 affiliate sources (D4, needs Impact.com approval)."
+    },
+    {
+      "date": "2026-07-02",
+      "type": "code+criteria",
+      "item": "Scout Agent Build Plan -- Prompts S2 + S4 + S1 + S3 (everything key-free, plus everything that only needs the still-absent ANTHROPIC_API_KEY, mock-tested per the SP-API precedent)",
+      "effect": "S2 (key-free): added operations (triage/seasonal2026/bankroll/kpis) + policy2026 brain blocks + guards.currentVsAvg90PriceCaution (1.15x, a SOFT adjustment distinct from the existing 1.5x priceSpikeRatio hard flag) above; scoring.triage_score() (stressed-price payback-speed ranking, a sort key only) wired into pipeline.run_once()'s winners ordering; BSR gate now prefers Keepa's avg90 sales rank (new keepa_client field avg_sales_rank_90) over current, recording which source was used; search_log.py + migration 004 (brand-growth loop, NOT YET APPLIED, pending with 001-003) wired into db.log_decision(brand=...) and the daily digest; ops_report.py (weekly Monday KPIs from Supabase outcomes, honestly marking profit-per-review-hour NOT TRACKABLE -- no logging source exists for it). S4 (key-free, needs Python 3.10+): mcp_server.py -- 6 read-only MCP tools (get_lead/top_leads/why_rejected/brand_history/run_stats/search_log_due) over new db.py read helpers (get_lead/top_leads_raw/leads_by_brand), enforced read-only by an AST allowlist test; the real `mcp` package could not be installed in this repo's Python 3.9 dev environment (verified: needs 3.10+, a real package constraint) so the query logic is tested standalone and build_server() gives an honest ImportError. S1 (needs ANTHROPIC_API_KEY, absent -- built + mock-tested only, same precedent as spapi.py): analyst.py -- a Claude second-opinion pass over hard-gate survivors with anti-sycophancy input filtering (excludes the composite score/verdict) and a deterministic post-validator rejecting any risk claim citing a field not in the input; wired into pipeline.run_once() as a no-op pass-through, merges into the existing explanation JSONB (zero schema change), tallies analyst_disagreements into the Discord digest. S3 (same ANTHROPIC_API_KEY gate): reflect.py -- weekly brand-memory notes (learning-hub/memory/brands/) regenerated from real rows with an ASIN-hallucination guard, fed back into analyst.py's input; memory_report.py -- an honest with/without-memory A/B measurement harness requiring >=15 real samples per group before claiming anything. 85 new tests (22 S2, 18 S4, 20 S1, 25 S3) across 4 new test files, all passing; full scout suite now 235/235. Bundled control-center/hub-data/ai-brain.json re-synced. NOT verified live: no ANTHROPIC_API_KEY exists in this repo (S1/S3 untested against a real API call), migrations 001-004 remain unapplied, mcp package untested against the real SDK (Python 3.10+ only)."
+    },
+    {
+      "date": "2026-07-02",
+      "type": "rag",
+      "item": "Daily research pipeline: pulled + ingested today's 2 queued YouTube transcripts, fed live",
+      "effect": "Ran the standing daily flow end to end: knowledge-rag/fetch_transcripts.py pulled the 2 videos queued in research-inbox (ungating guide IBXT2txZtJE, SellerAmp SAS tutorial rHCB-vSCWcI); the third queued item (TBFh9vFBq7k) remains stuck LOGIN_REQUIRED as previously documented, unchanged. Distilled actionable takeaways into research-inbox/research-insights.md AND learning-hub/transcripts/insights.md (the maintained file, which had drifted stale since 2026-06-19/20 -- flagged that drift honestly rather than silently reconciling the larger historical backlog), appended 2 corpus-staging.jsonl entries, flipped both manifest statuses to transcript-processed, moved the .txt files to research-inbox/transcripts/processed/ AND copied them into learning-hub/transcripts/ (the real directory knowledge-rag/ingest.py scans). Ran the REAL pipeline, not just staging: ingest.py rebuilt the corpus (97->99 docs, 1316->1340 chunks) and upload_to_supabase.py embedded only the 24 new chunks (resumable, local BAAI/bge-base-en-v1.5, $0) and upserted all 99 documents live. Verified retrieval live: ask.py's top-ranked, highest-relevance match for an ungating question was the brand-new transcript. The 27-entry corpus-staging.jsonl backlog (mostly 2026-06-30/07-01/07-02 text articles, not videos) still awaits its own separate reviewed merge -- explicitly NOT done in this pass, which was scoped to today's video queue."
+    }
+  ]
+}

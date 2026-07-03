@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 0.75,
+    "passed": 3,
+    "failed": 1,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Explains Max Cost as the reverse calculator / most you can pay",
+      "passed": true,
+      "evidence": "\u2026# Max Cost for a $32 Buy Box at 30%\u2026"
+    },
+    {
+      "text": "Needs FBA fee / size-weight to compute",
+      "passed": true,
+      "evidence": "\u2026g on the item's shipping weight. For a typical small-and\u2026"
+    },
+    {
+      "text": "Ties it to the 30% ROI target",
+      "passed": true,
+      "evidence": "\u2026ost for a $32 Buy Box at 30% ROI  **Short answer:** Y\u2026"
+    },
+    {
+      "text": "Mentions stacking / landing below the number",
+      "passed": false,
+      "evidence": "\u2026is **30%**. The numbers below are calculated to hit ex\u2026"
+    }
+  ]
+}

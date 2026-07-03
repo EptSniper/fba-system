@@ -1,0 +1,820 @@
+00:00 [Music]
+00:11 
+
+00:11 hello everyone welcome back to hustle tv
+00:15 
+
+00:15 what i want to do today is
+00:17 
+
+00:17 cover reverse searching or reverse
+00:20 
+
+00:20 sourcing
+00:21 
+
+00:21 but using keeper to do that
+00:26 
+
+00:26 so let's just dive straight into it
+00:29 
+
+00:29 first of all um what you want to find is
+00:32 
+
+00:32 just find a product you've sold in the
+00:34 
+
+00:34 past or just a random product
+00:36 
+
+00:36 and make sure you've got keeper
+00:38 
+
+00:38 website open
+00:40 
+
+00:40 and head over to the data tab and
+00:44 
+
+00:44 product finder
+00:48 
+
+00:48 this is the page we're going to be using
+00:51 
+
+00:51 to source our products basically to
+00:53 
+
+00:53 reverse search our competitors
+00:57 
+
+00:57 there's a lot of information on this
+00:59 
+
+00:59 pages and i'll be honest with you i
+01:02 
+
+01:02 ignore 99 of it
+01:07 
+
+01:07 so the main things i'm going to
+01:09 
+
+01:09 concentrate on
+01:11 
+
+01:11 especially in this video
+01:13 
+
+01:13 is
+01:14 
+
+01:14 this amazon out of stock we don't really
+01:16 
+
+01:16 want amazon in stock
+01:17 
+
+01:17 the current price i tend to stick that
+01:20 
+
+01:20 at 10
+01:22 
+
+01:22 pounds
+01:23 
+
+01:23 or dollars um doesn't matter really one
+01:26 
+
+01:26 thing do make sure
+01:28 
+
+01:28 you've got the right marketplace
+01:30 
+
+01:30 selected at top because i was doing this
+01:32 
+
+01:32 the other day
+01:34 
+
+01:34 and i was getting no results see down
+01:36 
+
+01:36 here it says how many products you found
+01:38 
+
+01:38 right
+01:39 
+
+01:39 um i was doing it the other day and i
+01:42 
+
+01:42 had i didn't realize i had the us
+01:44 
+
+01:44 selected and i was trying to search a uk
+01:47 
+
+01:47 store and it was showing zero results
+01:49 
+
+01:49 and i was i just couldn't wrap my brains
+01:52 
+
+01:52 around it i didn't know what was going
+01:53 
+
+01:53 on and it took me a good 15 minutes to
+01:56 
+
+01:56 work out what i had done
+01:58 
+
+01:58 so yeah
+01:59 
+
+01:59 anyway i like to stick
+02:01 
+
+02:01 a minimum of 10 pounds on the product
+02:03 
+
+02:03 because
+02:04 
+
+02:04 anything under that the profit's getting
+02:06 
+
+02:06 tiny
+02:07 
+
+02:07 basically
+02:09 
+
+02:09 so those are the two filters i put on
+02:11 
+
+02:11 that'll be all really for this video
+02:14 
+
+02:14 then you want to move down to
+02:19 
+
+02:19 see if i can find it there's so much
+02:21 
+
+02:21 here the seller okay so the seller id
+02:25 
+
+02:25 now we're going to go grab that so
+02:28 
+
+02:28 scroll down and use this product anyway
+02:30 
+
+02:30 i think there's
+02:31 
+
+02:31 only a couple sellers on this yet so
+02:33 
+
+02:33 we'll just use this top guy sbmj
+02:38 
+
+02:38 and i'll click on that and open his
+02:39 
+
+02:39 storefront
+02:42 
+
+02:42 oh sorry if you haven't got um fmt
+02:44 
+
+02:44 installed
+02:46 
+
+02:46 just going to see other buying options
+02:49 
+
+02:49 it's just a longer way around click on
+02:51 
+
+02:51 there
+02:52 
+
+02:52 then you have to click on visit
+02:54 
+
+02:54 storefront
+02:56 
+
+02:56 okay then you can load it up that way
+02:59 
+
+02:59 just takes a little longer to go around
+03:03 
+
+03:03 and what we need now is this seller id
+03:05 
+
+03:05 so that's in the url at the top
+03:11 
+
+03:11 and we'll head back to the keeper page
+03:13 
+
+03:13 and paste in that
+03:15 
+
+03:15 number or code
+03:17 
+
+03:17 there and you'll see on the bottom right
+03:20 
+
+03:20 now
+03:21 
+
+03:21 the filtered matches for the products
+03:23 
+
+03:23 has changed it's gone right down to 35
+03:25 
+
+03:25 products okay
+03:27 
+
+03:27 so now we've filtered out all the
+03:29 
+
+03:29 products where amazon
+03:31 
+
+03:31 is on the listing
+03:33 
+
+03:33 and um
+03:35 
+
+03:35 anything below 10 pound will just get
+03:38 
+
+03:38 rid of them straight away because i
+03:39 
+
+03:39 don't i don't really want them
+03:41 
+
+03:41 so that's fine products
+03:48 
+
+03:48 so now really it's just a case of
+03:50 
+
+03:50 reverse searching these products
+03:52 
+
+03:52 directly from this page and just
+03:54 
+
+03:54 scanning through
+03:55 
+
+03:55 seeing what you fancy
+03:58 
+
+03:58 um
+03:59 
+
+03:59 double packs always interest me because
+04:03 
+
+04:03 i always find them to be profitable and
+04:05 
+
+04:05 they're easy to find let's have a look
+04:07 
+
+04:07 on that so i'm going to highlight this
+04:11 
+
+04:11 i'm going to reverse search this with
+04:13 
+
+04:13 fmt you can just search google
+04:17 
+
+04:17 uh
+04:18 
+
+04:18 it just makes it easier for me
+04:22 
+
+04:22 so this is 15 on here
+04:25 
+
+04:25 and it looks like superdrug are selling
+04:27 
+
+04:27 that product
+04:31 
+
+04:31 so let's open the listing here
+04:37 
+
+04:37 so this is the product on superdrug
+04:41 
+
+04:41 and this is the one we've just found
+04:42 
+
+04:42 from reverse searching
+04:46 
+
+04:46 to me they look the same
+04:52 
+
+04:52 so 3 16 each
+04:54 
+
+04:54 that would be 632
+04:58 
+
+04:58 by price
+04:60 
+
+04:60 because we're doing two and there we go
+05:02 
+
+05:02 so it's a 40 roi
+05:05 
+
+05:05 2 pound 54 profit that's not a bad
+05:07 
+
+05:07 product
+05:09 
+
+05:09 and it's selling between 3 10 and 370
+05:12 
+
+05:12 per month
+05:14 
+
+05:14 the keeper graph looks pretty nice
+05:22 
+
+05:22 over the last 30 i mean it has been down
+05:24 
+
+05:24 to 12 there over the last 90 days
+05:29 
+
+05:29 the all-time average is 16
+05:33 
+
+05:33 um
+05:35 
+
+05:35 but the fba price is looking good
+05:37 
+
+05:37 obviously keep has not tracked it here
+05:39 
+
+05:39 for the 90 days for some reason says
+05:41 
+
+05:41 some
+05:42 
+
+05:42 issue there will keeper not tracking
+05:44 
+
+05:44 that one but it looks to me like
+05:47 
+
+05:47 it's a solid price the fba price seems
+05:49 
+
+05:49 solid
+05:52 
+
+05:52 the actual fba price
+05:57 
+
+05:57 here so fba is actually
+05:59 
+
+05:59 1583 so it's a little bit more than this
+06:02 
+
+06:02 so you could make you could potentially
+06:03 
+
+06:03 make it a little bit more on that so
+06:05 
+
+06:05 that yeah that wasn't a bad product to
+06:07 
+
+06:07 find
+06:09 
+
+06:09 pretty happy with that
+06:13 
+
+06:13 uh you saw how easy that was i mean
+06:15 
+
+06:15 you've just got to go through them and
+06:16 
+
+06:16 have a look
+06:25 
+
+06:25 i do like these exclusives because i do
+06:27 
+
+06:27 think like it says amazon exclusive i'm
+06:29 
+
+06:29 not sure if amazon have made these
+06:30 
+
+06:30 listings
+06:32 
+
+06:32 or
+06:33 
+
+06:33 if someone else has made them and just
+06:36 
+
+06:36 added amazon exclusive to put people off
+06:38 
+
+06:38 because
+06:39 
+
+06:39 you do tend to find these amazon
+06:41 
+
+06:41 exclusive products outside of amazon
+06:48 
+
+06:48 i'm sorry let's do that uh let's go and
+06:50 
+
+06:50 look on the shopping
+06:56 
+
+06:56 so which one is it it's that one
+06:59 
+
+06:59 so someone that's not this one oh is
+07:01 
+
+07:01 this one here
+07:08 
+
+07:08 i don't think that'll be cheap enough if
+07:09 
+
+07:09 i'm honest with you
+07:11 
+
+07:11 they all seem to be a different
+07:12 
+
+07:12 variation of it that's another one but
+07:14 
+
+07:14 that's entertainer so entertainer do
+07:16 
+
+07:16 sell this and they probably did have it
+07:18 
+
+07:18 on offer at one point
+07:23 
+
+07:23 um
+07:26 
+
+07:26 but yeah this downtown stores were
+07:28 
+
+07:28 selling it at 12 pounds
+07:34 
+
+07:34 i don't actually think this product is
+07:36 
+
+07:36 profitable
+07:37 
+
+07:37 but i'm just showing you the process so
+07:39 
+
+07:39 this is 12 pounds
+07:42 
+
+07:42 it's going to be too much for us
+07:43 
+
+07:43 unfortunately but we can have a look
+07:47 
+
+07:47 that was on sale
+07:50 
+
+07:50 depends if it's an fbm
+07:54 
+
+07:54 a fulfill by merchant seller here or an
+07:56 
+
+07:56 fba seller
+08:00 
+
+08:00 so we can get that for 12. see here we
+08:03 
+
+08:03 we won't make the 30 which we're trying
+08:05 
+
+08:05 to aim for
+08:07 
+
+08:07 uh yeah
+08:08 
+
+08:08 2058
+08:11 
+
+08:11 yeah unfortunately not so there won't be
+08:12 
+
+08:12 enough profit in that one but that could
+08:14 
+
+08:14 have been a good product there
+08:16 
+
+08:16 it's a very nice keeper graph lots of
+08:18 
+
+08:18 sales going on there
+08:35 
+
+08:35 you can spend most your day looking
+08:37 
+
+08:37 through these stores so
+08:39 
+
+08:39 it can be a tedious job i'd you know
+08:41 
+
+08:41 spend an hour or two
+08:43 
+
+08:43 doing it and then have a little break
+08:46 
+
+08:46 um
+08:48 
+
+08:48 or have one day set per week you know
+08:50 
+
+08:50 just to do
+08:52 
+
+08:52 sourcing
+08:55 
+
+08:55 otherwise it can become yeah very
+08:56 
+
+08:56 tedious
+08:58 
+
+08:58 and tiring
+09:08 
+
+09:08 obviously if you don't have fmt like i
+09:09 
+
+09:09 said you just got a
+09:11 
+
+09:11 copy into google or however you do that
+09:14 
+
+09:14 yourself
+09:31 
+
+09:31 so sometimes it's worth looking on the
+09:33 
+
+09:33 actual search results as well because
+09:35 
+
+09:35 you get different products
+09:38 
+
+09:38 so you can actually get it here for 20
+09:44 
+
+09:44 so you can get that b m for 20 pounds
+09:46 
+
+09:46 i've noticed now with b m oh this one
+09:48 
+
+09:48 does actually have it so some bnm
+09:50 
+
+09:50 products now not all of them you can
+09:52 
+
+09:52 actually buy them
+09:54 
+
+09:54 directly from their store i used to
+09:55 
+
+09:55 avoid b m a lot because
+09:58 
+
+09:58 they just wouldn't
+09:59 
+
+09:59 deliver but they've obviously started
+10:01 
+
+10:01 delivering so the more products they add
+10:03 
+
+10:03 to that b m will be a really good place
+10:05 
+
+10:05 to source
+10:07 
+
+10:07 um so yeah that's the same set
+10:09 
+
+10:09 20 pounds
+10:13 
+
+10:13 i do believe it's probably not enough
+10:17 
+
+10:17 unless we will check just in case it's a
+10:20 
+
+10:20 fulfilled by merchant seller again
+10:25 
+
+10:25 uh what was it 20 i think yeah
+10:27 
+
+10:27 so it was up for 20.
+10:35 
+
+10:35 let's have a look
+10:37 
+
+10:37 there is a fbm seller so the lowest fba
+10:41 
+
+10:41 is actually 35.
+10:43 
+
+10:43 so let's put in 35
+10:47 
+
+10:47 and 20. i don't know if that'd be enough
+10:48 
+
+10:48 in it there's still not enough in it
+10:51 
+
+10:51 it's quite an expensive item
+10:53 
+
+10:53 like the fees are really expensive
+10:55 
+
+10:55 actually
+10:57 
+
+10:57 that's the weight that is that weight
+11:00 
+
+11:00 doesn't seem right to me but maybe it is
+11:07 
+
+11:07 i mean we've had a look at few products
+11:10 
+
+11:10 we weren't amazingly successful with
+11:12 
+
+11:12 that live trial
+11:15 
+
+11:15 but we did find one product which was
+11:17 
+
+11:17 good
+11:19 
+
+11:19 let me just close these down i don't
+11:20 
+
+11:20 want to close the wrong tabs down here
+11:22 
+
+11:22 so which one was it that we found
+11:26 
+
+11:26 was it there's this coco butter
+11:30 
+
+11:30 so the lotion here that was a good find
+11:33 
+
+11:33 um i would be happy with that to be fair
+11:34 
+
+11:34 i would have bought them 100
+11:37 
+
+11:37 but now you all know it so
+11:39 
+
+11:39 i can't really go and buy that product
+11:40 
+
+11:40 now because all everyone that starts
+11:42 
+
+11:42 watching this video
+11:44 
+
+11:44 it's going to be jumping on it so i'm
+11:45 
+
+11:45 going to miss that one but
+11:47 
+
+11:47 any of you out there you are welcome to
+11:49 
+
+11:49 take that lead
+11:50 
+
+11:50 but yeah hopefully you've um
+11:53 
+
+11:53 all learned something there or you've
+11:55 
+
+11:55 you know it's helped you
+11:56 
+
+11:56 just a different method of sourcing okay
+11:59 
+
+11:59 there's so many methods of sourcing so
+12:01 
+
+12:01 many tools out there
+12:04 
+
+12:04 i prefer manual manual sourcing you're
+12:06 
+
+12:06 never going to beat it really
+12:08 
+
+12:08 so yeah if you have any questions if you
+12:10 
+
+12:10 want me to go over anything else just
+12:11 
+
+12:11 add something in the comments
+12:13 
+
+12:13 uh yeah so thank you guys and i'll speak
+12:15 
+
+12:15 to you soon

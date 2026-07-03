@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 0.75,
+    "passed": 3,
+    "failed": 1,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Recommends NO-BUY / pass despite the ROI",
+      "passed": false,
+      "evidence": "\u2026eaker** |  ## short answer  **pass on this one \u2014 or at most do a\u2026"
+    },
+    {
+      "text": "Identifies Amazon Buy Box presence as the dealbreaker",
+      "passed": true,
+      "evidence": "\u2026# deal analysis: amazon in the buy box  ## the numbers you gave  | m\u2026"
+    },
+    {
+      "text": "References the Buy-Box-share reject rule (~20% / hard reject)",
+      "passed": true,
+      "evidence": "\u2026party sellers* \u2014 so your true share of sales is a fraction of hal\u2026"
+    },
+    {
+      "text": "Includes human-approval caveat",
+      "passed": true,
+      "evidence": "\u2026*standard oa guidance: keep human approval before any purchase\u2026"
+    }
+  ]
+}

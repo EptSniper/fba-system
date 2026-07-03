@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Flags Nike as gated / needs brand approval",
+      "passed": true,
+      "evidence": "\u2026Nike / Air Force 1  - **Gating:** **Hard-gated for a\u2026"
+    },
+    {
+      "text": "Flags IP / authenticity / invoice risk",
+      "passed": true,
+      "evidence": "\u2026all) typically demands **invoices from a Nike-authorized\u2026"
+    },
+    {
+      "text": "Recommends list-before-buy / Seller Central check",
+      "passed": true,
+      "evidence": "\u2026cisive next step  **List-before-you-buy.** Before spendi\u2026"
+    },
+    {
+      "text": "Eligibility verdict is BLOCKED / don't buy (not a green light)",
+      "passed": true,
+      "evidence": "\u2026est.  ---  ## VERDICT: **BLOCKED** (do not buy for Amazon\u2026"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Endorses the deal-first angle around the live BOGO",
+      "passed": true,
+      "evidence": "\u2026# Target Toy BOGO + Target Circle \u2014 Worth\u2026"
+    },
+    {
+      "text": "Stacking (BOGO + Circle + cashback) to manufacture margin",
+      "passed": true,
+      "evidence": "\u2026ce where the best SALE / cashback / coupon is TODAY (e.g.\u2026"
+    },
+    {
+      "text": "Each ASIN must still pass the gates / deal-analyst",
+      "passed": true,
+      "evidence": "\u2026al still has to pass the gates ASIN-by-ASIN.**  This m\u2026"
+    },
+    {
+      "text": "No blanket buy (lead = hypothesis / verify each)",
+      "passed": true,
+      "evidence": "\u2026make sure both units of each pair are sellable ASINs,\u2026"
+    }
+  ]
+}

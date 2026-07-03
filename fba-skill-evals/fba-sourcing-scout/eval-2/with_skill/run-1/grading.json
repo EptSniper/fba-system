@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Endorses the deal-first angle around the live BOGO",
+      "passed": true,
+      "evidence": "\u2026rcing Scout \u2014 Target Toy BOGO Run  **Short answer: yes\u2026"
+    },
+    {
+      "text": "Stacking (BOGO + Circle + cashback) to manufacture margin",
+      "passed": true,
+      "evidence": "\u2026Target Circle account to stack on top of it. That stack\u2026"
+    },
+    {
+      "text": "Each ASIN must still pass the gates / deal-analyst",
+      "passed": true,
+      "evidence": "\u2026lead list to hand to fba-deal-analyst.  One honesty note up fr\u2026"
+    },
+    {
+      "text": "No blanket buy (lead = hypothesis / verify each)",
+      "passed": true,
+      "evidence": "\u2026fba-deal-analyst.\" Treat each as a hypothesis, not a de\u2026"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Flags Amazon ~60% Buy Box as reject/major risk",
+      "passed": true,
+      "evidence": "\u2026# Keepa Read: Amazon ~60% Buy Box + Offer Cou\u2026"
+    },
+    {
+      "text": "References ~20% threshold OR hard-reject for Amazon BB",
+      "passed": true,
+      "evidence": "\u2026sn't 90\u2013100% (which is a no-go), so there's a recurring\u2026"
+    },
+    {
+      "text": "Reads 40->2 crash as cliff / IP / supply signal",
+      "passed": true,
+      "evidence": "\u2026y) vs regular repeating dips (the profile that can w\u2026"
+    },
+    {
+      "text": "Verdict leans reject / pass",
+      "passed": true,
+      "evidence": "\u2026Almost always a be-very-careful flag. When Amazon is on\u2026"
+    }
+  ]
+}

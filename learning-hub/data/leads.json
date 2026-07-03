@@ -1,0 +1,31 @@
+{
+  "source": "learning-hub/tracking/product-leads.md",
+  "updated": "2026-07-02",
+  "note": "Machine-readable mirror of product-leads.md. The example row in the .md is a template, not a real lead. Added a 'review' pipeline stage to match the .md status key (idea/researching/review/buy/ordered/sold/passed).",
+  "pipeline": {
+    "idea": 0,
+    "researching": 0,
+    "review": 1,
+    "buy": 0,
+    "ordered": 0,
+    "sold": 0,
+    "passed": 0
+  },
+  "leads": [
+    {
+      "date": "2026-06-30",
+      "product": "Baldur's Gate 3 Deluxe Edition (Xbox Series X)",
+      "asin": "B0DD8MRVL5",
+      "buyCost": 79.99,
+      "sellPrice": 142.25,
+      "roi": 0.388,
+      "bsr": 8269,
+      "estMonthlySales": 57,
+      "eligible": "unconfirmed (6 SellerAmp alerts)",
+      "status": "review",
+      "notes": "Real-screenshot test of the fba-chart-reader/fba-deal-analyst chain. Priced outside the $8-$60 OA band; Buy-Box erosion risk (Amazon Resale offer + lower FBM offers underneath) compresses ROI to ~24% in the downside case. Lean NO-BUY. Full card: learning-hub/ai-system/product-research-template.md",
+      "decisionMade": null,
+      "outcome": null
+    }
+  ]
+}

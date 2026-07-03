@@ -1,0 +1,82 @@
+00:00 so here's a quick tutorial on how to
+00:02 
+
+00:02 storefront stock a lot of Amazon sellers
+00:04 
+
+00:04 first find a listing that has a lot of
+00:05 
+
+00:05 Amazon sellers next click on their names
+00:07 
+
+00:07 to open up your storefronts preferably I
+00:09 
+
+00:09 like to go with people who have zero to
+00:12 
+
+00:12 100 ratings next if you're viewing
+00:14 
+
+00:14 somebody's storefront if you look to the
+00:16 
+
+00:16 URL where it says seller equals you look
+00:18 
+
+00:18 at this number here where it stops at
+00:20 
+
+00:20 this and symbol this is their seller ID
+00:22 
+
+00:22 now grab all their seller IDs and throw
+00:24 
+
+00:24 it in a Google sheet or a spreadsheet
+00:26 
+
+00:26 next head over to keepa.com and go to
+00:29 
+
+00:29 where it says data and they keep a
+00:31 
+
+00:31 product finder next scroll to where it
+00:34 
+
+00:34 says seller and it has like a question
+00:36 
+
+00:36 mark paste all the sellers in there next
+00:38 
+
+00:38 thing to do is to edit some filters so
+00:40 
+
+00:40 personally what I like to do is only
+00:42 
+
+00:42 physical products no variation a minimum
+00:45 
+
+00:45 of 50 drops and I like to make sure that
+00:47 
+
+00:47 no Amazon offer exists
+00:50 
+
+00:50 now we're left with 45 products there
+00:52 
+
+00:52 are products that are filtered by
+00:54 
+
+00:54 filters that you like to see
+00:57 
+
+00:57 now starts the manual product research
+00:59 
+
+00:59 process

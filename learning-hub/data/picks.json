@@ -1,0 +1,8 @@
+{
+  "source": "scout/ (Keepa + scoring) — export of the picks table",
+  "updated": "2026-06-20",
+  "connected": false,
+  "reason": "Scout not connected yet — needs a paid KEEPA_KEY and a run. Until then this is honestly empty.",
+  "lastRun": null,
+  "picks": []
+}

@@ -1,0 +1,5230 @@
+00:00 Here's the problem with most Keepa
+00:02 
+
+00:02 tutorials. They teach you to look at the
+00:04 
+
+00:04 chart without actually teaching you how
+00:06 
+
+00:06 to read it. It's like showing someone a
+00:08 
+
+00:08 heart monitor and saying, "Make sure the
+00:10 
+
+00:10 lines go up and down." That's not how
+00:12 
+
+00:12 you diagnose a patient, and that's
+00:14 
+
+00:14 certainly not how you decide whether or
+00:16 
+
+00:16 not you're going to invest your
+00:17 
+
+00:17 hard-earned dollars. So, in this video,
+00:20 
+
+00:20 I'm going to teach you how to read a
+00:22 
+
+00:22 keep a chart properly. not just what the
+00:24 
+
+00:24 lines mean, but what they're actually
+00:26 
+
+00:26 trying to tell you about the product's
+00:29 
+
+00:29 past, present, and future. By the end,
+00:32 
+
+00:32 you're going to be able to look at any
+00:33 
+
+00:33 Keepa chart and know within about a
+00:35 
+
+00:35 minute or so whether a product is worth
+00:37 
+
+00:37 your money. My name is Chris Grant. I've
+00:40 
+
+00:40 been selling on Amazon for over a
+00:41 
+
+00:41 decade, and I've taught thousands of
+00:43 
+
+00:43 sellers through my OA challenge. My
+00:46 
+
+00:46 other courses, like Keepa Academy, are
+00:48 
+
+00:48 even used by seven and eight figure
+00:50 
+
+00:50 sellers to train their teams. And what
+00:52 
+
+00:52 I've learned is that most of what you've
+00:55 
+
+00:55 been taught about Kipa is either
+00:57 
+
+00:57 outdated or incomplete. And I'm going to
+00:60 
+
+00:60 fix that today. Let's dive in. First,
+01:03 
+
+01:03 let's talk about how to get Kippa.
+01:05 
+
+01:05 You're going to need to sign up for an
+01:06 
+
+01:06 account over on kipa.com.
+01:09 
+
+01:09 You scroll down to the bottom of the
+01:10 
+
+01:10 page, and you're going to see that the
+01:12 
+
+01:12 price is now about $29 per month. I
+01:16 
+
+01:16 don't know exactly what that is in US
+01:18 
+
+01:18 dollars, but it's going to be less than
+01:20 
+
+01:20 $35 a month for the tool that is going
+01:24 
+
+01:24 to be the backbone of your Amazon
+01:26 
+
+01:26 business. Now, once you've signed up for
+01:28 
+
+01:28 an account, it's very easy to do. You're
+01:30 
+
+01:30 going to want to go over to the apps
+01:32 
+
+01:32 screen. And there's a few things that
+01:34 
+
+01:34 you want here. Number one, you're going
+01:35 
+
+01:35 to want to install the browser extension
+01:38 
+
+01:38 on whatever browser that you use.
+01:40 
+
+01:40 Whether that is Firefox, whether it's
+01:42 
+
+01:42 Chrome or Opera or Windows or Safari,
+01:46 
+
+01:46 they have it for each one. After that,
+01:48 
+
+01:48 you're going to want to download it for
+01:50 
+
+01:50 your phone. You can get it on Google
+01:52 
+
+01:52 Play and you can get it on the Apple App
+01:54 
+
+01:54 Store. This way you have access to it
+01:57 
+
+01:57 whether you're doing online arbitrage,
+01:60 
+
+01:60 wholesale, retail arbitrage, Amazon to
+02:03 
+
+02:03 Amazon flips, or anything in between.
+02:05 
+
+02:05 This is very simple. All right. Now,
+02:08 
+
+02:08 once you've done that, let's talk a
+02:10 
+
+02:10 little bit about what we're going to be
+02:12 
+
+02:12 covering in this video. In this video,
+02:14 
+
+02:14 we're going to be covering what Keepa is
+02:18 
+
+02:18 and how to use it on the actual product
+02:21 
+
+02:21 detail page, including the settings.
+02:24 
+
+02:24 However, we are not going to be diving
+02:26 
+
+02:26 into all of the things that you can do
+02:28 
+
+02:28 on kipa.com.
+02:30 
+
+02:30 And the things that you can do on
+02:32 
+
+02:32 kipa.com are vast and incredibly
+02:35 
+
+02:35 powerful. You can go and read the
+02:37 
+
+02:37 threads that I've written about that on
+02:39 
+
+02:39 Twitter or you can go and find some
+02:41 
+
+02:41 other videos on YouTube about that. If
+02:43 
+
+02:43 you really want to dive deep, you can
+02:45 
+
+02:45 join our OAC Plus community, which is a
+02:48 
+
+02:48 community that includes all of my
+02:49 
+
+02:49 courses, including Keepa Academy, which
+02:52 
+
+02:52 is what's used by seven and eight figure
+02:54 
+
+02:54 sellers to teach their teams. Now, in
+02:58 
+
+02:58 this video, I'm not only going to show
+02:59 
+
+02:59 you what to click, although we're going
+03:01 
+
+03:01 to start there, but I'm also going to
+03:02 
+
+03:02 teach you how to think about this data.
+03:05 
+
+03:05 Now, very first thing is once you have
+03:07 
+
+03:07 this installed and you go to a product
+03:10 
+
+03:10 detail page on Amazon, you're going to
+03:13 
+
+03:13 see this. It is a keep a graph. And the
+03:16 
+
+03:16 first thing you're going to want to do
+03:18 
+
+03:18 is you're going to want to go to the
+03:19 
+
+03:19 settings tab. You want to make sure
+03:22 
+
+03:22 everything here is set up correctly. The
+03:24 
+
+03:24 very first thing you're going to want to
+03:26 
+
+03:26 see the range. Now, you're going to
+03:28 
+
+03:28 notice that there is day, week, month, 3
+03:30 
+
+03:30 months, year, or all. You don't want to
+03:32 
+
+03:32 be overwhelmed by the data. So,
+03:35 
+
+03:35 typically I tell people either to start
+03:37 
+
+03:37 with a 3-month view or put in a custom
+03:40 
+
+03:40 view. I have mine set to 180 days. This
+03:44 
+
+03:44 is going to give me 6 months worth of
+03:47 
+
+03:47 data that I can take a look at and make
+03:49 
+
+03:49 a pretty good decision as to what I'm
+03:52 
+
+03:52 going to get out of a product that I
+03:54 
+
+03:54 invest in. And we'll talk a little bit
+03:56 
+
+03:56 about what I'm looking for later on down
+03:58 
+
+03:58 the road. The close-up view I want
+03:60 
+
+03:60 turned off. If you have this turned on,
+04:02 
+
+04:02 you're actually going to see a lot of
+04:04 
+
+04:04 ups and downs that are not necessary
+04:06 
+
+04:06 when you're looking at a Keepa graph.
+04:10 
+
+04:10 You might even see things in the
+04:11 
+
+04:11 close-up view that it'll make it look
+04:13 
+
+04:13 like the price went up by a significant
+04:16 
+
+04:16 amount when in reality it may have only
+04:18 
+
+04:18 gone up by a dollar. I also like to
+04:21 
+
+04:21 filter out extreme values. Every now and
+04:23 
+
+04:23 again a buy box price will drop
+04:25 
+
+04:25 precipitously or it will raise by an
+04:27 
+
+04:27 order of magnitude and those don't
+04:30 
+
+04:30 really count. So I like to filter out
+04:32 
+
+04:32 those extreme values. They don't really
+04:34 
+
+04:34 help us. You can decide what you want
+04:36 
+
+04:36 your date format to be. I'm in the US so
+04:39 
+
+04:39 I use a typical US version. In the
+04:42 
+
+04:42 tracking settings under tracking mode
+04:44 
+
+04:44 you're going to want to use pro. Now,
+04:47 
+
+04:47 the reason this is that if you plan to
+04:48 
+
+04:48 do any Amazon to Amazon flips and you
+04:51 
+
+04:51 plan to track any products, you want to
+04:53 
+
+04:53 have everything available to you so you
+04:56 
+
+04:56 can get really granular. And we'll dive
+04:58 
+
+04:58 into this when we track a product later
+04:60 
+
+04:60 on. So, choose the pro option. Your
+05:02 
+
+05:02 desired price reduction preset. I have
+05:04 
+
+05:04 mine set to 30%, you can change it to
+05:07 
+
+05:07 whatever you might want, but this will
+05:08 
+
+05:08 autofill in the discounts for you based
+05:12 
+
+05:12 on what you're looking for. Now, the
+05:14 
+
+05:14 auto prefill that I have set for my
+05:17 
+
+05:17 tracking is the buy box, Amazon, and
+05:19 
+
+05:19 new. I'm not really going to be flipping
+05:21 
+
+05:21 any used products. So, I'm just looking
+05:23 
+
+05:23 for those ones right now. And then, how
+05:26 
+
+05:26 long do I want to track this item for?
+05:28 
+
+05:28 I'm going to track these items for a
+05:30 
+
+05:30 year. You can choose a shorter period or
+05:32 
+
+05:32 a longer period. I think a year is
+05:34 
+
+05:34 pretty good. And there's probably not a
+05:36 
+
+05:36 whole lot of things that you're going to
+05:38 
+
+05:38 track for longer than that. And if you
+05:39 
+
+05:39 do, you can always retrack it later on.
+05:42 
+
+05:42 Now, do you want to get notified for
+05:43 
+
+05:43 lightning deals for tracked products? I
+05:46 
+
+05:46 have mine set to yes because every now
+05:48 
+
+05:48 and again I will track a product for
+05:50 
+
+05:50 personal use. You cannot use lightning
+05:52 
+
+05:52 deals for Amazon to Amazon flips, but
+05:55 
+
+05:55 we'll go ahead and choose yes here just
+05:57 
+
+05:57 in case I want to buy a new monitor or
+05:59 
+
+05:59 something like that. Now, how often do
+06:01 
+
+06:01 you want to rearm your alert timer? I
+06:03 
+
+06:03 have mine set to the minimum of 1 day.
+06:06 
+
+06:06 You can set this to two or five or seven
+06:08 
+
+06:08 or 10. You should probably keep it at 1
+06:11 
+
+06:11 day. This is going to let you see how
+06:13 
+
+06:13 often something drops in price. Now, if
+06:16 
+
+06:16 something drops in price multiple times
+06:18 
+
+06:18 per day, you're probably only going to
+06:20 
+
+06:20 get one or two alerts. But if it is
+06:23 
+
+06:23 dropping once every 3 days, you'll get
+06:26 
+
+06:26 alerted every 3 days. The Amazon Smile
+06:29 
+
+06:29 program no longer exists, so I've turned
+06:31 
+
+06:31 that off just so we don't accidentally
+06:33 
+
+06:33 get an Amazon Smile URL. This used to be
+06:36 
+
+06:36 a program they use to give money to
+06:39 
+
+06:39 charities. Do I want to consider coupons
+06:41 
+
+06:41 in price alerts? Yes, absolutely.
+06:43 
+
+06:43 Whether it's for personal use, you can
+06:45 
+
+06:45 also use some coupons for Amazon to
+06:48 
+
+06:48 Amazon flips as long as they're not a
+06:51 
+
+06:51 Prime benefit only. And do I want to
+06:54 
+
+06:54 receive alerts for Prime exclusive
+06:56 
+
+06:56 offers? Again, I'm going to turn this to
+06:58 
+
+06:58 yes because I will track some items for
+07:02 
+
+07:02 personal use in here. Now, in your data
+07:04 
+
+07:04 settings, what measurement unit do you
+07:06 
+
+07:06 want to use? Do you want to use metric
+07:08 
+
+07:08 or imperial? I'm in the US, as I said
+07:10 
+
+07:10 before. I need to see things in freedom
+07:12 
+
+07:12 units. And so, I'm going to choose
+07:14 
+
+07:14 Imperial, but you choose whatever is
+07:16 
+
+07:16 best for you. The the add-on or the
+07:19 
+
+07:19 extension can be in several languages.
+07:21 
+
+07:21 Choose which one is best for you. I, of
+07:23 
+
+07:23 course, I'm going to choose English. You
+07:24 
+
+07:24 can choose German or French or Spanish
+07:26 
+
+07:26 or Chinese or Japanese, whatever is
+07:29 
+
+07:29 helpful for you here. Now, the Keepa box
+07:32 
+
+07:32 vertical size, that's going to be how
+07:34 
+
+07:34 tall the actual Keepa box is. I usually
+07:37 
+
+07:37 put mine to 300 pixels. You can do
+07:40 
+
+07:40 anything between 170 and and 500 pixels.
+07:44 
+
+07:44 300 is in the middle and so that's what
+07:46 
+
+07:46 I chose. For the horizontal size or the
+07:49 
+
+07:49 size it's going to take up left and
+07:51 
+
+07:51 right on your screen. For those of you
+07:53 
+
+07:53 in Ann Arbor, I'm choosing dynamic. This
+07:55 
+
+07:55 means that if there is a little bit less
+07:57 
+
+07:57 room, it might be a little smaller. If
+07:59 
+
+07:59 there's a little more room, it might
+08:00 
+
+08:00 stretch out a little bit. The default
+08:02 
+
+08:02 view I have set to the keep a box. You
+08:05 
+
+08:05 could also choose a keep a button. If
+08:07 
+
+08:07 you choose the keep a button, you'll
+08:08 
+
+08:08 have to you'll have to select the keep a
+08:10 
+
+08:10 button every time to load the keep a
+08:12 
+
+08:12 chart. And I don't want to do that
+08:14 
+
+08:14 because I may forget and not see it or
+08:17 
+
+08:17 miss it or something like that. The
+08:19 
+
+08:19 keepa box will load all of the data for
+08:22 
+
+08:22 you automatically. It might slow down
+08:24 
+
+08:24 the load time just a little bit, but
+08:27 
+
+08:27 it's a it's a penalty I'm willing to
+08:29 
+
+08:29 pay. Now, do I want to allow the add-on
+08:31 
+
+08:31 to gather Amazon prices to improve?
+08:34 
+
+08:34 Keepa data. Yes, absolutely. I'm a user
+08:37 
+
+08:37 of Keepa. I want the data to be as
+08:39 
+
+08:39 upto-date and as accurate as possible,
+08:42 
+
+08:42 which means I want to allow Keepa to use
+08:44 
+
+08:44 my device, my computer, to be able to
+08:46 
+
+08:46 scrape prices for product pages that I'm
+08:49 
+
+08:49 on. You should have that turned on. It
+08:51 
+
+08:51 should be turned on out of the box. Now,
+08:53 
+
+08:53 we can also show the price history
+08:55 
+
+08:55 graphs as overlays when hovering Amazon
+08:58 
+
+08:58 products. So whether you're on a keep a
+09:00 
+
+09:00 product finder page or you're in seller
+09:02 
+
+09:02 central or you might be on a product
+09:05 
+
+09:05 search page if you have this set to yes
+09:07 
+
+09:07 you can hover over the title and you'll
+09:10 
+
+09:10 see a keep a graph down to the bottom
+09:12 
+
+09:12 right hand side on many products. I want
+09:16 
+
+09:16 to go ahead and say yes to that. I want
+09:19 
+
+09:19 that to be turned on. And then you're
+09:21 
+
+09:21 going to need to set it up. You're going
+09:23 
+
+09:23 to set this up any which way you want to
+09:25 
+
+09:25 see. I choose sales rank, buy box,
+09:28 
+
+09:28 Amazon, and new. And I select 180 days.
+09:32 
+
+09:32 That way, I can see 180 days worth of
+09:34 
+
+09:34 that data without actually having to
+09:36 
+
+09:36 click into the product detail page. And
+09:39 
+
+09:39 then finally, do I want to display stock
+09:42 
+
+09:42 quantity on offer listings page? The
+09:45 
+
+09:45 answer here is yes. This is a pro only
+09:48 
+
+09:48 feature. I do want to see the stock
+09:51 
+
+09:51 quantity. And what I will see is if I
+09:53 
+
+09:53 actually open up the sellers that are on
+09:56 
+
+09:56 a listing, you'll notice right down
+09:58 
+
+09:58 here, it'll give me the stock level for
+10:01 
+
+10:01 each one of these sellers. You can get
+10:03 
+
+10:03 that from other tools like Seller AMP,
+10:05 
+
+10:05 but I do like to have Keepa go ahead and
+10:08 
+
+10:08 try to pull that data as well. All
+10:10 
+
+10:10 right. Now, once you've done that,
+10:12 
+
+10:12 you're just going to refresh your page
+10:14 
+
+10:14 and everything should save for you. And
+10:16 
+
+10:16 now we can start talking about what all
+10:19 
+
+10:19 of the items inside a Keepa graph
+10:21 
+
+10:21 actually do for us. All right, let's
+10:24 
+
+10:24 talk about the actual Keepa graph and
+10:26 
+
+10:26 all of the things that are available
+10:28 
+
+10:28 here for you to play with. So number
+10:30 
+
+10:30 one, you can see I have everything
+10:32 
+
+10:32 turned off. The very first thing I want
+10:34 
+
+10:34 to talk about is actually right up here
+10:36 
+
+10:36 at the very top. You're going to see in
+10:38 
+
+10:38 the keepa box there is news, there's
+10:41 
+
+10:41 support, there's manage price watches,
+10:43 
+
+10:43 there's product finder, find related
+10:45 
+
+10:45 deals, and related best sellers. If you
+10:48 
+
+10:48 actually click on each one of these,
+10:51 
+
+10:51 you'll be taken to keep a.com. Now, I
+10:54 
+
+10:54 said we're not going to be going into
+10:56 
+
+10:56 these, and we're not, but go out and
+10:58 
+
+10:58 find some information on those or go and
+11:01 
+
+11:01 read my Twitter threads on all of that.
+11:03 
+
+11:03 Okay. Now, let's talk about what each
+11:06 
+
+11:06 one of these things do for you. Number
+11:08 
+
+11:08 one, you're going to notice that I have
+11:10 
+
+11:10 three graphs. You may only see two. I
+11:13 
+
+11:13 have my sub ranks turned on now. And
+11:17 
+
+11:17 we'll get to why this is going to be
+11:19 
+
+11:19 turned on here in just a little bit. A
+11:21 
+
+11:21 lot of people will tell you you just
+11:22 
+
+11:22 need the two graphs, and they are
+11:24 
+
+11:24 incorrect. You do need all three graphs
+11:26 
+
+11:26 to get everything out of Keepa. The very
+11:29 
+
+11:29 first thing that you're going to have is
+11:31 
+
+11:31 the sales rank. This is going to give us
+11:33 
+
+11:33 an idea of how well something is
+11:36 
+
+11:36 selling. And you have two choices.
+11:39 
+
+11:39 Number one, you can set this up the
+11:41 
+
+11:41 correct way. And you can see that when a
+11:43 
+
+11:43 sales rank goes down toward the bottom
+11:45 
+
+11:45 of the chart or closer to zero, that
+11:47 
+
+11:47 means it is selling better in relation
+11:50 
+
+11:50 to the other items in its category. And
+11:52 
+
+11:52 when the sales rank goes up or closer or
+11:56 
+
+11:56 farther away from zero, the worse it is
+11:59 
+
+11:59 selling in comparison with other
+12:02 
+
+12:02 products in its category. You can also
+12:05 
+
+12:05 change that around by clicking this
+12:07 
+
+12:07 little arrow icon right there. You'll
+12:10 
+
+12:10 notice that the zero gets put at the
+12:11 
+
+12:11 top, meaning that if the line goes up,
+12:15 
+
+12:15 the demand is going up. I just it's not
+12:18 
+
+12:18 the way that I know Keepa, so I don't
+12:20 
+
+12:20 use it that way. Next, we have the buy
+12:23 
+
+12:23 box. The buy box is the price when there
+12:27 
+
+12:27 is a buy box present. This is a buy box
+12:30 
+
+12:30 over here. It has that little yellow add
+12:32 
+
+12:32 to cart and that orange buy now button.
+12:35 
+
+12:35 The buy box tells you what price the
+12:38 
+
+12:38 item was when Keepa gathered the data.
+12:41 
+
+12:41 It's also going to allow you to see who
+12:44 
+
+12:44 was in the buy box at any particular
+12:47 
+
+12:47 time. And it will give you some other
+12:48 
+
+12:48 data like their stock history over here,
+12:52 
+
+12:52 like their pricing history, when they
+12:54 
+
+12:54 were first found on the listing, when
+12:56 
+
+12:56 they were first seen on the listing,
+12:58 
+
+12:58 what kind of price type it was, maybe
+12:60 
+
+12:60 it's new, maybe it's buy box, what their
+13:02 
+
+13:02 price is, what their stock was, and
+13:05 
+
+13:05 several other things. All right, it
+13:07 
+
+13:07 gives you a nice little piece of data.
+13:08 
+
+13:08 And of course, you can open up their
+13:10 
+
+13:10 storefront inside of Keepa as well. But
+13:13 
+
+13:13 the most important thing about the buy
+13:15 
+
+13:15 box is it lets you know what the market
+13:18 
+
+13:18 is willing to pay for a product. And
+13:21 
+
+13:21 you'll notice that as the buy box goes
+13:24 
+
+13:24 up that the sales rank is also getting a
+13:28 
+
+13:28 bit worse. Meaning that the market
+13:31 
+
+13:31 really likes the price down here at $47
+13:35 
+
+13:35 because this is staying below this
+13:38 
+
+13:38 150,000 mark and it's going up and down.
+13:40 
+
+13:40 So we know that sales are getting
+13:42 
+
+13:42 better. sales are getting a little worse
+13:44 
+
+13:44 or slowing down. And this is typical,
+13:46 
+
+13:46 right? But we can see that as this price
+13:48 
+
+13:48 raises, the velocity slows down a bit.
+13:51 
+
+13:51 We can see it getting up over that 150,
+13:54 
+
+13:54 which just means that the market is
+13:56 
+
+13:56 still willing to pay this price, but
+13:58 
+
+13:58 they do prefer a lower price. There's
+14:00 
+
+14:00 fewer people in the market willing to
+14:03 
+
+14:03 pay. So being able to understand
+14:06 
+
+14:06 economics 101 and the relationship
+14:09 
+
+14:09 between supply, demand, and price is
+14:12 
+
+14:12 going to really help you when you're
+14:14 
+
+14:14 looking at Keepa graphs. Now, the next
+14:16 
+
+14:16 thing we're going to see is we have the
+14:18 
+
+14:18 ability to look at the new price. This
+14:21 
+
+14:21 new price is any new seller on the
+14:25 
+
+14:25 listing, whether it is Amazon, whether
+14:27 
+
+14:27 it is a new third-party FBA seller or a
+14:31 
+
+14:31 new third-party FBM seller or merchant
+14:34 
+
+14:34 fulfilled seller. This new line, this
+14:37 
+
+14:37 purple line, it does not include any
+14:39 
+
+14:39 shipping. You'll see there's no truck
+14:41 
+
+14:41 next to it. Whereas the buy box, it
+14:43 
+
+14:43 actually does include shipping. So, if
+14:46 
+
+14:46 the buy box was held by a third-party
+14:48 
+
+14:48 merchant fulfilled seller, it would
+14:50 
+
+14:50 actually grab how much their shipping
+14:53 
+
+14:53 was for that particular item and it
+14:55 
+
+14:55 would include that there. The new line
+14:57 
+
+14:57 does not. You also get new third-party
+15:00 
+
+15:00 FBA and these come as little orange
+15:03 
+
+15:03 triangles and you'll see here 5461,
+15:06 
+
+15:06 5440, etc. and so on. Now, the a lot of
+15:11 
+
+15:11 people mistake these little triangles
+15:14 
+
+15:14 for sales. These do not equate to sales.
+15:17 
+
+15:17 These are just the data that was
+15:19 
+
+15:19 gathered when Keepa grabbed the new
+15:22 
+
+15:22 third-party FBA offers that were on a
+15:25 
+
+15:25 listing. These are also clickable. You
+15:27 
+
+15:27 can click on them and it'll let you know
+15:30 
+
+15:30 who the offer came from. Apple store,
+15:32 
+
+15:32 when the offer was first found, when
+15:35 
+
+15:35 they were first seen on the listing,
+15:36 
+
+15:36 when they were last seen, and what kind
+15:39 
+
+15:39 of price type it is, new thirdparty FBA,
+15:43 
+
+15:43 and of course, their stock history, etc.
+15:45 
+
+15:45 Okay, you can also click on new
+15:48 
+
+15:48 third-party FBM. Now, these are new
+15:51 
+
+15:51 thirdparty merchant fulfilled sellers,
+15:53 
+
+15:53 and we see the same thing. We see these
+15:55 
+
+15:55 little blue boxes, and these are the
+15:57 
+
+15:57 price points that these sellers were at.
+15:60 
+
+15:60 It does include any of their shipping
+16:03 
+
+16:03 costs that are passed on to the buyer.
+16:06 
+
+16:06 And these are clickable. And we'll see
+16:08 
+
+16:08 here this is who the seller was. We can
+16:10 
+
+16:10 see what their stock level was. We can
+16:12 
+
+16:12 see what their price history was, etc.
+16:15 
+
+16:15 Just like we can with that new third-p
+16:17 
+
+16:17 partyy FBA price. We can also choose
+16:20 
+
+16:20 list price. This is just the price that
+16:23 
+
+16:23 Amazon has. That's like MSRP. It really
+16:26 
+
+16:26 means nothing. You're never going to
+16:27 
+
+16:27 need to turn it on. There is an eBay new
+16:30 
+
+16:30 price. These are prices that are being
+16:33 
+
+16:33 items are being listed for on eBay and
+16:36 
+
+16:36 you can see an eBay used price
+16:38 
+
+16:38 sometimes. Again, unless you're flipping
+16:40 
+
+16:40 things onto eBay quite frequently, this
+16:43 
+
+16:43 is not something you're really going to
+16:45 
+
+16:45 use. Now, how do you want this top graph
+16:48 
+
+16:48 set up? Personally, I like to have the
+16:50 
+
+16:50 sales rank turned on. I like to have the
+16:52 
+
+16:52 buy box turned on, and I will turn on
+16:55 
+
+16:55 the new thirdparty FBA. Now, the reason
+16:59 
+
+16:59 I do this is because this is who my
+17:02 
+
+17:02 competitors are. I don't really do much
+17:05 
+
+17:05 merchant fulfilled. However, if I did a
+17:08 
+
+17:08 fair amount of merchant fulfilled, I
+17:09 
+
+17:09 would also turn on the new thirdparty
+17:12 
+
+17:12 FBM so I could know where those sellers
+17:16 
+
+17:16 are in relationship to the buy box. And
+17:19 
+
+17:19 we can see that these new thirdparty FBM
+17:22 
+
+17:22 sellers are getting the buy box when
+17:24 
+
+17:24 there are no FBA sellers. And it even
+17:27 
+
+17:27 looks like back here that they're all
+17:30 
+
+17:30 matching each other. It does not mean
+17:32 
+
+17:32 that a third party merchant fulfilled
+17:34 
+
+17:34 seller is getting the buy box, but it
+17:36 
+
+17:36 also could because there are regional
+17:38 
+
+17:38 buy boxes. It takes me back to one other
+17:41 
+
+17:41 thing about the buy box line. The buy
+17:43 
+
+17:43 box line is directionally accurate. But
+17:46 
+
+17:46 we have to know that Keepa cannot gather
+17:48 
+
+17:48 the data from every single zip code in
+17:52 
+
+17:52 the country. And Amazon uses a flywheel
+17:54 
+
+17:54 approach to distribution. This means
+17:57 
+
+17:57 that even though this buy box price
+17:59 
+
+17:59 right here shows $49.99
+18:01 
+
+18:01 on Monday, February 9th at 3.48 in the
+18:05 
+
+18:05 afternoon, that may be the price that
+18:07 
+
+18:07 was pulled in California, but the price
+18:10 
+
+18:10 in Ohio may have been 5237
+18:14 
+
+18:14 or it could have been 47.97.
+18:18 
+
+18:18 But you need to know that the price does
+18:20 
+
+18:20 vary based on geographic location
+18:23 
+
+18:23 because Amazon wants to not only get the
+18:26 
+
+18:26 best price to the customer, but they
+18:28 
+
+18:28 also want to get the item to the
+18:30 
+
+18:30 customer in the fastest time possible
+18:32 
+
+18:32 for a price that the customer will buy
+18:35 
+
+18:35 or spend on a product. So you don't
+18:37 
+
+18:37 always have to be the lowest price to be
+18:40 
+
+18:40 able to get that buy box. And you may
+18:42 
+
+18:42 not even show up on the Keepa graph when
+18:45 
+
+18:45 you have the buy box because it may be a
+18:48 
+
+18:48 regional buy box. All right. However,
+18:51 
+
+18:51 this does allow us to have some
+18:53 
+
+18:53 directionally accurate data. Now, what
+18:56 
+
+18:56 you're going to want to do whenever you
+18:57 
+
+18:57 set this up is you're going to want to
+18:58 
+
+18:58 set it up at to whatever is most useful
+19:01 
+
+19:01 to you. I will also turn on Amazon FBA
+19:06 
+
+19:06 when they're on a listing or have been
+19:07 
+
+19:07 on a listing. Let's just see if we have
+19:10 
+
+19:10 any like that. I don't believe I have
+19:12 
+
+19:12 any listings up Amazon. So, we'll see
+19:15 
+
+19:15 that I do have a listing where Amazon
+19:18 
+
+19:18 has been on the listing. And right here,
+19:21 
+
+19:21 we'll see them in a shaded orange. Now,
+19:24 
+
+19:24 if we turn on the buy box along with
+19:27 
+
+19:27 Amazon, we'll notice that Amazon was in
+19:32 
+
+19:32 the buy box. Okay, their orange line
+19:34 
+
+19:34 shaded that buy box line as well. Okay.
+19:38 
+
+19:38 So, I also turn on Amazon when it's
+19:41 
+
+19:41 available. Now, in this second graph,
+19:44 
+
+19:44 this second graph gives us a few things.
+19:46 
+
+19:46 It gives us some category ranks over
+19:49 
+
+19:49 again. So, this beauty and personal care
+19:51 
+
+19:51 will match this sales rank line up here
+19:54 
+
+19:54 at the top. That is the top level
+19:56 
+
+19:56 category that this item is in. Beauty
+19:59 
+
+19:59 and personal care. We can also turn on
+20:02 
+
+20:02 the subcategory that it's in. This is in
+20:05 
+
+20:05 women's aud
+20:10 
+
+20:10 how this is acting in that particular
+20:13 
+
+20:13 subcategory. The top level category and
+20:16 
+
+20:16 the subcategory they should be
+20:19 
+
+20:19 congruous. They should look similar. If
+20:21 
+
+20:21 for some reason there is a big gap in
+20:24 
+
+20:24 the subcategory and the top level
+20:26 
+
+20:26 category, there could be something a
+20:28 
+
+20:28 little skew that maybe you need to dive
+20:30 
+
+20:30 a little deeper on. Not always, but
+20:33 
+
+20:33 sometimes. And then there is a monthly
+20:36 
+
+20:36 sold number that is this gold line. Now
+20:39 
+
+20:39 this monthly sold number is not
+20:41 
+
+20:41 understood very well. Okay, we'll see
+20:44 
+
+20:44 here that the monthly sold is showing 50
+20:48 
+
+20:48 and then it drops off. And a lot of
+20:50 
+
+20:50 people will say, "Oh, it was selling 50
+20:52 
+
+20:52 a month and now it's not selling any per
+20:54 
+
+20:54 month." And that's not the case. Okay.
+20:57 
+
+20:57 What the 50 line means or 200 or a
+20:60 
+
+20:60 thousand or whatever might show up there
+21:02 
+
+21:02 is means that there were in this case 50
+21:06 
+
+21:06 plus customers in the past month who
+21:10 
+
+21:10 purchased this particular item. Now if
+21:12 
+
+21:12 the average number of units sold for
+21:14 
+
+21:14 this particular item is 1.5 that could
+21:17 
+
+21:17 be anywhere between 50 customers and 100
+21:20 
+
+21:20 customers who bought on average 1.5
+21:23 
+
+21:23 units. That does not mean it sells 50
+21:25 
+
+21:25 times per month. It may sell more than
+21:27 
+
+21:27 that. Probably does sell more than that.
+21:30 
+
+21:30 Okay? But this does give you anam or
+21:33 
+
+21:33 this gives you some information as to
+21:36 
+
+21:36 how many people are actually purchasing
+21:38 
+
+21:38 this every single month. Now, the other
+21:41 
+
+21:41 thing to know about this monthly sold
+21:42 
+
+21:42 line is that it is a trailing indicator.
+21:47 
+
+21:47 It is the past 30 days, but it is
+21:50 
+
+21:50 updated once every day. And you'll
+21:52 
+
+21:52 notice that during some peak times that
+21:54 
+
+21:54 number will go up. Outside of peak
+21:57 
+
+21:57 times, that number may go down. Now,
+21:59 
+
+21:59 when this little gold line is lost, it
+22:01 
+
+22:01 does not mean that the item is no longer
+22:03 
+
+22:03 selling. It may just mean that it only
+22:06 
+
+22:06 had 47 customers over the past month. It
+22:09 
+
+22:09 may even sell more than 50 in a month,
+22:12 
+
+22:12 but it only had 47 customers over the
+22:14 
+
+22:14 past 30 days. And so, they've reduced
+22:17 
+
+22:17 that gold line to nothing because there
+22:19 
+
+22:19 is nothing there. Now the other thing to
+22:22 
+
+22:22 know is that this information is
+22:23 
+
+22:23 gathered directly from Amazon. This
+22:26 
+
+22:26 monthly sold figure is not something
+22:28 
+
+22:28 that Keepa figures out on its own. It is
+22:30 
+
+22:30 something that Amazon tells us and it is
+22:35 
+
+22:35 a range. There is 50 plus, 100 plus, 200
+22:40 
+
+22:40 plus and so on. And this is only given
+22:43 
+
+22:43 to us on about three and a half million
+22:46 
+
+22:46 AS. There are over a billion asens that
+22:48 
+
+22:48 are tracked on Amazon US alone. So while
+22:52 
+
+22:52 this is a good piece of data to be able
+22:54 
+
+22:54 to look at and give us an idea of how
+22:57 
+
+22:57 much a product selling, it should not be
+22:59 
+
+22:59 the end all beall. You do not want to
+23:02 
+
+23:02 only sell on items with this monthly
+23:05 
+
+23:05 sold line. All right? It should be a
+23:07 
+
+23:07 data point. In the third box, we have
+23:10 
+
+23:10 our rating. This is the rating for is it
+23:13 
+
+23:13 a 4.8? Is it a 4.7? Has it gone up or
+23:16 
+
+23:16 down? That's not really something you're
+23:18 
+
+23:18 going to pay attention to very much. But
+23:19 
+
+23:19 then there is a rating count. All right.
+23:22 
+
+23:22 And over the past 180 days, this has
+23:24 
+
+23:24 gone from 402 ratings all the way up to
+23:28 
+
+23:28 443.
+23:30 
+
+23:30 This means that around 40 customers have
+23:35 
+
+23:35 actually left a rating for this product.
+23:38 
+
+23:38 Now, if we figure that one in 100
+23:40 
+
+23:40 customers leave a rating for this
+23:43 
+
+23:43 product, over the last 6 months, this
+23:45 
+
+23:45 would have sold around 400 units. Now,
+23:48 
+
+23:48 we don't know what that number actually
+23:51 
+
+23:51 is. That is just some very rounded off
+23:54 
+
+23:54 math to help us figure out what kind of
+23:56 
+
+23:56 velocity there is. You should not use
+23:59 
+
+23:59 this math to supersede the sales rank
+24:03 
+
+24:03 and what that looks like. However, if
+24:06 
+
+24:06 there is no sales rank, which does
+24:08 
+
+24:08 happen, the rating count can help you
+24:11 
+
+24:11 figure out whether or not there is
+24:13 
+
+24:13 velocity on a product. And then, of
+24:16 
+
+24:16 course, there is the new offer count.
+24:18 
+
+24:18 This is going to take into account any
+24:20 
+
+24:20 new offers that are on a listing,
+24:22 
+
+24:22 whether they are merchant fulfilled or
+24:25 
+
+24:25 whether they are FBA, it doesn't matter.
+24:27 
+
+24:27 And what we're looking for in the new
+24:29 
+
+24:29 offer count is just some movement. This
+24:32 
+
+24:32 lets us know that sellers are selling
+24:34 
+
+24:34 out. Maybe some sellers are coming back
+24:36 
+
+24:36 onto the listing. It'll also let us
+24:39 
+
+24:39 know, is the supply increasing greatly?
+24:42 
+
+24:42 Is the supply coming down significantly?
+24:45 
+
+24:45 These are all things that we can use as
+24:47 
+
+24:47 indicators as to what might happen in
+24:49 
+
+24:49 the future. For example, if the supply
+24:51 
+
+24:51 is increasing faster than the demand is
+24:55 
+
+24:55 increasing, we know that there's very
+24:57 
+
+24:57 likely going to be some price erosion
+24:59 
+
+24:59 because when supply increases faster
+25:03 
+
+25:03 than demand, the price must come down.
+25:05 
+
+25:05 That is just economics 101. All right?
+25:07 
+
+25:07 And we'll look at some examples of that
+25:09 
+
+25:09 here in just a little bit. You're going
+25:11 
+
+25:11 to notice there's also another close-up
+25:12 
+
+25:12 view. Again, we want that close-up view
+25:15 
+
+25:15 turned off. And there is a range
+25:17 
+
+25:17 available here. We can look at the last
+25:20 
+
+25:20 week of this product. We can look at the
+25:22 
+
+25:22 last month, the last 3 months. I've put
+25:25 
+
+25:25 in here my last 180 days, okay, which is
+25:30 
+
+25:30 my this is my custom view. You we talked
+25:33 
+
+25:33 about that in the settings. I can look
+25:35 
+
+25:35 out over the past year and I can look
+25:37 
+
+25:37 out over the entirety of this product
+25:40 
+
+25:40 for as long as it's been tracked on
+25:42 
+
+25:42 Amazon. Right now, the next thing that
+25:45 
+
+25:45 we can look at is down here. We have
+25:47 
+
+25:47 some averages available to us. So we can
+25:50 
+
+25:50 see the current sales rank of 110348
+25:54 
+
+25:54 and we can see that the current
+25:56 
+
+25:56 subcategory sales rank is 1,697.
+26:01 
+
+26:01 The 90-day average sales rank is 108661.
+26:05 
+
+26:05 The 90-day average subcategory sales
+26:07 
+
+26:07 rank is 1816. And then 365day
+26:12 
+
+26:12 as well. And this lets us know what how
+26:15 
+
+26:15 high is this in the the Amazon catalog
+26:18 
+
+26:18 for this category. For this category,
+26:21 
+
+26:21 which is beauty and personal care, it is
+26:23 
+
+26:23 in the top 1.03%.
+26:27 
+
+26:27 This just lets us know, okay, this is
+26:29 
+
+26:29 doing pretty well in this particular
+26:31 
+
+26:31 category. We also get to see here how
+26:34 
+
+26:34 many drops per month there are. And
+26:36 
+
+26:36 you'll see that it says there are 11
+26:39 
+
+26:39 drops per month on average. Now what
+26:42 
+
+26:42 this is actually the average number of
+26:44 
+
+26:44 times that there is a sales rank drop
+26:47 
+
+26:47 that keeper records. It does not mean
+26:49 
+
+26:49 that there were only 11 sales. A sales
+26:52 
+
+26:52 rank drop might equal three sales. It
+26:55 
+
+26:55 might equal one sale. Okay? It usually
+26:58 
+
+26:58 does indicate a sale of some kind, but
+27:01 
+
+27:01 we don't know how many units it actually
+27:03 
+
+27:03 means. All right. The other thing is if
+27:06 
+
+27:06 that rank is really good, like something
+27:09 
+
+27:09 ranked number three in shoes, you may
+27:11 
+
+27:11 not see very many rank drops because it
+27:14 
+
+27:14 is just selling consistently over time.
+27:17 
+
+27:17 Now, some people like to use this as an
+27:19 
+
+27:19 indicator for sales. And again, it is
+27:22 
+
+27:22 directionally accurate, but it has no
+27:24 
+
+27:24 correlation to the number of units that
+27:27 
+
+27:27 are actually sold on a product every
+27:30 
+
+27:30 single month. All right. Now, we can
+27:32 
+
+27:32 also see here down on the bottom bar, we
+27:34 
+
+27:34 can actually take a look at some of the
+27:37 
+
+27:37 other marketplaces where this is
+27:38 
+
+27:38 selling. So, right now, this item is
+27:41 
+
+27:41 sold for $49.94 in the US. $49.94 is the
+27:45 
+
+27:45 new price. Over in Canada, this is going
+27:48 
+
+27:48 for $1125
+27:51 
+
+27:51 in as a new product. If we actually
+27:54 
+
+27:54 click on this button here, we can
+27:56 
+
+27:56 actually see multiple marketplaces. I
+27:58 
+
+27:58 have the US, I have Canada, and I have
+28:01 
+
+28:01 Mexico turned on. And we can see the
+28:04 
+
+28:04 actual this is the sales rank. So in
+28:07 
+
+28:07 Canada, this item, let me turn on
+28:09 
+
+28:09 Canada. This item does not sell very
+28:11 
+
+28:11 well. In the US, of course, we can see
+28:14 
+
+28:14 this sells okay. And in Mexico, it does
+28:17 
+
+28:17 not sell very well ei. So the prices may
+28:20 
+
+28:20 be higher, but the US is really the only
+28:23 
+
+28:23 marketplace where this is selling
+28:25 
+
+28:25 significantly. We can also click through
+28:28 
+
+28:28 and look at the rating or the rating
+28:29 
+
+28:29 count by marketplace. And you'll notice
+28:32 
+
+28:32 that the rating counts are very similar.
+28:35 
+
+28:35 That is because rating counts are often
+28:37 
+
+28:37 shared between marketplaces. And then we
+28:40 
+
+28:40 can also choose the buy box price or the
+28:43 
+
+28:43 new price from each different
+28:45 
+
+28:45 marketplace. We'll notice that in the US
+28:47 
+
+28:47 that price is around 50. In Canada, that
+28:50 
+
+28:50 price is above 100. And in Mexico, that
+28:53 
+
+28:53 price was just under 100. the last time
+28:56 
+
+28:56 that it was in stock there. Right now,
+28:58 
+
+28:58 if we look at the sales rank, we might
+29:00 
+
+29:00 notice that, you know what, it might
+29:02 
+
+29:02 actually sell a little bit when it's in
+29:05 
+
+29:05 stock in Mexico, but it is not in stock
+29:08 
+
+29:08 in Mexico at this moment. All right. So,
+29:10 
+
+29:10 if you wanted to sell any items crosser,
+29:13 
+
+29:13 this is something good that you can use.
+29:16 
+
+29:16 It's not something that I'm going to
+29:17 
+
+29:17 teach a whole lot on cuz I don't do
+29:19 
+
+29:19 crossber sales, but it is helpful for
+29:21 
+
+29:21 you to know what other marketplaces are
+29:24 
+
+29:24 charging. And these are all put into
+29:27 
+
+29:27 your local currency. So, if you're in
+29:30 
+
+29:30 Mexico or you're in Canada, you will get
+29:33 
+
+29:33 Canadian dollars or you'll get Mexican
+29:35 
+
+29:35 pesos, whether it's US dollars or
+29:37 
+
+29:37 anything like that. It'll all be
+29:39 
+
+29:39 translated into your own currency.
+29:42 
+
+29:42 Again, down here at the bottom, we can
+29:44 
+
+29:44 see when this item was last updated. It
+29:46 
+
+29:46 was last updated 52 minutes ago. This is
+29:49 
+
+29:49 incredibly important to know. A lot of
+29:51 
+
+29:51 people think that Keepa is updated every
+29:55 
+
+29:55 few minutes or it's up to date by the
+29:57 
+
+29:57 second. It is not. The more popular
+29:59 
+
+29:59 items are going to be updated much
+30:01 
+
+30:01 faster. Items that are middle of the
+30:04 
+
+30:04 road are going to be updated maybe every
+30:06 
+
+30:06 couple of hours. and items that are not
+30:08 
+
+30:08 incredibly popular might go 24 hours
+30:10 
+
+30:10 without getting updated, right? Because
+30:12 
+
+30:12 Keepa has to go and gather a ton of
+30:15 
+
+30:15 data. If this is over an hour or two
+30:18 
+
+30:18 hours old, it'll give you the option to
+30:20 
+
+30:20 refresh it and Keepa will go and gather
+30:22 
+
+30:22 the data manually. You can also see how
+30:25 
+
+30:25 many users are actually tracking the
+30:27 
+
+30:27 price on this product. There is one user
+30:29 
+
+30:29 tracking the price on this product, at
+30:31 
+
+30:31 least that Keepa knows about. And then
+30:33 
+
+30:33 of course we have some statistics that
+30:35 
+
+30:35 are available to us. And in the
+30:37 
+
+30:37 statistics it'll let us know what the
+30:39 
+
+30:39 lowest new price was back on November
+30:42 
+
+30:42 24th. Also what the lowest sales rank
+30:44 
+
+30:44 was back on December 10th. The current
+30:47 
+
+30:47 price as of 52 minutes ago. The current
+30:50 
+
+30:50 sales rank as of 52 minutes ago. The
+30:53 
+
+30:53 highest price back in June of 2020. The
+30:56 
+
+30:56 highest rank in May of 2020 at 607,000.
+31:01 
+
+31:01 It lets us know the average new price
+31:03 
+
+31:03 over the last 90 and 180 days as well as
+31:07 
+
+31:07 the average sales rank over the last 90
+31:10 
+
+31:10 and 180 days. And then it tells us the
+31:13 
+
+31:13 average number of drops over the past 90
+31:17 
+
+31:17 days both for price meaning they
+31:20 
+
+31:20 recorded five a an average of five price
+31:23 
+
+31:23 drops per month over the past 90 days on
+31:27 
+
+31:27 this particular product. Now, it does
+31:29 
+
+31:29 not mean that the price could not go
+31:31 
+
+31:31 back up because we saw this price go up
+31:33 
+
+31:33 on occasion and they saw 11 sales rank
+31:38 
+
+31:38 drops on average per month over the last
+31:41 
+
+31:41 90 days. Again, that does not correlate
+31:44 
+
+31:44 to units sold. It is just a direction of
+31:48 
+
+31:48 how often is the sales rank changing in
+31:51 
+
+31:51 a downward movement on this particular
+31:54 
+
+31:54 product. You can also share this graph
+31:56 
+
+31:56 and of course you can go back to your
+31:58 
+
+31:58 graph settings. Do you want the price
+31:60 
+
+32:00 history? Do you want category, sales
+32:02 
+
+32:02 ranks and monthly sales? Do you want
+32:04 
+
+32:04 offer counts and ratings? You can turn
+32:05 
+
+32:05 those on and you can turn them off. And
+32:08 
+
+32:08 we did that over here as well. Okay,
+32:11 
+
+32:11 that is the front page of your Keepa
+32:15 
+
+32:15 graph. There is a ton more to get to.
+32:18 
+
+32:18 We're going to talk about tracking
+32:19 
+
+32:19 product, the data, the variations, etc.
+32:22 
+
+32:22 and we're going to tie this all together
+32:24 
+
+32:24 to show you what a good product is, what
+32:26 
+
+32:26 a bad product is. But let's get into
+32:29 
+
+32:29 tracking products. All right, let's talk
+32:31 
+
+32:31 about the tracking product screen here.
+32:34 
+
+32:34 This is right here next to the price
+32:35 
+
+32:35 history. And this allows you to track
+32:38 
+
+32:38 any product that is on Amazon. You can
+32:40 
+
+32:40 do a couple of things. You can track
+32:42 
+
+32:42 whether or not it goes out of stock. You
+32:45 
+
+32:45 can track whether or not it comes back
+32:46 
+
+32:46 in stock. Or you can do both. You can
+32:49 
+
+32:49 track, hey, let me know when it goes out
+32:51 
+
+32:51 of stock and when it comes back in
+32:54 
+
+32:54 stock. You can track the buy box price.
+32:57 
+
+32:57 And this, remember, is the pro setting.
+32:59 
+
+32:59 We want the the pro setting for our
+33:01 
+
+33:01 tracking, which you can also set right
+33:04 
+
+33:04 down here at the very bottom. Now, you
+33:06 
+
+33:06 can select the buy box price. You'll
+33:09 
+
+33:09 notice that mine is set for $34.95. That
+33:12 
+
+33:12 is 30% below the current price on the
+33:16 
+
+33:16 product. And you can choose to track
+33:18 
+
+33:18 this price both down or you can select
+33:23 
+
+33:23 up. So if I wanted to know, hey, tell me
+33:26 
+
+33:26 when this product goes to $59.93,
+33:29 
+
+33:29 that means that it's going to tell me if
+33:31 
+
+33:31 this hits $59.94,
+33:33 
+
+33:33 I'll get an alert because this price has
+33:35 
+
+33:35 gone up 20%. And I can track it down if
+33:39 
+
+33:39 maybe I wanted to do some sort of Amazon
+33:41 
+
+33:41 to Amazon flip on this product. We can
+33:45 
+
+33:45 also we'll leave that on or less. We can
+33:49 
+
+33:49 also track Amazon themselves. We can
+33:51 
+
+33:51 track them out of stock or back in
+33:53 
+
+33:53 stock. And if we only want to know if
+33:56 
+
+33:56 Amazon comes in stock on this particular
+33:58 
+
+33:58 product at $34.95
+33:60 
+
+33:60 or higher or less, we can track that.
+34:02 
+
+34:02 That is no problem. Remember, or less is
+34:05 
+
+34:05 going to be $34.95 or less or $34.95 or
+34:09 
+
+34:09 more sold and fulfilled by Amazon. We
+34:12 
+
+34:12 can do the same thing with new. And this
+34:15 
+
+34:15 new here, we can track out of stock. We
+34:17 
+
+34:17 can track back in stock. And then we can
+34:19 
+
+34:19 choose, do we want to track the price
+34:22 
+
+34:22 going down or going up if I want to know
+34:24 
+
+34:24 if this price goes from a new seller at
+34:27 
+
+34:27 $34.95 or less. That's how I would set
+34:30 
+
+34:30 it here. I can also choose include
+34:33 
+
+34:33 shipping costs. And what this will do
+34:35 
+
+34:35 for me is this will take it from my new
+34:37 
+
+34:37 box here which is going to be any new
+34:39 
+
+34:39 seller and will not pull shipping costs
+34:42 
+
+34:42 and instead it will put it into new
+34:44 
+
+34:44 thirdparty FBA where my shipping cost
+34:47 
+
+34:47 will be included and it will grab this
+34:50 
+
+34:50 new third-party FBM where they also
+34:53 
+
+34:53 figure out the shipping costs. I would
+34:56 
+
+34:56 always set it up this way if you're
+34:57 
+
+34:57 tracking new thirdparty sellers. set it
+35:00 
+
+35:00 up so that you're including shipping
+35:02 
+
+35:02 cost so you know your entire price. You
+35:05 
+
+35:05 can also track by new offer count. So if
+35:08 
+
+35:08 you know that something is not
+35:10 
+
+35:10 profitable until there are six or fewer
+35:13 
+
+35:13 sellers, six or less sellers, you can
+35:16 
+
+35:16 track that. Or maybe you know that
+35:18 
+
+35:18 something is meltable and it gets three
+35:22 
+
+35:22 sellers when it is three or more sellers
+35:24 
+
+35:24 when you can actually sell the item. You
+35:27 
+
+35:27 can track the number of sellers going
+35:28 
+
+35:28 both down and up. You can also track the
+35:32 
+
+35:32 used prices. We're not going to spend
+35:33 
+
+35:33 very much time here because you're not
+35:36 
+
+35:36 really going to be tracking used prices.
+35:38 
+
+35:38 It's not really a huge deal, but you can
+35:40 
+
+35:40 track out of stock, back in stock. You
+35:43 
+
+35:43 can include shipping costs. You can
+35:45 
+
+35:45 track warehouse deals, lightning deals,
+35:48 
+
+35:48 used like new, etc., and used offer
+35:51 
+
+35:51 count. Now, one other thing here is you
+35:53 
+
+35:53 can use a memo and tags. Let's say, for
+35:56 
+
+35:56 example, that I'm tracking a product
+35:58 
+
+35:58 that maybe I've sold in the past and I
+36:00 
+
+36:00 want to sell it again when it becomes a
+36:03 
+
+36:03 little bit when the price is a little
+36:04 
+
+36:04 higher. So, I'm going to track this buy
+36:06 
+
+36:06 box price to be $50 or more. Okay? And
+36:11 
+
+36:11 I'm going to say in the memo section,
+36:14 
+
+36:14 I'm going to say, you know what, sell at
+36:17 
+
+36:17 $50 plus. And I'm also going to put in
+36:20 
+
+36:20 here, I grab this at lego.com.
+36:24 
+
+36:24 And you could put in a tag. Maybe I want
+36:25 
+
+36:25 to put in toys or something else. And
+36:28 
+
+36:28 now I've got some tags. So I can sort
+36:30 
+
+36:30 this inside of my Keepa account to
+36:34 
+
+36:34 actually just see particular items. Now,
+36:37 
+
+36:37 because you're on the pro section, there
+36:39 
+
+36:39 are some more ways to track. You can
+36:41 
+
+36:41 track by sales rank. So maybe you want
+36:43 
+
+36:43 something that is seasonal and when it
+36:45 
+
+36:45 hits 25,000
+36:47 
+
+36:47 or less in sales rank, you want to sell
+36:50 
+
+36:50 it. Or maybe you know that you've done
+36:52 
+
+36:52 really well when the item is 50,000 in
+36:55 
+
+36:55 sales rank or more because the the price
+36:58 
+
+36:58 goes up a little bit and the demand
+36:60 
+
+36:60 slows down, but you're okay with that.
+37:02 
+
+37:02 You can track the sales rank. Can also
+37:04 
+
+37:04 track the rating. Not really something
+37:07 
+
+37:07 you're going to do. And you can track
+37:09 
+
+37:09 the rating count if you choose. Now,
+37:11 
+
+37:11 there is even more you can track. There
+37:13 
+
+37:13 is used buy box prices for things like
+37:17 
+
+37:17 mixed media, books, video games, etc. If
+37:20 
+
+37:20 you want to track the used buy box
+37:22 
+
+37:22 price, you can do that. You can track
+37:24 
+
+37:24 the list price. You can track the
+37:26 
+
+37:26 collectible price, the collectible offer
+37:28 
+
+37:28 count, the tradein value, the re
+37:31 
+
+37:31 refurbished price, and the refurbished
+37:34 
+
+37:34 offer count. You're probably not going
+37:36 
+
+37:36 to spend very much time in this last
+37:38 
+
+37:38 portion except for maybe the sales rank.
+37:41 
+
+37:41 Okay. Now, once you have that all set
+37:43 
+
+37:43 up, you can decide how long you want to
+37:46 
+
+37:46 track this. I have mine set as a default
+37:48 
+
+37:48 for one year. You can change it to 2, 3,
+37:51 
+
+37:51 10, whatever you might want to do. And
+37:53 
+
+37:53 once you click start tracking, then it
+37:56 
+
+37:56 will alert you. If you have the mobile
+37:58 
+
+37:58 app installed, it will alert you inside
+38:01 
+
+38:01 the mobile app. You can see that I also
+38:03 
+
+38:03 have it set to send me an email. You can
+38:06 
+
+38:06 hook this up to your Telegram Messenger.
+38:09 
+
+38:09 You can get web notifications, although
+38:11 
+
+38:11 I don't believe that works. It hasn't
+38:13 
+
+38:13 for a long time. I do get push
+38:15 
+
+38:15 notifications and you do have an RSS
+38:19 
+
+38:19 feed that you can set up. So if you want
+38:21 
+
+38:21 to set up some sort of RSS feed to
+38:24 
+
+38:24 Zapier or something else, you can have
+38:26 
+
+38:26 these texted to you if you felt like it.
+38:29 
+
+38:29 You can also change around your
+38:31 
+
+38:31 lightning deals. Do I want to get
+38:32 
+
+38:32 notified of lightning deals for this
+38:34 
+
+38:34 item? And how often do I want that timer
+38:36 
+
+38:36 to rearm? I want it to rearm every
+38:40 
+
+38:40 single day. And that's how we track
+38:42 
+
+38:42 products. You might do this for products
+38:44 
+
+38:44 that you want to sell that maybe are no
+38:46 
+
+38:46 longer profitable and you want to be
+38:48 
+
+38:48 notified when those products go back up
+38:50 
+
+38:50 in price. Or you might track products
+38:53 
+
+38:53 that come down frequently in price that
+38:56 
+
+38:56 maybe you can purchase to do an Amazon
+38:58 
+
+38:58 to Amazon flip, which is buying directly
+39:00 
+
+39:00 from Amazon and selling back on Amazon
+39:04 
+
+39:04 when the price goes back up. Again,
+39:06 
+
+39:06 we're not going to dive into Amazon to
+39:08 
+
+39:08 Amazon flips in this video, but there
+39:10 
+
+39:10 are other videos on it. And I would
+39:12 
+
+39:12 suggest that you go follow my friend
+39:14 
+
+39:14 Saul on Twitter, Saulsellstuff, if you
+39:17 
+
+39:17 want to learn more about Amazon to
+39:19 
+
+39:19 Amazon flips. Next, we're going to dive
+39:21 
+
+39:21 into the data section and all the things
+39:23 
+
+39:23 that it will teach or show you about a
+39:26 
+
+39:26 product. All right, let's talk about the
+39:28 
+
+39:28 data tab. The data tab has multiple
+39:30 
+
+39:30 subtabs including the product details,
+39:33 
+
+39:33 the offers, the buy box statistics, and
+39:35 
+
+39:35 the buy box used statistics. We're going
+39:38 
+
+39:38 to talk about product details, offers,
+39:40 
+
+39:40 and the buy box stats. We're going to
+39:43 
+
+39:43 leave out the used stats because it's
+39:45 
+
+39:45 not really something you're going to use
+39:46 
+
+39:46 very often. Now, what you get here in
+39:48 
+
+39:48 the product details on the lefth hand
+39:50 
+
+39:50 column is you're going to get what
+39:52 
+
+39:52 marketplace this is. You're going to get
+39:53 
+
+39:53 an image, the title, what category this
+39:56 
+
+39:56 is, what display group it's in. its
+39:58 
+
+39:58 rating, the review counts, all of these
+40:01 
+
+40:01 things. And then you're going to get to
+40:03 
+
+40:03 see where the buy box shipping country
+40:06 
+
+40:06 is, whether it's the US or one others.
+40:08 
+
+40:08 You're going to see the buy box seller
+40:10 
+
+40:10 and the buy box striketh through price.
+40:12 
+
+40:12 And what this means is that if there is
+40:13 
+
+40:13 a list price, and you'll remember that
+40:15 
+
+40:15 $60 from earlier, this is where the
+40:19 
+
+40:19 negative or the price drop comes from.
+40:22 
+
+40:22 50.04 is the current price of the buy
+40:26 
+
+40:26 box here. and that is about 17% less
+40:29 
+
+40:29 than the $60 or the clickthrough price.
+40:32 
+
+40:32 You're also going to get to see what the
+40:34 
+
+40:34 FBA pick and pack fee is for this item,
+40:36 
+
+40:36 what the referral fee is, and what the
+40:38 
+
+40:38 referral fee will be based on the
+40:40 
+
+40:40 current buy box price. You get to see
+40:43 
+
+40:43 who the lowest FBM seller is, what the
+40:46 
+
+40:46 total offer count is, how long it's been
+40:48 
+
+40:48 on Amazon, what category it's in, all of
+40:51 
+
+40:51 the UPC and EAN numbers, the AS, and
+40:54 
+
+40:54 then of course we have variation AS if
+40:57 
+
+40:57 those exist, what items are frequently
+40:59 
+
+40:59 bought together, the brand and the brand
+41:02 
+
+41:02 store name. And these are clickable
+41:04 
+
+41:04 here, so you can actually take these out
+41:06 
+
+41:06 to Keepa and look at all of the other
+41:08 
+
+41:08 products from this particular brand. Not
+41:12 
+
+41:12 something we can really go into, but it
+41:13 
+
+41:13 is something that's useful if you come
+41:15 
+
+41:15 across a brand that does very well for
+41:17 
+
+41:17 you and you want to go and source all of
+41:20 
+
+41:20 that other all of the other products on
+41:23 
+
+41:23 that particular brand. You're also going
+41:25 
+
+41:25 to get to see how large this item is.
+41:27 
+
+41:27 It's one fluid ounce. You can see the
+41:29 
+
+41:29 scent here that's available for you, the
+41:32 
+
+41:32 style, etc. and so on. A lot of data
+41:34 
+
+41:34 that you're not really going to need to
+41:37 
+
+41:37 worry about, but data nonetheless. Then
+41:40 
+
+41:40 you get to see what size or the package
+41:42 
+
+41:42 dimensions of this item, how much it
+41:44 
+
+41:44 weighs, the quantity, the actual item
+41:47 
+
+41:47 dimensions. So you'll notice that the
+41:49 
+
+41:49 item dimensions are smaller than what
+41:51 
+
+41:51 they're going to ship this item out in,
+41:54 
+
+41:54 what this actually weighs, and if
+41:56 
+
+41:56 there's any safety warnings and if it's
+41:58 
+
+41:58 hazmat or not. But over on the right
+42:01 
+
+42:01 hand side, you're going to see a lot of
+42:02 
+
+42:02 data that is actually useful. You get to
+42:05 
+
+42:05 see the current and averages for the
+42:07 
+
+42:07 sales rank. Now, why might you want to
+42:10 
+
+42:10 see this? You can take this sales rank
+42:13 
+
+42:13 information. You could take these
+42:14 
+
+42:14 averages and you could build out a
+42:17 
+
+42:17 profile for products that you like to
+42:19 
+
+42:19 sell. So, we've got the 180day sales
+42:23 
+
+42:23 rank average of 108,000 and the 30-day
+42:26 
+
+42:26 sales rank average of 121,000. And you
+42:30 
+
+42:30 could actually go and look for products
+42:32 
+
+42:32 that are very similar to this with a
+42:34 
+
+42:34 similar profile that you could go and
+42:37 
+
+42:37 source. You can do the same with the
+42:39 
+
+42:39 number of sales rank drops, the reviews.
+42:43 
+
+42:43 You can also take a look at the buy box
+42:45 
+
+42:45 averages, the current price, the 90-day
+42:48 
+
+42:48 average, 180day average, and 365day
+42:52 
+
+42:52 average. If you took all of this data
+42:54 
+
+42:54 and took it from say 15 or 20 products
+42:58 
+
+42:58 that you've sold in the past and put
+42:60 
+
+42:60 this into something like Claude or Chat
+43:02 
+
+43:02 GPT, you could actually have it build
+43:05 
+
+43:05 out a profile of the perfect product for
+43:08 
+
+43:08 you that you do well with and then you
+43:10 
+
+43:10 could go and look for products that look
+43:13 
+
+43:13 very similar to that. You're also going
+43:15 
+
+43:15 to be able to see what the new prices
+43:17 
+
+43:17 are, what the new third-party FBA prices
+43:21 
+
+43:21 are and the averages, the new thirdparty
+43:24 
+
+43:24 FBM and their averages as well as the
+43:26 
+
+43:26 highest and lowest. And then of course
+43:29 
+
+43:29 the list price and how that's changed
+43:31 
+
+43:31 over time and then eBay information as
+43:34 
+
+43:34 well. Now this data is not always
+43:36 
+
+43:36 perfectly accurate, but they too try to
+43:39 
+
+43:39 gather a lot of eBay information in
+43:41 
+
+43:41 there as well. And then we get to see
+43:43 
+
+43:43 the new offer count. How many new offers
+43:46 
+
+43:46 are there now? Eight. What's the 30-day,
+43:48 
+
+43:48 90-day, and 180day average offer counts
+43:52 
+
+43:52 for this particular item? And again, you
+43:55 
+
+43:55 could use all of this data and upload it
+43:58 
+
+43:58 into something like Claude or Chat GPT.
+44:01 
+
+44:01 And you could have it build a perfect
+44:04 
+
+44:04 product profile for you based on the
+44:07 
+
+44:07 current and average prices, the current
+44:09 
+
+44:09 and average sales ranks, the current and
+44:11 
+
+44:11 average new offer counts, etc. to go and
+44:15 
+
+44:15 actually use Keep a Product Finder to
+44:17 
+
+44:17 look for more products for you. All
+44:20 
+
+44:20 right. Also, just a nice thing to look
+44:22 
+
+44:22 at to say, okay, over the past current
+44:25 
+
+44:25 30, 60, and 90 days, this sales rank has
+44:28 
+
+44:28 been pretty solid. The averages are
+44:30 
+
+44:30 staying nicely. It's not going too
+44:32 
+
+44:32 crazy. If I go out and look over 365
+44:35 
+
+44:35 days, looks like it's getting a little
+44:37 
+
+44:37 less popular than it once was. And if we
+44:40 
+
+44:40 compare that to the buy box, 49 and 52
+44:44 
+
+44:44 and 49 and 46. Of course, the sales rank
+44:47 
+
+44:47 is getting a little higher on average
+44:49 
+
+44:49 because the price is going up a little
+44:51 
+
+44:51 bit, but that's okay. It's still
+44:53 
+
+44:53 selling. And so this is an all right
+44:55 
+
+44:55 product for me to go in and look at a
+44:58 
+
+44:58 bit closer and find other products very
+45:01 
+
+45:01 similar to this. A lot of information
+45:03 
+
+45:03 here for you to take in. You're not
+45:05 
+
+45:05 going to need all of it. So don't allow
+45:07 
+
+45:07 this to overwhelm you, but it does give
+45:09 
+
+45:09 you a nice glance into the health of
+45:11 
+
+45:11 this product over time. Now, the next
+45:14 
+
+45:14 thing we can do here is we can look at
+45:15 
+
+45:15 the offers on a product. The way that
+45:18 
+
+45:18 this is set up right now, you'll see all
+45:20 
+
+45:20 of the offers that are currently on this
+45:23 
+
+45:23 particular product. It doesn't look like
+45:25 
+
+45:25 any of these are currently FBA. They're
+45:27 
+
+45:27 all merchant fulfilled. Otherwise, you
+45:29 
+
+45:29 would see that they are FBA. You can
+45:32 
+
+45:32 also see their total price including
+45:34 
+
+45:34 shipping costs. You can open up their
+45:37 
+
+45:37 storefront right here if you want to.
+45:39 
+
+45:39 You can see the new condition or sorry,
+45:41 
+
+45:41 actually, if you click on this, it's
+45:43 
+
+45:43 going to be the actual product that
+45:46 
+
+45:46 they're selling. It'll be their their
+45:48 
+
+45:48 page rather than the actual page of the
+45:51 
+
+45:51 product. You can see what condition
+45:53 
+
+45:53 they're selling in, what their stock
+45:55 
+
+45:55 history looks like, what their price
+45:57 
+
+45:57 history looks like, how much stock
+45:60 
+
+45:60 they've had, about how many units that
+46:02 
+
+46:02 they've sold in total, how many units
+46:04 
+
+46:04 they've sold over the past 30 days,
+46:07 
+
+46:07 whether or not they're Prime, whether or
+46:08 
+
+46:08 not they're FBA, their seller name, and
+46:11 
+
+46:11 this will open up their storefront and
+46:13 
+
+46:13 their Keepa storefront, how many
+46:15 
+
+46:15 lifetime reviews they have, their seller
+46:18 
+
+46:18 ID, their rating total over the last 12
+46:21 
+
+46:21 months, whether or not this is Prime
+46:24 
+
+46:24 exclusive, and when they were last seen
+46:26 
+
+46:26 and first seen on this particular
+46:29 
+
+46:29 listing. Now, before I show you some of
+46:31 
+
+46:31 the other things in this graph, there
+46:33 
+
+46:33 are a few things you should know. Number
+46:35 
+
+46:35 one, the stock history. The stock
+46:37 
+
+46:37 history is not inherently wrong, but it
+46:40 
+
+46:40 can be a little incorrect. So, you're
+46:42 
+
+46:42 going to notice here that they had 48
+46:44 
+
+46:44 and then it dropped down to one
+46:46 
+
+46:46 significantly. Now, could this be them
+46:49 
+
+46:49 rearranging things? Possibly. It could
+46:52 
+
+46:52 also be a mistake. Especially in FBA. If
+46:55 
+
+46:55 you see an FBA offer that has 20 offers
+46:58 
+
+46:58 and it drops down to five, it's probably
+46:60 
+
+46:60 not that they sold out of all of those
+47:01 
+
+47:01 unit. It's probably that those went into
+47:04 
+
+47:04 FC transfer. So, we don't want to take
+47:06 
+
+47:06 this information as gospel, but it is
+47:09 
+
+47:09 going to be directionally accurate as to
+47:12 
+
+47:12 how many items were sold over the past
+47:14 
+
+47:14 30 days, how many items were sold in
+47:17 
+
+47:17 total. Now, you can choose the graph
+47:20 
+
+47:20 range in days, and I have this set to 90
+47:23 
+
+47:23 days. If I wanted to look out over the
+47:25 
+
+47:25 past six months, I could look out over
+47:27 
+
+47:27 180, over the past year, or over the
+47:30 
+
+47:30 lifetime of these people being on this
+47:33 
+
+47:33 particular product. I could also choose
+47:36 
+
+47:36 Prime only. I could choose free
+47:38 
+
+47:38 shipping. I could choose FBA only. And
+47:40 
+
+47:40 you'll see it goes away because there
+47:42 
+
+47:42 are no FBA offers. And of course, I
+47:44 
+
+47:44 could choose FBM only as well. And then
+47:47 
+
+47:47 one of the really cool things here that
+47:49 
+
+47:49 can allow me to storefront stock a
+47:50 
+
+47:50 little bit more is I can include
+47:53 
+
+47:53 historical offers. So you'll see here
+47:55 
+
+47:55 there are eight results on this right
+47:57 
+
+47:57 now. If I include historical offers,
+47:60 
+
+47:60 there are 108. And if I scroll over, I
+48:04 
+
+48:04 can see here when these were last seen.
+48:06 
+
+48:06 That's how I have them set up. These
+48:08 
+
+48:08 sellers were last seen over the in the
+48:10 
+
+48:10 last 9 minutes. This seller here, the
+48:13 
+
+48:13 Papel store, was last seen 42 days ago.
+48:16 
+
+48:16 However, they may be an incredible
+48:18 
+
+48:18 seller. They may just not be on this
+48:20 
+
+48:20 particular product anymore. Maybe they
+48:22 
+
+48:22 gave it up for something more promising.
+48:24 
+
+48:24 I could go and I could storefront stock
+48:26 
+
+48:26 them by opening up their actual
+48:28 
+
+48:28 storefront on Keepa or opening up their
+48:31 
+
+48:31 storefront on Amazon and going in and
+48:34 
+
+48:34 manually storefront stalking all 720
+48:38 
+
+48:38 listings that they're on. Okay, so you
+48:41 
+
+48:41 can gather some data from a lot of other
+48:43 
+
+48:43 sellers rather than just the ones that
+48:45 
+
+48:45 were on this listing. And all of this
+48:48 
+
+48:48 information is downloadable. You can
+48:50 
+
+48:50 export this data, all active columns
+48:53 
+
+48:53 into a CSV that will give you this
+48:56 
+
+48:56 information that you could use later on
+48:57 
+
+48:57 down the road. Now, we also have buy box
+49:01 
+
+49:01 statistics. And you're going to want to
+49:02 
+
+49:02 take the buy box statistics with a grain
+49:06 
+
+49:06 of salt. Okay? And you can even see here
+49:08 
+
+49:08 the buy box can be shared between
+49:11 
+
+49:11 multiple sellers. This means sellers in
+49:14 
+
+49:14 different regions might get different
+49:16 
+
+49:16 buy box or or it changes in between the
+49:20 
+
+49:20 time that Keepa is actually going to go
+49:22 
+
+49:22 out and gather this. But this table is
+49:24 
+
+49:24 going to give you what Keepa knows to be
+49:27 
+
+49:27 the seller share of the new buy box,
+49:30 
+
+49:30 right? And it is based on non-prime
+49:32 
+
+49:32 users. Now the competitive price
+49:35 
+
+49:35 threshold seems to be $84.86.
+49:38 
+
+49:38 Once it gets above $84, it seems that
+49:40 
+
+49:40 key or Amazon pulls this buy box away
+49:44 
+
+49:44 and it suppresses the buy box. You can
+49:46 
+
+49:46 see that there are seven new FBM sellers
+49:50 
+
+49:50 that seem to be eligible for the buy box
+49:53 
+
+49:53 at the moment. Okay. And we can see here
+49:56 
+
+49:56 average new offer count is six, stock of
+49:59 
+
+49:59 104. They won 43% of the time on this
+50:04 
+
+50:04 particular item. This is over the past
+50:06 
+
+50:06 30 days. If I go out over the past 90
+50:08 
+
+50:08 days, we can see here, okay, 52.40, they
+50:11 
+
+50:11 got 60%. But this Prime 11 or 111
+50:14 
+
+50:14 seller, their average price was a little
+50:17 
+
+50:17 higher and they got 10%. Apple store was
+50:20 
+
+50:20 even higher at 5461 and Keepa clocked
+50:23 
+
+50:23 them in around 9%. This can help you
+50:26 
+
+50:26 figure out where you may need to price
+50:29 
+
+50:29 to get a portion of the buy box. You
+50:32 
+
+50:32 don't always have to be the lowest
+50:33 
+
+50:33 seller to get the buy box. you can be
+50:36 
+
+50:36 priced above. Again, we talked about
+50:38 
+
+50:38 that flywheel model of distribution.
+50:41 
+
+50:41 Amazon wants to get the product to the
+50:43 
+
+50:43 consumer the fastest way possible, the
+50:46 
+
+50:46 cheapest way possible. And that means
+50:48 
+
+50:48 that a consumer in Ohio might see a
+50:50 
+
+50:50 different price than a consumer in
+50:52 
+
+50:52 California. And depending on where it
+50:54 
+
+50:54 is, you may be able to be priced a
+50:56 
+
+50:56 little bit differently. But this allows
+50:58 
+
+50:58 you to see, okay, this is the range I
+51:01 
+
+51:01 need to be in to be able to get a share
+51:04 
+
+51:04 of the buy box. So, if you see the buy
+51:06 
+
+51:06 box right now at $51, you might be okay
+51:10 
+
+51:10 at $52 and it might just sell a little
+51:13 
+
+51:13 bit lower than if you were priced at
+51:15 
+
+51:15 $50. Okay? So, again, take this with a
+51:19 
+
+51:19 grain of salt. Use it to give yourself
+51:22 
+
+51:22 some information, but don't use it as
+51:24 
+
+51:24 gospel. All right? And then of course
+51:26 
+
+51:26 you can see the same for used buy box
+51:28 
+
+51:28 statistics if that's available. It's not
+51:31 
+
+51:31 available on this particular item
+51:32 
+
+51:32 because you can't sell these items as
+51:34 
+
+51:34 used. Now let's talk about variations.
+51:37 
+
+51:37 In the variations tab, this is going to
+51:40 
+
+51:40 give you a ton of information for items
+51:42 
+
+51:42 that have maybe different sizes,
+51:44 
+
+51:44 different colors, variations of one
+51:47 
+
+51:47 particular item. Now, the first thing
+51:48 
+
+51:48 you're going to want to do is you're
+51:49 
+
+51:49 going to want to look at your configured
+51:50 
+
+51:50 columns and see what kind of data is
+51:53 
+
+51:53 important for you to see. You can add
+51:55 
+
+51:55 Amazon, the buy box, the new prices, the
+51:58 
+
+51:58 new offer count, the reviews, used offer
+52:01 
+
+52:01 count, and then there's several
+52:02 
+
+52:02 ungrouped, including the AS, the color,
+52:05 
+
+52:05 the GTIN, which you probably don't need,
+52:08 
+
+52:08 the image, the size, the title, the
+52:11 
+
+52:11 tracking since, and the variation
+52:13 
+
+52:13 attributes. I don't really need to know
+52:15 
+
+52:15 the I need to know the AS. Yeah, I
+52:18 
+
+52:18 actually want I don't need to know how
+52:20 
+
+52:20 long. Actually, I do want to see how
+52:21 
+
+52:21 long it's been tracked. I want the
+52:22 
+
+52:22 title, the size, the image, all of those
+52:24 
+
+52:24 things, but choose what's right for you
+52:27 
+
+52:27 in the configure columns. And if you
+52:29 
+
+52:29 just want to copy mine, feel free to
+52:31 
+
+52:31 stop this and take a look. You can
+52:33 
+
+52:33 export all of this data. Of course,
+52:35 
+
+52:35 you'll see how many results this are.
+52:37 
+
+52:37 This particular shoe, which is currently
+52:39 
+
+52:39 ranked 122,000, has 361
+52:44 
+
+52:44 variations that are currently in stock.
+52:46 
+
+52:46 You can also open this up in product
+52:48 
+
+52:48 viewer if you want to see this in its
+52:50 
+
+52:50 own page. Not necessary, but it does
+52:53 
+
+52:53 make things a little bit easier to see
+52:55 
+
+52:55 there. And then you can choose how long
+52:57 
+
+52:57 you want the graph range to be in days.
+52:59 
+
+52:59 You can choose 7 days, 30 days, 90 days,
+53:03 
+
+53:03 180, which is where I want mine to be,
+53:05 
+
+53:05 365, or the entire lifetime of this
+53:09 
+
+53:09 particular product. I'm going to choose
+53:11 
+
+53:11 the last year here. And then of course
+53:13 
+
+53:13 there's a glossery to let you know what
+53:15 
+
+53:15 all of these are for. And finally, we
+53:18 
+
+53:18 can look at include out of stock and
+53:20 
+
+53:20 historical variations, which will also
+53:23 
+
+53:23 show us the items that may no longer be
+53:25 
+
+53:25 in stock. This can be helpful if you
+53:27 
+
+53:27 happen to find a product that doesn't
+53:29 
+
+53:29 show up on Amazon, but there are other
+53:32 
+
+53:32 items that are very like it. So maybe if
+53:34 
+
+53:34 this was maybe if you found this in a
+53:36 
+
+53:36 gray color size 10 and it wasn't here,
+53:39 
+
+53:39 it may show up in the out of stock and
+53:42 
+
+53:42 you could bring it back in stock if it
+53:43 
+
+53:43 makes sense. And you can include
+53:46 
+
+53:46 international prices if you want to. So
+53:48 
+
+53:48 maybe an item sells for more in another
+53:51 
+
+53:51 marketplace. You can have that data show
+53:53 
+
+53:53 for you as well. If maybe you want to
+53:55 
+
+53:55 sell it in that other marketplace. Now,
+53:58 
+
+53:58 the way that I have my chart set up here
+53:60 
+
+53:60 is I see the AS. That way, I can match
+54:02 
+
+54:02 the AS up here in the URL bar to the AS
+54:05 
+
+54:05 down here. I like to see the image so I
+54:08 
+
+54:08 get a visual representation of what I
+54:10 
+
+54:10 see. Then you can see the current buy
+54:12 
+
+54:12 box price for this particular item. And
+54:16 
+
+54:16 I have the his or I have the
+54:17 
+
+54:17 international prices as well. I'm going
+54:19 
+
+54:19 to go ahead and turn that off. If there
+54:21 
+
+54:21 is no buy box price, if the buy box is
+54:23 
+
+54:23 suppressed, you'll see a little dash
+54:26 
+
+54:26 here. Now, this does not mean that the
+54:27 
+
+54:27 item is out of stock. It just means that
+54:29 
+
+54:29 this item is priced at a point where
+54:32 
+
+54:32 Amazon needs to suppress the buy box on
+54:35 
+
+54:35 this. You're also going to see a history
+54:37 
+
+54:37 chart of the actual price of the buy box
+54:40 
+
+54:40 price that is. And you'll see here this
+54:42 
+
+54:42 was at 90 and then 95. And whatever
+54:44 
+
+54:44 price this item is at right now has a
+54:47 
+
+54:47 suppressed buy box. So, we'll take a
+54:50 
+
+54:50 look at the actual buying options here,
+54:53 
+
+54:53 and we'll see that the lowest price
+54:54 
+
+54:54 seller is at $97.95,
+54:57 
+
+54:57 and that is enough for Amazon to to
+55:01 
+
+55:01 suppress the buy box on this particular
+55:03 
+
+55:03 variation. You get to see the title, and
+55:06 
+
+55:06 then we get to see the new offer count.
+55:08 
+
+55:08 Now, the new offer count lets us know
+55:10 
+
+55:10 how many sellers are on this particular
+55:12 
+
+55:12 variation. And if the offer count is
+55:15 
+
+55:15 moving up and down, it's a good
+55:17 
+
+55:17 indication that this variation is
+55:19 
+
+55:19 selling through. You'll also see the
+55:21 
+
+55:21 reviews. If you can see that the new
+55:23 
+
+55:23 offer count is moving up and down and
+55:26 
+
+55:26 the number of reviews or ratings is
+55:28 
+
+55:28 going up, that's a good thing. That
+55:30 
+
+55:30 means that this item is very likely
+55:33 
+
+55:33 selling through because these number of
+55:36 
+
+55:36 reviews are going up, etc. We're also
+55:39 
+
+55:39 going to see how many reviews in total
+55:42 
+
+55:42 this variation has. This variation has
+55:44 
+
+55:44 nine reviews. This one also has nine
+55:46 
+
+55:46 reviews. You'll see this little trophy
+55:49 
+
+55:49 by that. And that means that this item,
+55:52 
+
+55:52 these ones are the ones with the most
+55:54 
+
+55:54 reviews. The next one down has eight or
+55:57 
+
+55:57 6.72%
+55:59 
+
+55:59 5.88%
+56:01 
+
+56:01 etc. Then we like to see the variation
+56:03 
+
+56:03 attributes. This lets us know what size
+56:05 
+
+56:05 and color we're looking at. This color
+56:07 
+
+56:07 way is black on black in size 11. It
+56:10 
+
+56:10 seems to be the one that is the
+56:12 
+
+56:12 bestselling variation out of all of
+56:15 
+
+56:15 these historically. Then we have the
+56:17 
+
+56:17 color and the size separated. We could
+56:20 
+
+56:20 probably turn color and size off because
+56:22 
+
+56:22 we have the variation attributes turned
+56:24 
+
+56:24 on. And then we get to see the new offer
+56:27 
+
+56:27 count. Currently, this has four new
+56:29 
+
+56:29 offers on it. It has peaked at around
+56:32 
+
+56:32 five new offers over the past 365 days.
+56:37 
+
+56:37 So, it's not far off from its all-time
+56:39 
+
+56:39 high. And then we can see how long this
+56:42 
+
+56:42 item has been tracked. Now, the reason I
+56:45 
+
+56:45 want to see how long this item has been
+56:47 
+
+56:47 tracked is because I can actually sort
+56:49 
+
+56:49 by this. And we could take a look at one
+56:52 
+
+56:52 of these items that is much newer to
+56:55 
+
+56:55 this variation here. So, we can take a
+56:57 
+
+56:57 look at this item right here. It's
+56:58 
+
+56:58 taupe, black, and gum. We can see that
+57:02 
+
+57:02 this item has only been on this
+57:04 
+
+57:04 variation listing for 83 days. We're
+57:07 
+
+57:07 going to look at this this one here,
+57:08 
+
+57:08 this 5 and a half. This one here has
+57:11 
+
+57:11 been here for 83 days. It looks like it
+57:13 
+
+57:13 currently may have a suppressed buy box
+57:16 
+
+57:16 or maybe it's out of stock. And we can
+57:18 
+
+57:18 also see that it's had two offer counts
+57:21 
+
+57:21 on it. And we don't see any right now,
+57:24 
+
+57:24 but it has had a review over the past
+57:27 
+
+57:27 over this year, meaning that they
+57:30 
+
+57:30 probably sold out of this particular
+57:32 
+
+57:32 one. Now, knowing that, I might want to
+57:35 
+
+57:35 compete on this particular listing
+57:38 
+
+57:38 because it is much newer, but there is
+57:40 
+
+57:40 evidence that it is actually sold
+57:42 
+
+57:42 through pretty quickly. So, rather than
+57:45 
+
+57:45 only looking at the total number of
+57:49 
+
+57:49 reviews and paying attention to the
+57:51 
+
+57:51 items that only have the most number of
+57:53 
+
+57:53 reviews, you're going to want to take
+57:55 
+
+57:55 that into account along with how long
+57:59 
+
+57:59 this item has been tracked for. So, for
+58:01 
+
+58:01 example, this item right here, this blue
+58:04 
+
+58:04 cartoon in size 10, this looks like it
+58:07 
+
+58:07 might actually be a popular colorway and
+58:11 
+
+58:11 size because it's only been here for 341
+58:14 
+
+58:14 days. This one has only been there for
+58:17 
+
+58:17 353 days, but we can see that there are
+58:21 
+
+58:21 reviews and the number of sellers has
+58:24 
+
+58:24 moved pretty well on these listings.
+58:27 
+
+58:27 This is a place where a lot of people
+58:29 
+
+58:29 are going to not pay attention to them
+58:31 
+
+58:31 for one reason or another. Maybe because
+58:33 
+
+58:33 they are new or because there are not a
+58:36 
+
+58:36 lot of reviews, but this can give you a
+58:38 
+
+58:38 leg up when there are tons and tons of
+58:41 
+
+58:41 variations. And maybe you want to stick
+58:43 
+
+58:43 to the ones that are there is less
+58:46 
+
+58:46 competition on. So just because there is
+58:49 
+
+58:49 fewer competition, matter of fact, this
+58:50 
+
+58:50 one's currently unavailable. Meaning if
+58:53 
+
+58:53 you could bring this back in stock, you
+58:55 
+
+58:55 would be the only seller on this
+58:57 
+
+58:57 listing. Same is probably going to go
+58:59 
+
+58:59 for this one. This one is also currently
+59:01 
+
+59:01 unavailable. These ones are probably
+59:04 
+
+59:04 going to be overlooked by many sellers
+59:07 
+
+59:07 because they are newer to the catalog.
+59:09 
+
+59:09 There are not a lot of reviews. It
+59:12 
+
+59:12 doesn't look like there are a lot of
+59:13 
+
+59:13 sellers or that sellers is moving up and
+59:15 
+
+59:15 down very much. However, giving us a
+59:19 
+
+59:19 look at the whole picture lets us know
+59:21 
+
+59:21 that, hey, we might actually be able to
+59:22 
+
+59:22 sell these for 9798
+59:25 
+
+59:25 with no other competition compared to
+59:28 
+
+59:28 having to go and sell against four or
+59:30 
+
+59:30 five other sellers on some of these
+59:32 
+
+59:32 other listings. So, those are some of
+59:34 
+
+59:34 the things you want to take into
+59:35 
+
+59:35 account. Of course, we do want to sell
+59:37 
+
+59:37 the popular items if the pricing is
+59:40 
+
+59:40 stable, but there are some edge cases
+59:43 
+
+59:43 that we can take a look at where we
+59:45 
+
+59:45 might actually be able to find some
+59:48 
+
+59:48 products that are profitable that other
+59:50 
+
+59:50 people aren't looking at. So, hopefully
+59:51 
+
+59:51 that's helpful. All right, now that
+59:52 
+
+59:52 we've gone through every single bit of
+59:55 
+
+59:55 the Keepa graph, let's put this all
+59:56 
+
+59:56 together and let's look at a product
+59:58 
+
+59:58 that I would choose to sell. Okay, we're
+60:01 
+
+60:01 going to look at this G.I. Joe product.
+60:03 
+
+60:03 Now, we're going to look at a couple of
+60:04 
+
+60:04 things really quickly. Number one, we're
+60:06 
+
+60:06 going to take a look at this sales rank.
+60:08 
+
+60:08 Is there movement? Is there a weird
+60:11 
+
+60:11 heartbeat to this particular graph? Over
+60:14 
+
+60:14 the past 180 days, there is. This isn't
+60:17 
+
+60:17 the bestselling product, although we can
+60:19 
+
+60:19 see that before Q4 started, there were
+60:22 
+
+60:22 50 plus customers for this item. As Q4
+60:25 
+
+60:25 happened, it went up to 100 plus
+60:27 
+
+60:27 customers. And then as Q4 went away, it
+60:30 
+
+60:30 dropped back down to 50. and then it
+60:32 
+
+60:32 lost that gold monthly sold line.
+60:34 
+
+60:34 However, we are seeing that the BSR, the
+60:38 
+
+60:38 sales rank is still moving up and down
+60:40 
+
+60:40 and it's under 150,000 regularly, which
+60:44 
+
+60:44 means this item is selling. We're never
+60:46 
+
+60:46 going to know exactly how much it's
+60:48 
+
+60:48 selling, but it's selling and that's
+60:50 
+
+60:50 good enough for me to at least take a
+60:53 
+
+60:53 test for this. Maybe buy five or 10
+60:55 
+
+60:55 units, send them in and see how well it
+60:57 
+
+60:57 sells. Now, the other thing we notice
+60:59 
+
+60:59 here is the buy box. The buy box price
+61:02 
+
+61:02 on this is trending up outside of Q4.
+61:06 
+
+61:06 That's good news. That's what we want to
+61:08 
+
+61:08 see. We want to be able to sell these
+61:10 
+
+61:10 items for as high as possible. And we
+61:13 
+
+61:13 can see it lost the buy box for a little
+61:15 
+
+61:15 while. It was suppressed for a little
+61:16 
+
+61:16 bit. That made that BSR go up. We can
+61:19 
+
+61:19 see right in here where that BSR went up
+61:22 
+
+61:22 a little bit, but that buy box came back
+61:24 
+
+61:24 and we can now see that sales rank going
+61:27 
+
+61:27 back down and the number of sales
+61:29 
+
+61:29 happening a little bit faster. Those are
+61:32 
+
+61:32 all good things. We know we can't go too
+61:34 
+
+61:34 high on the price or it's going to get
+61:36 
+
+61:36 suppressed, but it doesn't seem like the
+61:38 
+
+61:38 suppression absolutely kills it. Now,
+61:40 
+
+61:40 the other thing that we're going to want
+61:41 
+
+61:41 to notice is Amazon ever on this
+61:44 
+
+61:44 particular item. It looks like Amazon
+61:45 
+
+61:45 has come in this item before, but it was
+61:48 
+
+61:48 a very short period of time and it was
+61:50 
+
+61:50 all the way back in May of last year.
+61:54 
+
+61:54 So, we don't necessarily have to worry
+61:55 
+
+61:55 about Amazon coming in on this product
+61:58 
+
+61:58 and bringing the price down. We also
+62:01 
+
+62:01 want to take a quick look at the new
+62:02 
+
+62:02 thirdparty FBA price. We can see that
+62:05 
+
+62:05 FBA price is right around the buy box,
+62:08 
+
+62:08 which is solid. The new thirdparty FBM
+62:11 
+
+62:11 price is a little bit lower than the buy
+62:13 
+
+62:13 box price, which means this is getting
+62:15 
+
+62:15 an FBA bump. FBA sellers are the ones
+62:18 
+
+62:18 who are getting the majority of the
+62:20 
+
+62:20 sales. Of course, some people will buy
+62:22 
+
+62:22 from a merchant fulfilled seller anyway,
+62:25 
+
+62:25 but that prime bump is real when you use
+62:28 
+
+62:28 FBA. And we can prove that by seeing
+62:31 
+
+62:31 that those orange triangles are right
+62:34 
+
+62:34 there around that buy box line. Right?
+62:36 
+
+62:36 So, that's what I'm going to look at. I
+62:38 
+
+62:38 can see that the demand is there. I can
+62:41 
+
+62:41 see what the price is looking. And then
+62:42 
+
+62:42 I'm going to go down and I'm going to
+62:44 
+
+62:44 look at the subranks. Is that monthly
+62:46 
+
+62:46 sold line still there? It's not there
+62:49 
+
+62:49 anymore, but that doesn't scare me off.
+62:50 
+
+62:50 I know that there is still some velocity
+62:52 
+
+62:52 and that gold line may come back now
+62:54 
+
+62:54 that the buy box is back and we can see
+62:57 
+
+62:57 that BSR is getting a bit better.
+62:59 
+
+62:59 Finally, I'm going to go down to the new
+63:01 
+
+63:01 offer count. The new offer count is
+63:02 
+
+63:02 trending down. That is why the price is
+63:05 
+
+63:05 trending up. the supply is going down.
+63:08 
+
+63:08 The demand is staying the same or
+63:10 
+
+63:10 getting a little bit better because that
+63:12 
+
+63:12 buy box price is back and so the price
+63:14 
+
+63:14 is going up. This is one of those kind
+63:17 
+
+63:17 of perfect scenarios. As supply dwindles
+63:21 
+
+63:21 and demand stays the same, price will go
+63:24 
+
+63:24 up. If the supply goes down and demand
+63:27 
+
+63:27 goes up, that price should go up even
+63:29 
+
+63:29 faster. All right, but this is the
+63:32 
+
+63:32 perfect chart. We see the differences.
+63:34 
+
+63:34 we see that delta in the price and the
+63:36 
+
+63:36 new offer count widening. And so this is
+63:39 
+
+63:39 something I would absolutely buy. Now,
+63:42 
+
+63:42 one thing to note, when I buy something,
+63:45 
+
+63:45 I want to make an asymmetric bet. So
+63:47 
+
+63:47 over the past 180 days, I can see that
+63:50 
+
+63:50 the lowest the buy box has been is
+63:52 
+
+63:52 around $27.99
+63:54 
+
+63:54 over the past 6 months. Over the past
+63:57 
+
+63:57 year, the lowest the buy box price has
+63:60 
+
+63:60 been is around $25.99,
+64:02 
+
+64:02 maybe $26.99.
+64:04 
+
+64:04 So, if I'm profitable, let's just say I
+64:07 
+
+64:07 can buy this for $15.
+64:10 
+
+64:10 That means that the $35.99 price this is
+64:13 
+
+64:13 at right now, I would make about $8.54
+64:17 
+
+64:17 with a 56% ROI. And my break even price
+64:21 
+
+64:21 is $25.95.
+64:24 
+
+64:24 Now, I know that the lowest price out
+64:26 
+
+64:26 here is going to be that $25 and some
+64:30 
+
+64:30 change. So, the asymmetric bet is in my
+64:33 
+
+64:33 favor. I may make $8.54
+64:37 
+
+64:37 on four or five sales. I may make $6 on
+64:40 
+
+64:40 a couple more sales. And let's say I
+64:42 
+
+64:42 break even on the remainder of the
+64:44 
+
+64:44 sales. That's okay. That means that I've
+64:46 
+
+64:46 made money in total. Maybe I didn't make
+64:49 
+
+64:49 money on every single sale, but that's
+64:51 
+
+64:51 all right. I'm alive to play the game
+64:53 
+
+64:53 another day. Even if I were to lose
+64:56 
+
+64:56 money and it were to go below that break
+64:58 
+
+64:58 even, maybe it goes down to 24.99 and I
+65:01 
+
+65:01 sell two or three units there, as long
+65:03 
+
+65:03 as I've made enough money on the other
+65:04 
+
+65:04 ones and there aren't a ton of returns,
+65:07 
+
+65:07 I'm still going to be in the positive.
+65:08 
+
+65:08 And that's what we're trying to do.
+65:10 
+
+65:10 We're not trying to maximize necessarily
+65:12 
+
+65:12 the price that we make on every single
+65:15 
+
+65:15 sale. We're trying to maximize the
+65:17 
+
+65:17 profit we make on average over the
+65:19 
+
+65:19 totality of an AS's life. All right, so
+65:23 
+
+65:23 that's the way to shift your mindset
+65:24 
+
+65:24 just a little bit. Now, let's look at a
+65:27 
+
+65:27 product that I would probably stay away
+65:29 
+
+65:29 from. This particular item doesn't look
+65:32 
+
+65:32 inherently bad. We can see that the
+65:35 
+
+65:35 price did come down to a point here of
+65:38 
+
+65:38 24 23 maybe 2296 at its worst when there
+65:43 
+
+65:43 were 11 sellers and then the price of
+65:45 
+
+65:45 course recovered and that buy box price
+65:48 
+
+65:48 even went away and we can see that the
+65:50 
+
+65:50 BSR even went up just a little bit but
+65:53 
+
+65:53 it is trending back down which means
+65:55 
+
+65:55 that velocity is getting a little bit
+65:57 
+
+65:57 better probably [snorts] as we're moving
+65:59 
+
+65:59 into spring and as this buy box is
+66:02 
+
+66:02 coming back. Okay, so those are all good
+66:04 
+
+66:04 things, but what we're noticing right
+66:06 
+
+66:06 here at the tail end is that the number
+66:09 
+
+66:09 of sellers is going from one and now
+66:12 
+
+66:12 we're up to six. And we're seeing this
+66:15 
+
+66:15 buy box price start to come down a bit
+66:17 
+
+66:17 more. Now, did this show up on a lead
+66:20 
+
+66:20 list or have sellers just happened to
+66:22 
+
+66:22 find it because they were tracking it?
+66:24 
+
+66:24 Because there are 14 users tracking this
+66:27 
+
+66:27 particular product. We can't say for
+66:29 
+
+66:29 sure, but we do know that if the number
+66:31 
+
+66:31 of sellers goes back up to that 10, 8,
+66:35 
+
+66:35 10, 11 range, we're probably going to
+66:38 
+
+66:38 see this price start falling again. And
+66:41 
+
+66:41 we're already seeing that start to
+66:43 
+
+66:43 happen. And I can get this item for $23
+66:46 
+
+66:46 at the moment. That is with no discount
+66:49 
+
+66:49 codes, no discount gift cards or any
+66:51 
+
+66:51 coupon codes or anything like that. And
+66:53 
+
+66:53 so this gives me about $6 $5.58 in
+66:57 
+
+66:57 profit. a 24% ROI, but I know my break
+67:00 
+
+67:00 even is around that $31 mark. This was
+67:04 
+
+67:04 at $34
+67:06 
+
+67:06 when there were four offers on the
+67:08 
+
+67:08 listing. It's at $38 now, but it is
+67:11 
+
+67:11 coming down from its high. And if this
+67:14 
+
+67:14 goes up at all and I see this go back
+67:16 
+
+67:16 down under that $31, which it seems like
+67:19 
+
+67:19 it can do very quick, then my asymmetric
+67:22 
+
+67:22 bet is off. And so for that reason,
+67:25 
+
+67:25 because I can see that the supply is
+67:27 
+
+67:27 going up even though the demand seems to
+67:30 
+
+67:30 be getting better, I'm already seeing
+67:33 
+
+67:33 some instability in that price, which
+67:36 
+
+67:36 means I'm probably going to hold on for
+67:38 
+
+67:38 this one because this is a regularly
+67:40 
+
+67:40 priced item at the source site. I know
+67:43 
+
+67:43 that I could only get it priced better
+67:45 
+
+67:45 unless they increase the price because
+67:47 
+
+67:47 maybe there's a sale, maybe there's a
+67:49 
+
+67:49 coupon code, maybe there's a discount
+67:51 
+
+67:51 gift card that I can get. And so I'm
+67:53 
+
+67:53 either going to wait until the number of
+67:56 
+
+67:56 sellers starts to drop again or I'm
+67:58 
+
+67:58 going to wait until there is a sale to
+68:01 
+
+68:01 be able to widen my ability to handle
+68:04 
+
+68:04 any price erosion on a product like
+68:07 
+
+68:07 this. Now, let's also look at a seasonal
+68:09 
+
+68:09 product. These are some Cadbury rainbow
+68:12 
+
+68:12 mini eggs. And we can see here that this
+68:15 
+
+68:15 particular product gets popular around
+68:18 
+
+68:18 every April. back in April of 2025, we
+68:21 
+
+68:21 see that this got down into the all the
+68:24 
+
+68:24 way down into the sub10,000 range. We
+68:27 
+
+68:27 can also see back in April of 2024, it
+68:31 
+
+68:31 did the same thing. It didn't get quite
+68:33 
+
+68:33 as popular, but it got well below the
+68:36 
+
+68:36 200,000 in sales rank. And again, in
+68:40 
+
+68:40 April of 2023, again, not nearly as
+68:43 
+
+68:43 popular as it is now or last year, but
+68:46 
+
+68:46 popular nonetheless. So this is what a
+68:49 
+
+68:49 seasonal chart is going to look like.
+68:51 
+
+68:51 Something that gets very popular when
+68:54 
+
+68:54 the right season comes around and Easter
+68:56 
+
+68:56 is coming up in a month or so. And you
+68:58 
+
+68:58 can see by the monthly sold line that
+69:01 
+
+69:01 tracks in April of 2024 over a thousand
+69:05 
+
+69:05 customers in a month chose this. Back in
+69:09 
+
+69:09 April of 2025, we saw the same thing.
+69:12 
+
+69:12 and then it peters out a bit and we can
+69:14 
+
+69:14 see that it's already starting to get
+69:17 
+
+69:17 popular early. So, this is already sub
+69:20 
+
+69:20 100 rank. Now, partially that is due to
+69:24 
+
+69:24 the fact that there are variations on
+69:27 
+
+69:27 this listing and that is helping a bit,
+69:30 
+
+69:30 but we're also seeing that the number of
+69:32 
+
+69:32 sellers is going up precipitously on
+69:34 
+
+69:34 this getting ready for Easter. And so
+69:37 
+
+69:37 for an item like this, you're either
+69:38 
+
+69:38 going to want to be first in or you're
+69:41 
+
+69:41 going to want to be last out at this
+69:43 
+
+69:43 product. This has a suppressed buy box.
+69:45 
+
+69:45 And even though it has a suppressed buy
+69:47 
+
+69:47 box, we can see that it is absolutely
+69:49 
+
+69:49 selling. But you would have to source
+69:52 
+
+69:52 this for under four or$5 to make any
+69:55 
+
+69:55 money at that $150 price that sellers
+69:58 
+
+69:58 are currently at on this particular
+69:60 
+
+69:60 listing. So you'd have to get this for
+70:02 
+
+70:02 incredibly cheap. Now, you might also
+70:05 
+
+70:05 see there's a 16 ounce on here that does
+70:07 
+
+70:07 still have a buy box of $8.96. We've got
+70:10 
+
+70:10 Amazon on that. This is the one that's
+70:12 
+
+70:12 very likely moving most of the volume on
+70:15 
+
+70:15 this. Matter of fact, we can see 5,000
+70:18 
+
+70:18 customers per month. So, that other
+70:20 
+
+70:20 variation may not even really be
+70:23 
+
+70:23 selling. However, that is something you
+70:25 
+
+70:25 want to pay attention to on seasonal
+70:27 
+
+70:27 products. It will pick up and you either
+70:29 
+
+70:29 want to be first in or last out. you get
+70:32 
+
+70:32 squeezed right in the middle. All right.
+70:35 
+
+70:35 And then finally, let's take a look at a
+70:37 
+
+70:37 suppressed buy box. A suppressed buy box
+70:40 
+
+70:40 means that right here, there is no way
+70:43 
+
+70:43 to actually hit add to cart. And what
+70:45 
+
+70:45 you have to do is you have to hit see
+70:47 
+
+70:47 all buying options and then you have to
+70:49 
+
+70:49 choose the seller. Mcloven hilarious.
+70:52 
+
+70:52 You have to choose the seller that you
+70:53 
+
+70:53 want to buy from. Okay, that's fine.
+70:56 
+
+70:56 That's no problem. What you will notice
+70:59 
+
+70:59 is that when the buy box gets
+71:00 
+
+71:00 suppressed, it will reduce how many
+71:04 
+
+71:04 sales happen on a product. When the buy
+71:07 
+
+71:07 box is there, you will get more sales.
+71:10 
+
+71:10 And we can see that happen. Every time
+71:12 
+
+71:12 this buy box shows back up, the sales
+71:15 
+
+71:15 rank does get better. Now, it does not
+71:18 
+
+71:18 mean that when there is no buy box, no
+71:20 
+
+71:20 sales happen. They do just that friction
+71:23 
+
+71:23 makes fewer customers. So, you're going
+71:25 
+
+71:25 to want to pay attention to that. If you
+71:27 
+
+71:27 hop on items without a buy box, it
+71:30 
+
+71:30 doesn't mean that they won't sell.
+71:31 
+
+71:31 You're just going to need to know that
+71:33 
+
+71:33 those items will likely sell a bit
+71:36 
+
+71:36 slower. All right, so that's really what
+71:39 
+
+71:39 you need to know about Keepa and all the
+71:42 
+
+71:42 different ways that you can use it with
+71:43 
+
+71:43 the onpage graph. There is a ton more
+71:46 
+
+71:46 inside of Keepa.com like Keepa product
+71:49 
+
+71:49 finder and the deals page and Keepa
+71:51 
+
+71:51 product viewer, etc. But we're going to
+71:53 
+
+71:53 have to do that for a different video.
+71:55 
+
+71:55 Now that we're all finished up, if you
+71:57 
+
+71:57 want to go deeper on Keepa and really
+71:59 
+
+71:59 master it, I would suggest that you
+72:01 
+
+72:01 check out OAC Plus. That's our private
+72:04 
+
+72:04 community of over 200 Amazon sellers
+72:06 
+
+72:06 where you get to rub shoulders with
+72:09 
+
+72:09 people who are in the trenches with you.
+72:12 
+
+72:12 It also includes full access to Keepa
+72:15 
+
+72:15 Academy, which is the same training used
+72:17 
+
+72:17 by seven and eight figure seller to
+72:19 
+
+72:19 train their own teams. We've also got an
+72:22 
+
+72:22 OA challenge live coming up in March.
+72:24 
+
+72:24 I'm going to put links to everything in
+72:26 
+
+72:26 the description. If you found this video
+72:28 
+
+72:28 helpful, drop a comment. Let me know
+72:31 
+
+72:31 what clicked for you, what was helpful,
+72:33 
+
+72:33 and what you'd like to see in future
+72:34 
+
+72:34 videos. And if you're not subscribed
+72:36 
+
+72:36 yet, make sure to hit that button for
+72:38 
+
+72:38 more content like this. All right, good
+72:40 
+
+72:40 selling everybody. I'll see you guys in
+72:42 
+
+72:42 the next

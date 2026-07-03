@@ -1,0 +1,275 @@
+{
+  "updated": "2026-07-02 (both queued videos fetched + ingested; TBFh9vFBq7k remains stuck LOGIN_REQUIRED)",
+  "purpose": "Index + dedup list for the daily research pipeline. The scheduled task appends to items[] and must skip any url/videoId already present here or any transcript already in learning-hub/transcripts/.",
+  "dailyCap": 10,
+  "topics": {
+    "fba_oa_mastery": [
+      "mastering Amazon FBA online arbitrage 2026",
+      "online arbitrage full course",
+      "how to find profitable products to resell on Amazon",
+      "online arbitrage sourcing products strategy",
+      "storefront stalking / reverse sourcing other Amazon sellers",
+      "mastering Keepa charts for Amazon FBA",
+      "SellerAmp SAS tutorial advanced",
+      "Amazon FBA what to look for in a product",
+      "Amazon FBA bookkeeping cash flow and finances for resellers",
+      "Amazon ungating IP restrictions guide"
+    ],
+    "amazon_help_docs": [
+      "Amazon Seller Central help listing restrictions",
+      "Amazon FBA fee structure documentation 2026",
+      "Amazon SP-API Listings Restrictions / FBA Inventory docs",
+      "Amazon Brand Registry / IP policy seller help"
+    ],
+    "build_the_system": [
+      "build a self-learning RAG AI agent Supabase",
+      "Next.js operator dashboard design data-dense",
+      "product research AI agent n8n / python for Amazon sellers",
+      "vector database embeddings retrieval best practices",
+      "research papers retrieval augmented generation calibration drift"
+    ]
+  },
+  "preferredSources": {
+    "youtube_long_courses": true,
+    "youtube_videos": true,
+    "amazon_help": true,
+    "blogs_articles": true,
+    "research_papers_arxiv": true
+  },
+  "items": [
+    {
+      "date": "2026-06-30",
+      "type": "youtube",
+      "title": "Amazon Online Arbitrage Product Sourcing 101 (2026 Beginners Guide)",
+      "url_or_videoId": "OUGc0aiT7l4",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-06-30",
+      "type": "youtube",
+      "title": "The Online Arbitrage Strategy That's Creating Sustainable Cash Flow in 2026 | Amazon FBA",
+      "url_or_videoId": "pP-zQ4-u370",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-06-30",
+      "type": "youtube",
+      "title": "How To Use Keepa For Online Arbitrage in 2026 | Amazon FBA Analysis Tool",
+      "url_or_videoId": "MAFpI4Wdd4w",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-06-30",
+      "type": "youtube",
+      "title": "Online Arbitrage Sourcing Using Keepa (ADVANCED TACTICS)",
+      "url_or_videoId": "TBFh9vFBq7k",
+      "topic": "fba_oa_mastery",
+      "status": "fetch-failed",
+      "note": "youtube-transcript.io batch response (transcripts/TBFh9vFBq7k__RAW.json) returned this video as the 7th element with empty id/tracks, playabilityStatus LOGIN_REQUIRED, failedReason PLAYABILITY_STATUS_NOK. No transcript text exists to recover. Needs manual re-fetch/re-check on the source video."
+    },
+    {
+      "date": "2026-06-30",
+      "type": "text",
+      "title": "2026 Update to U.S. Referral and Fulfillment by Amazon Fees",
+      "url_or_videoId": "https://sellingpartners.aboutamazon.com/update-to-u-s-referral-and-fulfillment-by-amazon-fees-for-2026",
+      "topic": "amazon_help_docs",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-06-30",
+      "type": "text",
+      "title": "How to Report an IP Violation to Amazon (Brand Registry / Report a Violation)",
+      "url_or_videoId": "https://sell.amazon.com/blog/report-a-violation-to-amazon",
+      "topic": "amazon_help_docs",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-06-30",
+      "type": "text",
+      "title": "Amazon FBA Accounting & Bookkeeping 2026 (Eightx)",
+      "url_or_videoId": "https://eightx.co/blog/amazon-fba-accounting-bookkeeping",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-06-30",
+      "type": "text",
+      "title": "Mastering Chunking Strategies for RAG (Databricks)",
+      "url_or_videoId": "https://community.databricks.com/t5/technical-blog/the-ultimate-guide-to-chunking-strategies-for-rag-applications/ba-p/113089",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-06-30",
+      "type": "text",
+      "title": "Searching for Best Practices in Retrieval-Augmented Generation (arXiv 2407.01219)",
+      "url_or_videoId": "https://arxiv.org/abs/2407.01219",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-06-30",
+      "type": "text",
+      "title": "RAG: A Comprehensive Survey of Architectures, Enhancements, and Robustness Frontiers (arXiv 2506.00054)",
+      "url_or_videoId": "https://arxiv.org/abs/2506.00054",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "youtube",
+      "title": "Finding Winning Products To Resell on Amazon FBA Made Easy | Reverse Sourcing Masterclass for 2026",
+      "url_or_videoId": "TZyBG1_-jLM",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "youtube",
+      "title": "This Has Completely Changed My Amazon FBA Business.. (NEW Storefront Stalking Reveal!)",
+      "url_or_videoId": "HXYMH_l6Ufk",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "youtube",
+      "title": "How To Start Amazon Online Arbitrage In 2026 (Full Beginners Guide)",
+      "url_or_videoId": "V0lMedQJzmQ",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "text",
+      "title": "Amazon Restricted Products in 2026: Categories, Requirements & How to Get Approved (Seller Labs)",
+      "url_or_videoId": "https://www.sellerlabs.com/blog/amazon-restricted-products-2026/",
+      "topic": "amazon_help_docs",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "text",
+      "title": "Keepa Product Finder: Every Filter Explained (2026 Guide) (FBA Mogul)",
+      "url_or_videoId": "https://fbamogul.com/keepa-product-finder-getting-started-guide/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "text",
+      "title": "Amazon FBA Fees 2026: Full Breakdown + April 17 Surcharge (AMZ Prep)",
+      "url_or_videoId": "https://amzprep.com/amazon-fba-fees/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "text",
+      "title": "Online-Optimized RAG for Tool Use and Function Calling (arXiv 2509.20415)",
+      "url_or_videoId": "https://arxiv.org/abs/2509.20415",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "text",
+      "title": "SellerAmp SAS Masterguide for 2026",
+      "url_or_videoId": "https://selleramp.com/tips-and-tutorials/selleramp-sas-masterguide-for-2026/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-01",
+      "type": "text",
+      "title": "Listings Restrictions API (Amazon SP-API)",
+      "url_or_videoId": "https://developer-docs.amazon.com/sp-api/docs/listings-restrictions-api",
+      "topic": "amazon_help_docs",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "youtube",
+      "title": "How to Get Ungated on Amazon in 2026 | Free Ungating Guide",
+      "url_or_videoId": "IBXT2txZtJE",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "youtube",
+      "title": "The ULTIMATE SellerAmp SAS for Amazon FBA Tutorial (Step by Step for Beginners)",
+      "url_or_videoId": "rHCB-vSCWcI",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "text",
+      "title": "Amazon cash flow management: the FBA seller playbook (Nova Analytics)",
+      "url_or_videoId": "https://novadata.io/resources/blog/amazon-cash-flow-management-fba-sellers",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "text",
+      "title": "11 Keepa Product Finder Hacks for Profitable Amazon Sourcing (Tall Oak Advisors)",
+      "url_or_videoId": "https://talloakadvisors.com/11-keepa-product-finder-hacks-for-profitable-amazon-sourcing/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "text",
+      "title": "Amazon Sellers Are Falling Behind: The New Rules of Sourcing Products in 2026 (Boxem)",
+      "url_or_videoId": "https://www.boxem.com/article/amazon-sellers-are-falling-behind-the-new-rules-of-sourcing-products-in-2026",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "text",
+      "title": "Amazon Meltable FBA Inventory: All You Need to Know (Seller Assistant)",
+      "url_or_videoId": "https://www.sellerassistant.app/blog/amazon-meltable-fba-inventory-all-you-need-to-know/",
+      "topic": "amazon_help_docs",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "text",
+      "title": "FBA product restrictions (Amazon Seller Central help, G200140860)",
+      "url_or_videoId": "https://sellercentral.amazon.com/gp/help/external/G200140860",
+      "topic": "amazon_help_docs",
+      "status": "fetch-failed",
+      "note": "Official policy page is JS-rendered; WebFetch returned only the page shell (no article content). Worth re-trying from an environment with a real browser (Claude Code / Chrome) — it is the authoritative doc behind the meltable/restrictions practitioner posts."
+    },
+    {
+      "date": "2026-07-02",
+      "type": "text",
+      "title": "Dashboard Design Patterns for Modern Web Apps in 2026 (Art of Styleframe)",
+      "url_or_videoId": "https://artofstyleframe.com/blog/dashboard-design-patterns-web-apps/",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "text",
+      "title": "RAG Evaluation in the Era of LLMs: A Comprehensive Survey (arXiv 2504.14891)",
+      "url_or_videoId": "https://arxiv.org/abs/2504.14891",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-02",
+      "type": "text",
+      "title": "Uncertainty Quantification for Retrieval-Augmented Reasoning (arXiv 2510.11483)",
+      "url_or_videoId": "https://arxiv.org/abs/2510.11483",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    }
+  ]
+}

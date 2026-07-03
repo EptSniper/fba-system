@@ -1,0 +1,26 @@
+{
+  "skill_name": "oa-deal-analyst",
+  "evals": [
+    {
+      "id": 0,
+      "name": "clean-buy",
+      "prompt": "ok found one storefront stalking — B07XYZ1234, it's a Crayola marker set. amazon buy box is $29.99 and a 3rd party FBA seller has it. i can get it at target for $16 plus like $4 shipping. BSR is around 18,000 in toys, keepa shows about 300 sold a month, 5 FBA offers, price and rank have been flat for 3 months. should i buy and how many?",
+      "expected_output": "Recommends BUY with a small test quantity (5-10 units). Computes profit/ROI from $20 landed cost vs $29.99 sell (~30%+ ROI). Notes all gates pass, no guard trips, Crayola is a friendly hint but eligibility must be confirmed in Seller Central. Separates allowed vs profitable. Includes the human-approval/SellerAmp caveat.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "amazon-buybox-reject",
+      "prompt": "this one looks amazing on paper — sells for $42, i can land it at $19 so thats like 50%+ ROI, BSR 9k, 6 sellers. but when i look at keepa the amazon line is in the buy box maybe half the time over the last year. worth it?",
+      "expected_output": "Recommends NO-BUY despite the strong ROI, because Amazon holding the Buy Box ~50% of the time exceeds the 20% share hard-reject guard. Explains that eligibility/competition outranks profit and you won't get consistent sales. Does not get seduced by the margin.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "missing-cost-review",
+      "prompt": "B0FABCDEF sells for $24 on amazon, BSR 40k, 6 sellers, 3P has the buy box, brand is some no name. looks decent right? should i grab it",
+      "expected_output": "Recommends REVIEW (not BUY), because the true landed cost is missing so profit/ROI cannot be computed. Asks for the landed cost incl. shipping. Notes the demand/competition signals look acceptable but refuses to greenlight a buy on demand signals alone.",
+      "files": []
+    }
+  ]
+}

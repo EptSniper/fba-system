@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Flags Amazon ~60% Buy Box as reject/major risk",
+      "passed": true,
+      "evidence": "\u2026ey actually mean  ### 1. Amazon held the Buy Box ~60% of\u2026"
+    },
+    {
+      "text": "References ~20% threshold OR hard-reject for Amazon BB",
+      "passed": true,
+      "evidence": "\u2026~60% of the past year \u2192 HARD REJECT  This is not a yellow fl\u2026"
+    },
+    {
+      "text": "Reads 40->2 crash as cliff / IP / supply signal",
+      "passed": true,
+      "evidence": "\u2026from 40 \u2192 2 \u2192 this is an IP-cliff fingerprint, not a\u2026"
+    },
+    {
+      "text": "Verdict leans reject / pass",
+      "passed": true,
+      "evidence": "\u2026of the past year \u2192 HARD REJECT  This is not a yellow fl\u2026"
+    }
+  ]
+}

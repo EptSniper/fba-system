@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Identifies hazmat (flammable/aerosol/alcohol)",
+      "passed": true,
+      "evidence": "\u2026t cliff before buying. - Hazmat / meltable / expiry / ov\u2026"
+    },
+    {
+      "text": "Flags meltable/seasonal OR FBA hazmat program/restriction",
+      "passed": true,
+      "evidence": "\u2026efore buying. - Hazmat / meltable / expiry / oversize:\u2026"
+    },
+    {
+      "text": "Returns VERIFY / eligibility-must-be-checked (not unqualified yes)",
+      "passed": true,
+      "evidence": "\u2026s. Without ASINs I can't check gating, IP history, the\u2026"
+    },
+    {
+      "text": "Addresses FBA eligibility/restrictions specifically",
+      "passed": true,
+      "evidence": "\u2026# FBA Eligibility Analysis \u2014 S\u2026"
+    }
+  ]
+}

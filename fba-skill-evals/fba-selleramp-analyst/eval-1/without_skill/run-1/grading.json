@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Flags ROI 28% as below the 30% gate",
+      "passed": true,
+      "evidence": "\u2026it | $4.20 | | SAS ROI | 28% | | SAS Breakeven | $19\u2026"
+    },
+    {
+      "text": "Notes cost $15 exceeds Max Cost $14",
+      "passed": true,
+      "evidence": "\u2026eakeven | $19.50 | | SAS Max Cost | $14.00 |  ## Short ans\u2026"
+    },
+    {
+      "text": "Verdict borderline / reject (not a clean buy)",
+      "passed": true,
+      "evidence": "\u2026mp Deal Check \u2014 Verdict: PASS (no buy) at $15 cost  ##\u2026"
+    },
+    {
+      "text": "Hands off (keepa/deal-analyst) \u2014 SAS isn't a buy order",
+      "passed": true,
+      "evidence": "\u2026on holds the Buy Box - **Keepa history** \u2014 is $26 the r\u2026"
+    }
+  ]
+}

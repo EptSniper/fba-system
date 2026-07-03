@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Recommends Keepa Product Finder for a known brand",
+      "passed": true,
+      "evidence": "\u2026ed example in your Keepa Product Finder playbook (~8,600 listing\u2026"
+    },
+    {
+      "text": "Gives the filter set (rank, Amazon OOS, offer count)",
+      "passed": true,
+      "evidence": "\u2026> ~8,600 listings). 2. **Sales Rank: 0 -> 150,000-200,000**\u2026"
+    },
+    {
+      "text": "Mentions storefront stalking OR instant-reject flags too",
+      "passed": true,
+      "evidence": "\u2026B \u2014 Reverse sourcing / \"storefront stalking\" (best for find\u2026"
+    },
+    {
+      "text": "Hands to deal-analyst / verify",
+      "passed": true,
+      "evidence": "\u2026al OA winners fast, then verify each in SellerAmp.  Here\u2026"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 4,
+    "failed": 0,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Explains Max Cost as the reverse calculator / most you can pay",
+      "passed": true,
+      "evidence": "\u2026# SellerAmp Read \u2014 Max Cost reverse calculation  **Y\u2026"
+    },
+    {
+      "text": "Needs FBA fee / size-weight to compute",
+      "passed": true,
+      "evidence": "\u2026ch depends on the item's size/weight tier \u2014 and you ha\u2026"
+    },
+    {
+      "text": "Ties it to the 30% ROI target",
+      "passed": true,
+      "evidence": "\u2026can pay and still hit my ROI?  In SellerAmp this is e\u2026"
+    },
+    {
+      "text": "Mentions stacking / landing below the number",
+      "passed": true,
+      "evidence": "\u2026till clear the bar. Land below Max Cost (after stacking\u2026"
+    }
+  ]
+}

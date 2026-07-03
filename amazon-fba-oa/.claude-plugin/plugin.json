@@ -1,0 +1,36 @@
+{
+  "name": "amazon-fba-oa",
+  "description": "Amazon FBA online-arbitrage expert team: 24 fba- skills for sourcing, buy/no-buy deal analysis, Keepa/SellerAmp/chart reading, market & data analysis, and listing SEO, plus the project rituals (journal, ai-brain, RAG, leads) and an engineering crew (architect, coder, reviewer, debugger, database, design, QA, innovation). Enforces the ai-brain.json gates, the allowed-vs-profitable split, and human-approved buying.",
+  "version": "0.2.0",
+  "author": {
+    "name": "Mehmet"
+  },
+  "license": "MIT",
+  "keywords": ["amazon", "fba", "online-arbitrage", "keepa", "selleramp", "sourcing", "compliance", "rag", "scout", "supabase", "nextjs"],
+  "skills": [
+    "./skills/fba-deal-analyst",
+    "./skills/fba-sourcing-scout",
+    "./skills/fba-compliance-checker",
+    "./skills/fba-keepa-analyst",
+    "./skills/fba-selleramp-analyst",
+    "./skills/fba-chart-reader",
+    "./skills/fba-market-analyst",
+    "./skills/fba-deal-calculator",
+    "./skills/fba-listing-optimizer",
+    "./skills/fba-session-journal",
+    "./skills/fba-brain-updater",
+    "./skills/fba-transcript-ingest",
+    "./skills/fba-lead-capture",
+    "./skills/fba-architect",
+    "./skills/fba-coder",
+    "./skills/fba-code-reviewer",
+    "./skills/fba-debugger",
+    "./skills/fba-database-expert",
+    "./skills/fba-designer",
+    "./skills/fba-context-keeper",
+    "./skills/fba-feedback-giver",
+    "./skills/fba-innovator",
+    "./skills/fba-qa-tester",
+    "./skills/fba-data-analyst"
+  ]
+}

@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eval Review</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --border: #e8e6dc;
+      --text: #141413;
+      --text-muted: #b0aea5;
+      --accent: #d97757;
+      --accent-hover: #c4613f;
+      --green: #788c5d;
+      --green-bg: #eef2e8;
+      --red: #c44;
+      --red-bg: #fceaea;
+      --header-bg: #141413;
+      --header-text: #faf9f5;
+      --radius: 6px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---- Header ---- */
+    .header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .header .instructions {
+      font-size: 0.8rem;
+      opacity: 0.7;
+      margin-top: 0.25rem;
+    }
+    .header .progress {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      text-align: right;
+    }
+
+    /* ---- Main content ---- */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ---- Sections ---- */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-shrink: 0;
+    }
+    .section-header {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .section-body {
+      padding: 1rem;
+    }
+
+    /* ---- Config badge ---- */
+    .config-badge {
+      display: inline-block;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-left: 0.75rem;
+      vertical-align: middle;
+    }
+    .config-badge.config-primary {
+      background: rgba(33, 150, 243, 0.12);
+      color: #1976d2;
+    }
+    .config-badge.config-baseline {
+      background: rgba(255, 193, 7, 0.15);
+      color: #f57f17;
+    }
+
+    /* ---- Prompt ---- */
+    .prompt-text {
+      white-space: pre-wrap;
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* ---- Outputs ---- */
+    .output-file {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-file + .output-file {
+      margin-top: 1rem;
+    }
+    .output-file-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .output-file-header .dl-btn {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-decoration: none;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+    .output-file-header .dl-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+    .output-file-content {
+      padding: 0.75rem;
+      overflow-x: auto;
+    }
+    .output-file-content pre {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    .output-file-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .output-file-content iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+    .output-file-content table {
+      border-collapse: collapse;
+      font-size: 0.8125rem;
+      width: 100%;
+    }
+    .output-file-content table td,
+    .output-file-content table th {
+      border: 1px solid var(--border);
+      padding: 0.375rem 0.5rem;
+      text-align: left;
+    }
+    .output-file-content table th {
+      background: var(--bg);
+      font-weight: 600;
+    }
+    .output-file-content .download-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .output-file-content .download-link:hover {
+      background: var(--border);
+    }
+    .empty-state {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    /* ---- Feedback ---- */
+    .prev-feedback {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.625rem 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .prev-feedback-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+    .feedback-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      line-height: 1.5;
+      resize: vertical;
+      color: var(--text);
+    }
+    .feedback-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .feedback-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      min-height: 1.1em;
+    }
+
+    /* ---- Grades (collapsible) ---- */
+    .grades-toggle {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .grades-toggle:hover {
+      color: var(--accent);
+    }
+    .grades-toggle .arrow {
+      margin-right: 0.5rem;
+      transition: transform 0.15s;
+      font-size: 0.75rem;
+    }
+    .grades-toggle .arrow.open {
+      transform: rotate(90deg);
+    }
+    .grades-content {
+      display: none;
+      margin-top: 0.75rem;
+    }
+    .grades-content.open {
+      display: block;
+    }
+    .grades-summary {
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .grade-badge {
+      display: inline-block;
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .grade-pass { background: var(--green-bg); color: var(--green); }
+    .grade-fail { background: var(--red-bg); color: var(--red); }
+    .assertion-list {
+      list-style: none;
+    }
+    .assertion-item {
+      padding: 0.625rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8125rem;
+    }
+    .assertion-item:last-child { border-bottom: none; }
+    .assertion-status {
+      font-weight: 600;
+      margin-right: 0.5rem;
+    }
+    .assertion-status.pass { color: var(--green); }
+    .assertion-status.fail { color: var(--red); }
+    .assertion-evidence {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      padding-left: 1.5rem;
+    }
+
+    /* ---- View tabs ---- */
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 2rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .view-tab {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .view-tab:hover { color: var(--text); }
+    .view-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .view-panel { display: none; }
+    .view-panel.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+
+    /* ---- Benchmark view ---- */
+    .benchmark-view {
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .benchmark-table {
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.8125rem;
+      width: 100%;
+      margin-bottom: 1.5rem;
+    }
+    .benchmark-table th, .benchmark-table td {
+      padding: 0.625rem 0.75rem;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+    .benchmark-table th {
+      font-family: 'Poppins', sans-serif;
+      background: var(--header-bg);
+      color: var(--header-text);
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .benchmark-table tr:hover { background: var(--bg); }
+    .benchmark-table tr.benchmark-row-with { background: rgba(33, 150, 243, 0.06); }
+    .benchmark-table tr.benchmark-row-without { background: rgba(255, 193, 7, 0.06); }
+    .benchmark-table tr.benchmark-row-with:hover { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-without:hover { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-table tr.benchmark-row-avg { font-weight: 600; border-top: 2px solid var(--border); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-with { background: rgba(33, 150, 243, 0.12); }
+    .benchmark-table tr.benchmark-row-avg.benchmark-row-without { background: rgba(255, 193, 7, 0.12); }
+    .benchmark-delta-positive { color: var(--green); font-weight: 600; }
+    .benchmark-delta-negative { color: var(--red); font-weight: 600; }
+    .benchmark-notes {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+    .benchmark-notes h3 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.875rem;
+      margin-bottom: 0.75rem;
+    }
+    .benchmark-notes ul {
+      list-style: disc;
+      padding-left: 1.25rem;
+    }
+    .benchmark-notes li {
+      font-size: 0.8125rem;
+      line-height: 1.6;
+      margin-bottom: 0.375rem;
+    }
+    .benchmark-empty {
+      color: var(--text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    /* ---- Navigation ---- */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .nav-btn:hover:not(:disabled) {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .done-btn {
+      font-family: 'Poppins', sans-serif;
+      padding: 0.5rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .done-btn:hover {
+      background: var(--bg);
+      border-color: var(--text-muted);
+    }
+    .done-btn.ready {
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+    }
+    .done-btn.ready:hover {
+      background: var(--accent-hover);
+    }
+    /* ---- Done overlay ---- */
+    .done-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .done-overlay.visible {
+      display: flex;
+    }
+    .done-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 2rem 3rem;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+    }
+    .done-card h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .done-card p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .done-card .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .done-card button {
+      padding: 0.5rem 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .done-card button:hover {
+      background: var(--bg);
+    }
+    /* ---- Toast ---- */
+    .toast {
+      position: fixed;
+      bottom: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 0.625rem 1.25rem;
+      border-radius: var(--radius);
+      font-size: 0.875rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 200;
+    }
+    .toast.visible {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" style="height:100vh; display:flex; flex-direction:column;">
+    <div class="header">
+      <div>
+        <h1>Eval Review: <span id="skill-name"></span></h1>
+        <div class="instructions">Review each output and leave feedback below. Navigate with arrow keys or buttons. When done, copy feedback and paste into Claude Code.</div>
+      </div>
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <!-- View tabs (only shown when benchmark data exists) -->
+    <div class="view-tabs" id="view-tabs" style="display:none;">
+      <button class="view-tab active" onclick="switchView('outputs')">Outputs</button>
+      <button class="view-tab" onclick="switchView('benchmark')">Benchmark</button>
+    </div>
+
+    <!-- Outputs panel (qualitative review) -->
+    <div class="view-panel active" id="panel-outputs">
+    <div class="main">
+      <!-- Prompt -->
+      <div class="section">
+        <div class="section-header">Prompt <span class="config-badge" id="config-badge" style="display:none;"></span></div>
+        <div class="section-body">
+          <div class="prompt-text" id="prompt-text"></div>
+        </div>
+      </div>
+
+      <!-- Outputs -->
+      <div class="section">
+        <div class="section-header">Output</div>
+        <div class="section-body" id="outputs-body">
+          <div class="empty-state">No output files found</div>
+        </div>
+      </div>
+
+      <!-- Previous Output (collapsible) -->
+      <div class="section" id="prev-outputs-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="togglePrevOutputs()">
+            <span class="arrow" id="prev-outputs-arrow">&#9654;</span>
+            Previous Output
+          </div>
+        </div>
+        <div class="grades-content" id="prev-outputs-content"></div>
+      </div>
+
+      <!-- Grades (collapsible) -->
+      <div class="section" id="grades-section" style="display:none;">
+        <div class="section-header">
+          <div class="grades-toggle" onclick="toggleGrades()">
+            <span class="arrow" id="grades-arrow">&#9654;</span>
+            Formal Grades
+          </div>
+        </div>
+        <div class="grades-content" id="grades-content"></div>
+      </div>
+
+      <!-- Feedback -->
+      <div class="section">
+        <div class="section-header">Your Feedback</div>
+        <div class="section-body">
+          <textarea
+            class="feedback-textarea"
+            id="feedback"
+            placeholder="What do you think of this output? Any issues, suggestions, or things that look great?"
+          ></textarea>
+          <div class="feedback-status" id="feedback-status"></div>
+          <div class="prev-feedback" id="prev-feedback" style="display:none;">
+            <div class="prev-feedback-label">Previous feedback</div>
+            <div id="prev-feedback-text"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav" id="outputs-nav">
+      <button class="nav-btn" id="prev-btn" onclick="navigate(-1)">&#8592; Previous</button>
+      <button class="done-btn" id="done-btn" onclick="showDoneDialog()">Submit All Reviews</button>
+      <button class="nav-btn" id="next-btn" onclick="navigate(1)">Next &#8594;</button>
+    </div>
+    </div><!-- end panel-outputs -->
+
+    <!-- Benchmark panel (quantitative stats) -->
+    <div class="view-panel" id="panel-benchmark">
+      <div class="benchmark-view" id="benchmark-content">
+        <div class="benchmark-empty">No benchmark data available. Run a benchmark to see quantitative results here.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done overlay -->
+  <div class="done-overlay" id="done-overlay">
+    <div class="done-card">
+      <h2>Review Complete</h2>
+      <p>Your feedback has been saved. Go back to your Claude Code session and tell Claude you're done reviewing.</p>
+      <div class="btn-row">
+        <button onclick="closeDoneDialog()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ---- Embedded data (injected by generate_review.py) ----
+    const EMBEDDED_DATA = {"skill_name": "fba-compliance-checker", "runs": [{"id": "eval-0-with_skill-run-1", "prompt": "Nike Air Force 1s from a Nike outlet \u2014 flip on Amazon?", "eval_id": 0, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Eligibility Check \u2014 Nike Air Force 1 (sneakers)\n\n**Your question:** \"Found Nike Air Force 1s at a Nike outlet sale, can flip on Amazon for double \u2014 should I grab them?\"\n\nI only answer the **\"am I allowed to sell it?\"** half here. The **\"does it make money?\"** half (ROI, fees, demand) is a separate question handled by the deal analyst \u2014 and I'll tell you below why that question doesn't even matter yet.\n\n---\n\n## ELIGIBILITY CHECK \u2014 Nike / Air Force 1\n\n- **Gating:** **Hard-gated for almost every account.** Nike is one of the most commonly brand-gated names on Amazon. Nike pulled its official wholesale relationship with Amazon in 2019, and the brand is routinely restricted for third-party resellers. New/beginner accounts are extremely unlikely to be auto-ungated, and the ungating path (if one exists for you at all) typically demands **invoices from a Nike-authorized distributor** \u2014 which a retail/outlet receipt is **not**. An outlet receipt will not ungate you.\n\n- **IP / brand risk: HIGH.** Nike is explicitly on the operation's **avoid-list** (IP-aggressive / commonly gated) in `references/oa-criteria.md`. Nike runs an active brand-protection and IP-enforcement program and is well known for filing complaints against resellers. Footwear is also one of the highest-counterfeit, highest-scrutiny categories on Amazon \u2014 even a genuine pair can trigger an authenticity complaint, and the burden of proof lands on you.\n\n- **Hazmat / meltable / expiry / oversize:** None apparent. Sneakers aren't hazmat, meltable, or dated. (This is the *only* clean line \u2014 and it doesn't save the deal.)\n\n- **Condition / variation notes:** Shoes are a **variation listing nightmare** \u2014 size/color children each have their own eligibility and their own offer dynamics. Even if you somehow cleared the brand gate, you could be eligible on some size/color children and not others. Footwear also carries a high return rate (fit), which erodes any \"double your money\" math fast.\n\n- **Receipt problem (decisive):** Amazon's authorized-invoice standard for branded goods generally wants a **wholesale/distributor invoice**, not a consumer outlet receipt. So even if a complaint hits and you're asked to prove sourcing, an outlet sale receipt is likely to fail the documentation test.\n\n---\n\n## VERDICT: **BLOCKED** (do not buy for Amazon resale)\n\nThis is one of the clearest no-go combinations for a beginner: an **avoid-list brand**, a **hard-gated category**, a **high-counterfeit product type**, and a **non-qualifying receipt**. The \"flip for double\" upside is real-sounding but irrelevant \u2014 if you can't list it, the margin is zero, and if you list it wrong, you risk an IP complaint that can suspend the account. The account is the one asset you can't afford to lose, so caution wins here.\n\n---\n\n## Decisive next step\n\n**List-before-you-buy.** Before spending a dollar, go into **Seller Central \u2192 Add a Product**, search the exact Air Force 1 ASIN, and try to create an offer:\n- If you see **\"You need approval to list this product\"** / **\"Apply to sell\"** with a brand restriction \u2192 that's the hard gate. **Don't buy.**\n- If (unlikely) you can list freely, still treat Nike footwear as high IP/counterfeit risk and confirm the approval path **before** buying \u2014 and know that an outlet receipt probably won't satisfy a future invoice request.\n\nIf you want to pursue branded sneakers seriously later, the only safe route is genuine ungating with **Nike-authorized distributor invoices**, not retail/outlet receipts.\n\n## If you want a profitable, *allowed* alternative\n\nYou don't need Nike to do this. The operation's **friendly / commonly resellable** list (a hint, not a guarantee) includes shoe/apparel-adjacent brands that are far less likely to be gated for a beginner \u2014 e.g. **Crocs, New Balance, Hoka, Puma, Under Armour**. Worth pointing the deal analyst at those instead.\n\n---\n\n**Caveat:** This is a risk assessment only. Real eligibility is **account-specific** and is decided in Seller Central / SP-API, not here \u2014 I can flag likelihood, I cannot truly clear (or block) an ASIN for your specific account. The list-before-you-buy test above is the real answer.\n\n*Profitability (ROI, fees, sell-through, the \"double your money\" claim) is intentionally not assessed in this check \u2014 hand that to fba-deal-analyst only if eligibility ever clears. For Nike, it won't, so the profit question is moot.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Flags Nike as gated / needs brand approval", "passed": true, "evidence": "\u2026Nike / Air Force 1  - **Gating:** **Hard-gated for a\u2026"}, {"text": "Flags IP / authenticity / invoice risk", "passed": true, "evidence": "\u2026all) typically demands **invoices from a Nike-authorized\u2026"}, {"text": "Recommends list-before-buy / Seller Central check", "passed": true, "evidence": "\u2026cisive next step  **List-before-you-buy.** Before spendi\u2026"}, {"text": "Eligibility verdict is BLOCKED / don't buy (not a green light)", "passed": true, "evidence": "\u2026est.  ---  ## VERDICT: **BLOCKED** (do not buy for Amazon\u2026"}]}}, {"id": "eval-0-without_skill-run-1", "prompt": "Nike Air Force 1s from a Nike outlet \u2014 flip on Amazon?", "eval_id": 0, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Nike Air Force 1s from a Nike Outlet \u2014 Should You Flip Them on Amazon?\n\n**Short answer: No, not as your plan stands.** The \"double your money\" math is real, but on Nike sneakers from a retail outlet it almost never survives Amazon's gating, IP, and authenticity rules.\n\n## 1. The eligibility problem (the dealbreaker)\n\n**Nike is a gated brand for most sellers.** The majority of accounts cannot list new Nike without brand approval (\"ungating\"), and Nike approvals have been largely closed for years. Scan the exact ASIN in the Seller app: if you see \"You need approval to list this brand,\" you're gated.\n\n**Even if listed, authenticity is the next wall.** To sell Nike you generally need a valid invoice from an authorized Nike distributor. An outlet receipt does NOT qualify. An \"inauthentic\" complaint \u2192 Amazon asks for a supplier invoice; a till receipt fails \u2192 listing pulled, funds held, account can be suspended \u2014 even though the shoes are genuine.\n\n> Eligibility verdict: For a typical seller, Nike sneakers from a retail outlet are BLOCKED \u2014 by brand gating AND the invoice/authenticity standard.\n\n## 2. The profit math is worse than \"double\"\n\nOn a ~$110 AF1 bought at ~$55: referral ~15% -$16.50, FBA (bulky) ~$8\u201312, inbound+prep ~$3\u20135 \u2192 ~$22\u201328 net (40\u201350% ROI) only if it sells at full price. Shoes have high return rates and brutal price competition. Downside (suspension) dwarfs the ~$25/pair upside.\n\n## 3. Eligibility FIRST, profit SECOND\n\n1. Scan the ASIN in the Seller app in-store. Gated \u2192 walk away.\n2. Only if ungated for Nike AND shoes: can you produce an authorized-distributor invoice? Outlet \u2192 no \u2192 walk away.\n3. Pull the Keepa chart per ASIN/size.\n4. Only then run real deal math with a returns buffer.\n\n## Verdict\n- Eligibility: BLOCKED for a typical seller.\n- Risk: High \u2014 Nike IP/inauthentic complaints can suspend your account.\n- Profit: Overstated.\n\n**Recommendation: Don't grab them.** Confirm gating in Seller Central; if not ungated (you almost certainly aren't), pass.\n\n*Operational guidance, not a guarantee \u2014 only your live Seller Central can confirm gating. Never auto-buy.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Flags Nike as gated / needs brand approval", "passed": true, "evidence": "\u2026never survives Amazon's gating, IP, and authenticity\u2026"}, {"text": "Flags IP / authenticity / invoice risk", "passed": true, "evidence": "\u2026urvives Amazon's gating, IP, and authenticity rules.\u2026"}, {"text": "Recommends list-before-buy / Seller Central check", "passed": true, "evidence": "\u2026hem.** Confirm gating in Seller Central; if not ungated (you alm\u2026"}, {"text": "Eligibility verdict is BLOCKED / don't buy (not a green light)", "passed": true, "evidence": "\u2026from a retail outlet are BLOCKED \u2014 by brand gating AND th\u2026"}]}}, {"id": "eval-1-with_skill-run-1", "prompt": "scented candles + hand sanitizer for Q4 \u2014 good to send into FBA?", "eval_id": 1, "outputs": [{"name": "analysis.md", "type": "text", "content": "# FBA Eligibility Analysis \u2014 Scented Candles + Hand Sanitizer (Q4 clearance)\n\n**Question being answered:** *Am I allowed to send these into FBA?* \u2014 eligibility and account risk only. This is **not** a profit opinion. Whether either deal makes money (ROI, fees, Keepa demand, sell-through before the season ends) is a separate question for fba-deal-analyst / fba-deal-calculator.\n\n**Honest limitation up front:** Eligibility is **account-specific** and is ultimately decided in Seller Central / SP-API. I can flag risk and likelihood, but I cannot truly clear any ASIN. The decisive test for every SKU is **list-before-you-buy**: try to create the listing in Seller Central; if it is hard-gated for your account, don't buy. Everything below is a risk read, not a clearance.\n\nAlso note: you gave me product *categories*, not specific ASINs or brands. Without ASINs I can't check gating, IP history, the Keepa offer-count cliff, or brand-as-seller for the actual items. The two categories you named, however, both carry well-known structural eligibility problems that apply regardless of brand \u2014 so the headline answer is driven by category, and the per-ASIN checks still have to happen before you buy.\n\n---\n\n## 1. Scented candles\n\n```\nELIGIBILITY CHECK \u2014 Scented candles (category, no ASIN/brand given)\n- Gating: unknown \u2014 must verify per ASIN in Seller Central. Candles themselves are\n  not a universally gated category, but specific brands may be gated or IP-protected.\n- IP / brand risk: unknown per brand \u2014 clearance/closeout candles are frequently\n  private-label or store brands (lower IP risk) but can also be name brands the owner\n  polices. Check each brand against the avoid-list, run IP Alert, and look for a Keepa\n  offer-count cliff before buying.\n- Hazmat / meltable / expiry / oversize:\n    * HAZMAT \u2014 YES, likely. Candles contain wax + a wick and are commonly classified\n      by Amazon as a flammable/hazmat item. Hazmat ASINs require Amazon's dangerous-\n      goods review and an approved hazmat path before they can go into FBA; some are\n      FBA-ineligible and must ship FBM. This is the primary blocker, not brand.\n    * MELTABLE \u2014 YES. Wax is heat-sensitive. Amazon enforces a meltable/heat-sensitive\n      FBA window (roughly mid-spring through early fall, ~Apr 15-Oct 15 historically),\n      during which meltable inventory is restricted or surcharged. For a Q4 inbound this\n      is largely in your favor \u2014 Q4 sits outside the typical meltable restriction window\n      \u2014 but confirm the current dates in Seller Central, because the window and the\n      hazmat rule are two separate gates and hazmat does not go away in Q4.\n    * Expiry \u2014 generally not dated goods.\n    * Oversize \u2014 usually standard size; confirm per ASIN (multi-wick / jar sets can be heavy).\n- Condition / variation notes: sell New only. Watch scent/size variation listings \u2014\n  you may be eligible/hazmat-approved on some children and not others; match the exact ASIN.\nVERDICT: VERIFY-FIRST  (hazmat classification is the gate that decides this)\nDecisive next step: for each candle ASIN, (1) check the hazmat / dangerous-goods\n  classification and your hazmat-eligibility status in Seller Central, and (2) try to\n  list it before buying. If it shows as hazmat-restricted or FBA-ineligible for your\n  account, do not buy for FBA.\nCaveat: risk assessment only; real eligibility is account-specific and confirmed in Seller Central.\n```\n\n**Plain read:** Candles are the riskier of the two on *eligibility*, but the risk is hazmat/meltable classification, not brand gating. The good news for your Q4 timing is that the meltable restriction window is typically a warm-season rule, so a Q4 inbound usually sidesteps it. The bad news is the hazmat (flammable) classification is year-round \u2014 if these ASINs are flagged dangerous-goods and your account isn't approved for that path, they're blocked from FBA regardless of season. Resolve hazmat status per ASIN first.\n\n---\n\n## 2. Hand sanitizer\n\n```\nELIGIBILITY CHECK \u2014 Hand sanitizer (category, no ASIN/brand given)\n- Gating: VERY LIKELY GATED / restricted. Hand sanitizer is a topical antiseptic \u2014\n  an OTC drug-adjacent / health-and-personal-care item. These categories are commonly\n  approval-gated, and hand sanitizer specifically drew tightened Amazon restrictions\n  (and FTC/FDA scrutiny over methanol contamination and false efficacy claims). Expect\n  to need approval, and expect some brands/ASINs to be hard-gated. Verify per ASIN.\n- IP / brand risk: unknown per brand \u2014 check each against the avoid-list, run IP Alert,\n  watch for an offer-count cliff. Brand risk is the secondary concern here; the primary\n  concern is the regulated-product gating below.\n- Hazmat / meltable / expiry / oversize:\n    * HAZMAT \u2014 YES, likely. Alcohol-based hand sanitizer is flammable and is routinely\n      classified as hazmat/dangerous goods by Amazon. Requires dangerous-goods review\n      and an approved hazmat path; may be FBA-restricted.\n    * EXPIRY \u2014 YES. Hand sanitizer is a dated/regulated OTC product. Amazon enforces\n      expiration-date and remaining-shelf-life requirements on dated goods, and you must\n      meet labeling/lot/expiry rules. CLEARANCE STOCK IS THE RISK HERE: clearance is\n      often clearance because it is near expiry or discontinued. Short-dated sanitizer\n      can be refused at the FBA dock or fail Amazon's remaining-shelf-life rule.\n    * Meltable \u2014 no. Oversize \u2014 usually no; confirm per ASIN.\n- Condition / variation notes: New only. Regulated OTC product \u2014 labeling, drug facts\n  panel, and lot/expiry compliance matter. Variation packs (sizes/multipacks): match exact ASIN.\nVERDICT: VERIFY-FIRST, leaning BLOCKED for clearance stock specifically\nDecisive next step: before buying, (1) confirm the category/brand is approvable for your\n  account in Seller Central (try to list it), (2) confirm hazmat path eligibility, and\n  (3) verify the actual expiration date on the clearance lot meets Amazon's remaining-\n  shelf-life requirement with margin to spare. If it's short-dated or you can't get\n  ungated, do not buy.\nCaveat: risk assessment only; real eligibility is account-specific and confirmed in Seller Central.\n```\n\n**Plain read:** Hand sanitizer stacks three eligibility problems at once \u2014 likely category/brand gating (regulated OTC/health item), likely hazmat (flammable alcohol), and expiration/shelf-life rules. The fact that it's **clearance** makes the expiry problem materially worse: clearance health goods are frequently near-dated, and Amazon can refuse short-dated inventory. For a beginner protecting the account, this is the higher-risk of the two products on eligibility grounds.\n\n---\n\n## Summary verdict\n\n| Product | Eligibility verdict | The gate that decides it |\n|---|---|---|\n| Scented candles | **VERIFY-FIRST** | Hazmat (flammable) classification per ASIN; meltable window mostly OK for Q4 |\n| Hand sanitizer | **VERIFY-FIRST, leaning BLOCKED on clearance** | Category/OTC gating + hazmat + short-dated clearance shelf-life |\n\n**So: are you \"good to send these into FBA\"?** Not yet \u2014 not on the strength of \"they're on clearance for Q4.\" Neither is clearly ALLOWED at this point, and neither is auto-cleared. Both are **VERIFY-FIRST**, and hand sanitizer in particular leans toward BLOCKED specifically *because it's clearance* (expiry/shelf-life risk on a regulated, hazmat product).\n\n**Decisive next step for both:** for each real ASIN, list-before-you-buy in Seller Central. That single test resolves gating. On top of it: confirm hazmat/dangerous-goods eligibility on both, confirm the candle meltable window for your Q4 inbound dates, and physically verify the expiration date on every hand-sanitizer clearance lot before committing a dollar.\n\n**Account-safety note:** you're a beginner and the account is the one asset you can't afford to damage. Both of these categories are exactly the kind that get accounts into trouble (hazmat refusals, expired-goods complaints, OTC compliance). A profitable item that suspends the account is a catastrophic loss \u2014 so caution beats optimism here.\n\n**Reminder on scope:** this is the *allowed* half only. Whether either is worth buying on the numbers (ROI >= 30%, profit >= $3, BSR <= 200k, real demand, ability to sell through before Q4 ends) is a separate analysis for fba-deal-analyst / fba-deal-calculator. And no purchase is approved here \u2014 the buy decision stays with you, the human.\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Identifies hazmat (flammable/aerosol/alcohol)", "passed": true, "evidence": "\u2026t cliff before buying. - Hazmat / meltable / expiry / ov\u2026"}, {"text": "Flags meltable/seasonal OR FBA hazmat program/restriction", "passed": true, "evidence": "\u2026efore buying. - Hazmat / meltable / expiry / oversize:\u2026"}, {"text": "Returns VERIFY / eligibility-must-be-checked (not unqualified yes)", "passed": true, "evidence": "\u2026s. Without ASINs I can't check gating, IP history, the\u2026"}, {"text": "Addresses FBA eligibility/restrictions specifically", "passed": true, "evidence": "\u2026# FBA Eligibility Analysis \u2014 S\u2026"}]}}, {"id": "eval-1-without_skill-run-1", "prompt": "scented candles + hand sanitizer for Q4 \u2014 good to send into FBA?", "eval_id": 1, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Compliance check: scented candles + hand sanitizer (clearance, Q4 FBA)\n\n**Question:** \"Thinking about sourcing a bunch of scented candles and some hand sanitizer for Q4, both on clearance. Am I good to send these into FBA?\"\n\n**Short answer:** Not yet. Both categories carry FBA eligibility/restriction risk that is separate from whether they'd be profitable. Verify each one in Seller Central before you buy. The fact they're on clearance adds two more red flags (condition/expiration and Q4 timing). Below is the verdict per item.\n\nThis is an eligibility / account-risk review only. It does NOT tell you whether either flips for a profit \u2014 run the deal math (ROI, fees, BSR/sell-through) separately. And nothing here grants real eligibility; only your Seller Central account can confirm what you're allowed to list.\n\n---\n\n## 1. Scented candles \u2014 VERIFY (lean cautious)\n\nCandles are the classic FBA \"meltable / hazmat\" trap. Two separate problems:\n\n- **Meltable / heat-sensitive.** Wax candles soften and deform in heat. Amazon treats meltables specially: in many fulfillment centers meltables are only accepted **Oct 1 \u2013 Apr 30** (the cool months) and are restricted or removed in summer. Since you're targeting Q4, the calendar is actually in your favor here \u2014 but you must confirm the ASIN is accepted, not assume it.\n- **Hazmat / flammable review.** Scented candles can be flagged hazmat because of flammability and the fragrance oils. A hazmat-flagged ASIN goes through a dangerous-goods review and may need an SDS (safety data sheet) before FBA will accept it. Some candle ASINs are FBM-only as a result.\n\n**Brand/IP angle:** if these are a brand that polices its listings (e.g., Yankee Candle and similar are well-known arbitrage targets but also actively brand-gated on some accounts), check that you're ungated on the exact brand before committing. Our brand \"avoid\" list (Nike, Adidas, Jordan, Yeezy, Apple, Sony, Disney) doesn't include candle brands, so IP is likely lower-risk than meltable/hazmat here \u2014 but confirm gating per brand.\n\n**Before buying, confirm in Seller Central / SellerAmp:**\n1. The exact ASIN shows **\"This product can be listed in New condition\"** for your account (not gated, not FBM-only).\n2. It is **not flagged hazmat/dangerous-goods** (SellerAmp surfaces this; Seller Central \"manage inventory\" shows a hazmat status), or if it is, that you can supply the SDS.\n3. It's accepted into FBA **right now** as a meltable (Q4/winter window helps, but verify the ASIN isn't blocked).\n\n## 2. Hand sanitizer \u2014 VERIFY (lean cautious / often blocked)\n\nHand sanitizer is higher-risk than candles for a new/young account:\n\n- **Topical drug / OTC + restricted.** Hand sanitizer is regulated as an OTC drug (it makes a kill-germs claim). \"Health & Personal Care\" / topical-OTC items are frequently **gated** and often require approval, and some sanitizers are outright restricted on FBA.\n- **Flammable / hazmat.** Alcohol-based sanitizer (typically 60\u201370%+ ethanol/isopropyl) is **flammable = hazmat/dangerous goods.** Expect a dangerous-goods review and possible SDS requirement; gel and liquid forms have shipping limits.\n- **Expiration-dated.** Sanitizer carries an expiration date. FBA enforces expiration rules (and meltable-style date labeling); short-dated stock can be refused or removed. This is exactly why **clearance** stock is risky \u2014 clearance often means it's close to expiry.\n\n**Before buying, confirm in Seller Central / SellerAmp:**\n1. Whether the ASIN/brand is **gated** for your account (topical OTC commonly is) and whether you can get approval.\n2. **Hazmat status** and whether you can provide an SDS.\n3. **Remaining shelf life** \u2014 FBA typically wants a healthy expiration buffer; verify the clearance lots aren't short-dated.\n\n## 3. The \"clearance\" angle (applies to both)\n\nClearance is great for buy cost, but it changes the compliance picture:\n\n- **Condition/expiration:** clearance consumables (sanitizer especially) are often near expiry. Short-dated stock can be rejected at check-in or removed. Photograph/verify expiration dates before shipping.\n- **Buy as New, sell as New:** make sure clearance units are sealed, undamaged, and genuinely New condition \u2014 clearance shelves often have dented/opened units that can't go in as New.\n- **Replenishability:** clearance is a one-time buy. Fine for a flip, but you can't restock if it sells well.\n\n## 4. Q4 timing note (eligibility-adjacent, not strictly compliance)\n\n- Get FBA shipments checked in by **~Nov 15** \u2014 Q4 check-in can take 1\u20133 weeks.\n- Meltable candles: the Q4/winter window is when meltables are *most* likely accepted, so timing works in your favor \u2014 but it also means inventory sitting past Apr 30 may get restricted. Sell through in-season.\n- If FBA check-in is too slow in peak Q4, **FBM** is a fallback for items FBA won't take fast enough.\n\n---\n\n## Verdict\n\n| Item | Eligibility verdict | Main blockers to clear |\n|------|--------------------|------------------------|\n| Scented candles | **VERIFY** (cautious) | Meltable window, possible hazmat/SDS, per-brand gating |\n| Hand sanitizer | **VERIFY** (often BLOCKED) | OTC/topical gating, hazmat/flammable + SDS, expiration on clearance stock |\n\n**Do not send blind.** For each ASIN, before you buy:\n1. Check **\"Apply to sell\" / listing eligibility** for your account (gated? FBM-only?).\n2. Check **hazmat/dangerous-goods** status (SellerAmp eligibility panel + Seller Central). Be ready to supply an SDS if flagged.\n3. For sanitizer, confirm **expiration buffer** on the clearance lots and whether OTC approval is required.\n4. Confirm the **meltable acceptance window** for the candle ASINs.\n\nIf any of those comes back gated/hazmat-blocked/short-dated and you can't clear it, that unit is BLOCKED for FBA regardless of how good the clearance price is. Of the two, candles in Q4 are the more workable; hand sanitizer is the one most likely to stop you cold.\n\n*Eligibility only \u2014 this is not a buy/profit recommendation, and it does not grant real selling permission. Confirm everything in your own Seller Central account before purchasing.*\n"}], "grading": {"summary": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4}, "expectations": [{"text": "Identifies hazmat (flammable/aerosol/alcohol)", "passed": true, "evidence": "\u2026classic FBA \"meltable / hazmat\" trap. Two separate prob\u2026"}, {"text": "Flags meltable/seasonal OR FBA hazmat program/restriction", "passed": true, "evidence": "\u2026es carry FBA eligibility/restriction risk that is separate\u2026"}, {"text": "Returns VERIFY / eligibility-must-be-checked (not unqualified yes)", "passed": true, "evidence": "\u2026# Compliance check: scented candles + hand\u2026"}, {"text": "Addresses FBA eligibility/restrictions specifically", "passed": true, "evidence": "\u2026sanitizer (clearance, Q4 FBA)  **Question:** \"Thinkin\u2026"}]}}, {"id": "eval-2-with_skill-run-1", "prompt": "Crayola markers \u2014 heard Crayola is easy to ungate; am I allowed to sell them?", "eval_id": 2, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Eligibility Analysis \u2014 Crayola Markers\n\n**Question asked:** \"I heard Crayola is easy to get ungated. Am I allowed to sell them?\"\n\nThis answer covers **only the \"Am I allowed?\" half** of a buy decision \u2014 eligibility, account risk, and restrictions. It does **not** tell you whether the deal makes money. That profit question (Keepa demand, ROI, fees, Buy Box) is a separate analysis handled by the deal analyst, and a \"yes\" here never implies a \"yes\" there.\n\n---\n\n## The honest limitation, stated up front\n\nEligibility is **account-specific**. It is ultimately decided in **Seller Central / SP-API**, not by me or by any brand list. I can flag risk and likelihood, but I cannot truly clear an ASIN for *your* account. The decisive, non-negotiable test is **list-before-you-buy**: try to create the offer in Seller Central first. If it is hard-gated for your account, don't buy it \u2014 no matter how cheap or how \"friendly\" the brand is.\n\n\"Crayola is easy to get ungated\" is a real and common observation, but two cautions:\n1. It is a **hint to look closer, not permission to sell**. Friendly-brand status is a discovery signal, not eligibility proof.\n2. \"Easy to ungate\" still means there may be an **approval step** (a category/brand gate you have to clear) before you can list \u2014 easy is not the same as already-open.\n\n---\n\n## ELIGIBILITY CHECK \u2014 Crayola (markers)\n\n- **Gating:** **Approvable / often auto-ungated \u2014 must verify in Seller Central.** Crayola is on the operation's *friendly* list (commonly resellable / commonly auto-ungated). Many accounts can either list immediately or clear the gate easily. But markers fall in arts-and-crafts / school supplies, and brand- or category-level approval can still apply on your specific account. Treat as **approvable, confirm by listing**.\n\n- **IP / brand risk:** **Low.** Crayola is explicitly a friendly brand in the operation's brand hints, not on the avoid-list (which is Nike, Adidas, Jordan, Yeezy, Apple, Sony, Disney). No standing signal that Crayola aggressively kicks resellers off listings. *Still verify per-ASIN*: check the live listing for an IP Alert, confirm the brand owner is not selling on its own listing, and scan the Keepa offer-count history for an \"IP cliff\" (offer count crashing toward ~1 and never recovering) \u2014 that fingerprint can appear on any single ASIN regardless of the brand's general reputation.\n\n- **Hazmat / meltable / expiry / oversize:** **None apparent for standard washable/classic markers.** Standard Crayola markers are water-based and not typically hazmat, not meltable, not dated grocery, and are small/light (standard-size). Caveat: do not assume this for every Crayola SKU \u2014 **scented markers, paint markers, certain art markers, and aerosol/spray products can carry solvent/flammability (hazmat) flags**. Check the specific ASIN.\n\n- **Condition / variation notes:** Sell **new** only. Crayola markers are frequently sold as **multipacks and variation listings** (color counts, pack sizes, washable vs. classic vs. Super Tips, etc.). On a variation (parent/child) listing you can be **eligible on some child ASINs and not others**, and the pack/count you physically buy must match the exact child ASIN you list against. Verify at the child-ASIN level, not the parent.\n\n---\n\n## VERDICT: ALLOWED (verify)\n\nCrayola markers are a **low-IP-risk, commonly-resellable, friendly brand** with **no inherent hazmat/meltable/expiry blockers** for standard washable/classic markers. There is **no brand-level reason to block**. The only thing standing between you and listing is the **account-specific gate check**, which for Crayola is usually easy to clear.\n\nThis is \"ALLOWED, pending verification\" \u2014 not a green light to buy. It clears the eligibility axis only.\n\n---\n\n## Decisive next step\n\n1. **List the exact ASIN in Seller Central before buying.** If you can create the offer, you are ungated for it on your account. If it shows \"Approval required,\" follow the ungating path (it is typically a quick, often automatic approval for Crayola). If it is hard-gated, do not buy.\n2. **Confirm the specific SKU is a standard water-based marker** (not a scented/paint/aerosol variant that could be hazmat).\n3. **Verify at the child-ASIN level** so the pack/count you buy matches the listing, and check the live listing for an IP Alert and the Keepa offer history for an IP cliff.\n4. **Hand the profit question to the deal analyst** \u2014 this analysis does not say the deal makes money.\n\n---\n\n**Caveat:** This is a risk assessment only. Real eligibility is account-specific and confirmed in Seller Central; a friendly-brand label is a hint, never an authorization to sell.\n"}], "grading": {"summary": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4}, "expectations": [{"text": "Friendly/ungated treated as a HINT, not a guarantee", "passed": true, "evidence": "\u2026front  Eligibility is **account-specific**. It is ultimately deci\u2026"}, {"text": "Gives decisive Seller Central / Boxem / approval check", "passed": true, "evidence": "\u2026ultimately decided in **Seller Central / SP-API**, not by me or\u2026"}, {"text": "Leans ALLOWED but with verification (not blocked)", "passed": true, "evidence": "\u2026d Crayola is easy to get ungated. Am I allowed to sell\u2026"}, {"text": "Stays on eligibility (no ROI/profit verdict)", "passed": false, "evidence": "\u2026e deal makes money. That profit question (Keepa demand,\u2026"}]}}, {"id": "eval-2-without_skill-run-1", "prompt": "Crayola markers \u2014 heard Crayola is easy to ungate; am I allowed to sell them?", "eval_id": 2, "outputs": [{"name": "analysis.md", "type": "text", "content": "# Crayola Markers \u2014 \"Am I allowed to sell them?\"\n\n**Verdict: VERIFY (likely ALLOWED after ungating)**\n\nCrayola is not a blocked or hard-gated brand for you. It's on the project's known-good, OA-friendly brand list. But \"easy to get ungated\" is not the same as \"already allowed.\" You almost certainly need to get approved (ungated) first before you can list, and there are a couple of product-specific things to confirm.\n\n---\n\n## 1. Brand / IP risk \u2014 GREEN\n\n- **Crayola is on our OA-friendly brand list** (a repeatedly-cited beginner winner, alongside Elmer's, LEGO, Hot Wheels, etc.).\n- It is **not on the AVOID / hard-gated list** (Nike, Adidas, Jordan, Yeezy, Apple, Sony, Disney \u2014 brands that file aggressive IP complaints or only let grandfathered sellers in).\n- No history of aggressive IP-complaint behavior is flagged for Crayola.\n\nYou are not at risk of being blocked outright or hit with an IP complaint just for reselling genuine Crayola. Good brand choice for a beginner.\n\n## 2. Gating / ungating \u2014 THIS IS THE REAL GATE\n\nYou heard right that Crayola is \"easy to ungate,\" but **easy != no approval needed.**\n\n- Crayola is **gated** \u2014 most accounts must **Apply to sell -> Request approval** before they can list it. It's generally cited as a **~200-unit ungate** request, BUT in practice **~10 units on a valid invoice is usually accepted.**\n- It's beginner-friendly to ungate because the invoice is cheap to source:\n  - **Best source: target.com** \u2014 Target receipts say **\"Invoice\"** (not \"Order Confirmation\"), which is what Amazon requires.\n  - Crayola via Target runs roughly **$0.50\u2013$8/unit**; ~10 units cited at ~$80 (or far less for budget items).\n- **Always click \"Apply to sell -> Request approval\" first** \u2014 sometimes Crayola instantly auto-approves (a hidden auto-ungate). You won't know until you try.\n\n### How to ungate (quick version)\n1. Seller Central -> search the **specific Crayola ASIN** -> **New** condition -> **Apply to sell -> Request approval**.\n2. If documents are asked for, **buy ~10 units of a Crayola product from Target** (or the brand site) and get the **invoice PDF**.\n3. Invoice must say **\"Invoice,\"** show **your Seller Central shipping address**, and list **item name + quantity**.\n4. Upload the PDF. Strengthen it by combining order-confirmation email + invoice + photo of the 10 units laid out + delivery email into one PDF, plus a short cover letter.\n5. If **denied in under ~5\u201310 minutes**, a bot auto-denied it \u2014 don't just resubmit. Wait 24\u201348h, try a **different Crayola ASIN**, or reply to the case. You want it to sit \"under review.\"\n\n> \"Ungate for free\" by returning the 10 units within Target's window exists as a tactic \u2014 use sparingly and within Target's policy.\n\n## 3. Product-specific checks \u2014 VERIFY before you buy\n\n- **Markers specifically:** standard Crayola markers are not hazmat, meltable, or expiring, so they're typically straightforward for FBA. Still **run a quick FBA-eligibility check on the exact ASIN** \u2014 some art/craft items (certain paints, solvents, aerosols, specialty lines) can trip **hazmat** flags. Plain washable/classic markers should be fine.\n- **Toys & Games seasonality:** Crayola often sits in Toys & Games. In **Q4 (~Oct\u2013Dec), Amazon imposes seasonal sell-through / performance requirements for new sellers in Toys.** It's June now, so not immediate, but if sourcing for Q4 confirm you meet the holiday selling-eligibility threshold first.\n- **Variation traps:** Crayola listings have many variations (pack size, color, washable vs. classic). Be approved for and list the **exact** variation/ASIN you buy.\n- **Condition:** sell **New** only as a beginner.\n\n## 4. Bottom line\n\n- **Allowed?** Not instantly \u2014 Crayola is gated, so **get approved (ungated) first.** Once ungated, you're clear to sell genuine new Crayola: low IP risk, on our friendly list.\n- **Easy?** Yes \u2014 one of the cheapest, most beginner-friendly brands to ungate (Target invoice, ~10 units, low cost).\n- **Before buying inventory:** (1) apply to sell + complete ungating on the specific ASIN, (2) confirm the exact marker ASIN passes FBA hazmat/eligibility, (3) if sourcing for Q4, confirm Toys seasonal selling eligibility.\n\n---\n\n### Important caveats\n- This is an **eligibility/risk read, not a profit call.** Whether a specific Crayola marker ASIN makes money (ROI, BSR, offers, fees) is a separate analysis.\n- **I cannot grant real eligibility.** Gating is account- and ASIN-specific and changes. The authoritative answer is what **your** Seller Central shows when you click \"Apply to sell\" on the exact ASIN. Always verify there before purchasing.\n"}], "grading": {"summary": {"pass_rate": 0.5, "passed": 2, "failed": 2, "total": 4}, "expectations": [{"text": "Friendly/ungated treated as a HINT, not a guarantee", "passed": false, "evidence": "(not found)"}, {"text": "Gives decisive Seller Central / Boxem / approval check", "passed": true, "evidence": "\u2026ngate,\" but **easy != no approval needed.**  - Crayola is\u2026"}, {"text": "Leans ALLOWED but with verification (not blocked)", "passed": true, "evidence": "\u2026Crayola Markers \u2014 \"Am I allowed to sell them?\"  **Verdic\u2026"}, {"text": "Stays on eligibility (no ROI/profit verdict)", "passed": false, "evidence": "\u2026ibility/risk read, not a profit call.** Whether a specif\u2026"}]}}], "previous_feedback": {}, "previous_outputs": {}, "benchmark": {"metadata": {"skill_name": "fba-compliance-checker", "skill_path": "<path/to/skill>", "executor_model": "<model-name>", "analyzer_model": "<model-name>", "timestamp": "2026-06-30T02:39:39Z", "evals_run": [0, 1, 2], "runs_per_configuration": 3}, "runs": [{"eval_id": 0, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 63.664, "tokens": 38491, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags Nike as gated / needs brand approval", "passed": true, "evidence": "\u2026Nike / Air Force 1  - **Gating:** **Hard-gated for a\u2026"}, {"text": "Flags IP / authenticity / invoice risk", "passed": true, "evidence": "\u2026all) typically demands **invoices from a Nike-authorized\u2026"}, {"text": "Recommends list-before-buy / Seller Central check", "passed": true, "evidence": "\u2026cisive next step  **List-before-you-buy.** Before spendi\u2026"}, {"text": "Eligibility verdict is BLOCKED / don't buy (not a green light)", "passed": true, "evidence": "\u2026est.  ---  ## VERDICT: **BLOCKED** (do not buy for Amazon\u2026"}], "notes": []}, {"eval_id": 1, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 101.409, "tokens": 42704, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Identifies hazmat (flammable/aerosol/alcohol)", "passed": true, "evidence": "\u2026t cliff before buying. - Hazmat / meltable / expiry / ov\u2026"}, {"text": "Flags meltable/seasonal OR FBA hazmat program/restriction", "passed": true, "evidence": "\u2026efore buying. - Hazmat / meltable / expiry / oversize:\u2026"}, {"text": "Returns VERIFY / eligibility-must-be-checked (not unqualified yes)", "passed": true, "evidence": "\u2026s. Without ASINs I can't check gating, IP history, the\u2026"}, {"text": "Addresses FBA eligibility/restrictions specifically", "passed": true, "evidence": "\u2026# FBA Eligibility Analysis \u2014 S\u2026"}], "notes": []}, {"eval_id": 2, "configuration": "with_skill", "run_number": 1, "result": {"pass_rate": 0.75, "passed": 3, "failed": 1, "total": 4, "time_seconds": 66.068, "tokens": 38176, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Friendly/ungated treated as a HINT, not a guarantee", "passed": true, "evidence": "\u2026front  Eligibility is **account-specific**. It is ultimately deci\u2026"}, {"text": "Gives decisive Seller Central / Boxem / approval check", "passed": true, "evidence": "\u2026ultimately decided in **Seller Central / SP-API**, not by me or\u2026"}, {"text": "Leans ALLOWED but with verification (not blocked)", "passed": true, "evidence": "\u2026d Crayola is easy to get ungated. Am I allowed to sell\u2026"}, {"text": "Stays on eligibility (no ROI/profit verdict)", "passed": false, "evidence": "\u2026e deal makes money. That profit question (Keepa demand,\u2026"}], "notes": []}, {"eval_id": 0, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 62.203, "tokens": 32921, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Flags Nike as gated / needs brand approval", "passed": true, "evidence": "\u2026never survives Amazon's gating, IP, and authenticity\u2026"}, {"text": "Flags IP / authenticity / invoice risk", "passed": true, "evidence": "\u2026urvives Amazon's gating, IP, and authenticity rules.\u2026"}, {"text": "Recommends list-before-buy / Seller Central check", "passed": true, "evidence": "\u2026hem.** Confirm gating in Seller Central; if not ungated (you alm\u2026"}, {"text": "Eligibility verdict is BLOCKED / don't buy (not a green light)", "passed": true, "evidence": "\u2026from a retail outlet are BLOCKED \u2014 by brand gating AND th\u2026"}], "notes": []}, {"eval_id": 1, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 1.0, "passed": 4, "failed": 0, "total": 4, "time_seconds": 111.742, "tokens": 62139, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Identifies hazmat (flammable/aerosol/alcohol)", "passed": true, "evidence": "\u2026classic FBA \"meltable / hazmat\" trap. Two separate prob\u2026"}, {"text": "Flags meltable/seasonal OR FBA hazmat program/restriction", "passed": true, "evidence": "\u2026es carry FBA eligibility/restriction risk that is separate\u2026"}, {"text": "Returns VERIFY / eligibility-must-be-checked (not unqualified yes)", "passed": true, "evidence": "\u2026# Compliance check: scented candles + hand\u2026"}, {"text": "Addresses FBA eligibility/restrictions specifically", "passed": true, "evidence": "\u2026sanitizer (clearance, Q4 FBA)  **Question:** \"Thinkin\u2026"}], "notes": []}, {"eval_id": 2, "configuration": "without_skill", "run_number": 1, "result": {"pass_rate": 0.5, "passed": 2, "failed": 2, "total": 4, "time_seconds": 83.682, "tokens": 42478, "tool_calls": 0, "errors": 0}, "expectations": [{"text": "Friendly/ungated treated as a HINT, not a guarantee", "passed": false, "evidence": "(not found)"}, {"text": "Gives decisive Seller Central / Boxem / approval check", "passed": true, "evidence": "\u2026ngate,\" but **easy != no approval needed.**  - Crayola is\u2026"}, {"text": "Leans ALLOWED but with verification (not blocked)", "passed": true, "evidence": "\u2026Crayola Markers \u2014 \"Am I allowed to sell them?\"  **Verdic\u2026"}, {"text": "Stays on eligibility (no ROI/profit verdict)", "passed": false, "evidence": "\u2026ibility/risk read, not a profit call.** Whether a specif\u2026"}], "notes": []}], "run_summary": {"with_skill": {"pass_rate": {"mean": 0.9167, "stddev": 0.1443, "min": 0.75, "max": 1.0}, "time_seconds": {"mean": 77.047, "stddev": 21.1323, "min": 63.664, "max": 101.409}, "tokens": {"mean": 39790.3333, "stddev": 2528.22, "min": 38176, "max": 42704}}, "without_skill": {"pass_rate": {"mean": 0.8333, "stddev": 0.2887, "min": 0.5, "max": 1.0}, "time_seconds": {"mean": 85.8757, "stddev": 24.8422, "min": 62.203, "max": 111.742}, "tokens": {"mean": 45846.0, "stddev": 14897.3303, "min": 32921, "max": 62139}}, "delta": {"pass_rate": "+0.08", "time_seconds": "-8.8", "tokens": "-6056"}}, "notes": []}};
+
+    // ---- State ----
+    let feedbackMap = {};  // run_id -> feedback text
+    let currentIndex = 0;
+    let visitedRuns = new Set();
+
+    // ---- Init ----
+    async function init() {
+      // Load saved feedback from server — but only if this isn't a fresh
+      // iteration (indicated by previous_feedback being present). When
+      // previous feedback exists, the feedback.json on disk is stale from
+      // the prior iteration and should not pre-fill the textareas.
+      const hasPrevious = Object.keys(EMBEDDED_DATA.previous_feedback || {}).length > 0
+        || Object.keys(EMBEDDED_DATA.previous_outputs || {}).length > 0;
+      if (!hasPrevious) {
+        try {
+          const resp = await fetch("/api/feedback");
+          const data = await resp.json();
+          if (data.reviews) {
+            for (const r of data.reviews) feedbackMap[r.run_id] = r.feedback;
+          }
+        } catch { /* first run, no feedback yet */ }
+      }
+
+      document.getElementById("skill-name").textContent = EMBEDDED_DATA.skill_name;
+      showRun(0);
+
+      // Wire up feedback auto-save
+      const textarea = document.getElementById("feedback");
+      let saveTimeout = null;
+      textarea.addEventListener("input", () => {
+        clearTimeout(saveTimeout);
+        document.getElementById("feedback-status").textContent = "";
+        saveTimeout = setTimeout(() => saveCurrentFeedback(), 800);
+      });
+    }
+
+    // ---- Navigation ----
+    function navigate(delta) {
+      const newIndex = currentIndex + delta;
+      if (newIndex >= 0 && newIndex < EMBEDDED_DATA.runs.length) {
+        saveCurrentFeedback();
+        showRun(newIndex);
+      }
+    }
+
+    function updateNavButtons() {
+      document.getElementById("prev-btn").disabled = currentIndex === 0;
+      document.getElementById("next-btn").disabled =
+        currentIndex === EMBEDDED_DATA.runs.length - 1;
+    }
+
+    // ---- Show a run ----
+    function showRun(index) {
+      currentIndex = index;
+      const run = EMBEDDED_DATA.runs[index];
+
+      // Progress
+      document.getElementById("progress").textContent =
+        `${index + 1} of ${EMBEDDED_DATA.runs.length}`;
+
+      // Prompt
+      document.getElementById("prompt-text").textContent = run.prompt;
+
+      // Config badge
+      const badge = document.getElementById("config-badge");
+      const configMatch = run.id.match(/(with_skill|without_skill|new_skill|old_skill)/);
+      if (configMatch) {
+        const config = configMatch[1];
+        const isBaseline = config === "without_skill" || config === "old_skill";
+        badge.textContent = config.replace(/_/g, " ");
+        badge.className = "config-badge " + (isBaseline ? "config-baseline" : "config-primary");
+        badge.style.display = "inline-block";
+      } else {
+        badge.style.display = "none";
+      }
+
+      // Outputs
+      renderOutputs(run);
+
+      // Previous outputs
+      renderPrevOutputs(run);
+
+      // Grades
+      renderGrades(run);
+
+      // Previous feedback
+      const prevFb = (EMBEDDED_DATA.previous_feedback || {})[run.id];
+      const prevEl = document.getElementById("prev-feedback");
+      if (prevFb) {
+        document.getElementById("prev-feedback-text").textContent = prevFb;
+        prevEl.style.display = "block";
+      } else {
+        prevEl.style.display = "none";
+      }
+
+      // Feedback
+      document.getElementById("feedback").value = feedbackMap[run.id] || "";
+      document.getElementById("feedback-status").textContent = "";
+
+      updateNavButtons();
+
+      // Track visited runs and promote done button when all visited
+      visitedRuns.add(index);
+      const doneBtn = document.getElementById("done-btn");
+      if (visitedRuns.size >= EMBEDDED_DATA.runs.length) {
+        doneBtn.classList.add("ready");
+      }
+
+      // Scroll main content to top
+      document.querySelector(".main").scrollTop = 0;
+    }
+
+    // ---- Render outputs ----
+    function renderOutputs(run) {
+      const container = document.getElementById("outputs-body");
+      container.innerHTML = "";
+
+      const outputs = run.outputs || [];
+      if (outputs.length === 0) {
+        container.innerHTML = '<div class="empty-state">No output files</div>';
+        return;
+      }
+
+      for (const file of outputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        // Always show file header with download link
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const content = document.createElement("div");
+        content.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          content.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          content.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          content.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(content, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          content.appendChild(a);
+        } else if (file.type === "error") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          pre.style.color = "var(--red)";
+          content.appendChild(pre);
+        }
+
+        fileDiv.appendChild(content);
+        container.appendChild(fileDiv);
+      }
+    }
+
+    // ---- XLSX rendering via SheetJS ----
+    function renderXlsx(container, b64Data) {
+      try {
+        const raw = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
+        const wb = XLSX.read(raw, { type: "array" });
+
+        for (let i = 0; i < wb.SheetNames.length; i++) {
+          const sheetName = wb.SheetNames[i];
+          const ws = wb.Sheets[sheetName];
+
+          if (wb.SheetNames.length > 1) {
+            const sheetLabel = document.createElement("div");
+            sheetLabel.style.cssText =
+              "font-weight:600; font-size:0.8rem; color:#b0aea5; margin-top:0.5rem; margin-bottom:0.25rem;";
+            sheetLabel.textContent = "Sheet: " + sheetName;
+            container.appendChild(sheetLabel);
+          }
+
+          const htmlStr = XLSX.utils.sheet_to_html(ws, { editable: false });
+          const wrapper = document.createElement("div");
+          wrapper.innerHTML = htmlStr;
+          container.appendChild(wrapper);
+        }
+      } catch (err) {
+        container.textContent = "Error rendering spreadsheet: " + err.message;
+      }
+    }
+
+    // ---- Grades ----
+    function renderGrades(run) {
+      const section = document.getElementById("grades-section");
+      const content = document.getElementById("grades-content");
+
+      if (!run.grading) {
+        section.style.display = "none";
+        return;
+      }
+
+      const grading = run.grading;
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("grades-arrow").classList.remove("open");
+
+      const summary = grading.summary || {};
+      const expectations = grading.expectations || [];
+
+      let html = '<div style="padding: 1rem;">';
+
+      // Summary line
+      const passRate = summary.pass_rate != null
+        ? Math.round(summary.pass_rate * 100) + "%"
+        : "?";
+      const badgeClass = summary.pass_rate >= 0.8 ? "grade-pass" : summary.pass_rate >= 0.5 ? "" : "grade-fail";
+      html += '<div class="grades-summary">';
+      html += '<span class="grade-badge ' + badgeClass + '">' + passRate + '</span>';
+      html += '<span>' + (summary.passed || 0) + ' passed, ' + (summary.failed || 0) + ' failed of ' + (summary.total || 0) + '</span>';
+      html += '</div>';
+
+      // Assertions list
+      html += '<ul class="assertion-list">';
+      for (const exp of expectations) {
+        const statusClass = exp.passed ? "pass" : "fail";
+        const statusIcon = exp.passed ? "\u2713" : "\u2717";
+        html += '<li class="assertion-item">';
+        html += '<span class="assertion-status ' + statusClass + '">' + statusIcon + '</span>';
+        html += '<span>' + escapeHtml(exp.text) + '</span>';
+        if (exp.evidence) {
+          html += '<div class="assertion-evidence">' + escapeHtml(exp.evidence) + '</div>';
+        }
+        html += '</li>';
+      }
+      html += '</ul>';
+
+      html += '</div>';
+      content.innerHTML = html;
+    }
+
+    function toggleGrades() {
+      const content = document.getElementById("grades-content");
+      const arrow = document.getElementById("grades-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Previous outputs (collapsible) ----
+    function renderPrevOutputs(run) {
+      const section = document.getElementById("prev-outputs-section");
+      const content = document.getElementById("prev-outputs-content");
+      const prevOutputs = (EMBEDDED_DATA.previous_outputs || {})[run.id];
+
+      if (!prevOutputs || prevOutputs.length === 0) {
+        section.style.display = "none";
+        return;
+      }
+
+      section.style.display = "block";
+      // Reset to collapsed
+      content.classList.remove("open");
+      document.getElementById("prev-outputs-arrow").classList.remove("open");
+
+      // Render the files into the content area
+      content.innerHTML = "";
+      const wrapper = document.createElement("div");
+      wrapper.style.padding = "1rem";
+
+      for (const file of prevOutputs) {
+        const fileDiv = document.createElement("div");
+        fileDiv.className = "output-file";
+
+        const header = document.createElement("div");
+        header.className = "output-file-header";
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = file.name;
+        header.appendChild(nameSpan);
+        const dlBtn = document.createElement("a");
+        dlBtn.className = "dl-btn";
+        dlBtn.textContent = "Download";
+        dlBtn.download = file.name;
+        dlBtn.href = getDownloadUri(file);
+        header.appendChild(dlBtn);
+        fileDiv.appendChild(header);
+
+        const fc = document.createElement("div");
+        fc.className = "output-file-content";
+
+        if (file.type === "text") {
+          const pre = document.createElement("pre");
+          pre.textContent = file.content;
+          fc.appendChild(pre);
+        } else if (file.type === "image") {
+          const img = document.createElement("img");
+          img.src = file.data_uri;
+          img.alt = file.name;
+          fc.appendChild(img);
+        } else if (file.type === "pdf") {
+          const iframe = document.createElement("iframe");
+          iframe.src = file.data_uri;
+          fc.appendChild(iframe);
+        } else if (file.type === "xlsx") {
+          renderXlsx(fc, file.data_b64);
+        } else if (file.type === "binary") {
+          const a = document.createElement("a");
+          a.className = "download-link";
+          a.href = file.data_uri;
+          a.download = file.name;
+          a.textContent = "Download " + file.name;
+          fc.appendChild(a);
+        }
+
+        fileDiv.appendChild(fc);
+        wrapper.appendChild(fileDiv);
+      }
+
+      content.appendChild(wrapper);
+    }
+
+    function togglePrevOutputs() {
+      const content = document.getElementById("prev-outputs-content");
+      const arrow = document.getElementById("prev-outputs-arrow");
+      content.classList.toggle("open");
+      arrow.classList.toggle("open");
+    }
+
+    // ---- Feedback (saved to server -> feedback.json) ----
+    function saveCurrentFeedback() {
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // Build reviews array from map
+      const reviews = [];
+      for (const [run_id, feedback] of Object.entries(feedbackMap)) {
+        if (feedback.trim()) {
+          reviews.push({ run_id, feedback, timestamp: new Date().toISOString() });
+        }
+      }
+
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviews, status: "in_progress" }),
+      }).then(() => {
+        document.getElementById("feedback-status").textContent = "Saved";
+      }).catch(() => {
+        // Static mode or server unavailable — no-op on auto-save,
+        // feedback will be downloaded on final submit
+        document.getElementById("feedback-status").textContent = "Will download on submit";
+      });
+    }
+
+    // ---- Done ----
+    function showDoneDialog() {
+      // Save current textarea to feedbackMap (but don't POST yet)
+      const run = EMBEDDED_DATA.runs[currentIndex];
+      const text = document.getElementById("feedback").value;
+      if (text.trim() === "") {
+        delete feedbackMap[run.id];
+      } else {
+        feedbackMap[run.id] = text;
+      }
+
+      // POST once with status: complete — include ALL runs so the model
+      // can distinguish "no feedback" (looks good) from "not reviewed"
+      const reviews = [];
+      const ts = new Date().toISOString();
+      for (const r of EMBEDDED_DATA.runs) {
+        reviews.push({ run_id: r.id, feedback: feedbackMap[r.id] || "", timestamp: ts });
+      }
+      const payload = JSON.stringify({ reviews, status: "complete" }, null, 2);
+      fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      }).then(() => {
+        document.getElementById("done-overlay").classList.add("visible");
+      }).catch(() => {
+        // Server not available (static mode) — download as file
+        const blob = new Blob([payload], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "feedback.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        document.getElementById("done-overlay").classList.add("visible");
+      });
+    }
+
+    function closeDoneDialog() {
+      // Reset status back to in_progress
+      saveCurrentFeedback();
+      document.getElementById("done-overlay").classList.remove("visible");
+    }
+
+    // ---- Toast ----
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      setTimeout(() => toast.classList.remove("visible"), 2000);
+    }
+
+    // ---- Keyboard nav ----
+    document.addEventListener("keydown", (e) => {
+      // Don't capture when typing in textarea
+      if (e.target.tagName === "TEXTAREA") return;
+
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        navigate(-1);
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        navigate(1);
+      }
+    });
+
+    // ---- Util ----
+    function getDownloadUri(file) {
+      if (file.data_uri) return file.data_uri;
+      if (file.data_b64) return "data:application/octet-stream;base64," + file.data_b64;
+      if (file.type === "text") return "data:text/plain;charset=utf-8," + encodeURIComponent(file.content);
+      return "#";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // ---- View switching ----
+    function switchView(view) {
+      document.querySelectorAll(".view-tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
+      document.querySelector(`[onclick="switchView('${view}')"]`).classList.add("active");
+      document.getElementById("panel-" + view).classList.add("active");
+    }
+
+    // ---- Benchmark rendering ----
+    function renderBenchmark() {
+      const data = EMBEDDED_DATA.benchmark;
+      if (!data) return;
+
+      // Show the tabs
+      document.getElementById("view-tabs").style.display = "flex";
+
+      const container = document.getElementById("benchmark-content");
+      const summary = data.run_summary || {};
+      const metadata = data.metadata || {};
+      const notes = data.notes || [];
+
+      let html = "";
+
+      // Header
+      html += "<h2 style='font-family: Poppins, sans-serif; margin-bottom: 0.5rem;'>Benchmark Results</h2>";
+      html += "<p style='color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;'>";
+      if (metadata.skill_name) html += "<strong>" + escapeHtml(metadata.skill_name) + "</strong> &mdash; ";
+      if (metadata.timestamp) html += metadata.timestamp + " &mdash; ";
+      if (metadata.evals_run) html += "Evals: " + metadata.evals_run.join(", ") + " &mdash; ";
+      html += (metadata.runs_per_configuration || "?") + " runs per configuration";
+      html += "</p>";
+
+      // Summary table
+      html += '<table class="benchmark-table">';
+
+      function fmtStat(stat, pct) {
+        if (!stat) return "—";
+        const suffix = pct ? "%" : "";
+        const m = pct ? (stat.mean * 100).toFixed(0) : stat.mean.toFixed(1);
+        const s = pct ? (stat.stddev * 100).toFixed(0) : stat.stddev.toFixed(1);
+        return m + suffix + " ± " + s + suffix;
+      }
+
+      function deltaClass(val) {
+        if (!val) return "";
+        const n = parseFloat(val);
+        if (n > 0) return "benchmark-delta-positive";
+        if (n < 0) return "benchmark-delta-negative";
+        return "";
+      }
+
+      // Discover config names dynamically (everything except "delta")
+      const configs = Object.keys(summary).filter(k => k !== "delta");
+      const configA = configs[0] || "config_a";
+      const configB = configs[1] || "config_b";
+      const labelA = configA.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const labelB = configB.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+      const a = summary[configA] || {};
+      const b = summary[configB] || {};
+      const delta = summary.delta || {};
+
+      html += "<thead><tr><th>Metric</th><th>" + escapeHtml(labelA) + "</th><th>" + escapeHtml(labelB) + "</th><th>Delta</th></tr></thead>";
+      html += "<tbody>";
+
+      html += "<tr><td><strong>Pass Rate</strong></td>";
+      html += "<td>" + fmtStat(a.pass_rate, true) + "</td>";
+      html += "<td>" + fmtStat(b.pass_rate, true) + "</td>";
+      html += '<td class="' + deltaClass(delta.pass_rate) + '">' + (delta.pass_rate || "—") + "</td></tr>";
+
+      // Time (only show row if data exists)
+      if (a.time_seconds || b.time_seconds) {
+        html += "<tr><td><strong>Time (s)</strong></td>";
+        html += "<td>" + fmtStat(a.time_seconds, false) + "</td>";
+        html += "<td>" + fmtStat(b.time_seconds, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.time_seconds) + '">' + (delta.time_seconds ? delta.time_seconds + "s" : "—") + "</td></tr>";
+      }
+
+      // Tokens (only show row if data exists)
+      if (a.tokens || b.tokens) {
+        html += "<tr><td><strong>Tokens</strong></td>";
+        html += "<td>" + fmtStat(a.tokens, false) + "</td>";
+        html += "<td>" + fmtStat(b.tokens, false) + "</td>";
+        html += '<td class="' + deltaClass(delta.tokens) + '">' + (delta.tokens || "—") + "</td></tr>";
+      }
+
+      html += "</tbody></table>";
+
+      // Per-eval breakdown (if runs data available)
+      const runs = data.runs || [];
+      if (runs.length > 0) {
+        const evalIds = [...new Set(runs.map(r => r.eval_id))].sort((a, b) => a - b);
+
+        html += "<h3 style='font-family: Poppins, sans-serif; margin-bottom: 0.75rem;'>Per-Eval Breakdown</h3>";
+
+        const hasTime = runs.some(r => r.result && r.result.time_seconds != null);
+        const hasErrors = runs.some(r => r.result && r.result.errors > 0);
+
+        for (const evalId of evalIds) {
+          const evalRuns = runs.filter(r => r.eval_id === evalId);
+          const evalName = evalRuns[0] && evalRuns[0].eval_name ? evalRuns[0].eval_name : "Eval " + evalId;
+
+          html += "<h4 style='font-family: Poppins, sans-serif; margin: 1rem 0 0.5rem; color: var(--text);'>" + escapeHtml(evalName) + "</h4>";
+          html += '<table class="benchmark-table">';
+          html += "<thead><tr><th>Config</th><th>Run</th><th>Pass Rate</th>";
+          if (hasTime) html += "<th>Time (s)</th>";
+          if (hasErrors) html += "<th>Crashes During Execution</th>";
+          html += "</tr></thead>";
+          html += "<tbody>";
+
+          // Group by config and render with average rows
+          const configGroups = [...new Set(evalRuns.map(r => r.configuration))];
+          for (let ci = 0; ci < configGroups.length; ci++) {
+            const config = configGroups[ci];
+            const configRuns = evalRuns.filter(r => r.configuration === config);
+            if (configRuns.length === 0) continue;
+
+            const rowClass = ci === 0 ? "benchmark-row-with" : "benchmark-row-without";
+            const configLabel = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+            for (const run of configRuns) {
+              const r = run.result || {};
+              const prClass = r.pass_rate >= 0.8 ? "benchmark-delta-positive" : r.pass_rate < 0.5 ? "benchmark-delta-negative" : "";
+              html += '<tr class="' + rowClass + '">';
+              html += "<td>" + configLabel + "</td>";
+              html += "<td>" + run.run_number + "</td>";
+              html += '<td class="' + prClass + '">' + ((r.pass_rate || 0) * 100).toFixed(0) + "% (" + (r.passed || 0) + "/" + (r.total || 0) + ")</td>";
+              if (hasTime) html += "<td>" + (r.time_seconds != null ? r.time_seconds.toFixed(1) : "—") + "</td>";
+              if (hasErrors) html += "<td>" + (r.errors || 0) + "</td>";
+              html += "</tr>";
+            }
+
+            // Average row
+            const rates = configRuns.map(r => (r.result || {}).pass_rate || 0);
+            const avgRate = rates.reduce((a, b) => a + b, 0) / rates.length;
+            const avgPrClass = avgRate >= 0.8 ? "benchmark-delta-positive" : avgRate < 0.5 ? "benchmark-delta-negative" : "";
+            html += '<tr class="benchmark-row-avg ' + rowClass + '">';
+            html += "<td>" + configLabel + "</td>";
+            html += "<td>Avg</td>";
+            html += '<td class="' + avgPrClass + '">' + (avgRate * 100).toFixed(0) + "%</td>";
+            if (hasTime) {
+              const times = configRuns.map(r => (r.result || {}).time_seconds).filter(t => t != null);
+              html += "<td>" + (times.length ? (times.reduce((a, b) => a + b, 0) / times.length).toFixed(1) : "—") + "</td>";
+            }
+            if (hasErrors) html += "<td></td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table>";
+
+          // Per-assertion detail for this eval
+          const runsWithExpectations = {};
+          for (const config of configGroups) {
+            runsWithExpectations[config] = evalRuns.filter(r => r.configuration === config && r.expectations && r.expectations.length > 0);
+          }
+          const hasAnyExpectations = Object.values(runsWithExpectations).some(runs => runs.length > 0);
+          if (hasAnyExpectations) {
+            // Collect all unique assertion texts across all configs
+            const allAssertions = [];
+            const seen = new Set();
+            for (const config of configGroups) {
+              for (const run of runsWithExpectations[config]) {
+                for (const exp of (run.expectations || [])) {
+                  if (!seen.has(exp.text)) {
+                    seen.add(exp.text);
+                    allAssertions.push(exp.text);
+                  }
+                }
+              }
+            }
+
+            html += '<table class="benchmark-table" style="margin-top: 0.5rem;">';
+            html += "<thead><tr><th>Assertion</th>";
+            for (const config of configGroups) {
+              const label = config.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+              html += "<th>" + escapeHtml(label) + "</th>";
+            }
+            html += "</tr></thead><tbody>";
+
+            for (const assertionText of allAssertions) {
+              html += "<tr><td>" + escapeHtml(assertionText) + "</td>";
+
+              for (const config of configGroups) {
+                html += "<td>";
+                for (const run of runsWithExpectations[config]) {
+                  const exp = (run.expectations || []).find(e => e.text === assertionText);
+                  if (exp) {
+                    const cls = exp.passed ? "benchmark-delta-positive" : "benchmark-delta-negative";
+                    const icon = exp.passed ? "\u2713" : "\u2717";
+                    html += '<span class="' + cls + '" title="Run ' + run.run_number + ': ' + escapeHtml(exp.evidence || "") + '">' + icon + "</span> ";
+                  } else {
+                    html += "— ";
+                  }
+                }
+                html += "</td>";
+              }
+              html += "</tr>";
+            }
+            html += "</tbody></table>";
+          }
+        }
+      }
+
+      // Notes
+      if (notes.length > 0) {
+        html += '<div class="benchmark-notes">';
+        html += "<h3>Analysis Notes</h3>";
+        html += "<ul>";
+        for (const note of notes) {
+          html += "<li>" + escapeHtml(note) + "</li>";
+        }
+        html += "</ul></div>";
+      }
+
+      container.innerHTML = html;
+    }
+
+    // ---- Start ----
+    init();
+    renderBenchmark();
+  </script>
+</body>
+</html>

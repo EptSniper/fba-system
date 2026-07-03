@@ -1,0 +1,186 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ───────────────────────────────────────────────────────────────────────────
+   FBA Center — operator console
+   Private, dense, utilitarian. Flat warm near-black, hairline borders, quiet
+   color, no gradients / glass / aurora / motion. Fast to paint,
+   information-first. Palette + type ported from the operator-console design
+   prototype (2026-07-02) — values only; no page logic changed.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg: #131412;           /* flat warm near-black base */
+  --panel: #1b1c1a;        /* panels/cards */
+  --panel-2: #1d1e1c;      /* inset rows, hovers */
+  --side-bg: #0d0e0c;      /* sidebar — deliberately darker than panels */
+  --border: rgba(240, 239, 236, 0.1);
+  --border-strong: rgba(240, 239, 236, 0.22);
+  --text: #f0efec;
+  --text-muted: #b3b2ac;
+  --text-faint: #84837c;   /* labels */
+  --accent: #ff4d00;       /* safety orange — links/active */
+  --accent-2: #e8a200;     /* amber — secondary highlight */
+  --profit: #4ade80;       /* green */
+  --loss: #ff6b57;         /* red */
+  --warn: #e8a200;         /* amber */
+  --info: #7db8e8;         /* sky */
+  --ring: rgba(255, 77, 0, 0.4);
+}
+
+/* Light theme — opt-in via <html data-theme="light">, set from Settings. Sidebar stays dark
+   in both themes (--side-bg unchanged) since it's a fixed console rail, not page content. */
+:root[data-theme="light"] {
+  --bg: #eceae4;
+  --panel: #fdfcfa;
+  --panel-2: #efede7;
+  --border: rgba(28, 27, 22, 0.13);
+  --border-strong: rgba(28, 27, 22, 0.3);
+  --text: #1c1b16;
+  --text-muted: #4c4a42;
+  --text-faint: #8a877c;
+  --profit: #187a34;
+  --loss: #bc3220;
+  --warn: #9a6b00;
+  --info: #2f6ea8;
+}
+
+/* Accent swatches — opt-in via <html data-accent="...">, set from Settings. Default (no
+   attribute) is safety orange, defined in :root above. */
+:root[data-accent="green"] { --accent: #4ade80; --ring: rgba(74, 222, 128, 0.4); }
+:root[data-accent="sky"] { --accent: #7db8e8; --ring: rgba(125, 184, 232, 0.4); }
+:root[data-accent="amber"] { --accent: #e8a200; --ring: rgba(232, 162, 0, 0.4); }
+
+@layer base {
+  html {
+    background: var(--bg);
+    color-scheme: dark;
+  }
+  html[data-theme="light"] {
+    color-scheme: light;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-width: 320px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .num {
+    font-family: var(--font-mono), monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
+  ::selection {
+    background: rgba(255, 77, 0, 0.25);
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+}
+
+@layer components {
+  /* Flat panel: 1px hairline, slight fill, no gradient/blur/shadow/radius — sharp rectangles
+     throughout, matching the operator-console reference. */
+  .surface {
+    background: var(--panel);
+    border: 1px solid var(--border);
+  }
+  .surface-hover {
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+  .surface-hover:hover {
+    border-color: var(--border-strong);
+    background: var(--panel-2);
+  }
+
+  .field {
+    width: 100%;
+    border: 1px solid var(--border-strong);
+    background: var(--bg);
+    padding: 0.5rem 0.6rem;
+    color: var(--text);
+    font-family: var(--font-mono), monospace;
+    font-size: 0.8125rem;
+    transition: border-color 120ms ease;
+  }
+  .field:hover { border-color: rgba(255, 77, 0, 0.4); }
+  .field:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(255, 77, 0, 0.18);
+  }
+
+  .rule-grad { height: 1px; background: var(--border); }
+}
+
+/* LED status dot — steady when healthy, pulses when a system needs attention.
+   Respects prefers-reduced-motion via the global rule below. */
+@keyframes led {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.animate-led { animation: led 1.8s ease-in-out infinite; }
+
+/* Ultra-faint static grid — painted once, no animation, gives a "tool" texture. */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 0.75rem;
+  top: 0.5rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  background: var(--accent);
+  color: #1a0d00;
+  padding: 0.55rem 0.9rem;
+  font-weight: 700;
+  transition: transform 140ms ease;
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* Thin, quiet scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); background-clip: padding-box; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

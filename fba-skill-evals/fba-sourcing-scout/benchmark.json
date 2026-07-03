@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "skill_name": "fba-sourcing-scout",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-06-30T02:57:53Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 113.009,
+        "tokens": 43482,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends reverse sourcing / storefront stalking for a beginner",
+          "passed": true,
+          "evidence": "\u2026ner** \u2192 your method is **reverse sourcing (storefront sta\u2026"
+        },
+        {
+          "text": "Deal-first (source where the sale/cashback is)",
+          "passed": true,
+          "evidence": "\u2026le today: No single live sale to chase yet (you have n\u2026"
+        },
+        {
+          "text": "Produces a concrete plan / steps (not vague)",
+          "passed": true,
+          "evidence": "\u2026# FBA Sourcing Plan \u2014 Brand-New Beginner, $5\u2026"
+        },
+        {
+          "text": "Hands to deal-analyst / verify, no auto-buy",
+          "passed": true,
+          "evidence": "\u2026here is a *hypothesis to verify*, never a buy order \u2014 ev\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 86.167,
+        "tokens": 39445,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends Keepa Product Finder for a known brand",
+          "passed": true,
+          "evidence": "\u2026e method here is **Keepa Product Finder** (Method B), not random\u2026"
+        },
+        {
+          "text": "Gives the filter set (rank, Amazon OOS, offer count)",
+          "passed": true,
+          "evidence": "\u2026- Brand = **Crayola** - Sales Rank = **0 \u2192 150,000** (top ~\u2026"
+        },
+        {
+          "text": "Mentions storefront stalking OR instant-reject flags too",
+          "passed": true,
+          "evidence": "\u2026* (Method B), not random storefront stalking. But we still l\u2026"
+        },
+        {
+          "text": "Hands to deal-analyst / verify",
+          "passed": true,
+          "evidence": "\u2026IDATE LEADS (hand to fba-deal-analyst)  These are **hypotheses\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 117.258,
+        "tokens": 41903,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Endorses the deal-first angle around the live BOGO",
+          "passed": true,
+          "evidence": "\u2026rcing Scout \u2014 Target Toy BOGO Run  **Short answer: yes\u2026"
+        },
+        {
+          "text": "Stacking (BOGO + Circle + cashback) to manufacture margin",
+          "passed": true,
+          "evidence": "\u2026Target Circle account to stack on top of it. That stack\u2026"
+        },
+        {
+          "text": "Each ASIN must still pass the gates / deal-analyst",
+          "passed": true,
+          "evidence": "\u2026lead list to hand to fba-deal-analyst.  One honesty note up fr\u2026"
+        },
+        {
+          "text": "No blanket buy (lead = hypothesis / verify each)",
+          "passed": true,
+          "evidence": "\u2026fba-deal-analyst.\" Treat each as a hypothesis, not a de\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 75.64,
+        "tokens": 33882,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends reverse sourcing / storefront stalking for a beginner",
+          "passed": true,
+          "evidence": "\u2026your gates.  **Step 3 \u2014 Storefront stalking (reverse sourci\u2026"
+        },
+        {
+          "text": "Deal-first (source where the sale/cashback is)",
+          "passed": true,
+          "evidence": "\u2026pes the batch | | **BSR (sales rank)** | Strong & stab\u2026"
+        },
+        {
+          "text": "Produces a concrete plan / steps (not vague)",
+          "passed": true,
+          "evidence": "\u2026od (do this in order)  **Step 1 \u2014 Open the sales, not\u2026"
+        },
+        {
+          "text": "Hands to deal-analyst / verify, no auto-buy",
+          "passed": true,
+          "evidence": "\u2026product actually sells. SellerAmp (SAS) or a free FBA calc\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 107.807,
+        "tokens": 56381,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Recommends Keepa Product Finder for a known brand",
+          "passed": true,
+          "evidence": "\u2026ed example in your Keepa Product Finder playbook (~8,600 listing\u2026"
+        },
+        {
+          "text": "Gives the filter set (rank, Amazon OOS, offer count)",
+          "passed": true,
+          "evidence": "\u2026> ~8,600 listings). 2. **Sales Rank: 0 -> 150,000-200,000**\u2026"
+        },
+        {
+          "text": "Mentions storefront stalking OR instant-reject flags too",
+          "passed": true,
+          "evidence": "\u2026B \u2014 Reverse sourcing / \"storefront stalking\" (best for find\u2026"
+        },
+        {
+          "text": "Hands to deal-analyst / verify",
+          "passed": true,
+          "evidence": "\u2026al OA winners fast, then verify each in SellerAmp.  Here\u2026"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 4,
+        "failed": 0,
+        "total": 4,
+        "time_seconds": 101.061,
+        "tokens": 55850,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Endorses the deal-first angle around the live BOGO",
+          "passed": true,
+          "evidence": "\u2026# Target Toy BOGO + Target Circle \u2014 Worth\u2026"
+        },
+        {
+          "text": "Stacking (BOGO + Circle + cashback) to manufacture margin",
+          "passed": true,
+          "evidence": "\u2026ce where the best SALE / cashback / coupon is TODAY (e.g.\u2026"
+        },
+        {
+          "text": "Each ASIN must still pass the gates / deal-analyst",
+          "passed": true,
+          "evidence": "\u2026al still has to pass the gates ASIN-by-ASIN.**  This m\u2026"
+        },
+        {
+          "text": "No blanket buy (lead = hypothesis / verify each)",
+          "passed": true,
+          "evidence": "\u2026make sure both units of each pair are sellable ASINs,\u2026"
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 105.478,
+        "stddev": 16.8582,
+        "min": 86.167,
+        "max": 117.258
+      },
+      "tokens": {
+        "mean": 41610.0,
+        "stddev": 2034.3866,
+        "min": 39445,
+        "max": 43482
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 94.836,
+        "stddev": 16.963,
+        "min": 75.64,
+        "max": 107.807
+      },
+      "tokens": {
+        "mean": 48704.3333,
+        "stddev": 12839.2626,
+        "min": 33882,
+        "max": 56381
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.00",
+      "time_seconds": "+10.6",
+      "tokens": "-7094"
+    }
+  },
+  "notes": []
+}

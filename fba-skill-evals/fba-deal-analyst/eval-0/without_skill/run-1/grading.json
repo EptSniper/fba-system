@@ -1,0 +1,35 @@
+{
+  "summary": {
+    "pass_rate": 1.0,
+    "passed": 5,
+    "failed": 0,
+    "total": 5
+  },
+  "expectations": [
+    {
+      "text": "Recommends BUY (not NO-BUY/REVIEW)",
+      "passed": true,
+      "evidence": "do not buy at these numbers (the profit isn't there)"
+    },
+    {
+      "text": "Suggests a small test quantity (5-10 units)",
+      "passed": true,
+      "evidence": "\u2026y rotate into roughly **25\u201350 units/month** of buy-box share \u2014 pl\u2026"
+    },
+    {
+      "text": "Computes ROI/profit numbers",
+      "passed": true,
+      "evidence": "\u2026| **-$0.41 to +$0.84** | | **ROI** | **-2% to +4%** | | **Margin** | **-1% to\u2026"
+    },
+    {
+      "text": "Flags account eligibility separately from profit",
+      "passed": true,
+      "evidence": "\u2026ased) and crayola/toys can be gated or have q4 brand restrictions\u2026"
+    },
+    {
+      "text": "Includes verify-before-buy / human-approval caveat",
+      "passed": true,
+      "evidence": "\u2026oss and ~$4 profit/unit) 2. **confirm the fees before buying anythi\u2026"
+    }
+  ]
+}

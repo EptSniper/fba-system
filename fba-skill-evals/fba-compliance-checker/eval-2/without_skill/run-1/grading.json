@@ -1,0 +1,30 @@
+{
+  "summary": {
+    "pass_rate": 0.5,
+    "passed": 2,
+    "failed": 2,
+    "total": 4
+  },
+  "expectations": [
+    {
+      "text": "Friendly/ungated treated as a HINT, not a guarantee",
+      "passed": false,
+      "evidence": "(not found)"
+    },
+    {
+      "text": "Gives decisive Seller Central / Boxem / approval check",
+      "passed": true,
+      "evidence": "\u2026ngate,\" but **easy != no approval needed.**  - Crayola is\u2026"
+    },
+    {
+      "text": "Leans ALLOWED but with verification (not blocked)",
+      "passed": true,
+      "evidence": "\u2026Crayola Markers \u2014 \"Am I allowed to sell them?\"  **Verdic\u2026"
+    },
+    {
+      "text": "Stays on eligibility (no ROI/profit verdict)",
+      "passed": false,
+      "evidence": "\u2026ibility/risk read, not a profit call.** Whether a specif\u2026"
+    }
+  ]
+}

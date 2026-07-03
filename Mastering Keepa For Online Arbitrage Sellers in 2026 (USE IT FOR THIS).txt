@@ -1,0 +1,1720 @@
+00:00 In today's video, I'm going to be going
+00:02 
+
+00:02 over everything you need to know about
+00:03 
+
+00:03 analyzing Keepa charts, and I'm going to
+00:05 
+
+00:05 break down the whole entire software
+00:06 
+
+00:06 from everything that it can do to
+00:08 
+
+00:08 everything that I personally use it for.
+00:09 
+
+00:09 So, if you already know how to use Keepa
+00:11 
+
+00:11 and you just want to see how I use
+00:12 
+
+00:12 Keepa, there is timestamps below this
+00:14 
+
+00:14 video for you to check that out. I think
+00:15 
+
+00:15 you'll take a lot of value if you're
+00:17 
+
+00:17 already experienced. But, if you are
+00:18 
+
+00:18 newer and you have no idea what this
+00:19 
+
+00:19 tool really does, then make sure you
+00:21 
+
+00:21 watch this whole entire thing through.
+00:22 
+
+00:22 Now, Keepa is going to be the backbone
+00:24 
+
+00:24 to your whole entire business as far as
+00:25 
+
+00:25 product analysis goes, to product
+00:27 
+
+00:27 sourcing goes. It literally can do
+00:28 
+
+00:28 everything. The only thing that it lacks
+00:30 
+
+00:30 is a profit calculator. Before you make
+00:32 
+
+00:32 any decisions on purchasing products,
+00:34 
+
+00:34 you need to first check out the Keepa
+00:35 
+
+00:35 chart. And I'm going to break down
+00:36 
+
+00:36 exactly what we need to look for in
+00:38 
+
+00:38 today's video. So, as we dive into my
+00:40 
+
+00:40 screen here, we're going to take a look
+00:40 
+
+00:40 at this product today here. And this is
+00:42 
+
+00:42 what we're going to pretty much use as
+00:44 
+
+00:44 our base reference for going through
+00:45 
+
+00:45 Keepa. Now, it's important to know what
+00:47 
+
+00:47 these all mean here before I dive any
+00:49 
+
+00:49 further. So, we're going to go over all
+00:50 
+
+00:50 these different tabs here. And then
+00:51 
+
+00:51 again, like I said, towards the middle
+00:53 
+
+00:53 half of this video, we're going to go
+00:54 
+
+00:54 over things that I specifically use it
+00:56 
+
+00:56 for myself. Now, when it comes to the
+00:58 
+
+00:58 price history, the cool thing about
+00:59 
+
+00:59 Keepa here is we can literally customize
+01:01 
+
+01:01 pretty much every single function here.
+01:03 
+
+01:03 So, if I wanted to turn on the sales
+01:05 
+
+01:05 rank here, I can do that. I'm not going
+01:06 
+
+01:06 to because I have it in the middle here.
+01:08 
+
+01:08 I can turn on the used offers, which
+01:10 
+
+01:10 does not affect me at all. We can turn
+01:11 
+
+01:11 on the new FBA sellers, their price
+01:13 
+
+01:13 points. Again, I personally don't use
+01:15 
+
+01:15 it. The main things that I'm using here
+01:16 
+
+01:16 in the front is the buy box. I want to
+01:19 
+
+01:19 see if Amazon's on here. And then also,
+01:21 
+
+01:21 I have this new function, which honestly
+01:22 
+
+01:22 you really don't need either. This here
+01:25 
+
+01:25 is plenty. Okay, the pink line is the
+01:27 
+
+01:27 buy box. This is essentially what the
+01:28 
+
+01:28 price is at at that exact moment in time
+01:31 
+
+01:31 on that product. So, as you hover over,
+01:33 
+
+01:33 you see it constantly changing. That's
+01:35 
+
+01:35 because there's a new person in the buy
+01:36 
+
+01:36 box getting sales. Pretty much what we
+01:38 
+
+01:38 want to notice with this is, okay, where
+01:40 
+
+01:40 is this at during this period? How was
+01:42 
+
+01:42 it impacted by the offer count? Pretty
+01:44 
+
+01:44 much we were looking for correlations
+01:45 
+
+01:45 when we were reading these Keepa charts
+01:47 
+
+01:47 here. And the most important thing of
+01:49 
+
+01:49 this top column here is that this is
+01:50 
+
+01:50 just the price. Okay? And you might be
+01:52 
+
+01:52 wondering, what are these little peaks
+01:53 
+
+01:53 here? Well, these are little spikes in
+01:55 
+
+01:55 price where someone was able to get a
+01:57 
+
+01:57 sale or buy box at a higher point
+01:59 
+
+01:59 because everyone else may have went back
+02:01 
+
+02:01 order there for that period or they have
+02:03 
+
+02:03 a really good rericer setup that's able
+02:05 
+
+02:05 to do that for them. Okay, it's
+02:06 
+
+02:06 important that you also use a rericer
+02:08 
+
+02:08 when you're selling on Amazon because
+02:10 
+
+02:10 you will get sales at higher prices just
+02:12 
+
+02:12 like these sellers are right here. Now,
+02:13 
+
+02:13 another thing that you should also keep
+02:15 
+
+02:15 note here is you can actually hover over
+02:16 
+
+02:16 different time frames. So, for example,
+02:18 
+
+02:18 you can go to the all of the product to
+02:20 
+
+02:20 see more things. Right here is an
+02:21 
+
+02:21 example of Amazon being on the listing
+02:23 
+
+02:23 back in 2015 and then now they're not
+02:25 
+
+02:25 there, right? They came on here for a
+02:27 
+
+02:27 little bit. Um, but yeah, you can pretty
+02:29 
+
+02:29 much navigate this however you want. You
+02:30 
+
+02:30 can do all year, 3 months, uh, month.
+02:33 
+
+02:33 And you can also zoom. So if you hold
+02:35 
+
+02:35 the left of your mouse and you drag and
+02:37 
+
+02:37 you drop, it zooms in. If you double
+02:39 
+
+02:39 double press the left, uh, side of the
+02:41 
+
+02:41 mouse, it'll zoom back out to that time
+02:43 
+
+02:43 frame you have set. Now, the middle
+02:44 
+
+02:44 column here is going to be the sales
+02:45 
+
+02:45 rank and the monthly sold. Pretty much
+02:47 
+
+02:47 means the exact same thing. The sales
+02:49 
+
+02:49 rank just dictates around how many times
+02:51 
+
+02:51 it sells a month. Honestly, for a new
+02:53 
+
+02:53 seller that's trying to learn Keep, if
+02:54 
+
+02:54 you're watching this far, just pay
+02:56 
+
+02:56 attention to the monthly sold right
+02:58 
+
+02:58 here. That is the most important thing
+02:59 
+
+02:59 is this yellow line. This is a direct
+03:01 
+
+03:01 number from Amazon themselves. So, it is
+03:04 
+
+03:04 very accurate. But sometimes this won't
+03:06 
+
+03:06 be there because the listing sells a bit
+03:08 
+
+03:08 slower and you want to just verify their
+03:09 
+
+03:09 sales happening, right? So, this is
+03:11 
+
+03:11 holding a consistent about 20,000 um
+03:14 
+
+03:14 sales rank in the pet supplies area,
+03:16 
+
+03:16 which means it's selling. Whereas, if
+03:18 
+
+03:18 you would have seen this this sales rank
+03:20 
+
+03:20 like a very long period of time without
+03:22 
+
+03:22 dropping and then it drops randomly,
+03:24 
+
+03:24 that drop there is usually going to
+03:25 
+
+03:25 indicate a sale. You will only see this
+03:27 
+
+03:27 on listings that are moving very slow
+03:30 
+
+03:30 though, so you probably are avoiding
+03:31 
+
+03:31 those anyways when you're sourcing. The
+03:33 
+
+03:33 bottom here is also going to be equally
+03:35 
+
+03:35 as important as the price, if not more
+03:37 
+
+03:37 important. Okay, this purplish line here
+03:39 
+
+03:39 is going to be the new offer count,
+03:40 
+
+03:40 which pretty much is just how many
+03:42 
+
+03:42 sellers are on the listing. So we see
+03:44 
+
+03:44 right here for the last year that it got
+03:45 
+
+03:45 up to about 25 at one point, then it
+03:47 
+
+03:47 went down to six, then it went back up,
+03:49 
+
+03:49 then it went back down. So it's
+03:50 
+
+03:50 constantly fluctuating. Okay, this is
+03:52 
+
+03:52 important because when you were reading
+03:53 
+
+03:53 Keepa charts, you need to piece these
+03:55 
+
+03:55 things together to kind of anticipate
+03:57 
+
+03:57 what's going to happen next for the
+03:59 
+
+03:59 product that you're carrying. Now, this
+04:00 
+
+04:00 product here, we can clearly see that
+04:02 
+
+04:02 when the offer count went down, do you
+04:04 
+
+04:04 kind of see how these peaks started to
+04:06 
+
+04:06 happen, right? We went from about 27ish,
+04:08 
+
+04:08 maybe 34, and now we're starting to get
+04:10 
+
+04:10 peaks up at like 34 right here. uh even
+04:13 
+
+04:13 higher, right? So from 31 now around $
+04:16 
+
+04:16 35ish dollars, we're getting these peaks
+04:18 
+
+04:18 because people are going backordered,
+04:19 
+
+04:19 right? All this means is people are
+04:21 
+
+04:21 going out of stock and it's going to the
+04:22 
+
+04:22 next person in buy box and that person
+04:24 
+
+04:24 might be priced higher. So us as buyers,
+04:27 
+
+04:27 as sellers, we pretty much always want
+04:29 
+
+04:29 to be pricing our products higher. Our
+04:31 
+
+04:31 repricers do that for us. But if we can
+04:33 
+
+04:33 look at a keep a chart and first
+04:34 
+
+04:34 determine that the offers are going
+04:35 
+
+04:35 down, that's going to be a good
+04:37 
+
+04:37 indicator that we're going to be able to
+04:38 
+
+04:38 sell this product at a higher price. And
+04:40 
+
+04:40 that's pretty much going to be clear as
+04:42 
+
+04:42 day on any Keep aa chart that you look
+04:44 
+
+04:44 at. Any product you pull up, you should
+04:46 
+
+04:46 see that clear correlation happening
+04:47 
+
+04:47 there. Now, this other thing I have here
+04:49 
+
+04:49 is just the rating count. How many
+04:50 
+
+04:50 ratings the product's getting. If you
+04:51 
+
+04:51 look at the last month here, this went
+04:53 
+
+04:53 from 250 ratings. Now, we're at 252. So,
+04:56 
+
+04:56 we got about two ratings. Again, not
+04:58 
+
+04:58 super important, but it can be used as
+04:60 
+
+04:60 an indicator of sales. So, if you don't
+05:02 
+
+05:02 have any other data to tell you how many
+05:04 
+
+05:04 times it sells a month, you can always
+05:05 
+
+05:05 check that out right there as well. Now,
+05:07 
+
+05:07 that's pretty much the charts. Hopefully
+05:09 
+
+05:09 that is in-depth enough. We we'll talk a
+05:10 
+
+05:10 bit more about it towards the end
+05:12 
+
+05:12 section of how I actually use it myself.
+05:13 
+
+05:13 Now, let's go to the track product
+05:15 
+
+05:15 feature right here. Okay, this is a very
+05:16 
+
+05:16 cool feature. We can pretty much come in
+05:18 
+
+05:18 here and set alerts for these products.
+05:20 
+
+05:20 So, if you have a quick look, if you are
+05:22 
+
+05:22 looking at a product and you essentially
+05:24 
+
+05:24 think that it's priced too low today,
+05:25 
+
+05:25 but you don't want to forget about it
+05:27 
+
+05:27 necessarily, you can set alerts here on
+05:29 
+
+05:29 this product so it notifies you in the
+05:31 
+
+05:31 future when it hits that price point.
+05:32 
+
+05:32 Okay, I have a very in-depth video on
+05:34 
+
+05:34 that. I will link it below this video
+05:36 
+
+05:36 that goes over exactly how I set up my
+05:38 
+
+05:38 trackers for these products to help
+05:40 
+
+05:40 build a bigger catalog. So, you should
+05:41 
+
+05:41 definitely check that out if you have
+05:43 
+
+05:43 not seen that. But there's also a pro
+05:44 
+
+05:44 section here where you can essentially
+05:46 
+
+05:46 adjust other things. If you want to
+05:47 
+
+05:47 track the offer count, you can do so
+05:49 
+
+05:49 right here. If you want to track
+05:50 
+
+05:50 anything else, you can. Um, again, I
+05:52 
+
+05:52 don't really use it much outside of just
+05:54 
+
+05:54 tracking the price point or the offer
+05:56 
+
+05:56 count and kind of managing my leads like
+05:58 
+
+05:58 that. So once you set that tracker, you
+05:59 
+
+05:59 press start tracking and then you will
+06:01 
+
+06:01 see that it notifies the email you have
+06:03 
+
+06:03 on file and then whenever you get that
+06:05 
+
+06:05 email or that tracked alert, it'll go to
+06:07 
+
+06:07 your email and it'll look something like
+06:08 
+
+06:08 this. Good news, the offer count has hit
+06:10 
+
+06:10 this certain number. Then you can go
+06:11 
+
+06:11 ahead and press show on Amazon. Again,
+06:13 
+
+06:13 this will just depend on how you set it
+06:15 
+
+06:15 up for yourself. But this is what the
+06:16 
+
+06:16 email will look like from Keepa
+06:17 
+
+06:17 themselves. Now the data tab is very
+06:19 
+
+06:19 important. I will talk about this a
+06:21 
+
+06:21 little bit more, but there's also three
+06:22 
+
+06:22 different things, actually four
+06:23 
+
+06:23 different things in here. We don't ever
+06:24 
+
+06:24 look at the buy box used. We don't care
+06:26 
+
+06:26 about that. product details. I also
+06:28 
+
+06:28 never really look at this, but if you
+06:30 
+
+06:30 want to get more details of the
+06:31 
+
+06:31 products, you can. One big mistake a lot
+06:33 
+
+06:33 of people make is they just analyze it
+06:36 
+
+06:36 like crazy to a point where it's just
+06:38 
+
+06:38 overkill. Okay, we don't I don't ever
+06:40 
+
+06:40 look at this. I literally never look at
+06:41 
+
+06:41 this this column or these uh this page
+06:44 
+
+06:44 at all. Um I don't think it's needed. I
+06:46 
+
+06:46 think the charts tell you enough, but
+06:47 
+
+06:47 it's there if you want to look at the
+06:49 
+
+06:49 additional data pieces if you want to.
+06:51 
+
+06:51 Um, offers tab is an important tab and I
+06:53 
+
+06:53 will share how I use this, but
+06:55 
+
+06:55 essentially the offers tab here is going
+06:56 
+
+06:56 to be all the different sellers in the
+06:58 
+
+06:58 listing and it gives you pretty much
+06:59 
+
+06:59 every piece of data you need about that
+07:01 
+
+07:01 seller. Um, you can actually even
+07:02 
+
+07:02 configure more columns in here if you
+07:04 
+
+07:04 wanted to. Um, but essentially this
+07:06 
+
+07:06 gives you number one their price. So you
+07:08 
+
+07:08 can actually see how these people price.
+07:10 
+
+07:10 Do they change their price? They have a
+07:11 
+
+07:11 stable price. You can kind of stock your
+07:13 
+
+07:13 competition right there. You can also
+07:15 
+
+07:15 see their stock counts. So how many do
+07:16 
+
+07:16 they have? How fast they sell out?
+07:18 
+
+07:18 Right? So right here we can see how fast
+07:20 
+
+07:20 they're moving. Same with this seller.
+07:22 
+
+07:22 Now this isn't always super accurate
+07:23 
+
+07:23 because people can actually hide their
+07:25 
+
+07:25 stock. So don't rely fully on this, but
+07:27 
+
+07:27 again this is great if you need an
+07:29 
+
+07:29 additional piece of proof that products
+07:31 
+
+07:31 are selling through. You also have their
+07:32 
+
+07:32 names right over here. You're going to
+07:34 
+
+07:34 have their IDs and then also here we
+07:36 
+
+07:36 have their rating history. So again,
+07:38 
+
+07:38 like typically this is good information
+07:40 
+
+07:40 because if they have very bad ratings, I
+07:42 
+
+07:42 usually infer that they do a lot of FBM.
+07:45 
+
+07:45 Might not be a person I want to include
+07:46 
+
+07:46 in a search or stock. If they have high
+07:48 
+
+07:48 rating percentage, that's usually a good
+07:50 
+
+07:50 sign that they do a lot of FBA. We have
+07:52 
+
+07:52 their review count here as well, how big
+07:53 
+
+07:53 that seller is. I can see if they are
+07:56 
+
+07:56 doing Prime or not with this check mark.
+07:57 
+
+07:57 And another really cool feature here is
+07:59 
+
+07:59 I can see when they came on the listing
+08:01 
+
+08:01 and when they got off the listing, okay,
+08:03 
+
+08:03 when they were last seen. So, pretty
+08:05 
+
+08:05 much I can look at this here. I can see
+08:06 
+
+08:06 that, okay, this person here that has
+08:08 
+
+08:08 6,000 reviews has been selling this for
+08:10 
+
+08:10 nearly 3 years. So, this person is
+08:13 
+
+08:13 selling this like crazy. Okay, they're
+08:15 
+
+08:15 probably doing this wholesale. So, it
+08:16 
+
+08:16 might not be the person you want to
+08:18 
+
+08:18 stock potentially or do with whatever,
+08:20 
+
+08:20 right? This offers tab is very important
+08:22 
+
+08:22 for any established seller. You need to
+08:24 
+
+08:24 know your competitors and how they
+08:26 
+
+08:26 maneuver and if it's safe or not to get
+08:27 
+
+08:27 on listings. And this again gives you
+08:28 
+
+08:28 all the data points that you need. Buy
+08:30 
+
+08:30 box statistics is also important. You
+08:32 
+
+08:32 can pretty much just see how the buy box
+08:34 
+
+08:34 rotates based on uh the the period. So,
+08:37 
+
+08:37 we have the whole entire history. Right
+08:39 
+
+08:39 here is that person that's been on here
+08:41 
+
+08:41 for 3 months. They have 11% of the
+08:42 
+
+08:42 history buy box on this product. But you
+08:44 
+
+08:44 check the last year again, same thing.
+08:47 
+
+08:47 180, 90, 30. Honestly, the most
+08:49 
+
+08:49 important thing here on these listings
+08:50 
+
+08:50 is if you want to compete, just make
+08:53 
+
+08:53 sure that no one has like 100% or 80% of
+08:55 
+
+08:55 the buy box. Make sure it's other people
+08:57 
+
+08:57 are getting rotation. If you look at a
+08:58 
+
+08:58 listing and you see people with like
+08:59 
+
+08:59 very low reviews getting some rotation,
+09:02 
+
+09:02 that's a very good sign that you can
+09:04 
+
+09:04 also get rotation on that listing as
+09:06 
+
+09:06 well. Okay, so that's pretty much what I
+09:07 
+
+09:07 use that for. Settings here. You guys
+09:08 
+
+09:08 can take a look. These are the settings
+09:10 
+
+09:10 I have set. Honestly, I've never really
+09:11 
+
+09:11 touched this. Um, this just stays as is.
+09:14 
+
+09:14 I haven't really messed with it at all.
+09:15 
+
+09:15 Um, if anything, maybe you can adjust
+09:17 
+
+09:17 the tracker there to be pro, so you can
+09:19 
+
+09:19 actually see more data when you pull it
+09:20 
+
+09:20 up here, so you see everything. But
+09:22 
+
+09:22 again, that is pretty much what I use
+09:24 
+
+09:24 Keepa for, or at least the whole
+09:26 
+
+09:26 overview of Keepa. So, now that you have
+09:28 
+
+09:28 a general understanding of what these
+09:29 
+
+09:29 charts actually mean and how you can use
+09:31 
+
+09:31 Keepa, I want to dig into how I
+09:33 
+
+09:33 personally use Keepa myself to make
+09:35 
+
+09:35 better decisions and give you like a
+09:36 
+
+09:36 very good overview masterass of how
+09:38 
+
+09:38 these Kippa charts actually work. So,
+09:39 
+
+09:39 one of the biggest things I use Kea for
+09:41 
+
+09:41 is determining risk and
+09:42 
+
+09:42 arbitrageability. Okay, I don't even
+09:44 
+
+09:44 know that's a real word, but what I mean
+09:46 
+
+09:46 by arbitrageability is is this a listing
+09:48 
+
+09:48 that has sellers on and off the listing.
+09:50 
+
+09:50 This is usually a really good sign that
+09:52 
+
+09:52 you are actually looking at potential
+09:53 
+
+09:53 opportunity and not just a random
+09:55 
+
+09:55 wholesaler, brand director, or private
+09:57 
+
+09:57 label lead that you're going to waste
+09:58 
+
+09:58 time on. And the easiest way to spot
+09:59 
+
+09:59 that is if you see the offer count going
+10:01 
+
+10:01 up and down consistently. That's a clear
+10:03 
+
+10:03 indicator that this is obviously being
+10:04 
+
+10:04 resold by a lot of different people. And
+10:06 
+
+10:06 this gives us opportunity right here.
+10:08 
+
+10:08 Now, when it comes to risk analysis, I'm
+10:11 
+
+10:11 typically looking at the last year and I
+10:13 
+
+10:13 am seeing where is the lowest point of
+10:15 
+
+10:15 this price's history. And typically,
+10:17 
+
+10:17 that's going to happen when the offer
+10:18 
+
+10:18 count goes up. So, it's right around
+10:19 
+
+10:19 here, right? I'm going to zoom into this
+10:21 
+
+10:21 time frame and I want to see what is
+10:22 
+
+10:22 like a consistent low point here. Okay,
+10:24 
+
+10:24 it seems like it's about $30 maybe at
+10:27 
+
+10:27 the lowest point. So, depending on my
+10:29 
+
+10:29 buy cost, I need to make sure that at
+10:30 
+
+10:30 the very worst case scenario on this
+10:32 
+
+10:32 product's history, I am never at a loss.
+10:35 
+
+10:35 Okay? So obviously to analyze a product
+10:36 
+
+10:36 you have to kind of understand and have
+10:38 
+
+10:38 a buy cost first otherwise you can't
+10:40 
+
+10:40 really analyze it properly. But that's
+10:42 
+
+10:42 what we're going to use Keepa here for
+10:44 
+
+10:44 like this. So this product in particular
+10:47 
+
+10:47 if I can find this for about$,552 from
+10:49 
+
+10:49 an online retailer. It's selling for
+10:51 
+
+10:51 39.83 today. Obviously it's very
+10:53 
+
+10:53 profitable and it's profitable because
+10:55 
+
+10:55 the offer count is so low. So we're
+10:57 
+
+10:57 getting these peaks here at these high
+10:59 
+
+10:59 points. Right? If we look at the sellers
+11:00 
+
+11:00 here 3840 everyone else is FBM. I don't
+11:03 
+
+11:03 care about these people. we can sell us
+11:05 
+
+11:05 at least that $40. And you can actually
+11:06 
+
+11:06 see a clear correlation here between
+11:09 
+
+11:09 being priced at FBA and FBM. This is why
+11:12 
+
+11:12 I don't think you should ever FBM when
+11:13 
+
+11:13 it's not Q4, unless it's like a very big
+11:15 
+
+11:15 product. On most listings, you can
+11:17 
+
+11:17 always FBA and just price ridiculously
+11:20 
+
+11:20 higher than this and still get buy box
+11:22 
+
+11:22 rotation just like this person is. So,
+11:23 
+
+11:23 if I'm going to sell this, I'm going to
+11:25 
+
+11:25 anticipate to move it at these high
+11:26 
+
+11:26 points. But, I still need to make sure
+11:28 
+
+11:28 that in case the offer count turns and
+11:30 
+
+11:30 it goes back up, I can at least get out
+11:32 
+
+11:32 of here with my money back. So again, if
+11:34 
+
+11:34 this thing does fall to about 30, $31,
+11:37 
+
+11:37 let's say 31, are we going to at least
+11:39 
+
+11:39 break even? And we are. So this passes
+11:42 
+
+11:42 that riskto-reward analysis essentially,
+11:45 
+
+11:45 right? This is in my favor to make me
+11:46 
+
+11:46 money. There's virtually no risk I lose
+11:48 
+
+11:48 money here. So I'd be foolish to not at
+11:50 
+
+11:50 least place a test order here on this
+11:52 
+
+11:52 listing here. Probably going to look
+11:54 
+
+11:54 like about 20 units because competition
+11:56 
+
+11:56 is low. spend about 300 bucks here,
+11:58 
+
+11:58 easily move through this, and we're
+11:59 
+
+11:59 going to make some money here and add it
+12:01 
+
+12:01 to our catalog ecosystem. Which, by the
+12:03 
+
+12:03 way, I have a really good video coming
+12:05 
+
+12:05 out for you guys soon here on how you
+12:07 
+
+12:07 can manage your catalog ecosystem to the
+12:09 
+
+12:09 max. This tool is going to absolutely
+12:10 
+
+12:10 change the game when it comes to the
+12:12 
+
+12:12 sustainable arbitrage model. I'm so
+12:14 
+
+12:14 excited to share with you guys. Now, I
+12:15 
+
+12:15 also use KBA to spot very quick IP
+12:17 
+
+12:17 complaints. And an IP complaint is very
+12:19 
+
+12:19 easy to spot. If you look at a product
+12:20 
+
+12:20 right here and you notice that the offer
+12:22 
+
+12:22 count just falls. So, it's from 28 down
+12:24 
+
+12:24 to 17 instantly without any little drop
+12:28 
+
+12:28 off. You zoom in as much as you want
+12:29 
+
+12:29 here. It's just a straight drop off.
+12:31 
+
+12:31 That is a clear indicator of an IP
+12:32 
+
+12:32 complaint and something that I would
+12:33 
+
+12:33 avoid, especially if it's been if it's
+12:35 
+
+12:35 been within the last year, kind of like
+12:37 
+
+12:37 it did right here. Okay. Now, nowadays,
+12:38 
+
+12:38 this can mean a lot more than just an IP
+12:40 
+
+12:40 complaint. It could be like a reate. Um,
+12:43 
+
+12:43 could be a lot of different things.
+12:44 
+
+12:44 Honestly, it's not just clear-cut IP
+12:46 
+
+12:46 complaint, but I'm usually just passing
+12:48 
+
+12:48 on it if there's ever any weird
+12:49 
+
+12:49 fluctuation in the offers like that. I
+12:51 
+
+12:51 just don't think it's ever worth the
+12:52 
+
+12:52 risk and there's just way more better
+12:54 
+
+12:54 products out there to buy than
+12:55 
+
+12:55 potentially taking the risk there. Now,
+12:56 
+
+12:56 I mentioned I like the offers tab a lot.
+12:58 
+
+12:58 Okay, this is a very good way to dig
+12:60 
+
+12:60 into products. Now, number one, we can
+13:02 
+
+13:02 use this to verify sales like I
+13:04 
+
+13:04 mentioned, but I can also verify better
+13:06 
+
+13:06 sellers to search and I did a video on
+13:08 
+
+13:08 this last week actually where we look at
+13:10 
+
+13:10 the people that have been on these
+13:11 
+
+13:11 listings for the longest period of time
+13:14 
+
+13:14 and those essentially would be better
+13:15 
+
+13:15 people if you are going to reverse
+13:16 
+
+13:16 source to use and use seller to reverse
+13:19 
+
+13:19 source off of. Okay, that's one really
+13:20 
+
+13:20 cool thing. What I probably wouldn't
+13:22 
+
+13:22 want to do, or actually for this listing
+13:24 
+
+13:24 in particular, actually, it might be a
+13:25 
+
+13:25 good idea to stock this person because
+13:27 
+
+13:27 they came on the listing nine days ago.
+13:29 
+
+13:29 They came on this listing before while
+13:31 
+
+13:31 it's low. So, they're buying this item
+13:32 
+
+13:32 when it's price high, making more money.
+13:34 
+
+13:34 That would be potentially a good seller
+13:36 
+
+13:36 to identify and then stock because
+13:38 
+
+13:38 they're on this listing at a low point
+13:40 
+
+13:40 in offers. That means that they're
+13:41 
+
+13:41 smarter than most people. They're not
+13:42 
+
+13:42 followers. They're not buying things
+13:44 
+
+13:44 that are spiking up in offers. they
+13:45 
+
+13:45 could be a pretty decent seller to go in
+13:47 
+
+13:47 there and dig a little bit deeper into
+13:48 
+
+13:48 them and potentially find winning
+13:50 
+
+13:50 products from versus just picking some
+13:52 
+
+13:52 random person on a Spring Valley
+13:53 
+
+13:53 listing. That's one really cool good
+13:55 
+
+13:55 feature about this offers tab is just
+13:57 
+
+13:57 finding better people to stock. Another
+13:59 
+
+13:59 good thing to look at here actually for
+14:01 
+
+14:01 that same exact feature is the buy box
+14:03 
+
+14:03 rotation the last 30 days. Right? So
+14:05 
+
+14:05 like this person here has three reviews
+14:07 
+
+14:07 but they're getting a good amount of buy
+14:08 
+
+14:08 box which means they're actively pricing
+14:10 
+
+14:10 their stuff competitively which means
+14:12 
+
+14:12 they also could be a pretty decent
+14:13 
+
+14:13 seller to stock. Right? Like a lot of
+14:15 
+
+14:15 this goes back to finding new leads and
+14:17 
+
+14:17 I like to use the offers tab in here to
+14:19 
+
+14:19 determine where I need to be looking and
+14:21 
+
+14:21 to give me a better, I guess, area to
+14:23 
+
+14:23 look into to find more listings for my
+14:24 
+
+14:24 store. The biggest indicators here on
+14:26 
+
+14:26 these charts, if you can take anything
+14:27 
+
+14:27 away from this video, like the most
+14:30 
+
+14:30 important thing on these products here
+14:32 
+
+14:32 is not the monthly sold or how fast it's
+14:34 
+
+14:34 selling, right? I'm honestly don't
+14:35 
+
+14:35 really care how fast products are
+14:37 
+
+14:37 selling. I just want to make sure I can
+14:38 
+
+14:38 make money on the products that I'm
+14:39 
+
+14:39 purchasing. I just need to make sure
+14:41 
+
+14:41 products are selling through. So, I want
+14:42 
+
+14:42 to see sellers moving on and off the
+14:44 
+
+14:44 listing. That's the best indicator. And
+14:45 
+
+14:45 ideally, we are capitalizing on these
+14:48 
+
+14:48 leads. If you look at this product right
+14:49 
+
+14:49 here, it's a good example of this. We're
+14:51 
+
+14:51 looking for these products that are
+14:53 
+
+14:53 selling at these [clears throat] high
+14:54 
+
+14:54 points. At 30%, we break even. But if we
+14:56 
+
+14:56 look at this listing in the last year,
+14:57 
+
+14:57 there's this period here. There's this
+14:59 
+
+14:59 period here. And then there's this
+15:00 
+
+15:00 period here right now. Ever since
+15:02 
+
+15:02 December, it's been about 2 months where
+15:04 
+
+15:04 this item is very, very profitable. So
+15:06 
+
+15:06 that's always happening when the offers
+15:07 
+
+15:07 are going down, right? So that's the
+15:10 
+
+15:10 biggest takeaway. do want to be finding
+15:12 
+
+15:12 leads and analyzing leads as the offers
+15:13 
+
+15:13 are falling. And if we're doing that,
+15:15 
+
+15:15 we're going to put ourselves in a
+15:16 
+
+15:16 situation to make way more money on
+15:18 
+
+15:18 these listings, really improve our
+15:20 
+
+15:20 margin, and not really have to worry too
+15:21 
+
+15:21 much about price tanking. This is
+15:23 
+
+15:23 literally the biggest takeaway. If you
+15:24 
+
+15:24 could take anything away from the Keepa
+15:26 
+
+15:26 and analysis, there's a lot of things
+15:28 
+
+15:28 you can learn, and I shared a lot in
+15:29 
+
+15:29 this video, and there's literally more
+15:31 
+
+15:31 things to dig into, too. It's just
+15:32 
+
+15:32 there's just more that would even be
+15:34 
+
+15:34 enough for a video. But the biggest
+15:35 
+
+15:35 thing I look for that we look for, my VA
+15:37 
+
+15:37 looks for, students of mine look for is
+15:39 
+
+15:39 we want low competition listings because
+15:41 
+
+15:41 this is what's going to set us up to
+15:42 
+
+15:42 have high profit margins. Guys,
+15:44 
+
+15:44 hopefully you enjoyed this video. If you
+15:45 
+
+15:45 have any additional questions on Keepa,
+15:47 
+
+15:47 if you have a product you want me to
+15:48 
+
+15:48 take a look at, just DM me on my
+15:49 
+
+15:49 Instagram. It's linked down below here.
+15:50 
+
+15:50 I can check it out for you. I can
+15:52 
+
+15:52 analyze it, give you my thoughts. If you
+15:53 
+
+15:53 have any other questions of the Amazon
+15:55 
+
+15:55 business model or you're running into
+15:56 
+
+15:56 any other issues, again, DM me your
+15:58 
+
+15:58 issue on Instagram. I probably have a
+15:59 
+
+15:59 video that I can send over to you. And
+16:01 
+
+16:01 if you're new here, you haven't seen
+16:02 
+
+16:02 many of my videos. I post these videos
+16:04 
+
+16:04 every week. I dive in depth on
+16:05 
+
+16:05 everything. The sustainable arbitrage
+16:07 
+
+16:07 model is built in a way where we just
+16:09 
+
+16:09 have so many products to buy because of
+16:10 
+
+16:10 our sourcing methods and we always cycle
+16:12 
+
+16:12 through leads throughout the year to
+16:13 
+
+16:13 have high profit margins essentially. So
+16:15 
+
+16:15 if you guys are looking for any
+16:16 
+
+16:16 personalized onetoone support if you
+16:18 
+
+16:18 want me to source with you implement the
+16:19 
+
+16:19 sustainable systems with you completely
+16:21 
+
+16:21 onetoone. There's a link down below this
+16:22 
+
+16:22 video. Feel free to book in a quick call
+16:24 
+
+16:24 can run you through what that looks
+16:25 
+
+16:25 like. And again if you guys have any
+16:26 
+
+16:26 other questions if you're not ready for
+16:27 
+
+16:27 that just DM me over on Instagram and I
+16:29 
+
+16:29 can try and help out as much as
+16:30 
+
+16:30 possible. Keepa is great and all and it
+16:32 
+
+16:32 has more features such as managing
+16:34 
+
+16:34 replay. So, I think you would enjoy this
+16:36 
+
+16:36 video right here because I'm going to
+16:37 
+
+16:37 break down how I actually set my tracked
+16:38 
+
+16:38 alerts in Keepa. And if you haven't
+16:40 
+
+16:40 already done so, make sure you follow
+16:41 
+
+16:41 the page for more weekly videos just
+16:43 
+
+16:43 like

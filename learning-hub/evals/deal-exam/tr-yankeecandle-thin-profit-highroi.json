@@ -1,0 +1,23 @@
+{
+  "id": "tr-yankeecandle-thin-profit-highroi",
+  "facts": {
+    "price": 11.0,
+    "oa_profit": 2.0,
+    "oa_roi": 0.48,
+    "est_sales": null,
+    "offers": null,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "profit"
+  ],
+  "trap_type": "transcript:high-roi-below-profit-floor",
+  "source": "Online Arbitrage Sourcing Secrets 99%...txt @00:04:29.000 \u2014 Yankee Candle 3-pack, 48% ROI but only $2/unit profit (below our $3 floor); narrator: 'not bad whatsoever' (on the sale price). DIVERGENCE NOTE: narrator likes the ROI%, but our scored profit floor treats sub-$3 as a real, if partial-credit, miss \u2014 with everything else at baseline this alone is unlikely to sink the verdict below review, worth checking against the actual run.",
+  "difficulty": "hard"
+}

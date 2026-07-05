@@ -13,6 +13,13 @@ numpy>=1.24
 # an ANTHROPIC_API_KEY even if installed.
 anthropic>=0.39
 
+# Data lake (DATA_ENGINE_PLAN.md V0) — append-only zstd Parquet raw-response archive.
+# scout/datalake.py no-ops cleanly if pyarrow is absent (archiving is best-effort), so these are
+# optional, but required for the lake to actually record. Pinned to the last Python-3.9-compatible
+# releases (this machine runs 3.9.12): pyarrow 17.x is the final 3.9 line; zstandard ships 3.9 wheels.
+pyarrow>=17,<18 ; python_version >= "3.9"
+zstandard>=0.22
+
 # Optional: read-only operator MCP server (Scout Agent Build Plan Prompt S4).
 # REQUIRES Python 3.10+ — `pip install mcp` fails on Python 3.9 with no matching distribution.
 # mcp>=1.0 ; python_version >= "3.10"

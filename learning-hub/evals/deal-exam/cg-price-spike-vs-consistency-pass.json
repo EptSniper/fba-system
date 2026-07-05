@@ -1,0 +1,26 @@
+{
+  "id": "cg-price-spike-vs-consistency-pass",
+  "facts": {
+    "price": 59.93,
+    "avg_price_90": 30.49,
+    "oa_profit": 8.0,
+    "oa_roi": 0.35,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo",
+    "sales_rank": 70000,
+    "avg_sales_rank_90": 70000,
+    "est_sales": 100,
+    "offers": 10
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "price-spike"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "chart-guide:price-spike",
+  "source": "How to Read a Keepa Chart (FULL Tutorial) Amazon FBA 2024.txt @18:16 \u2014 current price $59.93 vs a true price-consistency estimate of $28.99-$31.99 (used $30.49 midpoint as avg_price_90 for this case; ratio ~1.97 far exceeds our 1.5x spike trigger); narrator: 'do not buy inventory based on you estimating to sell at $59.93'.",
+  "difficulty": "medium"
+}

@@ -22,10 +22,14 @@ from typing import Any, Dict, List, Optional
 
 import analyst
 import config
+import datalake
 import db
+import shadow_outcomes
+import discovery_hints
 import discord_router
 import keepa_client
 import model as model_mod
+import predictions
 import redact
 import reflect
 import scoring
@@ -33,6 +37,42 @@ import spapi
 import storage
 
 log = logging.getLogger("scout.pipeline")
+
+
+def _discover_candidates(criteria: Dict[str, Any], api, limit: int) -> Dict[str, Any]:
+    """Two-pass discovery (TOP100_DEAL_WATCH_PLAN.md T3): when the nightly deal watch has left
+    FRESH hints, run a hint-led Product Finder pass FIRST (aimed at the hinted brands), capped
+    at dealFinder.hints.tokenShare of the run's discovery budget, then fill the rest with the
+    normal friendly-brand rotation. Returns {"asins": [...], "hinted": {asin -> store}, "hints_
+    followed": N}. Zero fresh hints -> 100% normal discovery, hinted={} (honest fallback, never
+    an error). Keepa-gated: only runs inside run_once, which already required a KEEPA_KEY."""
+    hint_seeds = discovery_hints.hinted_brand_seeds()
+    hinted: Dict[str, str] = {}
+    if not hint_seeds:
+        asins = keepa_client.find_candidates(criteria, api=api, limit=limit)
+        return {"asins": asins, "hinted": hinted, "hints_followed": 0}
+
+    # brand -> store, so a hint-led ASIN can record found_via="deal-hint:<store>".
+    brand_store = {h["brand"]: h.get("store") for h in discovery_hints.fresh_hints() if h.get("brand")}
+    hint_budget = max(1, int(limit * discovery_hints.token_share()))
+    hint_asins = keepa_client.find_candidates(criteria, api=api, limit=hint_budget, brand_seeds=hint_seeds)
+    for a in hint_asins:
+        hinted[a] = "hint"  # store attribution is per-brand, resolved below when we know brands
+
+    remaining = max(0, limit - len(hint_asins))
+    normal_asins = keepa_client.find_candidates(criteria, api=api, limit=remaining) if remaining else []
+
+    # Preserve order (hint-led first) while de-duping across the two passes.
+    seen = set()
+    combined: List[str] = []
+    for a in list(hint_asins) + list(normal_asins):
+        if a not in seen:
+            seen.add(a)
+            combined.append(a)
+    # Attribution refined later at enrich time (we only know each ASIN's brand after enrich);
+    # brand_store is stashed on the return so the caller can tag found_via then.
+    return {"asins": combined, "hinted": {a: True for a in hint_asins},
+            "hints_followed": len(hint_seeds), "brand_store": brand_store}
 
 
 def _check_eligibility(scored: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -114,7 +154,7 @@ def _maybe_post_picks(fresh: List[Dict[str, Any]]) -> Optional[int]:
     configured (still recording picks either way)."""
     if not fresh:
         return None
-    if not discord_router._resolve_url("scout_picks"):
+    if not discord_router.has_webhook("scout_picks"):
         log.warning("No scout_picks webhook (or fallback) configured; skipping post, still "
                    "recording picks.")
         return None
@@ -145,10 +185,22 @@ def _log_supabase_leads(evaluated: List[Dict[str, Any]],
         if hard_reject:
             reason = f"Hard reject: {hard_reject}. {reason}".strip()
         lead_id = db.log_lead(product, score, verdict, reason,
+                              found_via=product.get("found_via") or "scout",
                               explanation=product.get("explanation"))
         if lead_id is not None:
             logged += 1
         db.upsert_keepa_snapshot(product)
+        # Every pipeline verdict (review AND pass) makes falsifiable forward-looking claims
+        # (price-spike/-caution -> reversion, offers-rising/ip-cliff -> trend, est_sales ->
+        # velocity) — record them so run_daily.py can score the scorer's own predictions
+        # against fresh Keepa data later (Code Review 2026-07-04). Best-effort: never blocks
+        # a scoring cycle if Supabase is down.
+        try:
+            predictions.record_predictions_for(
+                product.get("asin"), lead_id, product, product.get("explanation") or {},
+            )
+        except Exception as e:
+            log.warning("record_predictions_for failed for %s (non-fatal): %s", product.get("asin"), e)
     return logged
 
 
@@ -243,6 +295,11 @@ def run_once(criteria: Optional[Dict[str, Any]] = None,
     # real run_id through directly instead, on every path (dry-run return, normal return,
     # and — via the exception's own run_id attribute below — the failure path too).
     summary["run_id"] = run_id
+    # V0 data lake: bind this cycle's run_id so every boundary archive() (keepa_client,
+    # deals/sources, analyst) tags rows with it, and start from clean per-run stats so the
+    # digest line reflects THIS run only (both no-op when archiving is disabled/absent).
+    datalake.set_run_context(run_id)
+    datalake.reset_stats()
     error_summary: Optional[str] = None
 
     try:
@@ -254,11 +311,25 @@ def run_once(criteria: Optional[Dict[str, Any]] = None,
 
         api = keepa_client.get_client()
 
-        # 1) find + 2) enrich
-        asins = keepa_client.find_candidates(criteria, api=api)
+        # 1) find (hint-led FIRST when the deal watch left fresh hints — T3) + 2) enrich
+        discovery = _discover_candidates(criteria, api=api, limit=config.CANDIDATE_LIMIT)
+        asins = discovery["asins"]
         summary["found"] = len(asins)
-        log.info("Product Finder returned %d ASINs", len(asins))
+        summary["hints_followed"] = discovery["hints_followed"]
+        log.info("Product Finder returned %d ASINs (%d hint-led seed brands)",
+                 len(asins), discovery["hints_followed"])
         enriched = keepa_client.enrich(asins, api=api)
+        # Tag hint-led candidates with found_via="deal-hint:<store>" so the learning loop can
+        # later measure whether hint-led candidates outperform (found_via is the lead's own
+        # provenance column). A product is hint-led if its ASIN came from the hint pass AND its
+        # brand is one of the hinted brands (belt: an ASIN can appear in a brand-seeded search
+        # without literally being that brand).
+        hinted_asins = discovery.get("hinted") or {}
+        brand_store = discovery.get("brand_store") or {}
+        for p in enriched:
+            if p.get("asin") in hinted_asins:
+                store = brand_store.get(p.get("brand"))
+                p["found_via"] = f"deal-hint:{store}" if store else "deal-hint"
         # Token telemetry (System Blueprint Prompt G1/G2) — a drained key silently looks like
         # "no results" otherwise; surfaced in the summary and the runs row so it's never silent.
         summary["tokens"] = keepa_client.token_telemetry(api)
@@ -304,6 +375,15 @@ def run_once(criteria: Optional[Dict[str, Any]] = None,
         summary["analyst_disagreements"] = sum(
             1 for p in scored if (p.get("analyst_note") or {}).get("disagrees_with_rules")
         )
+
+        # V1 shadow-outcome tracker: enqueue EVERY hard-gate survivor (bought or not) for day-30/60
+        # proxy ("silver") labels. Time-sensitive — a shadow label takes 30 days to mature, so this
+        # runs on every real cycle. No-op on dry runs / without Supabase; never blocks the cycle.
+        if not dry_run:
+            try:
+                summary["shadow_enqueued"] = shadow_outcomes.enqueue_survivors(scored, run_id)
+            except Exception as e:
+                log.warning("shadow enqueue failed (non-fatal): %s", e)
 
         # Preserve both positive-looking and negative examples in business memory.
         summary["supabase_logged"] = _log_supabase_leads(
@@ -372,3 +452,11 @@ def run_once(criteria: Optional[Dict[str, Any]] = None,
                      tokens_consumed=tokens.get("tokens_consumed"),
                      tokens_left_end=tokens.get("tokens_left"),
                      error_summary=error_summary)
+        # V0: archive the run summary, then flush the run's buffered raw responses to the lake
+        # (one Parquet file per source). Fully self-contained — a lake failure is counted in
+        # datalake.telemetry()['failures'], never propagated into the cycle result.
+        if datalake.enabled():
+            datalake.archive("run_summary", str(run_id), "run",
+                             {k: v for k, v in summary.items() if k != "picks"})
+            datalake.flush(run_id)
+            summary["lake_digest"] = datalake.digest_line()

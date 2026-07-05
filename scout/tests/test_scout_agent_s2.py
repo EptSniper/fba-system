@@ -33,29 +33,29 @@ def oa_candidate(**kw):
 # avg90 BSR preference
 # ---------------------------------------------------------------------------
 
-def test_bsr_gate_prefers_avg90_over_current_when_present():
+def test_bsr_check_prefers_avg90_over_current_when_present():
     p = oa_candidate(sales_rank=500000, avg_sales_rank_90=50000)  # current fails, avg90 passes
     ex = scoring.explain_oa(p)
-    bsr_gate = next(g for g in ex["gates"] if g["name"] == "bsr")
-    assert bsr_gate["source"] == "avg90"
-    assert bsr_gate["actual"] == 50000
-    assert bsr_gate["passed"] is True
+    bsr_check = next(c for c in ex["scored_checks"] if c["name"] == "bsr")
+    assert bsr_check["source"] == "avg90"
+    assert bsr_check["actual"] == 50000
+    assert bsr_check["passed"] is True
 
 
-def test_bsr_gate_falls_back_to_current_without_avg90():
+def test_bsr_check_falls_back_to_current_without_avg90():
     p = oa_candidate(sales_rank=25000)
     ex = scoring.explain_oa(p)
-    bsr_gate = next(g for g in ex["gates"] if g["name"] == "bsr")
-    assert bsr_gate["source"] == "current"
-    assert bsr_gate["actual"] == 25000
+    bsr_check = next(c for c in ex["scored_checks"] if c["name"] == "bsr")
+    assert bsr_check["source"] == "current"
+    assert bsr_check["actual"] == 25000
 
 
-def test_bsr_gate_source_none_when_neither_available():
+def test_bsr_check_source_none_when_neither_available():
     p = oa_candidate(sales_rank=None)
     ex = scoring.explain_oa(p)
-    bsr_gate = next(g for g in ex["gates"] if g["name"] == "bsr")
-    assert bsr_gate["source"] == "none"
-    assert bsr_gate["actual"] is None
+    bsr_check = next(c for c in ex["scored_checks"] if c["name"] == "bsr")
+    assert bsr_check["source"] == "none"
+    assert bsr_check["actual"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -110,7 +110,7 @@ def test_triage_score_ranks_high_velocity_above_high_roi_low_velocity():
 
 
 def test_triage_score_never_appears_in_hard_reject_or_gates():
-    # Sanity: triage_score is purely additive metadata, never referenced by the gate function.
+    # Sanity: triage_score is purely additive metadata, never referenced by oa_hard_reject().
     p = oa_candidate()
     p["triage_score"] = -999999  # an absurd value
     assert scoring.oa_hard_reject(p) is None  # must be unaffected
@@ -160,6 +160,23 @@ def test_is_due_true_on_unparseable_timestamp():
     row = {"brand": "Jellycat", "last_run_at": "not-a-date", "rerun_after_days": 21}
     import datetime as dt
     assert search_log._is_due(row, dt.datetime.now(dt.timezone.utc)) is True
+
+
+def test_is_due_handles_tz_naive_last_run_at():
+    """Regression (Code Review 2026-07-02, nit): a last_run_at with no explicit UTC offset
+    (e.g. '2026-06-01T12:00:00', no 'Z'/'+00:00') parses to a tz-NAIVE datetime via
+    fromisoformat — subtracting it from the tz-aware `now` used to raise TypeError outright
+    ("can't subtract offset-naive and offset-aware datetimes"), reproduced directly before this
+    fix. Must degrade to treating it as UTC, not crash."""
+    import datetime as dt
+    now = dt.datetime.now(dt.timezone.utc)
+    naive_5_days_ago = (now - dt.timedelta(days=5)).replace(tzinfo=None).isoformat()
+    row_within_cadence = {"brand": "Jellycat", "last_run_at": naive_5_days_ago, "rerun_after_days": 21}
+    assert search_log._is_due(row_within_cadence, now) is False  # must not raise, and be correct
+
+    naive_30_days_ago = (now - dt.timedelta(days=30)).replace(tzinfo=None).isoformat()
+    row_elapsed = {"brand": "Jellycat", "last_run_at": naive_30_days_ago, "rerun_after_days": 21}
+    assert search_log._is_due(row_elapsed, now) is True
 
 
 def test_due_searches_filters_via_db_rows():

@@ -1,0 +1,26 @@
+{
+  "id": "tr-adidas-kohls-avoidbrand-pass",
+  "facts": {
+    "price": 54.0,
+    "oa_profit": 0.5,
+    "oa_roi": 0.01,
+    "est_sales": null,
+    "offers": null,
+    "category": null,
+    "brand": "Adidas",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": true,
+  "expected_hard_reject_keyword": "brand hard-gated",
+  "expected_adjustment_names": [
+    "avoid-brand"
+  ],
+  "expected_failed_check_names": [
+    "roi",
+    "profit"
+  ],
+  "trap_type": "transcript:avoid-brand-and-thin-margin",
+  "source": "How To Find Products Using Keepa Product Finder...txt @00:02:38.000 \u2014 Adidas shoe, $44.99->$54, narrator: 'we won't be making any money there'. Combined real case: avoid-listed brand AND thin margin both point the same direction here.",
+  "difficulty": "easy"
+}

@@ -3,6 +3,11 @@ import { getBrain } from "@/lib/data";
 import { Panel, Badge, DataNote } from "@/components/ui";
 import { Reveal, Pressable } from "@/components/motion";
 
+// Reads live sibling learning-hub/ files on every request (Code Review 2026-07-02, Finding
+// CS8) — without this, Next.js may statically cache the page at build time and serve stale
+// data even though the underlying file changed.
+export const dynamic = "force-dynamic";
+
 type Tool = { name: string; url?: string; what: string };
 type Group = { title: string; note: string; tools: Tool[] };
 

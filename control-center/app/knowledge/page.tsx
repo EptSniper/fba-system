@@ -4,6 +4,11 @@ import { Panel, Badge, Pill, EmptyState, DataNote, ActionLink } from "@/componen
 import { KpiCard } from "@/components/blocks";
 import { Reveal, Counter } from "@/components/motion";
 
+// Reads live sibling learning-hub/ and knowledge-rag/ files on every request (Code Review
+// 2026-07-02, Finding CS8) — without this, Next.js may statically cache the page at build time
+// and serve stale data even though the underlying file changed.
+export const dynamic = "force-dynamic";
+
 const statusTone: Record<string, string> = {
   collected: "success",
   index_only: "info",

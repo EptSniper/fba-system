@@ -52,6 +52,10 @@ be deleted in the Vercel dashboard (Project → Settings → Delete).
 - **Data**: live local runs read the sibling `../learning-hub` files; on Vercel it falls back
   to the bundled `hub-data/` snapshot. To refresh the deployed snapshot after feeding new
   info, re-copy the hub JSON into `hub-data/` (or just redeploy from a fresh local run).
-- **No secrets needed.** It's a read-only dashboard. (The scout's Keepa key, deal-API keys,
-  etc. live with those services, not here.)
+- **Secrets, since CC1 (2026-07-03):** the dashboard is read-only ONLY when deployed without
+  Supabase env vars. If you set `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` in the Vercel
+  project, you MUST also set `BASIC_AUTH_USER` + `BASIC_AUTH_PASS` — the /api/ops/* routes
+  write real decisions with the service-role key, so `middleware.ts` refuses to serve a
+  Supabase-configured deployment that has no operator auth. (The scout's Keepa key, deal-API
+  keys, etc. still live with those services, not here.)
 - First deploy doubles as the build check — if anything fails, send me the Vercel build log.

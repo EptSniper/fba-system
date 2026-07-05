@@ -1,11 +1,20 @@
-import { BrainCircuit, Sparkles, Tag, BookOpen } from "lucide-react";
+import { BrainCircuit, Sparkles, Tag, BookOpen, CalendarClock } from "lucide-react";
 import { getBrain } from "@/lib/data";
 import { Panel, Pill, Badge, DataNote, ActionLink } from "@/components/ui";
 import { IngestionFeed } from "@/components/blocks";
 
+// Reads live sibling learning-hub/ files on every request (Code Review 2026-07-02, Finding
+// CS8) — without this, Next.js may statically cache the page at build time and serve stale
+// data even though the underlying file changed.
+export const dynamic = "force-dynamic";
+
 export default function BrainPage() {
   const brain = getBrain();
   const c = brain.criteria as Record<string, number | boolean>;
+  const seasonal = brain.operations?.seasonal2026;
+  const bankroll = brain.operations?.bankroll;
+  const policy = brain.policy2026;
+  const preferredOffers = brain.scoring?.preferredOffers;
 
   return (
     <div className="flex flex-col gap-5">
@@ -34,8 +43,66 @@ export default function BrainPage() {
           <Pill label="profit ≥" value={`$${c.minProfitPerUnit}`} />
           <Pill label="price" value={`$${c.priceMin}–${c.priceMax}`} />
           {c.rejectIfAmazonBuyBox ? <Badge tone="loss">reject if Amazon Buy Box</Badge> : null}
+          {preferredOffers ? (
+            <Pill label="goldilocks offers" value={`${preferredOffers.min}-${preferredOffers.max} (+${preferredOffers.bonus}pts)`} />
+          ) : null}
         </div>
       </Panel>
+
+      {(seasonal || bankroll || policy) && (
+        <Panel title="Operations & 2026 policy" icon={<CalendarClock size={16} />}>
+          <p className="mb-3 text-xs text-faint">
+            Informational doctrine, not scoring inputs — context for timing and cash-flow decisions.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {seasonal ? (
+              <div>
+                <div className="mb-1.5 text-xs font-medium text-muted">2026 seasonal calendar</div>
+                <ul className="flex flex-col gap-1 text-xs text-ink">
+                  {seasonal.primeDayWindow ? (
+                    <li>Prime Day sourcing: {seasonal.primeDayWindow.start} – {seasonal.primeDayWindow.end}</li>
+                  ) : null}
+                  {seasonal.backToSchoolBuyWindow ? <li>Back-to-school: {seasonal.backToSchoolBuyWindow}</li> : null}
+                  {seasonal.q4ArrivalDeadline ? <li>Q4 arrival deadline: {seasonal.q4ArrivalDeadline}</li> : null}
+                  {seasonal.q4StopSpeculativeBuysAfterWeek ? (
+                    <li>Stop speculative Q4 buys after week {seasonal.q4StopSpeculativeBuysAfterWeek}</li>
+                  ) : null}
+                  {seasonal.toysBuyWindows?.length ? <li>Toys buy windows: {seasonal.toysBuyWindows.join(", ")}</li> : null}
+                </ul>
+              </div>
+            ) : null}
+            {bankroll ? (
+              <div>
+                <div className="mb-1.5 text-xs font-medium text-muted">Bankroll & safety</div>
+                <ul className="flex flex-col gap-1 text-xs text-ink">
+                  {bankroll.cashReservePct !== undefined ? (
+                    <li>Cash reserve: {Math.round(bankroll.cashReservePct * 100)}%</li>
+                  ) : null}
+                  {bankroll.cutLossDays !== undefined ? <li>Cut-loss after {bankroll.cutLossDays} days</li> : null}
+                  {bankroll.agedSurchargeDay !== undefined ? (
+                    <li>Aged-inventory surcharge starts day {bankroll.agedSurchargeDay}</li>
+                  ) : null}
+                  {bankroll.buckets?.length ? <li>Buckets: {bankroll.buckets.join(", ")}</li> : null}
+                </ul>
+              </div>
+            ) : null}
+            {policy ? (
+              <div>
+                <div className="mb-1.5 text-xs font-medium text-muted">2026 policy facts</div>
+                <ul className="flex flex-col gap-1 text-xs text-ink">
+                  {policy.payoutHoldDaysAfterDelivery !== undefined ? (
+                    <li>Payout hold: delivery + {policy.payoutHoldDaysAfterDelivery} days (since {policy.payoutHoldEffective})</li>
+                  ) : null}
+                  {policy.comminglingEnded ? <li>Commingling ended ({policy.comminglingEndedEffective})</li> : null}
+                  {policy.feeIncreasePerUnit !== undefined ? (
+                    <li>Fee increase: +${policy.feeIncreasePerUnit}/unit ({policy.feeIncreaseEffective})</li>
+                  ) : null}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </Panel>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Panel

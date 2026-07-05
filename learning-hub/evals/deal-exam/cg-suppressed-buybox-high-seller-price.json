@@ -1,0 +1,29 @@
+{
+  "id": "cg-suppressed-buybox-high-seller-price",
+  "facts": {
+    "price": 97.95,
+    "has_buybox": false,
+    "buybox_seller": null,
+    "buybox_price": null,
+    "oa_profit": 10.0,
+    "oa_roi": 0.2,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "sales_rank": 100000,
+    "avg_sales_rank_90": 100000,
+    "est_sales": 100,
+    "offers": 10
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "no-featured-offer"
+  ],
+  "expected_failed_check_names": [
+    "roi"
+  ],
+  "trap_type": "chart-guide:suppressed-buybox",
+  "source": "Keepa Charts The Ultimate Amazon FBA Tutorial for 2026.txt @54:54 \u2014 buy box suppressed (shows a dash) because the lowest seller price ($97.95) is too high; narrator: 'this does not mean the item is out of stock, it just means this item is priced at a point where Amazon needs to suppress the buy box'.",
+  "difficulty": "medium"
+}

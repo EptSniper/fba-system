@@ -5,112 +5,103 @@
 sources, and **queues YouTube videos that it cannot transcribe itself** (the Cowork app can't call the
 transcript API — you can). This file is rewritten by that task each run with what's pending and what it found.
 
-_Last updated by the scheduled task: 2026-07-02._
+Last updated by the scheduled task: 2026-07-04
 
 ---
 
 ## STANDING DAILY ACTIONS (do these when you open the project)
 
-1. **Pull queued transcripts.** If the "PENDING" section below lists queued videos, run:
-   ```
-   python knowledge-rag/fetch_transcripts.py
-   ```
-   It reads `research-inbox/queue/*.json`, calls youtube-transcript.io with the key in
-   `knowledge-rag/.env`, and writes transcripts into `research-inbox/transcripts/`. (If a video saves a
-   `<id>__RAW.json` instead of a `.txt`, the API response shape differs — tell Mehmet or fix the parser.)
-2. **Ingest new transcripts.** For each new file in `research-inbox/transcripts/` (not in `processed/`),
-   follow `amazon-fba-oa/skills/fba-transcript-ingest/SKILL.md`: distill cited, actionable takeaways into
-   `research-inbox/research-insights.md` (mark **[policy]** vs **[practitioner]**), append a line to
-   `research-inbox/corpus-staging.jsonl`, record it in `research-inbox/research-manifest.json`, then move the
-   file to `research-inbox/transcripts/processed/`.
-3. **Feed the AI / get smarter.** Periodically (when staged material has accumulated and been eyeballed),
-   merge reviewed insights into the maintained knowledge in `learning-hub/` and run the real `knowledge-rag`
-   ingestion/embedding so `Ask`, the scout, and the control-center benefit. This is the "upload into memory +
-   feed the AI" step — keep it a reviewed merge, not an automatic dump (honesty rule). **25 staged entries**
-   now sit in `corpus-staging.jsonl` — a review-and-merge pass is getting worthwhile.
-4. **Consult `SKILLS_INDEX.md`** before non-trivial work and use the matching `fba-*` skill for whatever
-   you're doing — e.g. `fba-brain-updater` if today's findings should change a threshold in `ai-brain.json`.
-5. **Post the Discord update.** After finishing the above, POST a short update using the webhook URL stored
-   as `RESEARCH_DISCORD_WEBHOOK_URL` in `knowledge-rag/.env` (read the env var directly when posting — never
-   print/paste the URL value anywhere, including this file). Summarize: how many new items today's scheduled
-   run found (this run: **9** — 2 videos queued + 7 text sources staged), how many transcripts were
-   fetched/ingested since the last update, and the current local-corpus vs live-Supabase document/chunk
-   counts if they differ.
-6. **Never** commit or print `knowledge-rag/.env` or any key. Cite sources. Don't auto-buy anything.
+1. **Pull queued transcripts:** run `python knowledge-rag/fetch_transcripts.py` (reads all
+   `research-inbox/queue/*.json` items with `status:"queued"`, writes transcripts to
+   `research-inbox/transcripts/`, marks items done).
+2. **Ingest new transcripts:** for each new file in `research-inbox/transcripts/` (not under `processed/`),
+   follow the `fba-transcript-ingest` skill — distill cited takeaways into
+   `research-inbox/research-insights.md`, append a JSON line to `research-inbox/corpus-staging.jsonl`,
+   record the item in `research-inbox/research-manifest.json`, then MOVE the file to
+   `research-inbox/transcripts/processed/`.
+3. **Periodically merge staged → live:** review `corpus-staging.jsonl` + `research-insights.md`, merge the
+   reviewed insights into `learning-hub/`, and run the real `knowledge-rag` ingestion/embedding pipeline so
+   Ask/scout/control-center actually get smarter. Reviewed merge, never an auto-dump into
+   `knowledge-rag/corpus/`.
+4. **Use the skills:** consult `SKILLS_INDEX.md` before any non-trivial action and use the matching `fba-*`
+   skill (`fba-transcript-ingest` for ingestion; `fba-brain-updater` if a finding should change a buying
+   threshold in `ai-brain.json` — today's gated-brands tracker below is exactly such a review candidate).
+5. **Post the Discord update:** after finishing the above, POST a short update using the webhook URL stored
+   as `RESEARCH_DISCORD_WEBHOOK_URL` in `knowledge-rag/.env` (read the env var directly; NEVER print, paste,
+   or commit the URL value anywhere, including this file). Summarize: how many new items today's scheduled
+   run found, how many transcripts were fetched/ingested since the last update, and current local-corpus vs
+   live-Supabase document/chunk counts if they differ. Default to the batched-digest pattern.
+6. **Hygiene:** never print or commit `knowledge-rag/.env` or any key; cite sources in anything you write;
+   no auto-buy or money movement, ever.
 
-Full context for how these systems connect: `CLAUDE_CODE_GUIDE.md` (§3 "how the skills feed the systems").
+## PENDING NOW (recomputed 2026-07-04 from the real queue files)
 
----
+| videoId | Title | Queued in |
+|---|---|---|
+| `TBFh9vFBq7k` | Online Arbitrage Sourcing Using Keepa (ADVANCED TACTICS) | 2026-06-30.json — **stuck**: API returns LOGIN_REQUIRED / PLAYABILITY_STATUS_NOK (raw response saved as `transcripts/TBFh9vFBq7k__RAW.json`); needs a manual re-check of the source video, not another blind pull |
+| `rdltezXxIrk` | Keepa product finder tutorial 2026 \| Amazon FBA | 2026-07-04.json |
+| `jeqFx9ZiOhg` | How to Use Amazon FBA Profit Calculator \| Every Fee Every Cost Explained 2026 (AMZ Prep) | 2026-07-04.json |
 
-## PENDING NOW
+Pull command:
 
-**Queued YouTube videos: both 2026-07-02 videos fetched + ingested (Claude Code, 2026-07-02 evening).**
-IBXT2txZtJE (ungating guide) and rHCB-vSCWcI (SellerAmp SAS tutorial) were pulled, distilled into both
-`research-inbox/research-insights.md` and `learning-hub/transcripts/insights.md`, moved to
-`transcripts/processed/`, and copied into `learning-hub/transcripts/`. The real pipeline was run too —
-`ingest.py` + `upload_to_supabase.py` — so they're chunked, embedded (local, $0), and LIVE in Supabase
-(corpus grew 97→99 docs, 1,316→1,340 chunks; verified via a real Ask query). Only the known-stuck video
-remains:
+```
+python knowledge-rag/fetch_transcripts.py
+```
 
-| videoId | title | queue file | status |
-|---|---|---|---|
-| TBFh9vFBq7k | Online Arbitrage Sourcing Using Keepa (ADVANCED TACTICS) | queue/2026-06-30.json | **stuck — LOGIN_REQUIRED at the API (documented 2026-07-01); needs manual re-fetch/re-check, not a parser bug** |
+Unprocessed files in `research-inbox/transcripts/`: **0 ingestible** (only `TBFh9vFBq7k__RAW.json`, which
+contains no transcript text, plus the folder README). All previously fetched transcripts are in `processed/`.
 
-**Transcripts awaiting ingest: 0** — `research-inbox/transcripts/` holds only `README.md`, the
-non-recoverable `TBFh9vFBq7k__RAW.json`, and `processed/` (all fetched transcripts move there once ingested).
+## WHAT'S BEEN FOUND
 
-**`corpus-staging.jsonl`: 27 lines** (25 as of earlier 2026-07-02 + 2 video entries added this pass). Staged
-only — these are mostly TEXT articles/papers from 2026-06-30 through 07-02, a separate backlog from today's
-videos. A full reviewed merge into `learning-hub/` + a real ingest/embed pass for that backlog is still
-pending and getting more worthwhile as it grows.
+### Today (2026-07-04) — 9 new items (full detail: `digests/2026-07-04.md`)
 
-**One fetch-failed [policy] source worth grabbing from a real browser:** Amazon Seller Central
-"FBA product restrictions" help page (G200140860) — JS-rendered, WebFetch only got the shell. It's the
-authoritative doc behind today's meltable/restrictions practitioner posts. If you pull it, ingest per the
-usual text-source flow and flip its manifest status from `fetch-failed` to `ingested-staged`.
+**Queued videos (2):** rdltezXxIrk (Keepa Product Finder tutorial, Oct 2025 — a second practitioner's PF
+recipes next to the just-ingested Parameter Method transcript) and jeqFx9ZiOhg (AMZ Prep, Apr 2026 — every
+2026 fee explained; cross-checks fba-deal-calculator).
 
----
+**Text sources ingested + staged (7):**
+- **Ecom Circles 2026 OA guide** — realistic net margins 10–20%; 40% gross-margin floor with full COGS
+  (3PL prep $0.50–$2/unit, 2–5% inspection loss); 2026 rule changes to verify officially (commingling ends
+  Mar 31, Amazon's own prep ended Jan 1, retail receipts no longer ungate). [practitioner]
+- **B2B Supplier Hub reverse-sourcing workflow (Jun 2026)** — reverse sourcing's top use is a 2–3-supplier
+  bench for existing winners; 2026 chain-of-custody enforcement means authorization, not availability, is
+  the gate. Wholesale-tier; filed for later maturity. [practitioner]
+- **Stealth Seller storefront screen** — stalk mixed-category storefronts <~1,000 products with irregular
+  small batches and no Amazon on-listing; skip single-brand giants (wholesale). Concrete scout_pro
+  storefront-scoring filter. [practitioner]
+- **The Selling Guys 750+ gated/restricted-brand tracker (updated Jul 1 2026)** — tiered risk list (legal
+  action → C&D → gated); Nike/Lego(US)/Fitbit/Under Armour gated; Apple/Bose/Ninja/Razer/Makita legal tier.
+  **Review candidate for the ai-brain avoid/caution lists via fba-brain-updater — do not auto-import.**
+  [practitioner]
+- **Eightx Xero/A2X guide** — the Xero implementation of "never book the net deposit": per-fee-type chart
+  of accounts, A2X ≥$50K/mo vs Link My Books below, 5-business-day settlement reconciliation cadence,
+  reserves as an Amazon Receivables asset. [practitioner]
+- **arXiv 2603.02153 (Dell, production)** — multi-query + RRF fusion gains are neutralized after reranking
+  (Hit@10 0.51→0.48, added latency): don't add fusion to knowledge-rag by default; A/B behind the eval
+  harness. PDF had no machine-readable text this run — read it before design decisions. [practitioner]
+- **arXiv 2605.01664** — claim-level LLM-judge grounding harness (separate judge model, no outside
+  knowledge, partial evidence = unsupported, CSV audit trail at every stage): the design to copy for an Ask
+  grounding check; its "100%" result is a 25-query eval — ignore the number, keep the design. [practitioner]
 
-## WHAT'S BEEN FOUND (today first; full cited detail in `research-insights.md` + `digests/`)
+### Rolling summary — most useful recent takeaways (details: `research-insights.md` + `digests/`)
 
-**2026-07-02 — 7 new text sources staged:**
-- **[practitioner]** **DD+7 cash flow** (novadata.io) — since Mar 12, 2026 disbursements run Delivery
-  Date + 7 (+3–5 day bank transfer); reserve = 3–12% of recent revenue and grows with velocity; 5 cash
-  leaks; CCC 60–120 days for FBA; a 4-number Monday routine (disbursement vs forecast, reserve WoW,
-  days-of-inventory, rolling 28-day contribution margin/SKU).
-- **[practitioner]** **Meltable window — active NOW** (sellerassistant.app) — meltables are FBA-inboundable
-  only Oct 16–Apr 14; through Oct 15 any chocolate/gummy/wax lead is FBM-only; off-window arrivals get
-  disposed at seller cost. (Official page G200140860 pending — see above.)
-- **[practitioner]** **Keepa PF hacks** (talloakadvisors.com) — bulk-brand `###` list filter; Buy Box
-  90-day-drop% −20…20 stability band; negative keywords; rankless-gem search (skip the rank filter);
-  Chris Grant's Corridor method; URL-decode saved bookmarks to learn advanced queries.
-- **[practitioner]** **2026 sourcing shifts** (boxem.com) — search-page/multi-pack sourcing (SellerAmp Quick
-  View Simplified shows rank/FBA count on results pages); bulk ungate checking while storefront stalking;
-  margin is created via coupon/gift-card/rewards stacking + reseller cert + tax-free prep center; check FBM
-  for <1 lb items.
-- **[practitioner]** **Dashboard patterns 2026** (artofstyleframe.com) — 4–6 KPI cards max; three states per
-  component (content-shaped skeletons / honest empty / component-scoped error with retry — never a
-  page-blocking modal); 256px sidebar + 64px rail; dense-table specs; override chart default palettes
-  (WCAG). Confirms the control-center design system with concrete numbers.
-- **[research]** **RAG eval survey** (arXiv 2504.14891) — the catalog to use when building the missing eval
-  harness over `Ask`: retrieval-component vs generation/grounding metrics, RAG datasets + automated
-  frameworks (ARES-style).
-- **[research]** **R2C uncertainty quantification** (arXiv 2510.11483) — confidence via perturbed-retrieval
-  answer stability (>5% AUROC gain); cheap calibration probe idea so `Ask` can flag weakly-grounded answers
-  instead of sounding uniformly confident. Design input only.
-
-**Rolling summary of the most useful earlier takeaways (2026-06-30 → 07-01):**
-- **[policy]** 2026 US FBA fees +~$0.08/unit avg (Jan 15); **[practitioner]** separate ~3.5% fuel surcharge
-  from Apr 17 on fulfillment fees; aged-inventory surcharge starts ~181 days; Amazon ended its own FBA prep.
-- **[policy]** SP-API **Listings Restrictions API** = the concrete path to automate eligibility checks
-  (not wired up); IP enforcement = copyright/trademark/patent via Brand Registry tooling.
-- **[practitioner]** Keepa: filters are AND — don't over-constrain; prefer 90-day avg BSR; offer-count
-  TREND > level; sharp offer-count cliffs = IP-complaint risk; check break-even price before anything else.
-- **[practitioner]** SAS Masterguide: "!" on Estimated Sales = variation-shared figure; alerts mean
-  investigate, not auto-skip; BSR is category-relative; model coupon stacking in the Profit Calculator.
-- **[practitioner]** Sourcing doctrine across sources: storefront stalking + reverse sourcing first,
-  "you make items profitable (discount stacking), you don't find them profitable", persistent lead bank +
-  weekly capital allocation, buy the price cycle not clearance.
-
-_The scheduled task refreshes this file every run. If the date above is stale, the task may not have run
-(it only runs while the Claude desktop app is open, else on next launch)._
+- **Keepa reading discipline** (XdUGuD4ouKI, Cflrv_y9lSA — ingested 2026-07-04): parent-category BSR only;
+  offer-count spikes (1→43 sellers in ~2 weeks) precede price crashes; "Keepa cliffs" (32→4 sellers) = active
+  IP enforcement, stronger evidence than an ipalert lookup; price off 1+ years of history, never the spot.
+- **2026 fee map** (Seller Snap + AMZ Prep + Eightx, staged 07-01→07-03): Apr-17 ~3.5% fuel surcharge on FBA
+  fulfillment; low-inventory fee now FNSKU-level (most small-OA SKUs exempt — check before deep replens);
+  returns-processing fee above category thresholds; aged-inventory surcharge from ~181 days.
+- **Ungating playbook** (IBXT2txZtJE + Seller Labs + today's Ecom Circles): bulk auto-ungate scans first
+  (50–100 brands clear free on a new account); invoice-gated → ~10 units from the brand or a major retailer,
+  addresses matching the seller account; retail receipts no longer work in 2026; resubmission is a volume
+  game; paid ungating services just repeat this.
+- **Sourcing as a database, not a hunt** (FBA Lead List, 07-03): save every analyzed ASIN including non-buys
+  and rescan the lead bank — leads mature in 2–6 months; validates the `leads` + outcomes design.
+- **Cash-flow clock** (Nova, 07-02): DD+7 disbursement since Mar 12 2026; reserve 3–12% of trailing revenue,
+  velocity-linked; Monday 4-number routine (disbursement vs forecast, reserve WoW, days-of-inventory, 28-day
+  CM/SKU).
+- **RAG build guidance** (2504.14891 eval survey; 2501.07391 knob ablation; 2509.20415 online embedding
+  adaptation; 2510.11483 perturbation-based confidence; + today's 2603.02153 fusion counter-evidence and
+  2605.01664 grounding harness): measure every retrieval change behind a retrieval-aware eval with
+  claim-level grounding checks; single-query + rerank may beat multi-query fusion; flag low-confidence Ask
+  answers instead of sounding uniformly sure.

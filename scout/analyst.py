@@ -30,6 +30,8 @@ import json
 import os
 from typing import Any, Dict, Optional, Tuple
 
+import datalake  # V0 raw data lake — archive() never raises and no-ops when disabled/absent
+
 try:
     import anthropic
 except Exception:  # pragma: no cover - package optional at import time
@@ -49,8 +51,9 @@ SYSTEM_PROMPT = (
     "You are an online-arbitrage sourcing analyst reviewing ONE candidate product that has "
     "already passed every hard eligibility/profitability gate in a rule-based system. You are "
     "a SECOND OPINION, not the decision-maker — a human and a separate rule engine make the "
-    "actual call. You are given pre-computed facts: gate results, named scoring adjustments "
-    "with their point values, raw Keepa-derived metrics, and (when available) a memory note "
+    "actual call. You are given pre-computed facts: scored-check results, named scoring "
+    "adjustments with their point values, raw Keepa-derived metrics, and (when available) a "
+    "memory note "
     "about this brand's history. You are DELIBERATELY NOT shown any composite score or verdict "
     "— form your own qualitative judgment from the raw facts instead of agreeing with a number.\n\n"
     "Hard rule: if a fact is not present in the input, you do not know it. Never use background "
@@ -111,7 +114,8 @@ def build_input(p: Dict[str, Any], category: Optional[str] = None,
         "avg_offers_90": p.get("avg_offers_90"), "avg_price_90": p.get("avg_price_90"),
         "amazon_bb_share": p.get("amazon_bb_share"),
         "oa_profit": p.get("oa_profit"), "oa_roi": p.get("oa_roi"),
-        "gates": explanation.get("gates"),
+        # "gates" fallback: rows persisted before the scored_checks rename (2026-07-02 S4)
+        "scored_checks": explanation.get("scored_checks") or explanation.get("gates"),
         "adjustments": explanation.get("adjustments"),
         "risk_flags": p.get("risks"),
     }
@@ -161,6 +165,16 @@ def call_analyst(input_data: Dict[str, Any], client: Optional[Any] = None) -> Di
             cleaned, rejected = _post_validate(block.input, input_data)
             cleaned["status"] = "ok"
             cleaned["rejected_risk_count"] = rejected
+            # Archive the EXACT input JSON + raw model output (the training record for the
+            # judgment layer). tokens_consumed is Anthropic usage, not Keepa — the row's source
+            # column ('analyst') keeps the two token economies distinguishable. Never raises.
+            usage = getattr(response, "usage", None)
+            out_tokens = None
+            if usage is not None:
+                out_tokens = (getattr(usage, "input_tokens", 0) or 0) + (getattr(usage, "output_tokens", 0) or 0)
+            datalake.archive("analyst", input_data.get("asin"), "analyst",
+                             {"input": input_data, "output": block.input, "model": MODEL},
+                             tokens_consumed=out_tokens)
             return cleaned
     return {"status": "error", "reason": "model did not return the expected tool_use block"}
 

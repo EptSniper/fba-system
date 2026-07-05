@@ -1,0 +1,24 @@
+{
+  "id": "tr-hotwheels-thin-margin-pass",
+  "facts": {
+    "price": 6.49,
+    "oa_profit": 1.56,
+    "oa_roi": 0.12,
+    "est_sales": null,
+    "offers": null,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "roi",
+    "profit"
+  ],
+  "trap_type": "transcript:thin-margin-pass",
+  "source": "Finding Thousands of Arbitrage Products...Store-Front Stalking.txt @00:08:52.000 \u2014 Hot Wheels toy, fees leave $1.56 before cost; narrator: 'I would skip that product'.",
+  "difficulty": "easy"
+}

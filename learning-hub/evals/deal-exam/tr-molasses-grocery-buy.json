@@ -1,0 +1,21 @@
+{
+  "id": "tr-molasses-grocery-buy",
+  "facts": {
+    "price": 19.99,
+    "oa_profit": 3.58,
+    "oa_roi": 0.57,
+    "est_sales": 500,
+    "offers": 7,
+    "category": "grocery",
+    "brand": "Plantation",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "transcript:grocery-clean-buy",
+  "source": "Amazon Online Arbitrage Sourcing Marathon ($1000 in Profit).txt @00:04:13.920 \u2014 molasses bought post-coupon at $6.28 (57% ROI, ~$3.58/unit profit after coupon vs the pre-coupon 33%/~$2.27), narrator: 'a pretty good winner'.",
+  "difficulty": "medium"
+}

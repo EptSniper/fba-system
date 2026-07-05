@@ -64,6 +64,15 @@ def _resolve_url(stream: str) -> Optional[str]:
     return os.getenv(FALLBACK_ENV_VAR) or None
 
 
+def has_webhook(stream: str) -> bool:
+    """Public check: does this stream (or its fallback) currently resolve to a real webhook
+    URL? Callers outside this module (pipeline.py, discord_notify.py) used to reach into the
+    private `_resolve_url()` directly (Code Review 2026-07-02, nit) — this is the intended public
+    surface for "should I bother posting" checks; `send()` still does its own resolution
+    internally for the actual post."""
+    return bool(_resolve_url(stream))
+
+
 def _post_with_retry(url: str, payload: Dict[str, Any], session: Optional[Any] = None) -> bool:
     """POST once; on HTTP 429, sleep for the server's Retry-After and try exactly ONE more
     time (never an unbounded retry loop against a webhook). Any other error is logged and

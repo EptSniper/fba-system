@@ -1,0 +1,21 @@
+{
+  "id": "tr-cricut-blade-extreme-roi-buy",
+  "facts": {
+    "price": 14.95,
+    "oa_profit": 6.93,
+    "oa_roi": 7.0,
+    "est_sales": 100,
+    "offers": null,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "transcript:extreme-roi-clean-buy",
+  "source": "Amazon Online Arbitrage Sourcing Marathon ($1000 in Profit).txt @00:12:45.760 \u2014 Cricut replacement blade, $0.99 cost, 600-800% ROI; narrator: 'probably a banger banger product'.",
+  "difficulty": "easy"
+}

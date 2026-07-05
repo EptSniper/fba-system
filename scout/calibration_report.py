@@ -49,6 +49,14 @@ def calibration_summary(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     X = np.array([[float(r["features"].get(k) or 0.0) for k in feature_keys] for r in rows])
     y = np.array([1 if r["label"] else 0 for r in rows])
 
+    # stratify raises ValueError outright when the minority class has <2 members — a state the
+    # upstream refused-gate (n_pos>0 and n_neg>0) legitimately allows. Refuse honestly instead
+    # of crashing the report at the first realistic milestone dataset (Review 2026-07-05).
+    minority = int(min((y == 1).sum(), (y == 0).sum()))
+    if minority < 2:
+        return {"available": False,
+                "reason": f"minority class has only {minority} row(s) — too few for a stratified split"}
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.3, random_state=42, stratify=y
     )
@@ -77,12 +85,29 @@ def generate_report() -> str:
 
     lines = [
         f"## {now} — calibration + promotion check", "",
-        f"- Trainable rows (feature snapshot + realized outcome): **{assembled['trainable_count']}**",
+        f"- Trainable rows (feature snapshot + a label): **{assembled['trainable_count']}**",
         f"- Labeled rows total (incl. local-ledger outcomes with no feature snapshot): {assembled['labeled_count']}",
         f"- Class balance: {assembled['positive']} positive / {assembled['negative']} negative",
         f"- Minimum required (ai-brain.json learning.minLabeledRows): {assembled['min_required']}",
         "",
     ]
+
+    # Per-quality-tier breakdown (DATA_ENGINE_PLAN.md V1) — gold=realized, silver=shadow proxy.
+    # Reported separately, NEVER blended, so a silver-heavy metric can't masquerade as validated.
+    by_tier = assembled.get("by_tier") or {}
+    if by_tier:
+        lines.append("- Label quality tiers (trainable):")
+        for tier in ("gold", "silver", "bronze", "backtest"):
+            t = by_tier.get(tier)
+            if t:
+                lines.append(f"  - **{tier}**: {t['total']} ({t['positive']} pos / {t['negative']} neg)")
+        if assembled.get("silver_count"):
+            lines.append(f"- ⚠ {assembled['silver_caveat']}")
+        if assembled.get("backtest_available"):
+            lines.append(f"- **backtest** (held SEPARATE, not in this diagnostic): "
+                         f"{assembled['backtest_available']} hindsight rows — the weakest tier "
+                         f"(simulated buy cost, no execution); trained on by the V3 ranker only.")
+        lines.append("")
 
     if assembled["refused"]:
         lines.append(f"**Verdict: NOT enough data to promote.** {assembled['reason']}.")
@@ -129,4 +154,7 @@ def write_report() -> str:
 
 
 if __name__ == "__main__":
-    print(write_report())
+    # ASCII-safe stdout: the report block contains U+26A0 once silver labels exist, and a
+    # redirected/scheduled stdout on Windows is cp1252 — a raw print would UnicodeEncodeError
+    # AFTER the file was already written, making a successful run exit non-zero.
+    print(write_report().encode("ascii", "replace").decode())

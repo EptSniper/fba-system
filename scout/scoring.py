@@ -228,7 +228,7 @@ def estimate_oa_profit_roi(price, weight_lb, cogs_fraction=None, category=None):
         return None, None
     cf = config.OA_COGS_FRACTION if cogs_fraction is None else cogs_fraction
     if category:
-        referral = max(price * config.referral_rate_for(category), config.MIN_REFERRAL_FEE)
+        referral = max(price * config.referral_rate_for(category, price=price), config.MIN_REFERRAL_FEE)
     else:
         referral = price * config.REFERRAL_RATE
     fulfillment = estimate_fulfillment_fee(weight_lb) * (1 + config.FUEL_SURCHARGE)
@@ -237,6 +237,32 @@ def estimate_oa_profit_roi(price, weight_lb, cogs_fraction=None, category=None):
     profit = price - referral - fulfillment - cogs - prep
     roi = (profit / cogs) if cogs > 0 else None
     return round(profit, 2), (round(roi, 3) if roi is not None else None)
+
+
+def net_proceeds(price, weight_lb, category=None):
+    """Seller's net $ from a sale BEFORE cost of goods — price minus referral (category-aware,
+    $0.30 floor), fulfillment (with fuel surcharge), and prep. Used by the shadow-outcome tracker
+    (V1) and the backtest (V2) to compute `would_have_profited` at an ORIGINAL landed cost:
+    profit = net_proceeds(price_now) - landed_cost. Returns None for a missing/zero price."""
+    if not price or price <= 0:
+        return None
+    if category:
+        referral = max(price * config.referral_rate_for(category, price=price), config.MIN_REFERRAL_FEE)
+    else:
+        referral = price * config.REFERRAL_RATE
+    fulfillment = estimate_fulfillment_fee(weight_lb) * (1 + config.FUEL_SURCHARGE)
+    prep = config.OA_PREP_COST
+    return round(price - referral - fulfillment - prep, 2)
+
+
+def assumed_landed_cost(price, cogs_fraction=None):
+    """The simulated landed (buy-in) cost the scout assumes for an OA candidate — price *
+    OA_COGS_FRACTION — since Keepa never has a real buy cost. Frozen at enqueue time by the
+    shadow-outcome tracker as the ORIGINAL cost basis for `would_have_profited`."""
+    if not price or price <= 0:
+        return None
+    cf = config.OA_COGS_FRACTION if cogs_fraction is None else cogs_fraction
+    return round(price * cf, 2)
 
 
 def triage_score(p: Dict[str, Any], category: Optional[str] = None) -> Optional[float]:
@@ -343,7 +369,8 @@ def _ip_cliff(p: Dict[str, Any]) -> bool:
     drop because it dents account health. Heuristic from the fields we have (current offers far
     below a once-crowded 90-day average); always confirm on Keepa's all-time offer-count chart."""
     cur, avg = p.get("offers"), p.get("avg_offers_90")
-    return bool(cur is not None and avg and avg >= 8 and cur <= 2)
+    return bool(cur is not None and avg and avg >= config.OA_IP_CLIFF_MIN_AVG_OFFERS
+                and cur <= config.OA_IP_CLIFF_MAX_CURRENT_OFFERS)
 
 
 def _no_featured_offer(p: Dict[str, Any]) -> bool:
@@ -427,9 +454,10 @@ def _score_oa_impl(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = None,
         adjustments.append({"name": name, "points": points, "reason": reason})
 
     if brands.is_friendly(p.get("brand")):
-        score = min(100.0, round(score + 5, 1))   # small nudge toward known-good brands
+        adj_pts = config.OA_ADJ_FRIENDLY_BRAND
+        score = min(100.0, round(score + adj_pts, 1))   # small nudge toward known-good brands
         brand_tag = " · ★known-good brand"
-        _adj("friendly-brand", 5, "Known-good OA brand (ai-brain.json brands.friendly)")
+        _adj("friendly-brand", adj_pts, "Known-good OA brand (ai-brain.json brands.friendly)")
     elif brands.is_avoided(p.get("brand")):
         brand_tag = " · ⚠avoid-brand"
         _adj("avoid-brand", 0, "Brand on the avoid list — informational only, hard gate is separate")
@@ -440,45 +468,57 @@ def _score_oa_impl(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = None,
         brand_tag += f" · ★{po['min']}-{po['max']}-offer band"
         _adj("preferred-offer-band", po["bonus"], f"{offers} offers is in the {po['min']}-{po['max']} goldilocks band")
     if _price_spike(p):
-        score = max(0.0, round(score - 15, 1))   # learned red flag: price likely to revert
+        adj_pts = config.OA_ADJ_PRICE_SPIKE
+        score = max(0.0, round(score + adj_pts, 1))   # learned red flag: price likely to revert
         brand_tag += " · ⚠price-spike"
-        _adj("price-spike", -15, "Current price far above its 90-day average — likely to revert")
+        _adj("price-spike", adj_pts, "Current price far above its 90-day average — likely to revert")
     elif _price_caution(p):
-        score = max(0.0, round(score - 5, 1))    # softer, earlier warning — never a gate
+        adj_pts = config.OA_ADJ_PRICE_CAUTION
+        score = max(0.0, round(score + adj_pts, 1))    # softer, earlier warning — never a gate
         brand_tag += " · ⚠price-caution"
-        _adj("price-caution", -5,
+        _adj("price-caution", adj_pts,
              f"Current price is {config.OA_PRICE_CAUTION_RATIO}-{config.OA_PRICE_SPIKE_RATIO}x "
              "its 90-day average — a softer early warning, not yet a spike")
     if _offers_rising(p):
-        score = max(0.0, round(score - 12, 1))   # learned red flag: seller spike -> price tank
+        adj_pts = config.OA_ADJ_OFFERS_RISING
+        score = max(0.0, round(score + adj_pts, 1))   # learned red flag: seller spike -> price tank
         brand_tag += " · ⚠offers-rising"
-        _adj("offers-rising", -12, "Offer count far above its 90-day average — seller spike, price likely to tank")
+        _adj("offers-rising", adj_pts, "Offer count far above its 90-day average — seller spike, price likely to tank")
     _share = _amazon_share(p)
     if _share and _share > 0 and not _amazon_has_buybox(p):
-        score = max(0.0, round(score - 10, 1))   # Buy-Box rotation: Amazon steals a cut of sales
+        adj_pts = config.OA_ADJ_AMAZON_SHARES_BUYBOX
+        score = max(0.0, round(score + adj_pts, 1))   # Buy-Box rotation: Amazon steals a cut of sales
         brand_tag += f" · ⚠amazon-shares-BB({_share*100:.0f}%)"
-        _adj("amazon-shares-buybox", -10, f"Amazon wins the Buy Box ~{_share*100:.0f}% of the time (rotation)")
+        _adj("amazon-shares-buybox", adj_pts, f"Amazon wins the Buy Box ~{_share*100:.0f}% of the time (rotation)")
     if _ip_cliff(p):
-        score = max(0.0, round(score - 20, 1))   # offer-count collapse: likely brand IP complaints
+        adj_pts = config.OA_ADJ_IP_CLIFF
+        score = max(0.0, round(score + adj_pts, 1))   # offer-count collapse: likely brand IP complaints
         brand_tag += " · ⚠IP-cliff"
-        _adj("ip-cliff", -20, "Offer count collapsed (e.g. 56→1) — likely brand IP complaints")
+        _adj("ip-cliff", adj_pts, "Offer count collapsed (e.g. 56→1) — likely brand IP complaints")
     _wc = _worst_case_loss(p)
-    if _wc is not None and _wc > 2:
-        score = max(0.0, round(score - 10, 1))   # loses money at the 90-day low Buy-Box price
+    if _wc is not None and _wc > config.OA_WORST_CASE_LOSS_BAR:
+        adj_pts = config.OA_ADJ_WORST_CASE_LOSS
+        score = max(0.0, round(score + adj_pts, 1))   # loses money at the 90-day low Buy-Box price
         brand_tag += f" · ⚠worst-case -${_wc:.0f}"
-        _adj("worst-case-loss", -10, f"Loses ~${_wc:.2f}/unit at the 90-day low Buy-Box price")
+        _adj("worst-case-loss", adj_pts, f"Loses ~${_wc:.2f}/unit at the 90-day low Buy-Box price")
     if _no_featured_offer(p):
-        score = max(0.0, round(score - 8, 1))    # no Buy Box → much slower sales
+        adj_pts = config.OA_ADJ_NO_FEATURED_OFFER
+        score = max(0.0, round(score + adj_pts, 1))    # no Buy Box → much slower sales
         brand_tag += " · ⚠no-BuyBox"
-        _adj("no-featured-offer", -8, "No Buy Box / featured offer — buyers must dig, much slower sales")
+        _adj("no-featured-offer", adj_pts, "No Buy Box / featured offer — buyers must dig, much slower sales")
     _brand = (p.get("brand") or "").strip().lower()
     if _brand in ("", "generic") or "generic" in _brand:
-        score = max(0.0, round(score - 8, 1))    # brand-generic listing (Masterclass: avoid)
+        adj_pts = config.OA_ADJ_GENERIC_BRAND
+        score = max(0.0, round(score + adj_pts, 1))    # brand-generic listing (Masterclass: avoid)
         brand_tag += " · ⚠generic-brand"
-        _adj("generic-brand", -8, "Brand-generic / no real brand — avoid (Masterclass)")
+        _adj("generic-brand", adj_pts, "Brand-generic / no real brand — avoid (Masterclass)")
 
     def ok(cond): return "✓" if cond else "✗"
-    gates = [
+    # NOTE: these are SCORED checks (each contributes points to `score` above) — none of them
+    # are hard rejects on their own. The 5 real hard rejects live in oa_hard_reject() below and
+    # are unconditional regardless of score. Naming this "gates" (as an earlier version did)
+    # falsely implied these six were pass/fail cutoffs; Code Review 2026-07-02 Finding S4.
+    scored_checks = [
         {"name": "bsr", "passed": bool(bsr_for_gate is not None and bsr_for_gate <= c["bsr_max"]),
          "actual": bsr_for_gate, "threshold": c["bsr_max"], "source": bsr_source},
         {"name": "sales", "passed": bool(sales is not None and sales >= c["min_monthly_sales"]),
@@ -493,16 +533,16 @@ def _score_oa_impl(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = None,
          "actual": _amazon_has_buybox(p), "threshold": False},
     ]
     bits = [
-        f"BSR {_fmt(bsr_for_gate,0)}{'~avg90' if bsr_source == 'avg90' else ''} {ok(gates[0]['passed'])}",
-        f"~{_fmt(sales,0)}/mo {ok(gates[1]['passed'])}",
-        f"{_fmt(offers,0)} offers {ok(gates[2]['passed'])}",
-        f"ROI {('%.0f%%' % (roi*100)) if roi is not None else '?'} {ok(gates[3]['passed'])}"
+        f"BSR {_fmt(bsr_for_gate,0)}{'~avg90' if bsr_source == 'avg90' else ''} {ok(scored_checks[0]['passed'])}",
+        f"~{_fmt(sales,0)}/mo {ok(scored_checks[1]['passed'])}",
+        f"{_fmt(offers,0)} offers {ok(scored_checks[2]['passed'])}",
+        f"ROI {('%.0f%%' % (roi*100)) if roi is not None else '?'} {ok(scored_checks[3]['passed'])}"
         + (f" (grocery {min_roi*100:.0f}% bar)" if is_grocery else ""),
-        f"${_fmt(profit)}/u {ok(gates[4]['passed'])}",
+        f"${_fmt(profit)}/u {ok(scored_checks[4]['passed'])}",
         f"BuyBox {'Amazon✗' if _amazon_has_buybox(p) else '3P✓'}",
     ]
     reason = " · ".join(bits) + brand_tag + f"  →  {score}/100  (est.; confirm in SellerAmp)"
-    return {"score": score, "profit": profit, "roi": roi, "gates": gates,
+    return {"score": score, "profit": profit, "roi": roi, "scored_checks": scored_checks,
             "adjustments": adjustments, "reason": reason, "min_roi_applied": min_roi,
             "category": category}
 
@@ -519,10 +559,14 @@ def score_product_oa(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = Non
 
 def explain_oa(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = None,
               category: Optional[str] = None) -> Dict[str, Any]:
-    """Structured explain-why verdict for one candidate: { verdict, score, gates, adjustments }.
+    """Structured explain-why verdict for one candidate:
+    { verdict, score, scored_checks, adjustments, hard_reject }.
     verdict mirrors the pipeline's vocabulary ("pass" on a hard reject, else "review"/"pass" by
-    score threshold) — it does NOT authorize a buy; it's the same transparent gate/score logic
-    as score_product_oa, just returned as data instead of a formatted string."""
+    score threshold) — it does NOT authorize a buy. scored_checks are the 6 point-contributing
+    signals (bsr/sales/offers/roi/profit/buybox); they are NOT gates — a candidate can fail
+    several of them and still score above threshold. The only unconditional rejects are
+    hard_reject's 5 conditions (see oa_hard_reject()), which apply regardless of score
+    (Code Review 2026-07-02, Finding S4 — this key used to be misleadingly named "gates")."""
     r = _score_oa_impl(p, criteria, category)
     hard_reject = oa_hard_reject(p)
     if hard_reject:
@@ -534,7 +578,7 @@ def explain_oa(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = None,
         "score": r["score"],
         "profit": r["profit"],
         "roi": r["roi"],
-        "gates": r["gates"],
+        "scored_checks": r["scored_checks"],
         "adjustments": r["adjustments"],
         "hard_reject": hard_reject,
         "category": r["category"],
@@ -577,7 +621,7 @@ def risk_flags_oa(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = None) 
     if _ip_cliff(p):
         flags.append("Offer-count cliff (e.g. 56→1) → likely brand IP complaints; account-health risk")
     _wc = _worst_case_loss(p)
-    if _wc is not None and _wc > 2:
+    if _wc is not None and _wc > config.OA_WORST_CASE_LOSS_BAR:
         flags.append(f"Worst case: ~${_wc:.2f}/unit loss at the 90-day low Buy-Box price")
     if _no_featured_offer(p):
         flags.append("No Buy Box / featured offer → buyers must dig; much slower sales")

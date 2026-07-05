@@ -1,0 +1,21 @@
+{
+  "id": "cg-ip-cliff-general-vs-our-threshold",
+  "facts": {
+    "price": 25.0,
+    "avg_offers_90": 28.0,
+    "offers": 17.0,
+    "oa_profit": 6.0,
+    "oa_roi": 0.3,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "chart-guide:ip-cliff-narrator-vs-our-numeric-threshold",
+  "source": "Mastering Keepa For Online Arbitrage Sellers in 2026.txt @12:15 \u2014 'offer count just falls from 28 down to 17 instantly... that is a clear indicator of an IP complaint'; narrator advises avoiding. DIVERGENCE NOTE ON PURPOSE: our ip-cliff heuristic requires current offers <= 2 (OA_IP_CLIFF_MAX_CURRENT_OFFERS); 17 is nowhere close, so no hard reject or adjustment fires here even though the narrator's general rule (any sudden, large, instant drop) would flag it. This is the clearest example in the whole case bank of our implementation being NARROWER than the practitioner heuristic it's modeled on \u2014 worth a human's attention, not a bug to silently 'fix' by loosening the threshold without more evidence.",
+  "difficulty": "hard"
+}

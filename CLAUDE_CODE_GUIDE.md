@@ -155,10 +155,13 @@ Either way, the skills' shared rulebook is `amazon-fba-oa/references/`.
   built and validated; 5 skills (`fba-deal-analyst`, `fba-compliance-checker`, `fba-keepa-analyst`,
   `fba-selleramp-analyst`, `fba-sourcing-scout`) are eval-hardened. Installable package +
   test artifacts are in **`fba-skill-evals/`**.
-- **`scout/`** — Python OA discovery + scoring/gates (loads `ai-brain.json`); scorer tests pass; live
-  discovery needs a paid `KEEPA_KEY`.
-- **`scout_pro/`** — advanced ML variant; SP-API/Ads are stubs; no tests yet.
-- **`knowledge-rag/`** — zero-cost RAG (local `BAAI/bge-base-en-v1.5`, read-only Supabase), 78 docs / 1,224 chunks.
+- **`scout/`** — Python OA discovery + scoring/gates (loads `ai-brain.json`); 382 tests pass
+  (`python run_all_tests.py` runs this + scout_pro + knowledge-rag together); live discovery
+  needs a paid `KEEPA_KEY`.
+- **`scout_pro/`** — advanced ML variant; SP-API/Ads are stubs; 36 tests pass (`test_gates_scoring.py` + `test_discord_config.py`).
+- **`knowledge-rag/`** — zero-cost RAG (local `BAAI/bge-base-en-v1.5`, read-only Supabase); live
+  corpus count changes with every research-pipeline run — check `ai-brain.json`'s
+  `knowledge.ragCorpus` rather than trusting a number pinned here.
 - **`control-center/`** — Next.js 15 operator dashboard; `app/api/knowledge-search` shells `ask.py`.
 - **`learning-hub/`** — knowledge base + `data/ai-brain.json` (source of truth) + trackers (honest empty states).
 

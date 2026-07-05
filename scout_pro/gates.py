@@ -31,6 +31,12 @@ def hard_gates(feature_row: Dict[str, Any], snapshot_row: Dict[str, Any] | None 
     """
     Evaluate non-negotiable gates. Returns (passed, rejection_reasons).
     passed=False => never alert/source, regardless of model probability.
+
+    DELIBERATELY stricter than ../scout/scoring.py (Code Review 2026-07-02, Finding S14 — see
+    README.md's "Deliberate divergences" section for the full rationale, not a bug to fix):
+    margin here is a HARD reject at GATE_MARGIN_FLOOR, where scout/ scores ROI/profit as two of
+    six soft signals; "grocery" is hard-blocked via GATE_FORBIDDEN_CATEGORIES by default, where
+    scout/ explicitly allows it with a relaxed ROI bar (ai-brain.json's groceryMinRoi).
     """
     g = config.GATES
     reasons: List[str] = []

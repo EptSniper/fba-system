@@ -1,0 +1,22 @@
+{
+  "id": "cg-amazon-historical-buybox-caution",
+  "facts": {
+    "price": 32.6,
+    "oa_profit": 5.0,
+    "oa_roi": 0.35,
+    "amazon_bb_share": 0.25,
+    "avg_offers_90": 10,
+    "offers": 15,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": true,
+  "expected_hard_reject_keyword": "wins the buy box",
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "chart-guide:amazon-rotation-hardreject",
+  "source": "How To Read Keepa Charts for Amazon FBA (with how many to buy).txt @03:40 \u2014 Amazon has historically appeared on this listing (orange shading), price dropped below the $27.52 break-even during those periods; narrator: 'If Amazon come back on the listing I am losing money... I might pass this one.' Estimated a 25% historical share for the rotation gate (video doesn't state an exact %).",
+  "difficulty": "medium"
+}

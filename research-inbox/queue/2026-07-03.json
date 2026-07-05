@@ -1,0 +1,36 @@
+{
+  "date": "2026-07-03",
+  "note": "YouTube videos/courses queued for transcription. Run knowledge-rag/fetch_transcripts.py to pull transcripts; the next daily run ingests them. Titles were dedup-checked against learning-hub/transcripts/ and the manifest items[] list.",
+  "videos": [
+    {
+      "videoId": "PydYmi56Sso",
+      "title": "Amazon Online Arbitrage: How To Succeed in 2026 (Flips4Miles full walkthrough)",
+      "channel": "Flips4Miles (via SellerAmp)",
+      "url": "https://www.youtube.com/watch?v=PydYmi56Sso",
+      "topic": "fba_oa_mastery",
+      "why": "SellerAmp's Jan-2026 featured end-to-end OA walkthrough (account setup \u2192 sourcing \u2192 scaling/delegation) by the same practitioner behind the already-ingested SAS Masterguide; the blog wrapper itself had no substance, the video is the content.",
+      "isLongCourse": true,
+      "status": "done"
+    },
+    {
+      "videoId": "XdUGuD4ouKI",
+      "title": "How To Use KEEPA For Amazon FBA In 2026 || Beginner To Expert In ONE Video",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=XdUGuD4ouKI",
+      "topic": "fba_oa_mastery",
+      "why": "March-2026 beginner-to-expert Keepa walkthrough; newest full-scope Keepa video found \u2014 cross-checks the staged PF-filter and chart rules against the current UI.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "Cflrv_y9lSA",
+      "title": "The Keepa Parameter Method! Advanced Keepa Data Product Finder Sourcing Tutorial & Live OA Sourcing!",
+      "channel": "YouTube (OA creator)",
+      "url": "https://www.youtube.com/watch?v=Cflrv_y9lSA",
+      "topic": "fba_oa_mastery",
+      "why": "Advanced Keepa Product Finder parameter tactics with live sourcing \u2014 directly covers the gap left by the permanently stuck TBFh9vFBq7k (advanced Keepa tactics, LOGIN_REQUIRED). Older upload (Dec 2023) but parameter methodology, accept if transcript quality holds.",
+      "isLongCourse": false,
+      "status": "done"
+    }
+  ]
+}

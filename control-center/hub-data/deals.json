@@ -2,7 +2,7 @@
   "source": "deal-scout (deal feeds + Amazon profitability) — see ai-system/deal-sourcing-system.md",
   "updated": "2026-06-20",
   "connected": false,
-  "reason": "Deal tracking isn't live yet — it needs a deal-API key (FMTC/LinkMyDeals) or a compliant retailer feed, plus the Amazon profitability check (Keepa/SP-API). Until then this is honestly empty.",
+  "reason": "Deal tracking isn't live yet — the real sources (scout/deals/) are Slickdeals RSS (no key needed, already wired) and Best Buy's Products API (needs BESTBUY_API_KEY, see HUMAN_TODO.md); both collect deals today, but the matcher that turns a collected deal into an Amazon-matched, profit-checked pick (Prompt D2) isn't built yet, so nothing surfaces here until it is. Until then this is honestly empty. (Code Review 2026-07-02, Findings CS4/CS5 — this used to reference FMTC/LinkMyDeals, which scout/deals/ never actually implemented.)",
   "principle": "Source where the best sale / cashback / coupon is TODAY; stack discounts for a moat.",
   "watchedRetailers": ["Target", "Walmart", "Walgreens", "Best Buy", "Home Depot", "Lowe's", "Ace Hardware", "Kohl's", "Grocery Outlet"],
   "today": []

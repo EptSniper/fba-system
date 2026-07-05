@@ -1,0 +1,26 @@
+{
+  "date": "2026-07-04",
+  "note": "The daily task writes one queue file per day (e.g. 2026-06-30.json) listing YouTube videos/courses to transcribe. fetch_transcripts.py reads files matching YYYY-MM-DD.json, pulls transcripts via the API, and sets each item's status to 'done'.",
+  "videos": [
+    {
+      "videoId": "rdltezXxIrk",
+      "title": "Keepa product finder tutorial 2026 | Amazon FBA",
+      "channel": "unknown (verify on pull)",
+      "url": "https://www.youtube.com/watch?v=rdltezXxIrk",
+      "topic": "fba_oa_mastery",
+      "why": "Oct-2025 Product-Finder-focused tutorial; complements the just-ingested Keepa Parameter Method transcript with a second practitioner's PF filter recipes",
+      "isLongCourse": false,
+      "status": "queued"
+    },
+    {
+      "videoId": "jeqFx9ZiOhg",
+      "title": "How to Use Amazon FBA Profit Calculator | Every Fee Every Cost Explained 2026 | AMZ Prep",
+      "channel": "AMZ Prep",
+      "url": "https://www.youtube.com/watch?v=jeqFx9ZiOhg",
+      "topic": "fba_oa_mastery",
+      "why": "Apr-2026 fee-by-fee walkthrough (incl. the Apr-17 fuel surcharge era) - cross-checks fba-deal-calculator math and the staged 2026 fee map",
+      "isLongCourse": false,
+      "status": "queued"
+    }
+  ]
+}

@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 
 import config
 import db
+import predictions
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPORT_PATH = os.path.join(HERE, "..", "learning-hub", "tracking", "ops-report.md")
@@ -74,7 +75,10 @@ def roi_gap_stats(pairs: List[Dict[str, Any]]) -> Optional[Dict[str, float]]:
     return {"mean_gap": round(statistics.mean(gaps), 3), "n": len(gaps)}
 
 
-def generate_report() -> str:
+def generate_report(fetch_fresh_stats=None) -> str:
+    """`fetch_fresh_stats`: optional live-Keepa-refetch callback, forwarded to
+    predictions.hit_rate_summary() (Code Review 2026-07-04) — omit it (the default) for an
+    honest "unavailable" prediction section until a real KEEPA_KEY exists."""
     leads = db.leads_with_outcomes()
     pairs = _outcome_pairs(leads)
     now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -84,6 +88,8 @@ def generate_report() -> str:
     if not pairs:
         lines.append(f"No realized outcomes yet ({len(leads)} leads total, 0 with an outcome). "
                      f"Nothing to compute — expected until real buy/sell cycles are recorded.")
+        lines.append("")
+        lines.append(predictions.hit_rate_summary(fetch_fresh_stats))
         lines.append("")
         return "\n".join(lines)
 
@@ -120,6 +126,7 @@ def generate_report() -> str:
     lines.append("- **Profit per review-hour**: NOT TRACKABLE — no review-hour logging exists "
                  "anywhere in this repo yet; this KPI needs a new capture mechanism before it "
                  "can be reported honestly.")
+    lines.append(predictions.hit_rate_summary(fetch_fresh_stats))
     lines.append("")
     return "\n".join(lines)
 

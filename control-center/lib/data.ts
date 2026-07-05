@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Money, Inventory, Leads, Picks, Brain, Knowledge, Deals, RagManifest, CaptureEvent } from "./types";
+import { HUB_DATA_DIR } from "./events-server";
+import type { Money, Inventory, Leads, Picks, Brain, Deals, RagManifest, CaptureEvent } from "./types";
 
 // Bundled snapshots of the hub data. Static imports are traced into the build, so these
 // are GUARANTEED to exist on Vercel (which has no sibling learning-hub/ folder).
@@ -10,14 +11,15 @@ import inventoryBundled from "@/hub-data/inventory.json";
 import leadsBundled from "@/hub-data/leads.json";
 import picksBundled from "@/hub-data/picks.json";
 import dealsBundled from "@/hub-data/deals.json";
-import knowledgeBundled from "@/hub-data/knowledge-index.json";
 import manifestBundled from "@/hub-data/rag-manifest.json";
 
 // Local dev reads the LIVE sibling hub so edits show instantly; on serverless (Vercel) the
 // sibling folder isn't there, so readJson throws and we return the bundled snapshot instead.
 // Everything is read server-side — nothing leaks to the client, no secrets.
-const HUB = path.join(process.cwd(), "..", "learning-hub");
-const DATA = path.join(HUB, "data");
+// The hub path itself lives in ONE place — lib/events-server.ts (the write side) owns
+// HUB_DATA_DIR and this read side imports it, so the two can never point at different
+// directories.
+const DATA = HUB_DATA_DIR;
 
 function live<T>(file: string, bundled: T): T {
   try {
@@ -49,10 +51,6 @@ export function getPicks(): Picks {
 
 export function getDeals(): Deals {
   return live<Deals>(path.join(DATA, "deals.json"), dealsBundled as unknown as Deals);
-}
-
-export function getKnowledge(): Knowledge {
-  return live<Knowledge>(path.join(HUB, "knowledge-index.json"), knowledgeBundled as unknown as Knowledge);
 }
 
 export function getRagManifest(): RagManifest {

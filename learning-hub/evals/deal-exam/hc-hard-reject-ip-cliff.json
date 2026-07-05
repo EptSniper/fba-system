@@ -1,0 +1,31 @@
+{
+  "id": "hc-hard-reject-ip-cliff",
+  "facts": {
+    "price": 25.0,
+    "sales_rank": 50000,
+    "avg_sales_rank_90": 50000,
+    "est_sales": 150,
+    "offers": 1,
+    "weight_lb": 1.0,
+    "oa_profit": 8.0,
+    "oa_roi": 0.45,
+    "buybox_seller": "ThirdPartySellerCo",
+    "amazon_bb_share": 0.0,
+    "avg_price_90": 25.0,
+    "avg_offers_90": 40,
+    "has_buybox": true,
+    "price_low_90": 20.0,
+    "brand": "AcmeToys",
+    "category": null
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": true,
+  "expected_hard_reject_keyword": "offer count collapsed",
+  "expected_adjustment_names": [
+    "ip-cliff"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "hard-reject:ip-cliff",
+  "source": "handcrafted from fba-keepa-analyst's 'IP cliff' instant-reject fingerprint (offers crash 56->1 and never recover); avg90=40>=8, current=1<=2 per scoring.ipCliffShape",
+  "difficulty": "medium"
+}

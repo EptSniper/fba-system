@@ -1,0 +1,24 @@
+{
+  "id": "tr-gap-discount-stack-37roi",
+  "facts": {
+    "price": 33.0,
+    "oa_profit": 8.0,
+    "oa_roi": 0.37,
+    "est_sales": 300,
+    "offers": 19,
+    "avg_offers_90": 14,
+    "category": null,
+    "brand": "Gap",
+    "buybox_seller": "ThirdPartySellerCo",
+    "sales_rank": 100000,
+    "avg_sales_rank_90": 100000
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "transcript:clean-buy-with-rising-offers",
+  "source": "Most Profitable Online Arbitrage Sourcing Method For 2025.txt @00:03:43.000 \u2014 Gap crew neck XL variant, $8 profit/37% ROI after discount stacking, but offer count rose 14->19 over 2-3 weeks (ratio 1.36 \u2014 just under our 1.4 rising-offers trigger, see NOTE). NOTE: 19/14=1.357 < OA_OFFERS_RISE_RATIO(1.4) \u2014 first draft expected the offers-rising adjustment; recompute before trusting this file's expected_adjustment_names.",
+  "difficulty": "hard"
+}

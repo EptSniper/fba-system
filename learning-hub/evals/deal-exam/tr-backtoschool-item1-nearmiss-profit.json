@@ -1,0 +1,25 @@
+{
+  "id": "tr-backtoschool-item1-nearmiss-profit",
+  "facts": {
+    "price": 9.0,
+    "oa_profit": 2.0,
+    "oa_roi": 0.77,
+    "est_sales": 5000,
+    "offers": 15,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo",
+    "sales_rank": 50000,
+    "avg_sales_rank_90": 50000
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "profit"
+  ],
+  "trap_type": "transcript:high-roi-below-profit-floor",
+  "source": "Back To School LIVE Amazon Online Arbitrage Product Research.txt @00:05:16.479 \u2014 $2.89->$9, 77% ROI, $2/unit profit (below our $3 floor); narrator: 'that's green all day'.",
+  "difficulty": "hard"
+}

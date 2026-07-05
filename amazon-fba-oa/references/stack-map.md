@@ -8,11 +8,13 @@ non-negotiables. The durable record of every change is `AI_COLLABORATION_JOURNAL
 
 - **`scout/`** — Python OA discovery engine. Keepa → scoring/gates (`scoring.py`, `config.py` loads thresholds
   from `learning-hub/data/ai-brain.json`) → optional Discord alert → SQLite + optional Supabase logging
-  (`db.py`, `pipeline.py`). Tests in `scout/tests/` (scorer 15/15, pipeline-memory 2/2). Live discovery needs a paid `KEEPA_KEY`.
+  (`db.py`, `pipeline.py`). Tests in `scout/tests/` — run all of scout+scout_pro+knowledge-rag at once with
+  `python scout/run_all_tests.py` (382 scout tests as of 2026-07-04; the script prints the live count, plus a non-blocking deal-exam knowledge report). Live discovery needs a paid `KEEPA_KEY`.
 - **`scout_pro/`** — advanced ML variant: snapshots, features, calibrated models, ranker, review queue,
-  registry, drift (`models.py`, `gates.py`, `features.py`, `labels.py`, `db/schema.sql`). SP-API/Ads are stubs; no tests yet.
+  registry, drift (`models.py`, `gates.py`, `features.py`, `labels.py`, `db/schema.sql`). SP-API/Ads are stubs; 36 tests pass.
 - **`knowledge-rag/`** — zero-cost RAG. Local embeddings `BAAI/bge-base-en-v1.5` (768-dim), read-only Supabase
-  retrieval. `ask.py` exposes `retrieve()` + `--json` CLI; corpus is 78 docs / 1,224 chunks. Evals in `evals/`, `evaluate.py`.
+  retrieval. `ask.py` exposes `retrieve()` + `--json` CLI; corpus count grows with every research-pipeline
+  run — check `ai-brain.json`'s `knowledge.ragCorpus` for the current figure. Evals in `evals/`, `evaluate.py`.
 - **`control-center/`** — canonical UI. Next.js 15.5.18, TypeScript, Tailwind. Read-only operator dashboard
   (Today, Find/deal-analyzer, Amazon Ops, Ask, Brain, Scout Intelligence). `app/api/knowledge-search/route.ts`
   is a Node-only dynamic POST route that shells `ask.py`. Bundled snapshots in `hub-data/` can go stale vs the live brain.

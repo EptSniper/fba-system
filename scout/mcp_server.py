@@ -43,12 +43,13 @@ from __future__ import annotations
 
 import datetime as dt
 import os
-import re
 from typing import Any, Dict, List, Optional
 
 import db
 import scoring
 import search_log
+from reflect import slug  # shared brand-name slugifier (Code Review 2026-07-02, nit — this used
+                          # to be a byte-for-byte duplicate of reflect.py's own helper)
 
 try:
     from mcp.server.fastmcp import FastMCP
@@ -57,11 +58,6 @@ except Exception:  # pragma: no cover - package/Python-version optional at impor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MEMORY_BRANDS_DIR = os.path.join(HERE, "..", "learning-hub", "memory", "brands")
-
-
-def _slug(text: str) -> str:
-    s = re.sub(r"[^a-z0-9]+", "-", text.strip().lower()).strip("-")
-    return s or "unknown"
 
 
 # ----------------------------------------------------------------------------
@@ -118,7 +114,9 @@ def why_rejected(asin: str) -> Dict[str, Any]:
                 "message": "No structured explanation stored for this lead (pre-migration-001 "
                           "row, or it predates explain_oa())."}
     return {"asin": asin, "found": True, "verdict": explanation.get("verdict"),
-           "score": explanation.get("score"), "gates": explanation.get("gates"),
+           "score": explanation.get("score"),
+           # "gates" fallback: rows persisted before the scored_checks rename (2026-07-02 S4)
+           "scored_checks": explanation.get("scored_checks") or explanation.get("gates"),
            "adjustments": explanation.get("adjustments"),
            "hard_reject": explanation.get("hard_reject")}
 
@@ -135,7 +133,7 @@ def brand_history(brand: str) -> Dict[str, Any]:
         v = lead.get("verdict") or "unknown"
         verdict_counts[v] = verdict_counts.get(v, 0) + 1
     memory_note = None
-    memory_path = os.path.join(MEMORY_BRANDS_DIR, f"{_slug(brand)}.md")
+    memory_path = os.path.join(MEMORY_BRANDS_DIR, f"{slug(brand)}.md")
     if os.path.exists(memory_path):
         with open(memory_path, encoding="utf-8") as f:
             memory_note = f.read()

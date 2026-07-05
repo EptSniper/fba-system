@@ -13,19 +13,30 @@ type Criteria = {
   maxOffers: number;
   minRoi: number;
   minProfitPerUnit: number;
+  priceMin: number;
+  priceMax: number;
 };
 
 type Guards = {
   priceSpikeRatio: number;
   offersRiseRatio: number;
   amazonBuyBoxShareMax: number;
+  priceCautionRatio: number;
 };
+
+type BandedRate = { priceThreshold: number; atOrBelowThreshold: number; aboveThreshold: number };
 
 type DealAnalyzerProps = {
   criteria: Criteria;
   guards: Guards;
   groceryMinRoi: number;
   referralRates: Record<string, number>;
+  bandedRates: Record<string, BandedRate>;
+  minReferralFee: number;
+  fuelSurcharge: number;
+  prepCost: number;
+  worstCaseLossBarUsd: number;
+  marginHealthThreshold: number;
   friendlyBrands: string[];
   avoidBrands: string[];
   restrictionKeywords: Record<string, string[]>;
@@ -53,9 +64,6 @@ const DEFAULTS = {
   titleText: "",
 };
 type FormState = typeof DEFAULTS;
-
-const FUEL_RATE = 0.035;
-const PREP = 0.5;
 
 function numOrNull(s: string): number | null {
   if (s.trim() === "") return null;
@@ -113,7 +121,7 @@ type Check = {
   hard?: boolean; // does failing this force a PASS (reject) verdict?
 };
 
-export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, friendlyBrands, avoidBrands, restrictionKeywords }: DealAnalyzerProps) {
+export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, bandedRates, minReferralFee, fuelSurcharge, prepCost, worstCaseLossBarUsd, marginHealthThreshold, friendlyBrands, avoidBrands, restrictionKeywords }: DealAnalyzerProps) {
   const [v, setV] = React.useState<FormState>(DEFAULTS);
   const [saving, setSaving] = React.useState(false);
   const [saveMsg, setSaveMsg] = React.useState<{ tone: "ok" | "err"; text: string } | null>(null);
@@ -122,27 +130,47 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
 
   const isGrocery = v.category === "grocery";
   const roiTarget = isGrocery ? groceryMinRoi : criteria.minRoi;
-  const referralRate = v.category ? referralRates[v.category] ?? referralRates.default ?? 0.15 : referralRates.default ?? 0.15;
+
+  // Price-banded categories (Code Review 2026-07-02, Finding CS6) — e.g. grocery is really 8%
+  // at/below a price threshold and 15% above it; a single flat rate overstates profit/ROI once
+  // price crosses the threshold. Mirrors scout/config.referral_rate_for(category, price).
+  function referralRateFor(price: number): number {
+    const flat = v.category ? referralRates[v.category] ?? referralRates.default ?? 0.15 : referralRates.default ?? 0.15;
+    const band = v.category ? bandedRates[v.category] : undefined;
+    if (!band) return flat;
+    return price <= band.priceThreshold ? band.atOrBelowThreshold : band.aboveThreshold;
+  }
+  const referralRate = referralRateFor(v.sellPrice);
 
   // Mirrors amazon-fba-oa/skills/fba-deal-calculator/scripts/fba_calc.py and
   // scout/scoring.py's estimate_oa_profit_roi for referral/fulfillment/fuel/prep — category-aware
-  // referral rate + the $0.30 floor ONLY when a category is known, exactly like scout's
-  // estimate_oa_profit_roi (no floor on the uncategorized path). "Inbound / unit" is a
-  // DELIBERATE control-center-only addition (real shipping-to-Amazon cost scout's simplified
-  // estimate doesn't model) — this makes the two tools diverge on purpose for that one line
-  // item; everything else stays formula-identical to scout.
-  const referral = v.category ? Math.max(v.sellPrice * referralRate, 0.3) : v.sellPrice * referralRate;
-  const fuel = v.fbaFee * FUEL_RATE;
-  const nonCostFees = referral + v.fbaFee + fuel + PREP + v.inbound;
+  // referral rate + the minReferralFee floor ONLY when a category is known, exactly like scout's
+  // estimate_oa_profit_roi (no floor on the uncategorized path). fuelSurcharge/prepCost/
+  // minReferralFee are read from ai-brain.json's fees block (Code Review 2026-07-02, Finding
+  // S6) — previously hardcoded FUEL_RATE/PREP/0.3 constants here could silently drift from
+  // scout/config.py's own fee schedule. "Inbound / unit" is a DELIBERATE control-center-only
+  // addition (real shipping-to-Amazon cost scout's simplified estimate doesn't model) — this
+  // makes the two tools diverge on purpose for that one line item; everything else stays
+  // formula-identical to scout.
+  const referral = v.category ? Math.max(v.sellPrice * referralRate, minReferralFee) : v.sellPrice * referralRate;
+  const fuel = v.fbaFee * fuelSurcharge;
+  const nonCostFees = referral + v.fbaFee + fuel + prepCost + v.inbound;
   const profit = v.sellPrice - v.buyCost - nonCostFees;
   const roi = v.buyCost > 0 ? profit / v.buyCost : 0;
   const margin = v.sellPrice > 0 ? profit / v.sellPrice : 0;
-  const breakeven = (v.buyCost + v.fbaFee + fuel + PREP + v.inbound) / (1 - referralRate);
+  const breakeven = (v.buyCost + v.fbaFee + fuel + prepCost + v.inbound) / (1 - referralRate);
   const maxCost = (v.sellPrice - nonCostFees) / (1 + roiTarget);
 
   // ---- Optional Keepa-history guards (skipped, not failed, when the field is empty) --------
   const avgPrice90 = numOrNull(v.avgPrice90);
   const isPriceSpike = avgPrice90 !== null && v.sellPrice > avgPrice90 * guards.priceSpikeRatio;
+  // Softer, earlier warning band (Code Review 2026-07-02, Finding CS3) — mirrors
+  // scout/scoring.py's _price_caution(): price is 1.15-1.5x its 90-day average, a smaller
+  // penalty than a genuine spike and mutually exclusive with it (checked only when NOT already
+  // a spike, same as scoring.py's elif). This control-center calculator never surfaced it at
+  // all before, even though scout's own rater always has scored it.
+  const isPriceCaution = !isPriceSpike && avgPrice90 !== null
+    && v.sellPrice > avgPrice90 * guards.priceCautionRatio;
 
   const avgOffers90 = numOrNull(v.avgOffers90);
   const isOffersRising = avgOffers90 !== null && v.offers > avgOffers90 * guards.offersRiseRatio;
@@ -154,11 +182,14 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
   const priceLow90 = numOrNull(v.priceLow90);
   let worstCaseLoss = 0;
   if (priceLow90 !== null) {
-    const referralLow = v.category ? Math.max(priceLow90 * referralRate, 0.3) : priceLow90 * referralRate;
-    const nonCostFeesLow = referralLow + v.fbaFee + fuel + PREP + v.inbound;
+    // Re-bands at the LOW price, not the current sell price (Finding CS6) — a banded category's
+    // rate can genuinely differ at the 90-day low vs today (e.g. today $30/15%, low $12/8%).
+    const referralRateLow = referralRateFor(priceLow90);
+    const referralLow = v.category ? Math.max(priceLow90 * referralRateLow, minReferralFee) : priceLow90 * referralRateLow;
+    const nonCostFeesLow = referralLow + v.fbaFee + fuel + prepCost + v.inbound;
     worstCaseLoss = Math.max(0, -(priceLow90 - v.buyCost - nonCostFeesLow));
   }
-  const isWorstCaseFail = priceLow90 !== null && worstCaseLoss > 2;
+  const isWorstCaseFail = priceLow90 !== null && worstCaseLoss > worstCaseLossBarUsd;
 
   const isAvoidBrand = matchesBrandList(v.brandText, avoidBrands, "avoid");
   const isFriendlyBrand = !isAvoidBrand && matchesBrandList(v.brandText, friendlyBrands, "friendly");
@@ -183,9 +214,21 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
     { key: "roi", label: "ROI floor", countable: true,
       status: roi >= roiTarget ? "pass" : "fail",
       detail: `${pct(roi)}${isGrocery ? ` (grocery ${Math.round(groceryMinRoi * 100)}% bar)` : ""}` },
+    // Scored, not a hard reject (Code Review 2026-07-02, Finding CS7) — the Find page's own
+    // "Buy / no-buy criteria" panel already advertises this $priceMin-$priceMax band as one of
+    // the rater's criteria, but this calculator never actually checked it. Soft (SOFT_KEYS
+    // below): an out-of-band price demotes BUY to REVIEW rather than forcing a reject outright,
+    // matching that scout/scoring.py itself doesn't hard-gate on price either.
+    { key: "price-band", label: "Price band", countable: true,
+      status: v.sellPrice >= criteria.priceMin && v.sellPrice <= criteria.priceMax ? "pass" : "fail",
+      detail: `$${v.sellPrice} (target $${criteria.priceMin}-$${criteria.priceMax})` },
     { key: "price-spike", label: "Price spike (90d)", countable: true, hard: false,
       status: avgPrice90 === null ? "skip" : isPriceSpike ? "fail" : "pass",
       detail: avgPrice90 === null ? "not checked" : `$${v.sellPrice} vs $${avgPrice90} avg (max ${guards.priceSpikeRatio}×)` },
+    { key: "price-caution", label: "Price caution (90d)", countable: true, hard: false,
+      status: avgPrice90 === null || isPriceSpike ? "skip" : isPriceCaution ? "fail" : "pass",
+      detail: avgPrice90 === null ? "not checked" : isPriceSpike ? "superseded by price spike"
+        : `$${v.sellPrice} vs $${avgPrice90} avg (${guards.priceCautionRatio}-${guards.priceSpikeRatio}× band)` },
     { key: "offers-rising", label: "Offers rising (90d)", countable: true,
       status: avgOffers90 === null ? "skip" : isOffersRising ? "fail" : "pass",
       detail: avgOffers90 === null ? "not checked" : `${v.offers} vs ${avgOffers90} avg (max ${guards.offersRiseRatio}×)` },
@@ -215,7 +258,7 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
   // flag. Now: any CORE criteria failure (demand/competition/profit/roi/eligibility) rejects, same
   // as before; soft-signal failures alone can only ever demote BUY to REVIEW, never force PASS,
   // and never get silently absorbed into a BUY.
-  const SOFT_KEYS = new Set(["price-spike", "offers-rising", "worst-case"]);
+  const SOFT_KEYS = new Set(["price-spike", "price-caution", "offers-rising", "worst-case", "price-band"]);
   const coreFailed = countable.filter((c) => c.status === "fail" && !SOFT_KEYS.has(c.key));
   const softFailed = countable.filter((c) => c.status === "fail" && SOFT_KEYS.has(c.key));
   const verdict = hardRejected || coreFailed.length > 0 ? "PASS" : softFailed.length === 0 ? "BUY" : "REVIEW";
@@ -240,7 +283,16 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
           min="0"
           step="0.01"
           value={v[key] as number}
-          onChange={(e) => set(key, Number(e.target.value))}
+          onChange={(e) => {
+            // Don't coerce a momentarily-empty box (backspacing to retype a new value) to a
+            // real 0 — `Number("") === 0`, so every clear-then-type keystroke used to flash a
+            // fake 0 through profit/ROI/margin math and the Demand/Competition/etc. checks
+            // (e.g. BSR briefly reading 0 always trivially "passes" the BSR-ceiling check).
+            // Skip the update while empty; the field visibly holds its last real value until a
+            // new number is actually typed (R3 nits).
+            if (e.target.value === "") return;
+            set(key, Number(e.target.value));
+          }}
         />
       </span>
     </label>
@@ -289,6 +341,7 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
           product: v.productName || v.titleText || (v.asin ? `ASIN ${v.asin}` : "Untitled deal"),
           asin: v.asin || undefined,
           roi,
+          roiUnit: "fraction", // profit/buyCost — declared so the API never unit-guesses (2026-07-03 #2)
           status: "researching",
           notes: `${verdict} — ${money(profit)}/u, ${pct(roi)} ROI, ${failed.length}/${countable.length} checks failed`
             + (rejectReason ? `. Hard reject: ${rejectReason}` : "")
@@ -352,7 +405,7 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
               </label>
             </div>
             <p className="mt-2.5 text-[11px] leading-snug text-faint">
-              {Math.round(referralRate * 100)}% referral ($0.30 min){v.category ? ` (${categoryLabel(v.category)})` : ""}, 3.5% fuel on FBA fee, $0.50 prep.
+              {Math.round(referralRate * 100)}% referral (${minReferralFee.toFixed(2)} min){v.category ? ` (${categoryLabel(v.category)})` : ""}, {(fuelSurcharge * 100).toFixed(1)}% fuel on FBA fee, ${prepCost.toFixed(2)} prep.
               Estimate only — confirm the exact fee in SellerAmp / Revenue Calculator.
             </p>
           </div>
@@ -365,7 +418,11 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
             <div className="grid gap-2.5 sm:grid-cols-2">
               {optField("90-day avg price", "avgPrice90", "$")}
               {optField("90-day avg offers", "avgOffers90")}
-              {optField("Amazon Buy-Box share", "amazonBBSharePct", undefined, "%")}
+              {/* "%" used to be passed as the PLACEHOLDER, showing a bare, meaningless "%"
+                  symbol in the empty box instead of a real hint (R3 nits) — this field also has
+                  no prefix/suffix rendering, so the label itself now states the units and the
+                  placeholder gives a real example. */}
+              {optField("Amazon Buy-Box share (%)", "amazonBBSharePct", undefined, "e.g. 20")}
               {optField("90-day low price", "priceLow90", "$")}
               <label className="block">
                 <span className="mb-1 block text-[11px] text-muted">Brand</span>
@@ -401,7 +458,7 @@ export function DealAnalyzer({ criteria, guards, groceryMinRoi, referralRates, f
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {stat("Profit / unit", money(profit), profit >= criteria.minProfitPerUnit)}
             {stat("ROI", pct(roi), roi >= roiTarget)}
-            {stat("Margin", pct(margin), margin >= 0.2)}
+            {stat("Margin", pct(margin), margin >= marginHealthThreshold)}
             {stat("Breakeven sell", money(breakeven), true, true)}
             {stat(`Max cost @${Math.round(roiTarget * 100)}%`, money(maxCost), v.buyCost <= maxCost)}
           </div>

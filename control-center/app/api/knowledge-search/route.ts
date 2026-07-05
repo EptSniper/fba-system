@@ -50,6 +50,32 @@ const answerCache = new Map<string, CachedResult>();
 const script = path.resolve(process.cwd(), "..", "knowledge-rag", "ask.py");
 const python = process.env.PYTHON_BIN || "python";
 
+// THIS_WEEK.md Prompt W1 — knowledge-rag/server.py keeps the bge model warm in memory instead
+// of every call paying a full model load. Try it first; any failure (not running, timeout,
+// bad response) falls straight back to the existing cold subprocess path below — this route
+// never depends on the server being up, it's purely a latency optimization when it is.
+const KNOWLEDGE_SERVER_PORT = process.env.KNOWLEDGE_SERVER_PORT || "8787";
+const KNOWLEDGE_SERVER_URL = `http://127.0.0.1:${KNOWLEDGE_SERVER_PORT}`;
+const SERVER_TIMEOUT_MS = 3_000;
+
+async function tryLocalServer(question: string, limit: number): Promise<RetrievalPayload | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), SERVER_TIMEOUT_MS);
+    const res = await fetch(`${KNOWLEDGE_SERVER_URL}/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, limit }),
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    return (await res.json()) as RetrievalPayload;
+  } catch {
+    return null; // server not running / timed out / bad response — fall back silently
+  }
+}
+
 async function runKnowledge(args: string[], timeout = 75_000) {
   const { stdout } = await execFileAsync(python, [script, ...args], {
     timeout,
@@ -102,7 +128,7 @@ export async function POST(request: Request) {
   const cached = answerCache.get(cacheKey);
   if (cached && cached.expires > Date.now()) {
     return NextResponse.json(
-      { ...cached.payload, source: "supabase", model: "BAAI/bge-base-en-v1.5", cache: "hit" },
+      { ...cached.payload, source: "supabase", model: "BAAI/bge-base-en-v1.5", cache: "hit", latency_source: "cache" },
       { headers: { "Cache-Control": "no-store", "X-Knowledge-Cache": "HIT" } },
     );
   }
@@ -110,8 +136,13 @@ export async function POST(request: Request) {
 
   try {
     const started = Date.now();
-    const payload = await runKnowledge(["--json", "--limit", "12", question]) as RetrievalPayload;
-    if (!payload.answer?.points?.length) {
+    let payload = await tryLocalServer(question, 12);
+    let latencySource: "server" | "subprocess" = "server";
+    if (!payload?.answer?.points?.length) {
+      payload = await runKnowledge(["--json", "--limit", "12", question]) as RetrievalPayload;
+      latencySource = "subprocess";
+    }
+    if (!payload?.answer?.points?.length) {
       throw new Error("Retrieval returned no answer points.");
     }
     answerCache.set(cacheKey, { expires: Date.now() + CACHE_TTL_MS, payload });
@@ -121,7 +152,8 @@ export async function POST(request: Request) {
       answerCache.delete(oldest);
     }
     return NextResponse.json(
-      { ...payload, source: "supabase", model: "BAAI/bge-base-en-v1.5", cache: "miss", latency_ms: Date.now() - started },
+      { ...payload, source: "supabase", model: "BAAI/bge-base-en-v1.5", cache: "miss",
+        latency_ms: Date.now() - started, latency_source: latencySource },
       { headers: { "Cache-Control": "no-store", "X-Knowledge-Cache": "MISS" } },
     );
   } catch (error) {

@@ -34,6 +34,14 @@ def _is_due(row: Dict[str, Any], now: _dt.datetime) -> bool:
         last_dt = _dt.datetime.fromisoformat(str(last_run).replace("Z", "+00:00"))
     except ValueError:
         return True  # unparseable timestamp -> treat as due rather than silently skip it
+    if last_dt.tzinfo is None:
+        # Code Review 2026-07-02, nit: a last_run_at string with no explicit UTC offset (e.g.
+        # Supabase/PostgREST occasionally omitting it, or a hand-set value) parses to a
+        # tz-NAIVE datetime, and `now - last_dt` below then raises TypeError ("can't subtract
+        # offset-naive and offset-aware datetimes") — reproduced directly, not hypothetical.
+        # Every timestamp this table ever stores is UTC (captured_at/checked_at etc. all
+        # default to now() in UTC), so assume UTC rather than raise or silently skip.
+        last_dt = last_dt.replace(tzinfo=_dt.timezone.utc)
     rerun_after = row.get("rerun_after_days") or DEFAULT_RERUN_AFTER_DAYS
     return (now - last_dt) >= _dt.timedelta(days=rerun_after)
 

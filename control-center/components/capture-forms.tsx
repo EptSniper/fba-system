@@ -63,7 +63,9 @@ export function CaptureForms({ initialEvents }: { initialEvents: CaptureEvent[] 
       const res = await fetch("/api/capture", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind, ...form }),
+        // This form's ROI field asks for a PERCENT ("35" = 35%) — declare the unit explicitly
+        // instead of making the API guess it from the magnitude (Code Review 2026-07-03, #2).
+        body: JSON.stringify({ kind, ...form, ...(kind === "lead" ? { roiUnit: "percent" } : {}) }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -123,12 +125,12 @@ export function CaptureForms({ initialEvents }: { initialEvents: CaptureEvent[] 
             <>
               <Field label="Status">
                 <select className={fieldCls} value={form.status ?? "idea"} onChange={set("status")}>
-                  {["idea", "researching", "buy", "ordered", "sold", "passed"].map((s) => (
+                  {["idea", "researching", "review", "buy", "ordered", "sold", "passed"].map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               </Field>
-              <Field label="Est. ROI %">
+              <Field label="Est. ROI %" hint="Type the percent (e.g. 35 for 35%) — stored as a fraction, normalized automatically.">
                 <input className={fieldCls} value={form.roi ?? ""} onChange={set("roi")} inputMode="decimal" placeholder="35" />
               </Field>
               <Field label="Source site">

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-02 (both queued videos fetched + ingested; TBFh9vFBq7k remains stuck LOGIN_REQUIRED)",
+  "updated": "2026-07-04 (daily run: 9 new items - 2 YouTube queued to queue/2026-07-04.json, 7 text sources fetched/distilled/staged; no new transcripts to ingest; TBFh9vFBq7k still stuck LOGIN_REQUIRED)",
   "purpose": "Index + dedup list for the daily research pipeline. The scheduled task appends to items[] and must skip any url/videoId already present here or any transcript already in learning-hub/transcripts/.",
   "dailyCap": 10,
   "topics": {
@@ -268,6 +268,188 @@
       "type": "text",
       "title": "Uncertainty Quantification for Retrieval-Augmented Reasoning (arXiv 2510.11483)",
       "url_or_videoId": "https://arxiv.org/abs/2510.11483",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-03",
+      "type": "youtube",
+      "title": "Amazon Online Arbitrage: How To Succeed in 2026 (Flips4Miles full walkthrough)",
+      "url_or_videoId": "PydYmi56Sso",
+      "topic": "fba_oa_mastery",
+      "status": "queued"
+    },
+    {
+      "date": "2026-07-03",
+      "type": "youtube",
+      "title": "How To Use KEEPA For Amazon FBA In 2026 || Beginner To Expert In ONE Video",
+      "url_or_videoId": "XdUGuD4ouKI",
+      "topic": "fba_oa_mastery",
+      "status": "queued"
+    },
+    {
+      "date": "2026-07-03",
+      "type": "youtube",
+      "title": "The Keepa Parameter Method! Advanced Keepa Data Product Finder Sourcing Tutorial & Live OA Sourcing!",
+      "url_or_videoId": "Cflrv_y9lSA",
+      "topic": "fba_oa_mastery",
+      "status": "queued"
+    },
+    {
+      "date": "2026-07-03",
+      "type": "text",
+      "title": "Why Amazon FBA Sourcing Will Be Harder in 2026 (FBA Lead List / Olsons)",
+      "url_or_videoId": "https://www.fbaleadlist.com/why-amazon-fba-sourcing-will-be-harder-in-2026-and-how-modern-arbitrage-resellers-are-preparing-now/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-03",
+      "type": "text",
+      "title": "Bookkeeping for Amazon Sellers: The Complete Guide (Beancount.io, Apr 2026)",
+      "url_or_videoId": "https://beancount.io/blog/2026/04/16/bookkeeping-for-amazon-sellers-complete-guide",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-03",
+      "type": "text",
+      "title": "Amazon Fee Changes 2026: Significant Fee Updates (Seller Snap, updated Apr 2026)",
+      "url_or_videoId": "https://sellersnap.io/amazon-fee-changes-and-updates/",
+      "topic": "amazon_help_docs",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-03",
+      "type": "text",
+      "title": "Enhancing Retrieval-Augmented Generation: A Study of Best Practices (arXiv 2501.07391)",
+      "url_or_videoId": "https://arxiv.org/abs/2501.07391",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-03",
+      "type": "text",
+      "title": "Amazon Online Arbitrage: How To Succeed in 2026 (SellerAmp blog)",
+      "url_or_videoId": "https://selleramp.com/tips-and-tutorials/amazon-online-arbitrage-how-to-succeed-in-2026/",
+      "topic": "fba_oa_mastery",
+      "status": "skipped-thin",
+      "note": "Blog is a one-page wrapper around the Flips4Miles video PydYmi56Sso with no standalone substance; the video was queued instead (see the 2026-07-03 youtube item)."
+    },
+    {
+      "date": "2026-07-03",
+      "type": "text",
+      "title": "Guide: Amazon Storefront Stalking to Source Product Leads (BowTiedSlinger)",
+      "url_or_videoId": "https://www.bowtiedslinger.com/p/guide-amazon-storefront-stalking",
+      "topic": "fba_oa_mastery",
+      "status": "skipped-paywall",
+      "note": "Substack paywall after the intro; free portion only restates storefront-stalking basics already staged (better for replens, needs Keepa + SellerAmp). Not saved/staged."
+    },
+    {
+      "date": "2026-07-03",
+      "type": "text",
+      "title": "RAG Production Guide 2026 (Lushbinary)",
+      "url_or_videoId": "https://lushbinary.com/blog/rag-retrieval-augmented-generation-production-guide/",
+      "topic": "build_the_system",
+      "status": "fetch-failed",
+      "note": "WebFetch returned an empty body (JS-rendered). Search snippets suggest useful production content (hybrid search as the biggest naive-RAG win, ~40% retrieval failure claim, RAGAS eval, reranking). Worth a browser-equipped re-fetch."
+    },
+    {
+      "date": "2026-07-04",
+      "type": "video",
+      "title": "The Keepa Parameter Method! Advanced Keepa Data Product Finder Sourcing Tutorial & Live OA Sourcing!",
+      "url_or_videoId": "Cflrv_y9lSA",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged",
+      "note": "Fetched via knowledge-rag/fetch_transcripts.py, distilled to research-insights.md + corpus-staging.jsonl. Full knowledge-rag corpus embed pending (staged tier only)."
+    },
+    {
+      "date": "2026-07-04",
+      "type": "video",
+      "title": "How To Use KEEPA For Amazon FBA In 2026 || Beginner To Expert In ONE Video",
+      "url_or_videoId": "XdUGuD4ouKI",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged",
+      "note": "Fetched via knowledge-rag/fetch_transcripts.py, distilled to research-insights.md + corpus-staging.jsonl. Full knowledge-rag corpus embed pending (staged tier only)."
+    },
+    {
+      "date": "2026-07-04",
+      "type": "video",
+      "title": "Amazon Online Arbitrage: How To Succeed in 2026 (Flips4Miles full walkthrough)",
+      "url_or_videoId": "PydYmi56Sso",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged",
+      "note": "Fetched via knowledge-rag/fetch_transcripts.py (602K chars, long course), distilled to research-insights.md + corpus-staging.jsonl. Full knowledge-rag corpus embed pending (staged tier only)."
+    },
+    {
+      "date": "2026-07-04",
+      "type": "youtube",
+      "title": "Keepa product finder tutorial 2026 | Amazon FBA",
+      "url_or_videoId": "rdltezXxIrk",
+      "topic": "fba_oa_mastery",
+      "status": "queued"
+    },
+    {
+      "date": "2026-07-04",
+      "type": "youtube",
+      "title": "How to Use Amazon FBA Profit Calculator | Every Fee Every Cost Explained 2026 | AMZ Prep",
+      "url_or_videoId": "jeqFx9ZiOhg",
+      "topic": "fba_oa_mastery",
+      "status": "queued"
+    },
+    {
+      "date": "2026-07-04",
+      "type": "text",
+      "title": "The Complete Online Arbitrage Guide for 2026 (Ecom Circles)",
+      "url_or_videoId": "https://ecomcircles.com/blog/online-arbitrage-amazon/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-04",
+      "type": "text",
+      "title": "Reverse Sourcing for Amazon Sellers: The 5-Step Workflow (2026 Guide) (B2B Supplier Hub)",
+      "url_or_videoId": "https://www.b2bsupplierhub.com/blog/reverse-sourcing-for-amazon-sellers",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-04",
+      "type": "text",
+      "title": "Everything on Storefront Stalking as an Arbitrage Seller (Stealth Seller)",
+      "url_or_videoId": "https://stealthseller.co/blog/everything-on-storefront-stalking-as-a-arbitrage-seller",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-04",
+      "type": "text",
+      "title": "Current List of Amazon Gated & Restricted Brands (The Selling Guys, updated Jul 1 2026)",
+      "url_or_videoId": "https://www.thesellingguys.com/current-list-of-amazon-gated-and-restricted-brands/",
+      "topic": "amazon_help_docs",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-04",
+      "type": "text",
+      "title": "Xero Bookkeeping for Amazon FBA 2026: Settlement Reconciliation Guide (Eightx)",
+      "url_or_videoId": "https://eightx.co/blog/xero-bookkeeping-amazon-fba",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-04",
+      "type": "text",
+      "title": "Scaling RAG with RAG Fusion: Lessons from an Industry Deployment (arXiv 2603.02153, Dell)",
+      "url_or_videoId": "https://arxiv.org/abs/2603.02153",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-04",
+      "type": "text",
+      "title": "A Hybrid Retrieval and Reranking Framework for Evidence-Grounded RAG (arXiv 2605.01664)",
+      "url_or_videoId": "https://arxiv.org/abs/2605.01664",
       "topic": "build_the_system",
       "status": "ingested-staged"
     }

@@ -1,19 +1,36 @@
 import Link from "next/link";
 import { ArrowRight, Database, LineChart, Radar, ShieldCheck, Target } from "lucide-react";
 import { getBrain, getDeals, getInventory, getLeads, getMoney, getPicks } from "@/lib/data";
+import { getRecentRuns, getSearchLogRows, searchesDueCount, supabaseConfigured } from "@/lib/supabase-server";
 import { KpiCard, PickCard, IngestionFeed } from "@/components/blocks";
 import { ProfitChart } from "@/components/profit-chart";
+import { RunsHealth } from "@/components/runs-health";
 import { Badge, EmptyState, PageHeader, Panel } from "@/components/ui";
 import { money, num, pct } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
-export default function TodayPage() {
+// Reads live sibling learning-hub/ files on every request (Code Review 2026-07-02, Finding
+// CS8) — without this, Next.js may statically cache the page at build time and serve stale
+// data even though the underlying file changed.
+export const dynamic = "force-dynamic";
+
+export default async function TodayPage() {
   const fin = getMoney();
   const inventory = getInventory();
   const leads = getLeads();
   const picks = getPicks();
   const deals = getDeals();
   const brain = getBrain();
+  const runsConfigured = supabaseConfigured();
+  const [runsResult, searchLogResult] = runsConfigured
+    ? await Promise.all([getRecentRuns(14), getSearchLogRows()])
+    : [null, null];
+  // Distinguish "Supabase not configured" from "configured, but this fetch failed" from
+  // "configured and genuinely has zero runs" — three different honest states, not one.
+  const runs = runsResult ?? [];
+  const runsFetchFailed = runsConfigured && runsResult === null;
+  // null = unreadable (rendered "—"), a number = real count of brands due a re-mining run.
+  const searchesDue = searchLogResult === null ? null : searchesDueCount(searchLogResult);
   const rag = brain.knowledge.ragCorpus;
   const c = brain.criteria as Record<string, number>;
   const g = (brain.guards ?? {}) as Record<string, number>;
@@ -30,14 +47,20 @@ export default function TodayPage() {
 
   const activeLeads = Object.values(leads.pipeline).reduce((a, b) => a + b, 0);
 
-  const gates: [string, string][] = [
+  // These are ai-brain.json's criteria thresholds. Only "Amazon Buy Box" is a real hard reject
+  // (scout/scoring.py's oa_hard_reject() — unconditional regardless of score); BSR/Sales/ROI/
+  // Profit/Offers/Price are SCORED thresholds that each contribute points to the 0-100 score —
+  // a candidate can miss one and still clear the review bar. Calling all of these "gates" (as
+  // an earlier version of this panel did) falsely implied every row was a pass/fail cutoff
+  // (Code Review 2026-07-02, Finding S4).
+  const criteria: [string, string][] = [
     ["BSR", `≤ ${Math.round(c.bsrMax / 1000)}k`],
     ["Sales/mo", `≥ ${c.minMonthlySales}`],
     ["ROI", `≥ ${Math.round(c.minRoi * 100)}%`],
     ["Profit/unit", `≥ $${c.minProfitPerUnit}`],
     ["Offers", `${c.minOffers}–${c.maxOffers}`],
     ["Price", `$${c.priceMin}–$${c.priceMax}`],
-    ["Amazon Buy Box", c.rejectIfAmazonBuyBox ? "reject" : "allow"],
+    ["Amazon Buy Box (hard reject)", c.rejectIfAmazonBuyBox ? "reject" : "allow"],
   ];
   const guards: [string, string][] = [
     ["Price spike", `> ${g.priceSpikeRatio ?? 1.5}× 90d`],
@@ -66,7 +89,7 @@ export default function TodayPage() {
         <KpiCard label="Knowledge notes" tone="accent" value={num(rag?.chunks ?? 0)} />
       </section>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <div className="flex min-w-0 flex-col gap-3 lg:col-span-2">
           <Panel title="Systems" icon={<Radar size={13} />} right="real connections only">
             <div className="flex flex-col divide-y divide-line">
@@ -85,6 +108,8 @@ export default function TodayPage() {
             </div>
           </Panel>
 
+          <RunsHealth connected={runsConfigured} fetchFailed={runsFetchFailed} runs={runs} searchesDue={searchesDue} />
+
           <Panel title="Scout picks" icon={<Target size={13} />} right={picks.connected ? "live" : "offline"}>
             {picks.picks.length ? (
               <div className="grid gap-2 sm:grid-cols-2">
@@ -97,9 +122,9 @@ export default function TodayPage() {
         </div>
 
         <div className="flex flex-col gap-3">
-          <Panel title="Buy gates" icon={<ShieldCheck size={13} />} right="ai-brain">
+          <Panel title="Buy criteria" icon={<ShieldCheck size={13} />} right="ai-brain">
             <dl className="flex flex-col divide-y divide-line text-[12px]">
-              {gates.map(([k, v]) => (
+              {criteria.map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between py-1.5">
                   <dt className="text-muted">{k}</dt>
                   <dd className="num font-medium text-ink">{v}</dd>

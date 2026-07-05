@@ -18,13 +18,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import analyst  # noqa: E402
 import pipeline  # noqa: E402
+from ast_guards import find_write_like_calls, open_call_targets_containing  # noqa: E402
 
 
 def _base(**kw):
     p = {
         "asin": "B0TEST", "price": 30.0, "brand": "Jellycat",
         "rule_score": 80, "blended_score": 85, "model_proba": 0.7, "verdict": "review", "score": 85,
-        "explanation": {"gates": [{"name": "bsr", "passed": True}], "adjustments": []},
+        "explanation": {"scored_checks": [{"name": "bsr", "passed": True}], "adjustments": []},
     }
     p.update(kw)
     return p
@@ -56,21 +57,19 @@ def test_analyst_never_calls_scoring_functions():
 
 
 def test_analyst_never_opens_a_file():
-    tree = ast.parse(inspect.getsource(analyst))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "open":
-            assert False, "analyst.py has no legitimate reason to open/write any file"
+    """Broadened beyond a bare open()-only scan (Code Review 2026-07-02, Finding S9): also
+    catches os/io/codecs-style open() and pathlib .write_text()/.write_bytes()/.open() method
+    calls, none of which the original bare-Name-only check would have seen."""
+    hits = find_write_like_calls(analyst)
+    assert not hits, f"analyst.py has no legitimate reason to open/write any file, found: {hits}"
 
 
 def test_analyst_has_no_ai_brain_json_open_call():
     # NOT a blanket substring ban — the module's own docstring legitimately explains that it
     # has no write path to ai-brain.json, which would false-positive on a naive text search.
     # AST-based: assert no open()/write call anywhere targets that path (there are none, since
-    # test_analyst_never_opens_a_file already proves there's no open() call in this file at all).
-    tree = ast.parse(inspect.getsource(analyst))
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "open":
-            assert False, "analyst.py must never open any file, let alone ai-brain.json"
+    # test_analyst_never_opens_a_file already proves there's no write-like call in this file at all).
+    assert open_call_targets_containing(analyst, "ai-brain.json") == []
 
 
 # ---------------------------------------------------------------------------
@@ -89,9 +88,9 @@ def test_build_input_excludes_score_and_verdict_fields():
         assert forbidden not in data
 
 
-def test_build_input_includes_gates_and_adjustments():
+def test_build_input_includes_scored_checks_and_adjustments():
     data = analyst.build_input(_base())
-    assert data["gates"] == [{"name": "bsr", "passed": True}]
+    assert data["scored_checks"] == [{"name": "bsr", "passed": True}]
     assert data["asin"] == "B0TEST"
     assert data["brand"] == "Jellycat"
 
@@ -104,7 +103,7 @@ def test_build_input_includes_memory_note_when_given():
 def test_build_input_omits_none_fields():
     data = analyst.build_input({"asin": "B0X"})
     assert "brand" not in data
-    assert "gates" not in data
+    assert "scored_checks" not in data
 
 
 # ---------------------------------------------------------------------------

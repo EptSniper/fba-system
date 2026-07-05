@@ -1,0 +1,21 @@
+{
+  "id": "cg-seasonality-q4-bump-clean-buy",
+  "facts": {
+    "price": 35.99,
+    "oa_profit": 8.54,
+    "oa_roi": 0.56,
+    "offers": 10,
+    "avg_offers_90": 15,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "chart-guide:seasonality-clean-buy",
+  "source": "Keepa Charts The Ultimate Amazon FBA Tutorial for 2026.txt @60:22 \u2014 G.I. Joe item, Q4 seasonality bump (50+ to 100+ sold/mo), declining offer count, $8.54 profit/56% ROI at a $15 buy cost/$35.99 sell price; narrator: 'this is something I would absolutely buy.'",
+  "difficulty": "easy"
+}

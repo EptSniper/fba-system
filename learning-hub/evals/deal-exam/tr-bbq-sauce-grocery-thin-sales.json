@@ -1,0 +1,23 @@
+{
+  "id": "tr-bbq-sauce-grocery-thin-sales",
+  "facts": {
+    "price": 29.99,
+    "oa_profit": 6.14,
+    "oa_roi": 0.54,
+    "est_sales": 30,
+    "offers": 3,
+    "category": "grocery",
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "sales"
+  ],
+  "trap_type": "transcript:below-min-sales-but-strong-profit",
+  "source": "Finding Thousands of Arbitrage Products...Store-Front Stalking.txt @00:10:14.000 \u2014 Sweet Baby Ray's, only ~30 sales/mo (below our 50 floor) but strong $6.14/unit profit at 3 sellers; narrator bought anyway ('six dollars profit every time'). DIVERGENCE NOTE: sales is a SCORED check (partial credit at 30/50), not a hard gate, so it's plausible this still clears review \u2014 real test of whether the scorer's partial-credit design matches practitioner tolerance for under-threshold-but-profitable volume.",
+  "difficulty": "hard"
+}

@@ -15,8 +15,8 @@ Two layers, applied to every string:
      literally in the text, is masked — catches anything, regardless of what URL param name
      carried it.
   2. Generic patterns as a second line of defense for values redact() couldn't already know
-     about from the environment: `key=...`/`apiKey=...`/`token=...` query params, and Discord
-     webhook URLs (host + numeric id + token segment).
+     about from the environment: KEY/TOKEN/SECRET-style query parameters, and Discord webhook
+     URLs (host + numeric id + token segment).
 """
 from __future__ import annotations
 
@@ -29,12 +29,27 @@ _MASK = "***REDACTED***"
 _ENV_NAME_PATTERN = re.compile(r"(KEY|TOKEN|WEBHOOK)", re.IGNORECASE)
 
 _QUERY_PARAM_PATTERN = re.compile(
-    r"(?i)\b(api[_-]?key|apikey|key|token|access[_-]?token|secret)=([^&\s\"'<>]+)"
+    r"(?i)\b(api[_-]?key|apikey|key|token|access[_-]?token|secret)="
+    # Negative lookaheads exclude the shapes real secrets never take but SOURCE CODE constantly
+    # does: JSX `key={...}` props, Python `sorted(key=lambda ...)` / `key=len` sort kwargs, and
+    # `api_key=os.environ[...]` env lookups. Found live 2026-07-05 (Session 52): the original
+    # pattern flagged 34 files on one ordinary commit, none a real secret — every hit was one of
+    # these four code shapes. The character class also excludes brace/paren/bracket as a second
+    # line of defense against the same shapes.
+    r"(?!\{)(?!\()(?!lambda\b)(?!len\b)(?!os\.environ\b)"
+    r"([^&\s\"'<>{}()\[\]]+)"
 )
 
 _DISCORD_WEBHOOK_PATTERN = re.compile(
     r"https://discord(?:app)?\.com/api/webhooks/\d+/[A-Za-z0-9_\-]+"
 )
+
+# JWT structure (Supabase anon/service_role keys are JWTs): three base64url segments joined by
+# dots, header segment always starts "eyJ" (base64 of `{"...`). Catches a live JWT even when it
+# ISN'T the current value of a *KEY*/*TOKEN*/*WEBHOOK* env var above — e.g. an old rotated key,
+# or one loaded under a name this process doesn't recognize (scripts/pre-commit.py's secrets
+# scan runs this against STAGED file content, not process env, so this is its main defense).
+_JWT_PATTERN = re.compile(r"eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}")
 
 
 def _sensitive_env_values() -> list:
@@ -48,9 +63,9 @@ def _sensitive_env_values() -> list:
 
 
 def redact(text: Optional[str]) -> Optional[str]:
-    """Mask every known-secret env var value, generic key=/token= query params, and Discord
-    webhook URLs found in `text`. None-safe (returns None unchanged) so callers can wrap an
-    Optional[str] without an extra guard."""
+    """Mask every known-secret env var value, generic KEY/TOKEN-style query parameters, Discord
+    webhook URLs, and JWT-shaped strings found in `text`. None-safe (returns None unchanged) so
+    callers can wrap an Optional[str] without an extra guard."""
     if not text:
         return text
     out = text
@@ -59,4 +74,5 @@ def redact(text: Optional[str]) -> Optional[str]:
             out = out.replace(value, _MASK)
     out = _QUERY_PARAM_PATTERN.sub(lambda m: f"{m.group(1)}={_MASK}", out)
     out = _DISCORD_WEBHOOK_PATTERN.sub(_MASK, out)
+    out = _JWT_PATTERN.sub(_MASK, out)
     return out

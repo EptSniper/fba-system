@@ -1,7 +1,7 @@
 """
 tuning_report.py — weekly threshold-tuning suggestions (System Blueprint Prompt 3.1).
 
-Compares realized outcomes against each named gate/adjustment from the scout's own explain-why
+Compares realized outcomes against each named scored-check/adjustment from the scout's own explain-why
 output (scoring.explain_oa(), stored in Supabase leads.explanation) and suggests brain threshold
 changes for HUMAN review. Writes to learning-hub/tracking/threshold-tuning-report.md.
 
@@ -37,17 +37,23 @@ def _outcome_label(lead: Dict[str, Any]):
     return labels.label_from_outcome(outcome)
 
 
-def gate_and_adjustment_stats(leads: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
-    """{check_name: {"wins": n, "losses": n}} across every gate + adjustment name that appears
-    in a lead's stored explanation, counted only for leads with a realized outcome."""
+def check_and_adjustment_stats(leads: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
+    """{check_name: {"wins": n, "losses": n}} across every scored-check + adjustment name that
+    appears in a lead's stored explanation, counted only for leads with a realized outcome.
+    "check:" entries are scoring.py's SCORED checks (bsr/sales/offers/roi/profit/buybox) — never
+    one of the 5 real hard rejects, which never vary per-lead since they're unconditional
+    (Code Review 2026-07-02, Finding S4 — this was misleadingly named gate_and_adjustment_stats
+    with a "gate:" key prefix, implying these were pass/fail cutoffs)."""
     stats: Dict[str, Dict[str, int]] = collections.defaultdict(lambda: {"wins": 0, "losses": 0})
     for lead in leads:
         label = _outcome_label(lead)
         if label is None:
             continue
         explanation = lead.get("explanation") or {}
-        for gate in explanation.get("gates", []):
-            key = f"gate:{gate.get('name')}={'pass' if gate.get('passed') else 'fail'}"
+        # "gates" is the pre-rename key (explain_oa() called them gates until Code Review
+        # 2026-07-02 S4) — rows persisted before the rename must still count toward learning.
+        for check in explanation.get("scored_checks") or explanation.get("gates") or []:
+            key = f"check:{check.get('name')}={'pass' if check.get('passed') else 'fail'}"
             stats[key]["wins" if label else "losses"] += 1
         for adj in explanation.get("adjustments", []):
             key = f"adjustment:{adj.get('name')}"
@@ -70,7 +76,7 @@ def generate_report() -> str:
         lines.append("")
         return "\n".join(lines)
 
-    stats = gate_and_adjustment_stats(with_outcome)
+    stats = check_and_adjustment_stats(with_outcome)
     lines.append(f"Analyzed {len(with_outcome)} leads with both an explanation and a realized outcome.")
     lines.append("")
     lines.append("| check | wins | losses | sample size |")

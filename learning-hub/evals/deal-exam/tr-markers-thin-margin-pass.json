@@ -1,0 +1,24 @@
+{
+  "id": "tr-markers-thin-margin-pass",
+  "facts": {
+    "price": 1.0,
+    "oa_profit": 0.17,
+    "oa_roi": 0.17,
+    "est_sales": 25000,
+    "offers": null,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "roi",
+    "profit"
+  ],
+  "trap_type": "transcript:thin-margin-pass",
+  "source": "Back To School LIVE Amazon Online Arbitrage Product Research.txt @00:08:44.959 \u2014 10-markers-for-$1, $0.17/unit profit; narrator: 'a little bit too thin of a profit margin'.",
+  "difficulty": "easy"
+}

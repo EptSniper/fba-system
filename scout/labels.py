@@ -81,6 +81,53 @@ def _from_supabase() -> List[Dict[str, Any]]:
             "asin": lead.get("asin"), "source": "supabase",
             "features": features if snapshot else None,
             "label": label,
+            "label_quality": "gold",  # a REALIZED outcome — the strongest label
+        })
+    return rows
+
+
+def _from_shadow() -> List[Dict[str, Any]]:
+    """SILVER labels — the shadow-outcome tracker's proxy outcomes (DATA_ENGINE_PLAN.md V1). Each
+    completed shadow row carries the ORIGINAL pre-decision feature snapshot and a
+    would_have_profited label computed at the original landed cost. HONEST CAVEAT: a shadow label
+    ignores execution and sell-through (we never actually bought/sold), so it is weaker than a
+    gold outcome and is reported as its own tier — never blended silently into gold."""
+    rows = []
+    for s in db.all_shadow_outcomes():
+        label = s.get("would_have_profited")
+        if label is None:
+            continue
+        snapshot = s.get("features_snapshot") or {}
+        # Leakage guard: re-filter to the pre-decision allowlist at read time too.
+        features = {k: snapshot.get(k) for k in db.PRE_DECISION_FEATURES} if snapshot else None
+        rows.append({
+            "asin": s.get("asin"), "source": "shadow",
+            "features": features if snapshot else None,
+            "label": bool(label),
+            "label_quality": "silver",
+            "checkpoint_day": s.get("checkpoint_day"),
+        })
+    return rows
+
+
+def _from_backtest() -> List[Dict[str, Any]]:
+    """BACKTEST labels — the 4th and WEAKEST tier (DATA_ENGINE_PLAN.md V2): hindsight simulations
+    on historical Keepa data with a simulated buy cost, no execution, no sell-through. Included in
+    training only when a caller explicitly opts in (V3's ranker); the calibration diagnostic keeps
+    them OUT and reports their count as a separate tier line, never blended into gold/silver."""
+    rows = []
+    for b in db.all_backtest_rows():
+        label = b.get("would_have_profited")
+        if label is None:
+            continue
+        snapshot = b.get("features_snapshot") or {}
+        features = {k: snapshot.get(k) for k in db.PRE_DECISION_FEATURES} if snapshot else None
+        rows.append({
+            "asin": b.get("asin"), "source": "backtest",
+            "features": features if snapshot else None,
+            "label": bool(label),
+            "label_quality": "backtest",
+            "simulation_date": b.get("simulation_date"),
         })
     return rows
 
@@ -129,20 +176,45 @@ def _from_local_ledger() -> List[Dict[str, Any]]:
         label = label_from_outcome(latest)
         if label is None:
             continue
-        rows.append({"asin": latest.get("asin"), "source": "local_ledger", "features": None, "label": label})
+        rows.append({"asin": latest.get("asin"), "source": "local_ledger", "features": None,
+                     "label": label, "label_quality": "gold"})  # a realized outcome, just no snapshot
     return rows
 
 
-def assemble_training_rows() -> Dict[str, Any]:
-    """The single entry point. Combines both sources, keeps only rows with BOTH a real
-    pre-decision feature snapshot AND a realized-outcome label, and enforces the minimum from
-    ai-brain.json. Never raises on missing data — an honest empty/refused result instead."""
-    all_labeled = _from_supabase() + _from_local_ledger()
+def _tier_counts(rows: List[Dict[str, Any]]) -> Dict[str, Dict[str, int]]:
+    """Per-quality-tier breakdown of trainable rows — the honesty requirement: calibration
+    performance MUST be reported per tier, never with silver silently blended into gold."""
+    tiers: Dict[str, Dict[str, int]] = {}
+    for r in rows:
+        q = r.get("label_quality", "unknown")
+        t = tiers.setdefault(q, {"total": 0, "positive": 0, "negative": 0})
+        t["total"] += 1
+        t["positive" if r["label"] else "negative"] += 1
+    return tiers
+
+
+def assemble_training_rows(include_silver: bool = True, include_backtest: bool = False) -> Dict[str, Any]:
+    """The single entry point. Combines gold (realized outcomes) and, by default, silver (shadow
+    proxy outcomes); backtest (hindsight) rows are OPT-IN (V3's ranker) and OUT of the calibration
+    diagnostic. Keeps only rows with BOTH a pre-decision feature snapshot AND a label, and enforces
+    the minimum from ai-brain.json. by_tier is always returned so reports show performance per
+    quality tier separately (the weaker-tier caveats). Never raises on missing data.
+
+    include_silver=False -> gold only; include_backtest=True -> add the backtest tier (V3)."""
+    gold = _from_supabase() + _from_local_ledger()
+    silver = _from_shadow() if include_silver else []
+    backtest = _from_backtest() if include_backtest else []
+    all_labeled = gold + silver + backtest
     trainable = [r for r in all_labeled if r.get("features")]
 
     n_pos = sum(1 for r in trainable if r["label"] is True)
     n_neg = sum(1 for r in trainable if r["label"] is False)
     min_rows = min_labeled_rows()
+    by_tier = _tier_counts(trainable)
+    silver_n = by_tier.get("silver", {}).get("total", 0)
+    # backtest rows exist even when not mixed in — surface the count so a report can show the tier
+    # line honestly ("backtest available, held separate") without blending them into the diagnostic.
+    backtest_available = db.count_backtest_rows() if not include_backtest else by_tier.get("backtest", {}).get("total", 0)
 
     refused = len(trainable) < min_rows or n_pos == 0 or n_neg == 0
     if len(trainable) < min_rows:
@@ -162,6 +234,12 @@ def assemble_training_rows() -> Dict[str, Any]:
         "min_required": min_rows,
         "refused": refused,
         "reason": reason,
+        "by_tier": by_tier,           # {gold: {total,positive,negative}, silver: {...}, backtest: {...}}
+        "silver_count": silver_n,
+        "backtest_available": backtest_available,  # count held separate unless include_backtest=True
+        "silver_caveat": ("Silver (shadow) labels ignore execution and sell-through — we never "
+                          "actually bought or sold. Report their tier separately; never treat a "
+                          "silver-trained metric as if validated by realized outcomes."),
     }
 
 

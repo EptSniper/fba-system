@@ -1,0 +1,8 @@
+# Minimal deps for the cloud ranker-training job (.github/workflows/train-ranker.yml).
+# Deliberately NOT scout/requirements.txt: training needs no keepa/anthropic/pyarrow — smaller
+# install = faster + cheaper Actions minutes (same reasoning as requirements-dealwatch.txt).
+requests>=2.31
+python-dotenv>=1.0
+numpy>=1.24
+scikit-learn>=1.3
+joblib>=1.3

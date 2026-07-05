@@ -5,12 +5,13 @@ propose_updates.py — continuous self-improvement: PROPOSALS only, applied ONLY
 Run automatically at the end of every daily runner cycle (run_daily.py). Generates three kinds
 of proposals and appends them, dated, to learning-hub/tracking/brain-proposals.md:
 
-  (a) outcome-driven — realized wins/losses per gate/adjustment (reuses tuning_report.py's
-      stats function so the logic can't drift between the two reports), but reports EVERY
-      finding with an honest confidence label instead of suppressing small samples — "too
-      small to act" is itself the honest finding at n=1-3, per the example in the prompt.
-  (b) data-driven — run telemetry vs the brain: dead/toothless gates (100% reject rate at a
-      real sample size), brands repeatedly IP-cliff-flagged, Keepa token-cost drift vs the
+  (a) outcome-driven — realized wins/losses per scored-check/adjustment (reuses
+      tuning_report.py's stats function so the logic can't drift between the two reports), but
+      reports EVERY finding with an honest confidence label instead of suppressing small
+      samples — "too small to act" is itself the honest finding at n=1-3, per the example in
+      the prompt.
+  (b) data-driven — run telemetry vs the brain: dead/toothless scored checks (100% reject rate
+      at a real sample size), brands repeatedly IP-cliff-flagged, Keepa token-cost drift vs the
       System Blueprint's assumed ~7,500/day budget.
   (c) knowledge-driven — best-effort: run a knowledge-rag check for current OA thresholds and
       point at it for manual comparison. Free-text answers are NOT auto-diffed against
@@ -35,6 +36,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List
 
+import config
 import db
 import discord_router
 import tuning_report
@@ -43,8 +45,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPORT_PATH = os.path.join(HERE, "..", "learning-hub", "tracking", "brain-proposals.md")
 ASK_PY = os.path.join(HERE, "..", "knowledge-rag", "ask.py")
 
-# System Blueprint §3's assumed daily budget — flag if actual usage drifts meaningfully.
-ASSUMED_DAILY_TOKENS = 7500
+# System Blueprint §3's assumed daily budget — flag if actual usage drifts meaningfully. Single-
+# sourced from config.ASSUMED_DAILY_TOKENS (ai-brain.json's scoring.assumedDailyTokens can
+# override it — Code Review 2026-07-02, Finding S5) so this can't drift from the brain's value.
+ASSUMED_DAILY_TOKENS = config.ASSUMED_DAILY_TOKENS
 TOKEN_DRIFT_FLAG_RATIO = 0.5  # flag if actual is <50% or >150% of assumed
 
 
@@ -57,11 +61,12 @@ def confidence_label(n: int) -> str:
 
 
 def outcome_driven_proposals() -> List[Dict[str, Any]]:
-    """Every gate/adjustment with at least one realized outcome — reported honestly regardless
-    of sample size (small samples ARE the finding at this stage, per SYSTEM_BLUEPRINT.md §4.5)."""
+    """Every scored-check/adjustment with at least one realized outcome — reported honestly
+    regardless of sample size (small samples ARE the finding at this stage, per
+    SYSTEM_BLUEPRINT.md §4.5)."""
     leads = db.leads_with_outcomes()
     with_explanation = [l for l in leads if l.get("explanation")]
-    stats = tuning_report.gate_and_adjustment_stats(with_explanation)
+    stats = tuning_report.check_and_adjustment_stats(with_explanation)
     proposals = []
     for key, s in sorted(stats.items()):
         n = s["wins"] + s["losses"]
@@ -77,8 +82,9 @@ def outcome_driven_proposals() -> List[Dict[str, Any]]:
 
 
 def data_driven_proposals() -> List[Dict[str, Any]]:
-    """Dead/toothless gates + repeated IP-cliff brands + Keepa token-cost drift, from recent
-    run telemetry and stored explanations. Honestly reports 'no data yet' where nothing exists."""
+    """Dead/toothless scored checks + repeated IP-cliff brands + Keepa token-cost drift, from
+    recent run telemetry and stored explanations. Honestly reports 'no data yet' where nothing
+    exists."""
     proposals = []
     runs = db.recent_runs(limit=14)
     if not runs:
@@ -105,9 +111,9 @@ def data_driven_proposals() -> List[Dict[str, Any]]:
     leads = db.leads_with_outcomes()
     with_explanation = [l for l in leads if l.get("explanation")]
     if with_explanation:
-        stats = tuning_report.gate_and_adjustment_stats(with_explanation)
+        stats = tuning_report.check_and_adjustment_stats(with_explanation)
         for key, s in stats.items():
-            if not key.startswith("gate:"):
+            if not key.startswith("check:"):
                 continue
             n = s["wins"] + s["losses"]
             if n >= 5 and s["losses"] == n:

@@ -1,0 +1,101 @@
+# Top-100 deal watch — the free nightly cloud runner (TOP100_DEAL_WATCH_PLAN.md T2).
+# Runs scout/deals/run_watch.py at 9 PM America/New_York, year-round, on GitHub's free tier
+# (~8% of the 2,000 free Linux minutes/month). Your PC stays irrelevant — state is in Supabase,
+# alerts in Discord.
+#
+# ONE-TIME SETUP is a human step (repo must exist + secrets added): see HUMAN_TODO.md
+# "GitHub deal-watch cloud runner". Until that's done this workflow is inert (it only runs in a
+# repo that has the secrets).
+name: deal-watch
+
+on:
+  # GitHub cron is UTC-only, so schedule BOTH candidate UTC hours for 9 PM ET and let the first
+  # step exit unless it's actually 21:00 in New York — one ~10-second no-op run/day, exact 9 PM
+  # in both EST (UTC-5 -> 02:17 UTC) and EDT (UTC-4 -> 01:17 UTC). The :17 offset dodges the
+  # documented top-of-hour scheduling congestion.
+  schedule:
+    - cron: "17 1 * * *"
+    - cron: "17 2 * * *"
+  workflow_dispatch: {}   # manual "Run workflow" button for the end-to-end verification run
+
+# Never let two runs overlap (a slow run + the next cron) — that could double-post the digest.
+concurrency:
+  group: deal-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deal-watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Gate to exactly 9 PM America/New_York
+        id: gate
+        run: |
+          HOUR=$(TZ=America/New_York date +%H)
+          echo "New York hour: $HOUR"
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ] && [ "$HOUR" != "21" ]; then
+            echo "Not 9 PM ET (hour=$HOUR) and not a manual dispatch — exiting cleanly."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install minimal deps
+        if: steps.gate.outputs.run == 'true'
+        run: pip install -r scout/requirements-dealwatch.txt
+
+      - name: Run the deal watch
+        if: steps.gate.outputs.run == 'true'
+        working-directory: scout
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          DISCORD_WEBHOOK_RETAIL_DEALS: ${{ secrets.DISCORD_WEBHOOK_RETAIL_DEALS }}
+          DISCORD_WEBHOOK_SYSTEM_HEALTH: ${{ secrets.DISCORD_WEBHOOK_SYSTEM_HEALTH }}
+          WOOT_API_KEY: ${{ secrets.WOOT_API_KEY }}
+          BESTBUY_API_KEY: ${{ secrets.BESTBUY_API_KEY }}
+          HEALTHCHECK_URL_DEALWATCH: ${{ secrets.HEALTHCHECK_URL_DEALWATCH }}
+        run: python -m deals.run_watch
+
+      # If the run failed, post a short redacted alert to #system-health so a silent nightly
+      # failure gets noticed. redact.py + Actions' own secret masking both apply; the step never
+      # echoes an env value.
+      - name: Alert on failure
+        if: failure() && steps.gate.outputs.run == 'true'
+        working-directory: scout
+        env:
+          DISCORD_WEBHOOK_SYSTEM_HEALTH: ${{ secrets.DISCORD_WEBHOOK_SYSTEM_HEALTH }}
+        run: |
+          python - <<'PY'
+          import os, json, urllib.request
+          url = os.getenv("DISCORD_WEBHOOK_SYSTEM_HEALTH")
+          if url:
+              body = {"embeds": [{"title": "⚠ Deal watch failed",
+                                  "description": "scout/deals/run_watch.py exited non-zero in GitHub Actions. Check the run log (secrets are masked).",
+                                  "color": 0xE24C4C}]}
+              req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                          headers={"Content-Type": "application/json"})
+              try:
+                  urllib.request.urlopen(req, timeout=10)
+              except Exception as e:
+                  print("failure alert post failed:", type(e).__name__)
+          PY
+
+      # Defeat GitHub's 60-day-inactivity auto-disable of scheduled workflows in a low-commit repo.
+      - name: Keepalive
+        if: steps.gate.outputs.run == 'true'
+        uses: gautamkrishnar/keepalive-workflow@v2

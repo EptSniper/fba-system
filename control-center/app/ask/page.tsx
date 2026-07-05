@@ -3,6 +3,11 @@ import { getBrain } from "@/lib/data";
 import { KnowledgeAsk } from "@/components/knowledge-ask";
 import { PageHeader, Panel, Badge } from "@/components/ui";
 
+// Reads live sibling learning-hub/ files on every request (Code Review 2026-07-02, Finding
+// CS8) — without this, Next.js may statically cache the page at build time and serve stale
+// data even though the underlying file changed.
+export const dynamic = "force-dynamic";
+
 export default function AskPage() {
   const brain = getBrain();
   const rag = brain.knowledge.ragCorpus;

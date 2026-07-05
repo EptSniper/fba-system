@@ -1,0 +1,23 @@
+{
+  "id": "tr-sunnyangel-hippers-clean-buy",
+  "facts": {
+    "price": 13.75,
+    "oa_profit": 4.0,
+    "oa_roi": 0.34,
+    "est_sales": 2000,
+    "offers": null,
+    "category": null,
+    "brand": "Sunny Angels",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "friendly-brand"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "transcript:friendly-brand-clean-buy",
+  "source": "I Don't Stop Sourcing Product...txt @01:00:04.880 \u2014 Sunny Angel 'Hippers', 34% ROI/$4 profit, 2,000 sales/mo; narrator: 'actually going to be profitable'. (brands.py lists 'Sunny Angels', matching this listing's 'Sunny Angel' line.)",
+  "difficulty": "easy"
+}

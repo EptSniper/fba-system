@@ -46,6 +46,129 @@ per the project's source-of-truth order. Cite the source URL.
   all-FBM + heavy + cheap (<$50) listings are usually dropshippers → skip; cited tool stack ~$99/mo (SellerAmp
   ~$20 + Keepa ~$29 + Boxem ~$50, 2-week trials). (youtube.com/watch?v=OUGc0aiT7l4, youtube.com/watch?v=V0lMedQJzmQ)
 
+### 2026-07-04
+- **[practitioner]** Sales rank (the green line) should be read against its PARENT category, not a
+  subcategory — subcategory rank can mislead, especially on listings with no Monthly Sold data point to
+  cross-check against. Pair BSR with the "Monthly Sold" estimate (trailing-30-day, not exact units) as the
+  real demand signal. A healthy new-offer-count line moves up and down over time (sellers cycle in/out);
+  a flat, unchanging seller count — even a high one — means the listing isn't actually moving.
+  (youtube.com/watch?v=XdUGuD4ouKI)
+- **[practitioner]** A rapid, large seller-count jump (e.g. 1→43 sellers within ~2 weeks) is a strong
+  precursor to a price crash — treat a sudden offer-count spike as a pass signal absent a real edge (FBM
+  speed, unusually low cost, or genuinely huge volume). Never price off the current spot alone — expand to
+  1+ years of history; a current multi-year-peak price with a much lower trailing-12-month range should be
+  expected to revert by the time inventory lands. Also check for seasonal/event-driven demand (summer,
+  Easter, movie tie-ins) by zooming out — buying at a seasonal peak risks both a price drop and dead stock
+  once the season ends. (youtube.com/watch?v=XdUGuD4ouKI)
+- **[practitioner]** Amazon-on-listing is only disqualifying if Amazon holds the Buy Box almost
+  exclusively (check Buy Box Statistics' 30/90/180/365-day splits, not just current status); a single
+  seller dominating the Buy Box while priced HIGHER than competitors → avoid (won't get sales), but
+  dominating while priced LOWER can still be worth testing. Sharp seller-count collapses on a brand-owned
+  listing ("Keepa cliffs," e.g. 32→4 sellers) are the strongest signal of active IP enforcement — stronger
+  evidence than a supplementary ipalert.com lookup. Avoid misbranded/generic listings (actual manufacturer
+  ≠ listed brand, no "distributed by" relationship) — Amazon treats the mismatch as a counterfeit signal
+  that can trigger a Section 3 suspension requiring proof of authenticity. Also avoid single-seller,
+  professionally-optimized private-label listings sourced via wholesalers — tight seller control tends to
+  cause account issues before inventory even lands. (youtube.com/watch?v=XdUGuD4ouKI)
+- **[practitioner]** On variation listings, evaluate each child ASIN individually (its own Monthly Sold,
+  reviews, price history via the Variations tab) — a parent listing can hide a profitable variation even
+  if the first child you open isn't one. For sparse-data ("advanced") listings with no Monthly Sold
+  estimate, triangulate via rating-count trend, the Offers tab's sold-in-last-30/90-days total, and 6-month
+  stock-level changes; a long time-on-market (e.g. 239 days) with zero reviews and zero recent sales is a
+  pass regardless of apparent margin. Keepa is a screening tool for throughput (screen more, find more
+  winners) — once a real test-buy's sales data exists, it outweighs any Keepa estimate; test uncertain
+  leads with a small quantity (e.g. 10 units), not a large order. (youtube.com/watch?v=XdUGuD4ouKI)
+- **[practitioner]** **Flips4Miles full OA course, sourcing method:** of the four Amazon selling models
+  (arbitrage/wholesale/PL/dropshipping), OA is the lowest-capital entry point (recommended start ~$1,000-3,000
+  + ~$40/mo Seller Central + ~$16-20/mo SellerAmp + ~$20/mo Keepa) since listings already have proven sales
+  history. **Storefront stalking** (browsing a high-review seller's full catalog) is the best beginner method
+  — everything there already has proven demand; only move to **manual sourcing** on a specific retailer once
+  storefront stalking has proven that retailer/brand reliably converts. **"Leaf sourcing"**: search a
+  brand/niche directly in Amazon's own search bar (paired with SellerAmp's QuickView) and let Amazon's ranking
+  surface what's actually selling. Seasonal sourcing: find a listing that spiked in a past Q4/BTS peak, use
+  Keepa Buy Box Statistics (365-day, filtered to "sold at highest price"), then storefront-stalk those sellers
+  for other seasonal inventory. Rough retail-to-Amazon heuristic: Amazon price should be ~2x+ the retail buy
+  cost before discount stacking. (youtube.com/watch?v=PydYmi56Sso)
+- **[policy]** Retail dropshipping (buying from a third-party retailer that ships straight to the Amazon
+  customer) violates Amazon's seller policies — the customer can receive a package branded from a different
+  retailer than they ordered from. (youtube.com/watch?v=PydYmi56Sso)
+- **[practitioner]** **Keepa/SellerAmp reading rules (this course's version):** BSR belongs to the whole
+  PARENT listing, not a specific variation — always check the Variations tab for the variation with real
+  offer-count movement, since a good overall BSR can mask a dead one. Only new-offer-count and price/BSR
+  really matter for arbitrage: want offer count flat-or-declining and price flat-or-rising; a flat "blocky"
+  chart = slow-selling, avoid. A sharp offer-count collapse on the year/all-time view = a past IP complaint
+  signature, avoid going forward; rising offers + falling price = "price tanking," too easy to resource, also
+  avoid. Don't trust the "sold last 30 days" estimate at face value (sellers can hide stock via a max-order-
+  qty cap) — rely on offer-count trend + Buy Box Statistics history instead; that estimate also splits only
+  across sellers priced within ~5-9% of the Buy Box, not evenly across every seller. Amazon-on-listing is
+  workable if third parties still capture ~20%+ of Buy Box share (less if the item moves very fast); ~100%
+  Amazon share + flat offers = avoid. FBM-friendliness check: 20%+ of 30-day Buy Box share going to non-FBA
+  sellers signals FBM can win the Buy Box there. A listing Keepa can't identify (generic/unbranded) is a red
+  flag — can't verify authenticity or sales history. Use Keepa's price/offer-count tracking alert on
+  near-miss listings instead of abandoning them. (youtube.com/watch?v=PydYmi56Sso)
+- **[practitioner]** **Manufacturing margin, not finding it:** items are rarely profitable at list price —
+  margin comes from STACKING a sales-tax exemption (reseller cert), site coupons, cashback extensions
+  (Capital One Shopping, Rakuten, BeFrugal, TopCashback), discounted gift cards, and store loyalty cash.
+  Always run BOTH FBA and FBM calculators (FBM shipping entered manually from a weight table, not assumed) —
+  items priced >$20 but <1 lb tend to be more profitable FBM (avoids per-unit FBA fees while shipping stays
+  cheap). If an FBM seller holds the Buy Box, price a new FBA offer ~5-10% above it to capture the "Prime
+  bump." Rough shipping: ~$0.70/lb FBA inbound; FBM outbound ~a few dollars under a few oz up to ~$9-13+ past
+  1 lb. Cited full-month P&L anchor: ~$322K revenue, ~$156K COGS, ~$4.5K referral + ~$22K FBA fees + ~$3K FBM
+  shipping, netting ~$50-55K profit (~35% ROI on capital deployed) — offered as a real-world anchor for the
+  25-35% ROI targets discussed elsewhere. (youtube.com/watch?v=PydYmi56Sso)
+- **[practitioner]** **Buy criteria (this course's version):** stay under ~200,000 BSR generally (large
+  categories like clothing/home-kitchen can move at a much higher rank — offer-count movement matters more
+  than raw rank); baseline $3+/unit profit and 30%+ ROI, push to ~35-40%+ for shoes/clothing (higher return
+  rates), while non-returnable categories (grocery/supplements/vitamins) can work as low as ~22-27% ROI since
+  there's no return risk. (youtube.com/watch?v=PydYmi56Sso)
+- **[practitioner]** **Ungating/compliance:** buy 10+ units of an already-listed ASIN from a major retailer,
+  save the confirmation email as a PDF, submit as invoice documentation — unlocks the whole brand/category,
+  not just that ASIN (split across multiple orders if a retailer caps quantity). Rejections on first (or many)
+  submissions are normal — resubmit with more supporting docs (delivery email, product photo, card statement,
+  tracking) and vary the filename; one cited case needed 27 attempts. Avoid IP complaints mainly by checking a
+  brand's OTHER ASINs for a past offer-count collapse before committing to that brand at all. "Inauthentic"
+  complaints are treated as a low-frequency cost of business (~1/2,000 orders per this course) — keep an
+  order-tracking spreadsheet (retailer order #, supplier, ASIN, cost, date) to resubmit the original invoice
+  fast. A resale/sales-tax certificate is needed for most wholesale accounts and often useful for tax-free
+  arbitrage buying too (verify per retailer/state). (youtube.com/watch?v=PydYmi56Sso)
+- **[practitioner]** **Seasonal calendar (this course's version):** slower Jan-Mar; building Apr-Jun (Easter/
+  Mother's/Memorial/Father's Day); BTS ~Jul 15-Sep 15 (peaking early-mid Aug); Q4 (Oct-Dec) is strongest, with
+  **Nov 15 as the cutoff to stop new FBA shipments and shift to FBM**, Black Friday deals starting the Sunday
+  before, and **Dec 5-20 as the best window to restock proven ASINs**. FBM favored for beginners and during
+  demand spikes (same-day list/ship vs FBA's 1-3+ week inbound lag; raise expedited FBM shipping charges
+  during BTS/Q4 since carrier cost stays flat); FBA wins on long-run scale and the Prime-bump price. Typical
+  pattern: mostly FBA Jan-Oct, heavy FBM Nov-Dec (lighter version Jul-Aug). New FBA shipments commonly priced
+  ~25% above the current Buy Box while inventory checks in, then dropped to match once fully live.
+  (youtube.com/watch?v=PydYmi56Sso)
+- **[practitioner]** **Scaling notes:** test-order depth 2-10 units for a newer seller, scaling to 50-100+
+  only once a SKU is proven; prep centers (often no-sales-tax states like DE/NH) ~$1-1.75+/unit, commonly
+  requiring ~300-500 units/month before onboarding; VAs (Philippines/India/Pakistan) ~$3-6/hr or ~$200-500/mo
+  flat, recommended around $20-30K/mo in sales, not a substitute for sourcing skill; repricing software
+  (cited: BQool ~$25/mo) suggested once a store has ~10+ active ASINs. Niche notes: beauty (easy, low
+  returns, low ASP, easy to saturate); toys (high ASP, very Q4-seasonal); grocery/supplements (non-returnable,
+  cash-efficient at lower ROI, thin/pricey-to-ship supply); electronics (scalable, high ASP, higher returns);
+  shoes/clothing (huge brands, many variations, year-round demand, higher returns — for RA, avoid
+  missing/damaged shoe boxes even with no explicit Amazon rule against it, customers still expect the full
+  package); sporting goods (rotates with in-season sports). (youtube.com/watch?v=PydYmi56Sso)
+- **[practitioner]** **Keepa Parameter Method** — reverse-engineer a known-good OA lead's Keepa graph
+  into Product Finder filters: instead of trusting the noisy "current" BSR/price, take the 30/60/90/180-day
+  AVERAGES from a winning listing's Keepa Data tab and set narrow ranges around each in the Product
+  Finder, plus a buy-box price-average range, to surface other ASINs with a similar sales/price shape.
+  Layer in category, "Amazon out of stock," a minimum offer count (3+, to skip private-label-shaped
+  single-seller listings), and "no variations" (recommended for newer sellers) to cut noise before
+  eyeballing results. (youtube.com/watch?v=Cflrv_y9lSA)
+- **[practitioner]** When scanning candidate Keepa graphs from a parameter search: offer count
+  DECREASING while price holds/rises = sellers thinning out, a buyable signal; offer count rising while
+  price falls = competitive pressure, a pass signal. Also verify a "Walmart"-labeled listing is actually
+  sold-and-shipped by that retailer (not a third party riding the listing) before trusting its price, and
+  check whether Amazon itself is the seller before sourcing from your own Prime account.
+  (youtube.com/watch?v=Cflrv_y9lSA)
+- **[practitioner]** Very low sales-rank targets (~10,000 BSR) in this method tend to surface
+  wholesale-shaped items with thinner margins rather than genuine OA opportunities — a moderate BSR band
+  works better for parameter-matching. Cited example target: ~40% ROI / ~$4 profit per unit; the
+  presenter's own worked example noted peak-Q4 storage/fee rates cost about $1/unit versus non-Q4 timing.
+  (youtube.com/watch?v=Cflrv_y9lSA)
+
 ### 2026-07-02
 - **[practitioner]** **Meltable window check — it's the restricted season right now.** Amazon-classified
   meltables (all chocolate, gummies/gel supplements, wax melts, some cosmetics; anything degrading at 155°F)
@@ -57,6 +180,38 @@ per the project's source-of-truth order. Cite the source URL.
   (sellerassistant.app/blog/amazon-meltable-fba-inventory-all-you-need-to-know) [practitioner restating
   Amazon policy — official help page G200140860 is JS-rendered, not fetchable this run; verify dates in
   Seller Central]
+
+### 2026-07-03
+- **[practitioner]** Full 2026 fee-change map in one place (Seller Snap, updated Apr 2026), extending the staged
+  fee notes with the pieces our math doesn't model yet: **low-inventory-level fee is now seller-FNSKU-level**
+  (triggered only when BOTH 30-day AND 90-day days-of-supply < 28; $0.32–$2.09/unit; new sellers exempt 365
+  days, <20 units/7 days exempt — most small-OA SKUs dodge it, but check before deep replen buys);
+  **returns-processing fee** hits only above category return-rate thresholds (Grocery 2.9% … Computers 11.4%;
+  apparel/shoes per-unit, no threshold; <25 units shipped/mo exempt) → return-prone categories carry a hidden
+  per-unit cost the profit calc won't show; **non-SIPP bulky items now pay a ~$2.07/unit packaging fee** and
+  new **Overmax surcharges $17–$25/unit** — skip oversize unless priced in; **inbound defect fee consolidated
+  ~$0.60/unit avg**; removal 0–0.5 lb cheaper ($0.84). Each claim links the official Seller Central rate card —
+  verify per-ASIN there. (sellersnap.io/amazon-fee-changes-and-updates) [practitioner restating policy]
+
+### 2026-07-04 (daily run)
+- **[practitioner]** 2026 OA reality check (Ecom Circles, tool-vendor blog — verify policy claims officially):
+  realistic net margins are **10–20% after all fees**, not the 50%+ often claimed; never pursue deals under
+  **40% gross margin** because total COGS must absorb inbound shipping, 3PL prep ($0.50–$2/unit), 2–5%
+  inspection loss, and storage. Asserted 2026 rule changes worth verifying: **commingling ends Mar 31 2026**
+  (manufacturer barcodes required), Amazon's own **FBA prep services ended Jan 1 2026**, and **retail receipts
+  no longer work for ungating** (wholesale invoices / LOA only) — the last one matches the staged IBXT2txZtJE
+  ungating transcript. Test 20–50 units, verify sell-through + BSR <30K, scale only at 10+ units/week. Market
+  context: 2025 new-seller registrations down 44%, surviving sellers' traffic per seller up 31% since 2021.
+  (ecomcircles.com/blog/online-arbitrage-amazon)
+- **[practitioner]** 750+ gated/restricted-brand tracker updated **Jul 1 2026** (The Selling Guys, community
+  list — risk radar, not policy): tiered by severity (legal action → C&D → IP warning → gated → low-risk).
+  Fully gated incl. **Nike, Lego (US only), Fitbit, Under Armour, Logitech, Asics**; legal-action/C&D tier
+  incl. **Apple, Bose, Ninja, NutriBullet, Razer, Makita, Netgear, KONG, Johnson & Johnson**. Durable rules:
+  gating varies by country but action in one country predicts action elsewhere; don't hold deep stock of
+  risky brands (the inventory trap ends in policy warnings/suspension); check eligibility per-ASIN on YOUR
+  account before buying. → Candidate input for the ai-brain avoid/caution brand lists — review via
+  fba-brain-updater, don't auto-import.
+  (thesellingguys.com/current-list-of-amazon-gated-and-restricted-brands)
 
 ## Sourcing & finding products (incl. Keepa, SellerAmp, storefront stalking)
 
@@ -123,6 +278,39 @@ per the project's source-of-truth order. Cite the source URL.
   (Boxem) — tool pitches discounted, mechanics generalize.
   (boxem.com/article/amazon-sellers-are-falling-behind-the-new-rules-of-sourcing-products-in-2026)
 
+### 2026-07-03
+- **[practitioner]** *Sourcing is the new bottleneck; run it as a database, not a hunt.* 2026 manual sourcing
+  yields ~2-3 testable products/session where it used to yield 10 (more competition + GS1/GTIN/brand-gating
+  enforcement — e.g. the Oct-2025 Trader Joe's GTIN validation wave blocked inventory through no seller fault).
+  Their "three-punch" workflow matches and extends our staged 1-2-punch notes: (1) Keepa storefront-stalk up to
+  **50 storefront IDs at once** to extract every active ASIN, (2) ArbiSource reverse-scan the list across 240+
+  retail stores for price/stock/estimated margin, (3) custom-scan any store not in the database. Key habit:
+  **save every ASIN including the non-buys** — leads become viable in 2-6 months when retail price, stock,
+  competition, or gating changes; rescan your own lead bank instead of starting from zero ("shopping from the
+  back of the list"). Directly validates the project's `leads` table + outcome-tracking design; vendor math
+  (25X leads at 1/6 cost) is a sales pitch — the mechanism, not the numbers, is the takeaway.
+  (fbaleadlist.com/why-amazon-fba-sourcing-will-be-harder-in-2026-and-how-modern-arbitrage-resellers-are-preparing-now)
+
+### 2026-07-04 (daily run)
+- **[practitioner]** *Reverse sourcing, the supplier-side use* (B2B Supplier Hub, Jun 23 2026): its
+  highest-value use is finding **2nd/3rd authorized sources for products you already sell**, not new
+  products — one supplier's stockout shouldn't cost the Buy Box on your best SKU. 2026 twist: Amazon's
+  **chain-of-custody enforcement** means "who sells this AND can prove authorization" — a supplier with
+  stock sourced via a middleman may fail verification even with legitimate goods. Workflow: proven product
+  (UPC/brand/MPN) → map the brand's distributor network (mid-size brands often share lists) → confirm
+  authorization + invoice compliance BEFORE wiring money → compare cost/MOQ/lead-time/terms (cheapest unit
+  price loses to faster ship + no minimum surprisingly often) → keep a **2–3-supplier bench per top SKU**.
+  Field notes: Sports & Outdoor ~3–5 authorized distributors per SKU vs electronics ~20–25 per brand;
+  compliant invoices can still bounce until Amazon verifies the distributor directly; some distributors are
+  brand-authorized but not authorized to supply Amazon resellers. Mostly wholesale-tier tactics — file for
+  when the operation graduates from pure OA. (b2bsupplierhub.com/blog/reverse-sourcing-for-amazon-sellers)
+- **[practitioner]** Storefront-quality screen for stalking (Stealth Seller, 2024 — basics, but concrete):
+  the best storefronts to stalk are **mixed-category, under ~1,000 products, listing in irregular smaller
+  batches** (= a small reseller who researches each item), with **no Amazon on their listings**; skip huge
+  single-brand storefronts (wholesale, not reproducible OA). Confirms and sharpens the staged
+  storefront-selection heuristics — usable as a storefront-scoring filter in scout_pro.
+  (stealthseller.co/blog/everything-on-storefront-stalking-as-a-arbitrage-seller)
+
 ## Finances & account management
 
 ### 2026-06-30
@@ -161,6 +349,33 @@ per the project's source-of-truth order. Cite the source URL.
   cash-planning and any future `outcomes` cash-cycle fields.
   (novadata.io/resources/blog/amazon-cash-flow-management-fba-sellers) [practitioner — analytics vendor;
   DD+7 dates cite Amazon's Finances API docs, verify in Seller Central]
+
+### 2026-07-03
+- **[practitioner]** Amazon-seller chart of accounts + the mistakes that break profit math (Beancount, Apr 2026):
+  give **every fee type its own expense account** (referral, FBA fulfillment, storage, ads, subscription,
+  returns processing, other) and keep them **out of COGS** — COGS is product cost + duties + freight-in +
+  prep only. Record **lost/damaged reimbursements as taxable income** (missed ones create 1099-K mismatches),
+  refunds as contra-revenue, and reconcile every settlement (monthly minimum). FBA placement can create
+  **sales-tax nexus** in states you've never visited even though marketplace-facilitator laws cover the
+  Amazon-side collection — matters only if selling off-Amazon too. US quarterly estimated-tax dates 2026:
+  Apr 15 / Jun 16 / Sep 15 / Jan 15 '27, safe-harbor 100% of last year (110% if AGI >$150k). Reinforces the
+  staged Eightx rule: the settlement deposit is not "sales." → The `outcomes` realized-profit fields should
+  mirror this fee-type split so realized ROI nets out every component.
+  (beancount.io/blog/2026/04/16/bookkeeping-for-amazon-sellers-complete-guide)
+
+### 2026-07-04 (daily run)
+- **[practitioner]** The Xero-specific implementation of the staged "never book the net deposit" rule
+  (Eightx, Mar 2026, updated Jun 29): worked example — a $47K deposit is really **$68K gross − $21K of
+  fees/refunds**; book gross, one expense account per fee type, fees NEVER in COGS (also wrecks exit due
+  diligence). Tooling tiers: **A2X ($69/mo) above ~$50K/mo Amazon revenue** (settlement → coded journal
+  entries, penny-perfect rec), **Link My Books ($9–49/mo) below**; realistic all-in cost $611–2,111/mo.
+  Cadence: reconcile within **5 business days of each bi-weekly settlement** (15–30 min with A2X); 5-day
+  month-end close is achievable. Reserves = **Amazon Receivables asset**, not an expense. Weighted-average
+  COGS at full landed cost. Cautionary case: a £10M brand's "60% gross margin" was really 52% once fees were
+  unbundled, and Amazon CM2 (28%) badly trailed DTC (41%) → ad budget reallocated, +£14K/mo contribution.
+  Wrong books = wrong strategy. → When the operation needs real books, this is the setup recipe; the
+  `outcomes` realized-profit split should mirror the same per-fee-type granularity.
+  (eightx.co/blog/xero-bookkeeping-amazon-fba) [practitioner — CFO firm]
 
 ## Building the system (AI, RAG, dashboard, control-center)
 
@@ -245,5 +460,31 @@ per the project's source-of-truth order. Cite the source URL.
   make current/30-day-avg/90-day-avg **all agree** (e.g. $35-45 / $33-47 / $31-49) plus a bounded 30-day
   drop% (-45% to +7%) and min offer count — multi-window price agreement, not just one 90-day snapshot, is
   the stronger stability signal; a useful extension of the existing "gate on 90-day avg, not current" rule.
+
+### 2026-07-03
+- **[practitioner]** Systematic ablation of the RAG knobs `knowledge-rag` actually exposes (arXiv 2501.07391):
+  query expansion, retrieval strategy variants, a Contrastive In-Context Learning KB, plus controlled studies
+  of LM size, prompt design, **document chunk size, knowledge-base size, retrieval stride**, multilingual KBs,
+  and a sentence-level **"Focus Mode"** retriever. Findings are benchmark-specific — abstract staged only, read
+  the PDF before touching chunking or retrieval params; use alongside the staged eval survey (2504.14891) so
+  any knob change is measured, not vibes. Code public. (arxiv.org/abs/2501.07391)
+
+### 2026-07-04 (daily run)
+- **[practitioner]** *Production counter-evidence on retrieval fusion* (arXiv 2603.02153, Dell industry
+  deployment, Mar 2026): multi-query retrieval + reciprocal rank fusion **raised raw recall but the gains
+  were neutralized after reranking + truncation** — fusion variants did NOT beat single-query baselines on
+  KB-level Top-k accuracy (**Hit@10 fell 0.51 → 0.48** in several configs) while adding latency (query
+  rewriting + larger candidate sets). → For `knowledge-rag`: if a reranker is in the chain, single-query +
+  rerank may dominate multi-query + RRF on both quality and latency; don't add fusion by default, A/B it
+  behind the retrieval-aware eval harness (staged 2504.14891). Caveat: PDF returned no machine-readable text
+  this run — staged from abstract/snippets, read the paper before design decisions. (arxiv.org/abs/2603.02153)
+- **[practitioner]** *An auditable grounding harness worth copying* (arXiv 2605.01664, biomedical
+  citation-aware RAG on Bedrock KB + Titan embeddings + OpenSearch, hybrid retrieval → Cohere rerank): a
+  **separate LLM judge** (not the generator) makes **claim-level binary support decisions** — no outside
+  knowledge allowed; vague/indirect/partial evidence counts as UNSUPPORTED — with structured output (claim →
+  supported? → which source → why) persisted as CSVs at every pipeline stage. Reported 100% grounding on
+  **only 25 queries** — ignore the number, steal the design: it's exactly the honest-citation check the
+  guardrails demand for `Ask`, and the conservative rubric prevents overstating groundedness.
+  (arxiv.org/abs/2605.01664)
 
 <!-- The scheduled task appends cited takeaways under the right heading. -->

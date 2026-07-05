@@ -1,0 +1,24 @@
+{
+  "id": "cg-brand-present-limited-share-ok",
+  "facts": {
+    "price": 45.0,
+    "oa_profit": 10.0,
+    "oa_roi": 0.35,
+    "amazon_bb_share": 0.0,
+    "category": null,
+    "brand": "JVN Hair",
+    "buybox_seller": "ThirdPartySellerCo",
+    "sales_rank": 80000,
+    "avg_sales_rank_90": 80000,
+    "est_sales": 100,
+    "offers": 10
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "chart-guide:brand-present-but-low-share-ok",
+  "source": "How to Read a Keepa Chart (FULL Tutorial) Amazon FBA 2024.txt @10:20 \u2014 brand JVN Hair present on its own listing but only won 15% of the buy box over 90 days; narrator: 'I think that this listing is okay'. (JVN Hair is neither friendly- nor avoid-listed, so no brand adjustment fires \u2014 this case is really testing that a THIRD-PARTY brand-owner's limited presence, distinct from Amazon's own share, doesn't trip amazon-shares-buybox.)",
+  "difficulty": "medium"
+}

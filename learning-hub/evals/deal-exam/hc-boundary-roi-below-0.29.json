@@ -1,0 +1,31 @@
+{
+  "id": "hc-boundary-roi-below-0.29",
+  "facts": {
+    "price": 25.0,
+    "sales_rank": 50000,
+    "avg_sales_rank_90": 50000,
+    "est_sales": 150,
+    "offers": 10,
+    "weight_lb": 1.0,
+    "oa_profit": 5.0,
+    "oa_roi": 0.29,
+    "buybox_seller": "ThirdPartySellerCo",
+    "amazon_bb_share": 0.0,
+    "avg_price_90": 25.0,
+    "avg_offers_90": 10,
+    "has_buybox": true,
+    "price_low_90": 20.0,
+    "brand": "AcmeToys",
+    "category": null
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "roi"
+  ],
+  "trap_type": "boundary:roi-lower",
+  "source": "handcrafted boundary pair for CRITERIA_OA.min_roi=0.30 \u2014 0.29 fails the ROI scored check (partial credit, ~21.3/22 pts) but must not zero out the verdict alone",
+  "difficulty": "hard"
+}

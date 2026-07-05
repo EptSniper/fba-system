@@ -1,5 +1,6 @@
 import {
   LayoutDashboard,
+  CalendarClock,
   PenLine,
   Target,
   Tag,
@@ -13,14 +14,19 @@ import {
   Wrench,
   BrainCircuit,
   Settings2,
+  ClipboardCheck,
+  ListTodo,
   type LucideIcon,
 } from "lucide-react";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon; group: string };
 
 // One source of truth for navigation — used by the sidebar and the mobile nav.
+// /brief is first (CC2 item 1: "the designed morning entry point — link it first in nav").
 export const NAV: NavItem[] = [
+  { href: "/brief", label: "Morning Brief", icon: CalendarClock, group: "Command" },
   { href: "/", label: "Today", icon: LayoutDashboard, group: "Command" },
+  { href: "/queue", label: "Review Queue", icon: ClipboardCheck, group: "Command" },
   { href: "/log", label: "Log", icon: PenLine, group: "Command" },
   { href: "/find", label: "Find", icon: Target, group: "Sourcing" },
   { href: "/deals", label: "Deals", icon: Tag, group: "Sourcing" },
@@ -32,6 +38,7 @@ export const NAV: NavItem[] = [
   { href: "/knowledge", label: "Sources", icon: Library, group: "Knowledge" },
   { href: "/intelligence", label: "Scout Intelligence", icon: Gauge, group: "System" },
   { href: "/brain", label: "Brain", icon: BrainCircuit, group: "System" },
+  { href: "/proposals", label: "Proposals", icon: ListTodo, group: "System" },
   { href: "/tools", label: "Tools", icon: Wrench, group: "System" },
   { href: "/settings", label: "Settings", icon: Settings2, group: "System" },
 ];

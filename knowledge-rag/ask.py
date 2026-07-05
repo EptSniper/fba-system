@@ -340,6 +340,48 @@ def ask(question, k=6, category=None):
     return rows
 
 
+# ----------------------------------------------------------------------------
+# Warm-server delegation (THIS_WEEK.md Prompt W1). The cold path above pays a full model load
+# every process start (~1s on this machine's already-disk-cached fastembed model, much worse
+# on a fresh machine/model download); server.py keeps that model warm in memory. If it's
+# running, delegate to it for a faster answer — completely optional, best-effort, and
+# invisible to every caller: same JSON shape either way, and any failure (server not running,
+# timeout, bad response) silently falls back to the cold path below. This CLI never raises
+# just because the server happens to be down; that's the whole point of the fallback.
+# ----------------------------------------------------------------------------
+def _server_base_url() -> str:
+    port = os.environ.get("KNOWLEDGE_SERVER_PORT", "8787")
+    return f"http://127.0.0.1:{port}"
+
+
+def server_available(timeout: float = 1.5) -> bool:
+    """True if knowledge-rag/server.py is up and has the model warm. Short timeout on
+    purpose — if nothing's listening (the common case until the server is started as a
+    background process), this must fail fast so it never meaningfully delays the cold path."""
+    try:
+        r = requests.get(f"{_server_base_url()}/health", timeout=timeout)
+        return r.status_code == 200 and bool(r.json().get("model_loaded"))
+    except Exception:
+        return False
+
+
+def ask_via_server(question: str, limit: int = 6, category=None, timeout: float = 8.0):
+    """POST to the local warm server's /ask endpoint. Returns the exact same
+    {question, count, answer, matches} shape the cold path below produces, or None on ANY
+    failure (caller falls back to cold — this must never raise)."""
+    try:
+        r = requests.post(
+            f"{_server_base_url()}/ask",
+            json={"question": question, "limit": limit, "category": category},
+            timeout=timeout,
+        )
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except Exception:
+        return None
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Search the live Supabase knowledge brain")
     parser.add_argument("question", nargs="*", help="question to retrieve evidence for")
@@ -359,17 +401,32 @@ if __name__ == "__main__":
     if not q:
         parser.error("a non-empty question is required")
     try:
-        rows = retrieve(_retrieval_question(q), k=max(1, min(args.limit, 20)), category=args.category)
-        ranked = rerank(rows, q, limit=min(args.limit, 20))
+        limit = max(1, min(args.limit, 20))
+        # Fast path: delegate to the warm server if it's up (THIS_WEEK.md Prompt W1) — same
+        # output either way, so every existing caller of this CLI sees zero behavior change,
+        # just a faster answer when server.py happens to be running.
+        server_payload = ask_via_server(q, limit=limit, category=args.category) if server_available() else None
+        if server_payload is not None:
+            ranked = server_payload.get("matches", [])
+            answer = server_payload.get("answer")
+        else:
+            rows = retrieve(_retrieval_question(q), k=limit, category=args.category)
+            ranked = rerank(rows, q, limit=limit)
+            answer = synthesize(q, ranked)
         if args.as_json:
-            print(json.dumps({"question": q, "count": len(ranked), "answer": synthesize(q, ranked), "matches": ranked},
+            print(json.dumps({"question": q, "count": len(ranked), "answer": answer, "matches": ranked},
                              ensure_ascii=False))
         else:
-            if not rows:
+            # Note: previously this branch printed pre-rerank `rows` while --json printed
+            # post-rerank `ranked` (an existing drift between the two output modes) — now both
+            # use `ranked` always, since the warm server only ever returns the reranked form
+            # (there's no separate "raw rows" to fall back to when delegating to it) and this
+            # keeps the human-readable text IDENTICAL whether the cold or warm path served it.
+            if not ranked:
                 print("No matches found.")
             else:
-                print(f"\nTop {len(rows)} matches for: {q}\n" + "-" * 60)
-                for row in rows:
+                print(f"\nTop {len(ranked)} matches for: {q}\n" + "-" * 60)
+                for row in ranked:
                     sim = float(row.get("similarity", 0) or 0)
                     text = (row.get("chunk_text") or "").replace("\n", " ").strip()
                     print(f"\n[{sim:.3f}]  {row.get('citation', '')}")

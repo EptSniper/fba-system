@@ -1,0 +1,6 @@
+# Minimal deps for scout/deals/run_watch.py ONLY (TOP100_DEAL_WATCH_PLAN.md T2's cloud runner).
+# Deliberately NOT scout/requirements.txt — run_watch imports no Keepa/sklearn/anthropic/mcp,
+# so the GitHub Actions job installs a tiny surface and starts fast. RSS/Atom parsing uses the
+# stdlib (xml.etree), so no feedparser is needed either.
+requests>=2.31
+python-dotenv>=1.0

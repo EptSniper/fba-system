@@ -1,6 +1,6 @@
 {
   "$comment": "SINGLE SOURCE OF TRUTH for the AI's brain. Both the item finder/rater (scout/) and the control center read this. When Mehmet feeds new info and Claude distills it, this file is updated -> the scout and the dashboard both update. See ai-system/ingestion-pipeline.md.",
-  "updated": "2026-07-02",
+  "updated": "2026-07-05",
   "model": "online arbitrage (OA)",
   "criteria": {
     "bsrMax": 200000,
@@ -28,10 +28,66 @@
       "status": "proposed default — tune after live Keepa history is available (Phase 2, Prompt 2.1)"
     },
     "restrictionKeywords": {
-      "hazmat/flammable": ["battery", "batteries", "lithium", "spray", "aerosol", "flammable", "paint", "bleach", "cleaner", "disinfect", "sanitizer", "nail polish", "perfume", "cologne", "fragrance", "magnet", "lighter", "butane", "propane"],
-      "prohibited": ["tire", "gift card", "alcohol", "beer", "wine", "vodka", "whiskey"],
-      "expiration-dated": ["supplement", "vitamin", "protein", "snack", "coffee", "tea", "cereal", "formula", "lotion", "cream", "shampoo", "soap", "sunscreen", "cosmetic", "makeup", "serum", " point-after-opening", "pao"],
-      "meltable": ["chocolate", "gummy", "gummies", "jelly", "wax", "candle", "lip balm", "crayon"]
+      "hazmat/flammable": [
+        "battery",
+        "batteries",
+        "lithium",
+        "spray",
+        "aerosol",
+        "flammable",
+        "paint",
+        "bleach",
+        "cleaner",
+        "disinfect",
+        "sanitizer",
+        "nail polish",
+        "perfume",
+        "cologne",
+        "fragrance",
+        "magnet",
+        "lighter",
+        "butane",
+        "propane"
+      ],
+      "prohibited": [
+        "tire",
+        "gift card",
+        "alcohol",
+        "beer",
+        "wine",
+        "vodka",
+        "whiskey"
+      ],
+      "expiration-dated": [
+        "supplement",
+        "vitamin",
+        "protein",
+        "snack",
+        "coffee",
+        "tea",
+        "cereal",
+        "formula",
+        "lotion",
+        "cream",
+        "shampoo",
+        "soap",
+        "sunscreen",
+        "cosmetic",
+        "makeup",
+        "serum",
+        " point-after-opening",
+        "pao"
+      ],
+      "meltable": [
+        "chocolate",
+        "gummy",
+        "gummies",
+        "jelly",
+        "wax",
+        "candle",
+        "lip balm",
+        "crayon"
+      ]
     },
     "currentVsAvg90PriceCaution": 1.15,
     "source": "SINGLE SOURCE — scout/config.py loads these learned red-flag thresholds from here. priceSpikeRatio: reject/penalize when current price > 1.5x its 90-day avg (likely to revert). offersRiseRatio: flag when new-offer count > 1.4x its 90-day avg (seller spike -> price tank). amazonBuyBoxShareMax: hard-reject when Amazon wins the Buy Box >= 20% of the time (rotation), even if a 3P holds it now. pennyWar: proposed threshold for a Buy-Box price-war detector — not yet wired to real data (needs Keepa history=True, Phase 2). restrictionKeywords: moved here from a hardcoded dict in scout/scoring.py (_RESTRICTION_KEYWORDS) so both the scout AND the control-center Find page read the identical heuristic word-boundary list — a hint, never an eligibility verdict; always verify FBA restrictions/hazmat/expiration/meltable status in Seller Central before buying. currentVsAvg90PriceCaution: Scout Agent Build Plan (2026-07-02) sec 4.1 — a SOFTER, non-gate caution adjustment (small point penalty) at 1.15x avg90, distinct from and evaluated separately from priceSpikeRatio's 1.5x HARD flag; gives an earlier warning without touching the existing gate."
@@ -55,7 +111,17 @@
       "default": 0.15
     },
     "minReferralFee": 0.3,
-    "source": "Category referral rates simplified from Amazon's real fee table (knowledge-rag/sources/amazon/selling-fees.md, collected 2026-06-23 from sell.amazon.com/pricing). Several categories are tiered by price (clothing 5% <=$15 / 10% $15-20 / 17% >$20; grocery 8% <=$15 / 15% above; baby 8% <=$10 / 15% above; electronics accessories 15% <=$100 / 8% above) — the value stored here is the rate that applies across most of the $8-$60 OA price band (criteria.priceMin/priceMax). Consult the source doc before trusting an edge-case price point. 'default' (0.15) covers any category not listed; $0.30 minReferralFee applies to all categories per Amazon policy."
+    "fuelSurcharge": 0.035,
+    "prepCost": 0.5,
+    "bandedRates": {
+      "grocery": {
+        "priceThreshold": 15,
+        "atOrBelowThreshold": 0.08,
+        "aboveThreshold": 0.15,
+        "source": "Code Review 2026-07-02, Finding CS6: referralRates.grocery (flat 0.08) overstated profit/ROI for anything above $15 — the real Amazon rule (see referralRates.source above) is 8% at or below $15, 15% above it, and most of the $8-$60 OA price band sits ABOVE $15. Used by scout/config.referral_rate_for(category, price) and the control-center deal-analyzer when both a category and a price are known; referralRates.grocery (0.08) remains the fallback for grocery when no price is available to band on."
+      }
+    },
+    "source": "Category referral rates simplified from Amazon's real fee table (knowledge-rag/sources/amazon/selling-fees.md, collected 2026-06-23 from sell.amazon.com/pricing). Several categories are tiered by price (clothing 5% <=$15 / 10% $15-20 / 17% >$20; grocery 8% <=$15 / 15% above; baby 8% <=$10 / 15% above; electronics accessories 15% <=$100 / 8% above) — the value stored here is the rate that applies across most of the $8-$60 OA price band (criteria.priceMin/priceMax). Consult the source doc before trusting an edge-case price point. 'default' (0.15) covers any category not listed; $0.30 minReferralFee applies to all categories per Amazon policy. fuelSurcharge (3.5%, effective 2026-04) applies to the FBA fulfillment fee only, per the 2026 fee-change research (research-inbox/research-insights.md). prepCost ($0.50/unit) reflects the seller now prepping/labeling FBA in the US as of 2026 (Amazon ended its own FBA prep). Moved from scout/config.py's + control-center's separately-hardcoded FUEL_RATE/PREP constants into this single source (Code Review 2026-07-02, Finding S6) — both now read this block, with matching code fallbacks if it's absent."
   },
   "scoring": {
     "preferredOffers": {
@@ -63,18 +129,66 @@
       "max": 7,
       "bonus": 5,
       "source": "The 5-7 seller 'goldilocks' offer band is a scoring BONUS, not a gate — the hard offer band stays criteria.minOffers/maxOffers (3-25) and is unaffected. (learning-hub/transcripts/insights.md #9)"
-    }
+    },
+    "adjustments": {
+      "friendlyBrand": 5,
+      "priceSpike": -15,
+      "priceCaution": -5,
+      "offersRising": -12,
+      "amazonSharesBuybox": -10,
+      "ipCliff": -20,
+      "worstCaseLoss": -10,
+      "noFeaturedOffer": -8,
+      "genericBrand": -8,
+      "source": "Point deltas applied on top of the 0-100 base score (scout/scoring.py's OA_WEIGHTS) — none of these are gates; a candidate can trigger several and still clear the review threshold. Values are the scout's original hardcoded magnitudes, moved here so tuning is a brain edit, not a code edit (Code Review 2026-07-02, Finding S5). scout/config.py reads this block with code fallbacks matching these exact numbers."
+    },
+    "ipCliffShape": {
+      "minAvgOffers": 8,
+      "maxCurrentOffers": 2,
+      "source": "IP-complaint 'cliff' heuristic: a listing whose 90-day avg offer count was once >= minAvgOffers (a real crowd existed) and whose CURRENT offer count has collapsed to <= maxCurrentOffers (e.g. 56->1). Moved from scout/scoring.py's hardcoded 8/2 (Finding S5)."
+    },
+    "worstCaseLossBarUsd": 2,
+    "marginHealthThreshold": 0.2,
+    "scoreThreshold": 70,
+    "topN": 5,
+    "assumedDailyTokens": 7500,
+    "source": "scoreThreshold/topN mirror scout/config.py's SCORE_THRESHOLD/TOP_N .env defaults (only send picks >= this score, max picks per run). assumedDailyTokens is the System Blueprint's assumed daily Keepa token budget, used by propose_updates.py to flag real drift. Moved from scattered code constants (Code Review 2026-07-02, Finding S5) — scout/config.py falls back to these same values if this file is absent. marginHealthThreshold (added for Finding R3-nits) single-sources the control-center deal-analyzer's Margin-stat-tile health indicator (green above, neutral below) — it was independently hardcoded there alongside worstCaseLossBarUsd's own local literal copy; both now read this block instead of duplicating the numbers."
   },
   "seasonality": {
     "backToSchool": {
-      "months": [6, 7, 8],
-      "brands": ["Puma", "Cuddle Duds", "Gap", "Carter's"]
+      "months": [
+        6,
+        7,
+        8
+      ],
+      "brands": [
+        "Puma",
+        "Cuddle Duds",
+        "Gap",
+        "Carter's"
+      ]
     },
     "q4": {
-      "months": [9, 10, 11, 12],
-      "brands": ["Stanley", "Yeti", "LEGO", "Hot Wheels", "Pokemon", "Jellycat", "Tonies"]
+      "months": [
+        9,
+        10,
+        11,
+        12
+      ],
+      "brands": [
+        "Stanley",
+        "Yeti",
+        "LEGO",
+        "Hot Wheels",
+        "Pokemon",
+        "Jellycat",
+        "Tonies"
+      ]
     },
-    "buyLeadWeeks": [6, 8],
+    "buyLeadWeeks": [
+      6,
+      8
+    ],
     "source": "Seasonal buy windows from learning-hub/playbooks/field-sops.md's seasonal calendar. buyLeadWeeks = how many weeks ahead of a brand's peak-demand window to buy so inventory lands in time for the seasonal BSR hump."
   },
   "discovery": {
@@ -150,7 +264,18 @@
   ],
   "learning": {
     "minLabeledRows": 30,
-    "source": "System Blueprint Prompt 3.1 — the label builder (scout/labels.py) refuses to assemble a training table below this many labeled rows (with both positive and negative outcomes represented). Below it, the scout runs on the transparent rule score alone; this is a floor for even ATTEMPTING calibration, not a promotion threshold — scout_pro's champion/challenger gate (PROMOTION_MIN_GAIN) is the separate, stricter bar for actually replacing the rule engine."
+    "harvesterEnabled": false,
+    "harvestTokenShare": 0.4,
+    "backtestTokenCap": 10000,
+    "tokenBudget": {
+      "dailyScanTokens": 600,
+      "shadowRecheckTokens": 80,
+      "backtestTokens": 700,
+      "source": "Pro-trickle split (Session 46 analysis; GL1 go-live Session 51, 2026-07-05). The Pro plan refills 1 token/min (~1440/day, 60-token bank); this splits the observed generation across the nightly scan, the weekly shadow rechecks (shadow_outcomes._recheck_token_cap reads shadowRecheckTokens), and the backtest drip. Live-confirmed 2026-07-05: Product Finder API is REQUEST_REJECTED on Pro (keepa_client falls back to the search API, 10 tokens/term); history pulls cost 1 token/ASIN; search 10 tokens/query."
+    },
+    "source": "System Blueprint Prompt 3.1 — the label builder (scout/labels.py) refuses to assemble a training table below this many labeled rows (with both positive and negative outcomes represented). Below it, the scout runs on the transparent rule score alone; this is a floor for even ATTEMPTING calibration, not a promotion threshold — scout_pro's champion/challenger gate (PROMOTION_MIN_GAIN) is the separate, stricter bar for actually replacing the rule engine.",
+    "harvesterSource": "DATA_ENGINE_PLAN.md V0 #4 — scout/harvest.py idle-token harvester. harvesterEnabled is FALSE on the Keepa Pro trickle (1 token/min, 60 bank: no idle surplus to bank; harvest.enabled() returns a blocked-on-upgrade status). Flip to true only after upgrading to the 20/min API tier. harvestTokenShare (0..1) is the fraction of the OBSERVED daily token generation the harvester may spend once enabled (harvest.observed_daily_generation reads the real refill rate; never an assumed tier).",
+    "backtestSource": "DATA_ENGINE_PLAN.md V2 — scout/backtest.py hard per-run token ceiling (backtest.backtest_token_cap). The backtest samples ~3-5k on-policy ASINs (1 token each, history=365) and windows them into ~50k derived training rows; the cap keeps a run from draining the Pro-trickle bank, and the job is resumable across days toward the corpus target."
   },
   "dealSourcing": {
     "principle": "Source where the best SALE / cashback / coupon is TODAY (e.g. Target BOGO today, Walgreens BOGO tomorrow) — then stack cashback + discount gift cards + coupons (manufacturing margin) for a moat nobody else has.",
@@ -184,7 +309,9 @@
     "sources": {
       "slickdeals": {
         "enabled": true,
-        "feeds": ["https://slickdeals.net/newsearch.php?rss=1&mode=frontpage"],
+        "feeds": [
+          "https://slickdeals.net/newsearch.php?rss=1&mode=frontpage"
+        ],
         "pollIntervalHours": 6
       },
       "bestbuy": {
@@ -200,17 +327,41 @@
       "review": 0.6,
       "source": "Deal Finder Build Plan (2026-07-02) sec 3, step 5 — composite match confidence >= autoAccept flows straight into the scout's existing gates as a source=\"deal-finder\" candidate; [review, autoAccept) goes to the control-center match-review queue; below review is discarded (kept as a negative example for the gold set)."
     },
+    "hints": {
+      "minStrength": 2,
+      "tokenShare": 0.5,
+      "ttlHours": 72,
+      "source": "TOP100_DEAL_WATCH_PLAN.md (2026-07-04) T3 — the nightly Top-100 deal watch (scout/deals/run_watch.py) derives brand-anchored deal_hints; the 7:30 AM scout reads FRESH ones (scout/discovery_hints.py) as its FIRST Keepa Product Finder pass. minStrength = the discount-weighted quality-deal count a hint must reach before the scout acts on it (below it, the hint is stored as signal but not consumed). tokenShare = at most this fraction of a run's discovery token budget goes to hint-led queries; the rest is the normal friendly-brand rotation, so hints steer but never monopolise discovery. ttlHours = how long a derived hint stays fresh. Hints are DATA the scout consumes at runtime — this block never edits discovery params, and AVOID-listed brands never become hints (enforced in run_watch + discovery_hints)."
+    },
     "priceSanity": {
       "maxAmazonToRetailRatio": 3.0,
       "source": "Deal Finder Build Plan sec 3, step 5 — a practitioner heuristic, not yet tuned on our own data: if the matched Amazon price is >= 3x the retail deal price, suspect a pack-count/size mismatch rather than a genuine flip. Tune once real matched pairs exist."
     },
     "discountStack": {
-      "Target": {"cashbackPct": null, "giftCardPct": null},
-      "Walmart": {"cashbackPct": null, "giftCardPct": null},
-      "Walgreens": {"cashbackPct": null, "giftCardPct": null},
-      "Best Buy": {"cashbackPct": null, "giftCardPct": null},
-      "Home Depot": {"cashbackPct": null, "giftCardPct": null},
-      "Lowe's": {"cashbackPct": null, "giftCardPct": null},
+      "Target": {
+        "cashbackPct": null,
+        "giftCardPct": null
+      },
+      "Walmart": {
+        "cashbackPct": null,
+        "giftCardPct": null
+      },
+      "Walgreens": {
+        "cashbackPct": null,
+        "giftCardPct": null
+      },
+      "Best Buy": {
+        "cashbackPct": null,
+        "giftCardPct": null
+      },
+      "Home Depot": {
+        "cashbackPct": null,
+        "giftCardPct": null
+      },
+      "Lowe's": {
+        "cashbackPct": null,
+        "giftCardPct": null
+      },
       "source": "MANUAL weekly table, deliberately left NULL until Mehmet fills it in with real observed rates — no API exists for cashback/gift-card rates (Rakuten/TopCashback/CardCash have no public developer APIs; Deal Finder Build Plan sec 2). scout/deals/brain_config.discount_stack() treats a null/missing entry as 0% stack, never a fabricated default. Check Rakuten/TopCashback/cardbear.com weekly (build plan sec 5.4) and record real rates here."
     },
     "status": "PARTIALLY IMPLEMENTED 2026-07-02 (Deal Finder Build Plan Prompt D1): Supabase deals/deal_matches schema written (scout/db/migrations/003_deals_and_matches.sql, NOT YET APPLIED — pending with 001/002), attribute normalizer + Slickdeals RSS + Best Buy API connectors built and tested (53 new scout tests: 22 normalizer, 16 sources, 10 db, 5 collect orchestrator; full existing 97-test suite still green, 150/150 total). NOT live: no BESTBUY_API_KEY yet (connector honestly no-ops without one), no AI matcher (Prompt D2), no runner/control-center wiring (Prompt D3), no Tier-2 affiliate sources (Prompt D4)."
@@ -219,16 +370,27 @@
     "triage": {
       "formula": "expected_profit * monthly_velocity / buy_cost, at a STRESSED price",
       "stressedPriceFactor": 0.9,
-      "reviewOrder": ["eligibility", "speed", "downside"],
+      "reviewOrder": [
+        "eligibility",
+        "speed",
+        "downside"
+      ],
       "manualReviewBuyRate": "0.04-0.06 baseline (published practitioner estimate, not our own measured rate yet)",
       "source": "Scout Agent Build Plan (2026-07-02) sec 3.2 — orders the review queue/digest by expected payback SPEED under a stressed (competed-down) price rather than headline ROI, so limited review time goes to what deserves it first. scoring.triage_score() implements this; it is a ranking signal only, never a gate."
     },
     "seasonal2026": {
-      "primeDayWindow": {"start": "2026-06-23", "end": "2026-06-26", "role": "sourcing window, not a selling event, for OA"},
+      "primeDayWindow": {
+        "start": "2026-06-23",
+        "end": "2026-06-26",
+        "role": "sourcing window, not a selling event, for OA"
+      },
       "backToSchoolBuyWindow": "late June - mid August",
       "q4ArrivalDeadline": "2026-10-30",
       "q4StopSpeculativeBuysAfterWeek": 46,
-      "toysBuyWindows": ["Feb-Mar clearance", "October"],
+      "toysBuyWindows": [
+        "Feb-Mar clearance",
+        "October"
+      ],
       "januaryReturnsWave": true,
       "biasQ4TowardLowReturnCategories": true,
       "source": "Scout Agent Build Plan sec 3.5 — 2026-specific dates (Prime Day moved to June 23-26) distilled from practitioner research; overlaps with and extends the existing top-level `seasonality` block's brand/month windows (Q4 brands, back-to-school brands) rather than replacing it — `seasonality` = WHICH brands, `operations.seasonal2026` = WHEN to act on the calendar."
@@ -238,7 +400,11 @@
       "cutLossDays": 60,
       "agedSurchargeDay": 181,
       "reorderFormula": "weekly_velocity * lead_time + buffer",
-      "buckets": ["winners", "tests", "seasonalReserve"],
+      "buckets": [
+        "winners",
+        "tests",
+        "seasonalReserve"
+      ],
       "source": "Scout Agent Build Plan sec 3.6 — published practitioner guardrails. agedSurchargeDay 181 reflects Amazon's 2026 aged-inventory surcharge start (moved earlier from 271 days) — a real policy fact, cite policy2026 below for the source citation on that specific number."
     },
     "kpis": {

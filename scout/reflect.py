@@ -57,13 +57,17 @@ SYSTEM_PROMPT = (
 )
 
 
-def _slug(text: str) -> str:
+def slug(text: str) -> str:
+    """Filesystem-safe brand-name slug (e.g. "Mrs. Meyer's" -> "mrs-meyer-s"). Public — also
+    used by mcp_server.py to resolve the same memory-note filename when READING a note that
+    reflect.py WROTE; this used to be duplicated byte-for-byte in both files (Code Review
+    2026-07-02, nit)."""
     s = re.sub(r"[^a-z0-9]+", "-", text.strip().lower()).strip("-")
     return s or "unknown"
 
 
 def _note_path(brand: str) -> str:
-    return os.path.join(MEMORY_DIR, f"{_slug(brand)}.md")
+    return os.path.join(MEMORY_DIR, f"{slug(brand)}.md")
 
 
 def read_memory_note(brand: Optional[str]) -> Optional[str]:

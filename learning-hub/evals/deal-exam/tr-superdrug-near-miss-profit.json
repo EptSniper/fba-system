@@ -1,0 +1,23 @@
+{
+  "id": "tr-superdrug-near-miss-profit",
+  "facts": {
+    "price": 15.83,
+    "oa_profit": 2.54,
+    "oa_roi": 0.4,
+    "est_sales": 340,
+    "offers": null,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "profit"
+  ],
+  "trap_type": "transcript:profit-floor-near-miss",
+  "source": "One of The BEST Online Arbitrage Sourcing Methods using KEEPA PRODUCT FINDER.txt @00:04:52.000 \u2014 40% ROI but only ~\u00a32.54/unit profit (just under our $3 floor); narrator: 'pretty happy with that'. DIVERGENCE NOTE: strong ROI, profit just below the scored floor \u2014 a real near-miss on the profit check specifically, ROI alone comfortably passes.",
+  "difficulty": "hard"
+}

@@ -1,0 +1,27 @@
+{
+  "id": "tr-tommy-boxers-no-buybox-buy",
+  "facts": {
+    "price": 47.0,
+    "oa_profit": 14.0,
+    "oa_roi": 0.75,
+    "has_buybox": false,
+    "buybox_seller": null,
+    "buybox_price": null,
+    "est_sales": 100,
+    "offers": 15,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "sales_rank": 80000,
+    "avg_sales_rank_90": 80000
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "no-featured-offer"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "transcript:strong-margin-but-no-buybox",
+  "source": "LIVE Amazon Online Arbitrage Product Sourcing (For Beginners).txt @01:45 \u2014 Tommy Hilfiger boxers, $14 profit/75% ROI, 'no buy box currently'; narrator buys anyway.",
+  "difficulty": "medium"
+}

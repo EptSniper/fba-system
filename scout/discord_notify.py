@@ -130,7 +130,7 @@ if __name__ == "__main__":
         "margin_est": 0.29, "blended_score": 83.0,
         "reason": "Demo reason string — not a real product.",
     }
-    if discord_router._resolve_url("scout_picks"):
+    if discord_router.has_webhook("scout_picks"):
         print("Posting demo embed:", post_pick(demo))
     else:
         import json

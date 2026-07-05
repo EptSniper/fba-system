@@ -26,6 +26,7 @@ from typing import Any, Dict, List, Optional
 
 import config
 import brands
+import datalake  # V0 raw data lake — archive() never raises and no-ops when disabled/absent
 
 try:
     import keepa  # pip install keepa
@@ -78,6 +79,23 @@ def _require_keepa():
             "The 'keepa' package is not installed. Run: pip install keepa\n"
             "You also need a PAID Keepa subscription key set as KEEPA_KEY in .env."
         )
+
+
+def _tokens_consumed(api) -> Optional[int]:
+    """Best-effort read of the client's running tokens-consumed counter (for the lake's
+    tokens_consumed column). Guarded — never raises."""
+    try:
+        return token_telemetry(api).get("tokens_consumed")
+    except Exception:
+        return None
+
+
+def _delta(before: Optional[int], after: Optional[int]) -> Optional[int]:
+    """Tokens spent on the call between two counter reads; None if the counter isn't available
+    or reset (so we record 'unknown' honestly rather than a bogus number)."""
+    if isinstance(before, int) and isinstance(after, int) and after >= before:
+        return after - before
+    return None
 
 
 def get_client(key: Optional[str] = None):
@@ -296,12 +314,18 @@ def _normalize(product: Dict[str, Any]) -> Dict[str, Any]:
 # public API
 # ----------------------------------------------------------------------------
 def find_candidates(criteria: Optional[Dict[str, Any]] = None,
-                    api=None, limit: Optional[int] = None) -> List[str]:
+                    api=None, limit: Optional[int] = None,
+                    brand_seeds: Optional[List[str]] = None) -> List[str]:
     """
     Use Keepa Product Finder to return candidate ASINs matching the criteria.
 
     Returns a list of ASIN strings. See the module docstring about confirming the
     exact Product Finder parameter names for your Keepa version.
+
+    brand_seeds: an explicit brand-seed override (TOP100_DEAL_WATCH_PLAN.md T3 — the deal
+    watch's fresh hinted brands, for the hint-led FIRST discovery pass). None -> the normal
+    friendly-brand rotation (brands.seed_brands). An explicit [] means "seed nothing" (search
+    broadly), distinct from None.
     """
     _require_keepa()
     api = api or get_client()
@@ -326,11 +350,17 @@ def find_candidates(criteria: Optional[Dict[str, Any]] = None,
             "perPage": min(limit, 10000),
             "page": 0,
         }
-        # Knowledge-driven: aim at our known-good brands (brands.py) like the videos do.
-        if config.USE_BRAND_SEEDS:
+        # Knowledge-driven: aim at our known-good brands (brands.py) like the videos do — OR at
+        # an explicit brand_seeds override (deal-watch hinted brands, T3's hint-led pass). A
+        # non-None brand_seeds wins over the default rotation; an explicit [] seeds nothing.
+        if brand_seeds is not None:
+            seeds = brand_seeds
+        elif config.USE_BRAND_SEEDS:
             seeds = brands.seed_brands(config.BRAND_SEED_LIMIT)
-            if seeds:
-                params["brand"] = seeds   # CONFIRM exact key via Keepa "SHOW API QUERY"
+        else:
+            seeds = []
+        if seeds:
+            params["brand"] = seeds   # CONFIRM exact key via Keepa "SHOW API QUERY"
     else:
         # Private label (legacy): weak incumbents + beatable review moat.
         params = {
@@ -350,8 +380,69 @@ def find_candidates(criteria: Optional[Dict[str, Any]] = None,
     # limit) — System Blueprint Prompt G2's "drip, not burst" rule; safe for a nightly run.
     # Wrapped in a hard deadline (Finding S2) so a drained bucket aborts honestly instead of
     # blocking indefinitely.
-    asins = _with_deadline(api.product_finder, params, domain=config.KEEPA_DOMAIN, wait=True)
-    return list(asins or [])[:limit]
+    before = _tokens_consumed(api)
+    try:
+        asins = _with_deadline(api.product_finder, params, domain=config.KEEPA_DOMAIN, wait=True)
+    except Exception as e:
+        # LIVE-CONFIRMED 2026-07-05 (Session 51): Keepa PRO-plan keys get REQUEST_REJECTED on the
+        # Product Finder endpoint (it's an API-plan feature). The product-SEARCH endpoint IS
+        # available on Pro (10 tokens/term), so fall back to searching the seed brands — weaker
+        # filtering (no BSR/offer-count server-side; our own gates still apply downstream) but a
+        # working nightly discovery until the API-tier upgrade. Other errors re-raise unchanged.
+        fallback_terms = list(params.get("brand") or [])  # seeds only exist in OA mode
+        if "REQUEST_REJECTED" not in str(e) or not fallback_terms:
+            raise
+        print("[keepa] Product Finder rejected on this plan; falling back to brand SEARCH "
+              f"({min(len(fallback_terms), 3)} term(s), 10 tokens each)")
+        asins = _search_asins(fallback_terms[:3], limit)
+    after = _tokens_consumed(api)
+    asins = list(asins or [])[:limit]
+    # Archive the raw finder response (the params + ASIN set it returned). Keyed by params_hash
+    # so re-running the same recipe dedupes when the market hasn't moved and appends when it has
+    # — this IS the on-policy sampling history V2's backtest reads. Never breaks discovery.
+    datalake.archive("keepa", datalake.params_hash(params), "product_finder",
+                     {"params": params, "asins": list(asins)},
+                     tokens_consumed=_delta(before, after), params=params)
+    return asins
+
+
+def _search_asins(terms: List[str], limit: int) -> List[str]:
+    """Pro-plan discovery fallback: Keepa's product-search endpoint per brand term (10 tokens
+    each, ~20 products/term; live-verified 2026-07-05). Raw responses archived. Never raises —
+    a failed term just contributes nothing."""
+    import requests as _rq
+    out: List[str] = []
+    seen = set()
+    for term in terms:
+        try:
+            r = _rq.get("https://api.keepa.com/search",
+                        params={"key": config.KEEPA_KEY, "domain": 1,
+                                "type": "product", "term": term}, timeout=60)
+            data = r.json() or {}
+            prods = data.get("products") or []
+            datalake.archive("keepa", f"search:{term}", "product_search",
+                             [{k: p.get(k) for k in ("asin", "title", "brand")} for p in prods],
+                             tokens_consumed=data.get("tokensConsumed"))
+            for p in prods:
+                a = p.get("asin")
+                if a and a not in seen:
+                    seen.add(a)
+                    out.append(a)
+        except Exception as e2:
+            print(f"[keepa] search fallback failed for {term!r}: {redact_err(e2)}")
+        if len(out) >= limit:
+            break
+    return out[:limit]
+
+
+def redact_err(e: Exception) -> str:
+    """Error text safe for logs — the search URL carries the key as a query param, so a raw
+    requests exception string could leak it."""
+    try:
+        import redact
+        return redact.redact(str(e))[:200]
+    except Exception:
+        return type(e).__name__
 
 
 def enrich(asins: List[str], api=None) -> List[Dict[str, Any]]:
@@ -368,6 +459,7 @@ def enrich(asins: List[str], api=None) -> List[Dict[str, Any]]:
     # rating + review counts; buybox=True returns buyBoxStats (Amazon's Buy-Box win
     # share, for the rotation guard). These extra fields can cost more Keepa tokens.
     # Wrapped in a hard deadline (Finding S2) — same reasoning as find_candidates() above.
+    before = _tokens_consumed(api)
     products = _with_deadline(
         api.query,
         list(asins),
@@ -378,8 +470,20 @@ def enrich(asins: List[str], api=None) -> List[Dict[str, Any]]:
         history=False,   # we only need stats, not full time series -> cheaper
         wait=True,        # drip-pace against the token bucket (System Blueprint Prompt G2)
     )
+    after = _tokens_consumed(api)
+    plist = products or []
+    # Archive each RAW product response, keyed by ASIN, so a re-pull next week dedupes when the
+    # product hasn't changed. Batch token cost is split evenly across the products (an estimate —
+    # Keepa doesn't itemize per-ASIN cost). Archiving can never break enrichment.
+    per_tokens = None
+    batch_tokens = _delta(before, after)
+    if batch_tokens is not None and plist:
+        per_tokens = int(round(batch_tokens / len(plist)))
+    for p in plist:
+        datalake.archive("keepa", (p.get("asin") if isinstance(p, dict) else None),
+                         "product", p, tokens_consumed=per_tokens)
     out = []
-    for p in (products or []):
+    for p in plist:
         try:
             out.append(_normalize(p))
         except Exception:
@@ -388,15 +492,76 @@ def enrich(asins: List[str], api=None) -> List[Dict[str, Any]]:
     return out
 
 
+def query_history(asins: List[str], api=None, days: int = 365) -> List[Dict[str, Any]]:
+    """Pull FULL price/rank/offer HISTORY (not just current stats) for a batch of ASINs — the
+    backtest engine's on-policy data source (DATA_ENGINE_PLAN.md V2). Unlike enrich() (history=
+    False, cheap), this returns Keepa's time-series `data`/`csv` so features can be reconstructed
+    at PAST dates. Each raw product is archived (endpoint 'product_history', keyed by ASIN) so a
+    re-pull dedupes. Returns the RAW keepa products (backtest.parse_keepa_history parses them).
+
+    UNVERIFIED against a live Keepa response in this repo (no paid key spent here) — the request
+    shape mirrors enrich()'s confirmed api.query signature with history=True/days=365; confirm the
+    exact token cost + csv layout on the first real pull."""
+    if not asins:
+        return []
+    _require_keepa()
+    api = api or get_client()
+    before = _tokens_consumed(api)
+    products = _with_deadline(
+        api.query, list(asins), domain=config.KEEPA_DOMAIN,
+        stats=90, rating=False, history=True, days=days, wait=True,
+    )
+    after = _tokens_consumed(api)
+    plist = products or []
+    per_tokens = None
+    batch_tokens = _delta(before, after)
+    if batch_tokens is not None and plist:
+        per_tokens = int(round(batch_tokens / len(plist)))
+    for p in plist:
+        datalake.archive("keepa", (p.get("asin") if isinstance(p, dict) else None),
+                         "product_history", _json_safe(p), tokens_consumed=per_tokens)
+    return plist
+
+
+def _json_safe(obj):
+    """Deep-convert a keepa history product for lossless JSON archiving: numpy arrays -> lists
+    (str(np.array) ELIDES long arrays with '...', silently corrupting an archived payload),
+    numpy scalars -> python scalars, datetimes -> isoformat. Never raises — falls back to str."""
+    try:
+        import numpy as np
+    except Exception:
+        np = None
+    import datetime as _dt2
+    if np is not None and isinstance(obj, np.ndarray):
+        return [_json_safe(x) for x in obj.tolist()]
+    if np is not None and isinstance(obj, np.generic):
+        return obj.item()
+    if isinstance(obj, dict):
+        return {str(k): _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(x) for x in obj]
+    if isinstance(obj, (_dt2.datetime, _dt2.date)):
+        return obj.isoformat()
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+    return str(obj)
+
+
 def token_telemetry(api) -> Dict[str, Optional[int]]:
     """Read tokensLeft/tokensConsumed off a keepa.Keepa client instance for the runs table
     (System Blueprint Prompt G2 — "a drained key silently looks like no results, alert on
     tokensLeft"). Read defensively via getattr: the python keepa lib exposes these as plain
     instance attributes updated after each request, but never assume the exact attribute
     names are stable across versions — degrade to None rather than raise."""
+    # Explicit None checks, not an `or` chain: a legitimate 0 on tokens_consumed_total (fresh
+    # client, pre-first-request) is falsy and would silently fall through to a DIFFERENT-semantics
+    # attribute, corrupting the before/after deltas budgets are computed from (Review 2026-07-05).
+    consumed = getattr(api, "tokens_consumed_total", None)
+    if consumed is None:
+        consumed = getattr(api, "tokens_consumed", None)
     return {
         "tokens_left": getattr(api, "tokens_left", None),
-        "tokens_consumed": getattr(api, "tokens_consumed_total", None) or getattr(api, "tokens_consumed", None),
+        "tokens_consumed": consumed,
     }
 
 
@@ -404,7 +569,10 @@ def seller_asins(seller_id: str, api=None) -> List[str]:
     """Return the ASINs in a seller's catalog via Keepa's seller data."""
     _require_keepa()
     api = api or get_client()
+    before = _tokens_consumed(api)
     res = api.seller_query(seller_id, domain=config.KEEPA_DOMAIN)
+    after = _tokens_consumed(api)
+    datalake.archive("keepa", seller_id, "seller", res, tokens_consumed=_delta(before, after))
     info = (res or {}).get(seller_id, {}) if isinstance(res, dict) else {}
     return list(info.get("asinList", []) or [])
 

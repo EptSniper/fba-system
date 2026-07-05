@@ -18,8 +18,11 @@ keeps a one-line cross-channel summary so it remains the single place that prove
 run happened.
 
 Usage:
-    python run_daily.py             # real run — needs KEEPA_KEY (see .env)
-    python run_daily.py --dry-run   # no external writes/posts; prints the summary
+    python run_daily.py               # real run — needs KEEPA_KEY (see .env)
+    python run_daily.py --dry-run     # no external writes/posts; prints the summary
+    python run_daily.py --dry-run-live  # THIS_WEEK.md Prompt W2 — Keepa discovery honestly
+                                         # skipped (no key yet), everything else runs for real
+                                         # (deals collection, a real runs row, digest, heartbeat)
 
 Schedule it: see the "Scheduling" section in scout/README.md for the Windows Task Scheduler
 command (with "run when missed" enabled) and the equivalent cron line for a future small VPS.
@@ -44,8 +47,10 @@ try:
 except Exception:  # pragma: no cover - dotenv simply not installed
     pass
 
+import datalake
 import db
 import discord_router
+import harvest
 import memory_report
 import ops_report
 import pipeline
@@ -53,6 +58,7 @@ import propose_updates
 import redact
 import reflect
 import search_log
+from deals import collect as deals_collect
 
 try:
     import requests
@@ -66,32 +72,80 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LOCAL_BRAIN = os.path.join(HERE, "..", "learning-hub", "data", "ai-brain.json")
 BUNDLED_BRAIN = os.path.join(HERE, "..", "control-center", "hub-data", "ai-brain.json")
 
+# Every OTHER hub-data file mirrored into control-center/hub-data/ for Vercel (which has no
+# sibling learning-hub/ folder — see control-center/lib/data.ts's live() fallback). ai-brain.json
+# itself is checked separately via LOCAL_BRAIN/BUNDLED_BRAIN above so existing callers/tests that
+# patch those two specific names keep working unchanged. Code Review 2026-07-02, Finding S13:
+# the drift check originally covered ONLY ai-brain.json — a stale leads/picks/finances/deals/
+# knowledge-index/rag-manifest snapshot on Vercel is just as real a "deployed site shows old
+# data" problem (lower-stakes than stale SCORING thresholds, but still worth a heads-up).
+_HUB_DATA_DIR = os.path.join(HERE, "..", "learning-hub", "data")
+_HUB_ROOT_DIR = os.path.join(HERE, "..", "learning-hub")
+_BUNDLED_DIR = os.path.join(HERE, "..", "control-center", "hub-data")
+_RAG_SOURCES_DIR = os.path.join(HERE, "..", "knowledge-rag", "sources")
+
+OTHER_MIRRORED_HUB_DATA_FILES = [
+    (os.path.join(_HUB_DATA_DIR, "finances.json"), os.path.join(_BUNDLED_DIR, "finances.json")),
+    (os.path.join(_HUB_DATA_DIR, "inventory.json"), os.path.join(_BUNDLED_DIR, "inventory.json")),
+    (os.path.join(_HUB_DATA_DIR, "leads.json"), os.path.join(_BUNDLED_DIR, "leads.json")),
+    (os.path.join(_HUB_DATA_DIR, "picks.json"), os.path.join(_BUNDLED_DIR, "picks.json")),
+    (os.path.join(_HUB_DATA_DIR, "deals.json"), os.path.join(_BUNDLED_DIR, "deals.json")),
+    (os.path.join(_HUB_ROOT_DIR, "knowledge-index.json"), os.path.join(_BUNDLED_DIR, "knowledge-index.json")),
+    # rag-manifest.json's LIVE source lives in a different sibling tree entirely (knowledge-rag/,
+    # not learning-hub/) and under a different filename (manifest.json) — see getRagManifest().
+    (os.path.join(_RAG_SOURCES_DIR, "manifest.json"), os.path.join(_BUNDLED_DIR, "rag-manifest.json")),
+]
+
 # Below this many Keepa tokens left, post a dedicated system_health warning (a drained key
 # silently looks like "no results" otherwise — System Blueprint Prompt G2's own concern,
 # now routed to its own channel instead of only a digest field).
 LOW_TOKEN_WARNING_THRESHOLD = int(os.getenv("LOW_TOKEN_WARNING_THRESHOLD", "1000"))
 
 
-def check_brain_drift() -> Optional[str]:
-    """Warn if the bundled control-center snapshot has drifted from the live brain — this exact
-    kind of drift has bitten the project before (see AI_COLLABORATION_JOURNAL.md's known-drift
-    history). Returns a warning string, or None if they match or either file is simply absent."""
+def _hub_data_files_differ(live_path: str, bundled_path: str) -> bool:
+    """True only if BOTH files exist and their contents differ. Missing files degrade to False
+    (nothing to compare) rather than a drift finding — matches the original single-file
+    behavior."""
     try:
-        with open(LOCAL_BRAIN, encoding="utf-8") as f:
-            local = f.read()
-        with open(BUNDLED_BRAIN, encoding="utf-8") as f:
+        with open(live_path, encoding="utf-8") as f:
+            live = f.read()
+        with open(bundled_path, encoding="utf-8") as f:
             bundled = f.read()
     except FileNotFoundError:
+        return False
+    return live != bundled
+
+
+def check_brain_drift() -> Optional[str]:
+    """Warn if ANY bundled control-center/hub-data snapshot has drifted from its live source —
+    this exact kind of drift has bitten the project before (see AI_COLLABORATION_JOURNAL.md's
+    known-drift history). Originally checked only ai-brain.json; Code Review 2026-07-02, Finding
+    S13 extended it to every mirrored hub-data file (finances/inventory/leads/picks/deals/
+    knowledge-index/rag-manifest), since a stale one of those is just as real a "deployed site
+    shows old data" problem. Returns a combined warning naming every drifted file, or None if
+    everything matches (or every pair is simply absent)."""
+    drifted = []
+    if _hub_data_files_differ(LOCAL_BRAIN, BUNDLED_BRAIN):
+        drifted.append(os.path.basename(BUNDLED_BRAIN))
+    for live_path, bundled_path in OTHER_MIRRORED_HUB_DATA_FILES:
+        if _hub_data_files_differ(live_path, bundled_path):
+            drifted.append(os.path.basename(bundled_path))
+    if not drifted:
         return None
-    if local != bundled:
+    if drifted == ["ai-brain.json"]:
+        # Keep the original single-file wording verbatim — anything that string-matched this
+        # exact message (Discord history, prior journal entries) keeps working.
         return ("hub-data/ai-brain.json has drifted from learning-hub/data/ai-brain.json — "
                "re-sync before the deployed dashboard trusts stale thresholds.")
-    return None
+    return (f"{len(drifted)} bundled control-center/hub-data file(s) have drifted from their "
+           f"live source: {', '.join(drifted)} — re-sync before the deployed dashboard trusts "
+           f"stale data.")
 
 
 def format_digest(summary: Dict[str, Any], drift_warning: Optional[str],
                   run_id: Optional[Any], proposals_pending: int = 0,
-                  searches_due: int = 0, cross_channel_line: Optional[str] = None) -> Dict[str, Any]:
+                  searches_due: int = 0, cross_channel_line: Optional[str] = None,
+                  queue_pending: int = 0, deals_summary: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """One batched Discord embed for the whole cycle. Honest when there are zero candidates —
     says so plainly, never fabricates picks to look active."""
     picks = summary.get("picks") or []
@@ -111,6 +165,12 @@ def format_digest(summary: Dict[str, Any], drift_warning: Optional[str],
         # never disagrees, the prompt needs tuning; when it does, this is where you'd notice.
         fields.append({"name": "🧠 Analyst disagreed", "value": f"{analyst_disagreements} of "
                        f"{summary.get('scored', 0)} candidates", "inline": True})
+    hints_followed = summary.get("hints_followed")
+    if hints_followed:
+        # TOP100_DEAL_WATCH_PLAN.md T3 — discovery pointed at the nightly deal watch's hinted
+        # brands FIRST. A count only; zero fresh hints just means self-directed discovery.
+        fields.append({"name": "🧭 Deal-led discovery", "value": f"followed {hints_followed} "
+                       f"fresh deal-hint brand(s) before the normal rotation", "inline": True})
 
     if picks:
         lines = []
@@ -122,6 +182,13 @@ def format_digest(summary: Dict[str, Any], drift_warning: Optional[str],
         description = "\n".join(lines)
     elif summary.get("above_threshold"):
         description = f"{summary['above_threshold']} candidate(s) cleared the score bar (already picked before)."
+    elif summary.get("dry_run_live"):
+        # THIS_WEEK.md Prompt W2 — an honest SKIP, not "the scout looked and found nothing."
+        # Distinguishing these matters: "0 scanned" alone reads like a quiet Keepa result, not
+        # "discovery didn't run yet" — a real difference an operator shouldn't have to guess at.
+        description = ("Keepa discovery skipped honestly — no KEEPA_KEY configured yet "
+                       "(dry-run-live mode). Deals collection, runs telemetry, and this digest "
+                       "still ran for real.")
     else:
         description = f"No candidates cleared the bar this run ({found} scanned, {scored} scored)."
 
@@ -146,15 +213,34 @@ def format_digest(summary: Dict[str, Any], drift_warning: Optional[str],
         # Keepa-gated and manual.
         embed["fields"].append({"name": "🔎 Brand searches due", "value": f"{searches_due} saved "
                                f"brand search(es) due for re-run", "inline": False})
+    if queue_pending > 0:
+        # CC1 — the control-center's Review Queue (/queue). A count + link only; the actual
+        # approve/reject/watch decision always happens in the UI, never here.
+        embed["fields"].append({"name": "🗂️ Review Queue", "value": f"{queue_pending} item(s) "
+                               f"waiting on a human decision — open the control-center's "
+                               f"Review Queue (/queue)", "inline": False})
+    if deals_summary and deals_summary.get("total_rows"):
+        # Deal Finder Build Plan D1/D3 (THIS_WEEK.md Prompt W2) — collection is live and
+        # key-free (Slickdeals RSS); the matcher (D2) that would turn a deal into a scored
+        # pick isn't built yet, so say so plainly rather than implying more than exists.
+        per_source = ", ".join(f"{name}: {n}" for name, n in deals_summary.get("sources", {}).items())
+        embed["fields"].append({"name": "🛒 Retail deals", "value": f"{deals_summary['total_rows']} "
+                               f"deal(s) collected ({per_source}) — matching not yet built",
+                               "inline": False})
     if cross_channel_line:
         # The digest stays the one place that proves the WHOLE run happened, even though
         # picks/proposals/alerts now also post to their own channels.
         embed["fields"].append({"name": "🔀 This cycle", "value": cross_channel_line, "inline": False})
+    lake_digest = summary.get("lake_digest")
+    if lake_digest:
+        # V0 data lake (DATA_ENGINE_PLAN.md) — one honest line: rows/bytes archived this run,
+        # running total on disk, dedupe rate. Absent when archiving is disabled.
+        embed["fields"].append({"name": "🗄️ Data lake", "value": lake_digest, "inline": False})
     return {"username": "FBA Scout — Daily Digest", "embeds": [embed]}
 
 
 def cross_channel_summary_line(summary: Dict[str, Any], proposals_pending: int,
-                               system_health_alerts: int) -> Optional[str]:
+                               system_health_alerts: int, queue_notified: int = 0) -> Optional[str]:
     """A one-line "picks → #scout-picks (3), proposals → #brain-proposals (2)" summary of what
     else posted THIS cycle, so the digest remains the single place that proves the whole run
     happened even though those items now go to their own channels. None if nothing else fired."""
@@ -166,7 +252,31 @@ def cross_channel_summary_line(summary: Dict[str, Any], proposals_pending: int,
         parts.append(f"proposals → #brain-proposals ({proposals_pending})")
     if system_health_alerts:
         parts.append(f"alerts → #system-health ({system_health_alerts})")
+    if queue_notified:
+        parts.append(f"queue → #review-queue ({queue_notified})")
     return ", ".join(parts) if parts else None
+
+
+def notify_review_queue(counts: Optional[Dict[str, int]]) -> int:
+    """Posts a short heads-up to the "review_queue" stream when the queue is non-empty (CC1) —
+    this is the first real caller of that stream (provisioned 2026-07-02, stubbed ever since —
+    see scout/discord_router.py's STREAMS registry comment). Returns the total pending count
+    posted (0 if the queue is empty, counts are unavailable, or the send failed) — feeds the
+    digest's cross-channel line, same convention as post_system_health_alerts()."""
+    if not counts:
+        return 0
+    total = counts.get("leads", 0) + counts.get("deal_matches", 0)
+    if total <= 0:
+        return 0
+    embed = {
+        "title": "🗂️ Review Queue has items waiting",
+        "description": f"{counts.get('leads', 0)} scout lead(s) + {counts.get('deal_matches', 0)} "
+                      f"deal match(es) need a human decision. Open the control-center's Review "
+                      f"Queue (/queue) to approve, reject, or watch — each action requires a reason code.",
+        "color": 0xF5B14C,
+    }
+    ok = discord_router.send("review_queue", [embed])
+    return total if ok else 0
 
 
 def system_health_alerts(summary: Dict[str, Any], drift_warning: Optional[str]) -> List[Dict[str, Any]]:
@@ -185,6 +295,15 @@ def system_health_alerts(summary: Dict[str, Any], drift_warning: Optional[str]) 
         alerts.append({"title": "⚠ Low Keepa tokens", "color": 0xF5B14C,
                        "description": f"{tokens_left} tokens left "
                                       f"(warning threshold {LOW_TOKEN_WARNING_THRESHOLD})"})
+    # V0 weekly integrity check (Mondays) — a checksum mismatch or unreadable Parquet in the
+    # data lake means archived training data is corrupting; that deserves its own alert, not a
+    # buried log line. Absent on non-Monday runs (integrity_check isn't run then).
+    integ = summary.get("lake_integrity") or {}
+    if integ.get("mismatches") or integ.get("unreadable"):
+        alerts.append({"title": "⚠ Data lake integrity", "color": 0xE24C4C,
+                       "description": (f"{len(integ.get('mismatches', []))} checksum mismatch(es), "
+                                       f"{len(integ.get('unreadable', []))} unreadable file(s) — "
+                                       f"the raw training lake may be corrupting.")})
     return alerts
 
 
@@ -224,16 +343,45 @@ def ping_heartbeat(ok: bool) -> bool:
         return False
 
 
-def main(dry_run: bool = False) -> Dict[str, Any]:
+def main(dry_run: bool = False, dry_run_live: bool = False) -> Dict[str, Any]:
     drift_warning = check_brain_drift()
     if drift_warning:
         log.warning(drift_warning)
 
+    if not dry_run:
+        # Pull the latest cloud-trained ranker (train-ranker.yml uploads to Supabase storage
+        # models/ranker/current/) so the local pipeline has the current champion CANDIDATE on
+        # disk at cycle start. SHADOW-ONLY: nothing consumes it in scoring until Mehmet promotes
+        # via the brain key scoring.rankingChampion. Best-effort — a storage hiccup never blocks
+        # the cycle. Lazy import keeps run_daily's import chain sklearn-free.
+        try:
+            import train_ranker
+            fetched = train_ranker.fetch_current_model()
+            if fetched:
+                log.info("ranker: fetched current cloud model -> %s", fetched)
+        except Exception as e:
+            log.warning("ranker fetch failed (non-fatal): %s", e)
+
     summary: Dict[str, Any] = {}
     ok = False
     try:
-        summary = pipeline.run_once(dry_run=dry_run, post=not dry_run)
-        ok = "error" not in summary
+        if dry_run_live:
+            # THIS_WEEK.md Prompt W2 — "dress rehearsal": run everything that CAN run without a
+            # Keepa key for REAL (deals collection, runs telemetry, digest, heartbeat — all
+            # gated on `not dry_run` below, which dry_run_live never sets True), while honestly
+            # SKIPPING the Keepa-dependent discovery step instead of letting it raise. A real
+            # runs row is still written (status="skipped", not "failed" — nothing broke; this
+            # was never expected to run yet) so Runs Health shows today's cycle happened.
+            run_id = db.start_run()
+            db.finish_run(run_id, status="skipped",
+                          error_summary="Keepa discovery skipped honestly (dry-run-live mode, "
+                                        "no KEEPA_KEY configured yet) - not a failure.")
+            summary = {"found": 0, "scored": 0, "new_picks": 0, "posted": 0,
+                      "run_id": run_id, "dry_run_live": True}
+            ok = True
+        else:
+            summary = pipeline.run_once(dry_run=dry_run, post=not dry_run)
+            ok = "error" not in summary
     except Exception as e:
         # Code Review 2026-07-02, Finding B5: pipeline.run_once() already redacts its OWN
         # summary["error"]/error_summary before re-raising, but `raise` re-raises the ORIGINAL
@@ -251,6 +399,16 @@ def main(dry_run: bool = False) -> Dict[str, Any]:
         if run_id is None:
             recent = db.recent_runs(limit=1)
             run_id = recent[0].get("id") if recent else None
+
+        deals_summary = None
+        if not dry_run:
+            # Deal Finder Build Plan D1/D3 (THIS_WEEK.md Prompt W2) — Slickdeals RSS needs no
+            # key, so this can go live now; Best Buy stays key-gated with its own honest skip
+            # (deals/sources/bestbuy.py). Same non-fatal isolation as every other optional step.
+            try:
+                deals_summary = deals_collect.collect_all()
+            except Exception as e:
+                log.warning("deals collection failed (non-fatal): %s", e)
 
         proposals_pending = 0
         searches_due = 0
@@ -283,6 +441,48 @@ def main(dry_run: bool = False) -> Dict[str, Any]:
                     memory_report.write_report()
                 except Exception as e:
                     log.warning("memory_report failed (non-fatal): %s", e)
+                # V1 shadow-outcome tracker — weekly re-pull of due day-30/60 candidates (1-token
+                # calls, capped by learning.tokenBudget.shadowRecheckTokens). Honest no-op without
+                # Keepa/Supabase. Same non-fatal isolation as every other weekly step.
+                try:
+                    import shadow_outcomes
+                    summary["shadow_rechecks"] = shadow_outcomes.run_rechecks()
+                except Exception as e:
+                    log.warning("shadow recheck failed (non-fatal): %s", e)
+
+        if not dry_run and datalake.enabled():
+            # V0 data lake: deals collection (above) archived raw RSS/API bodies to the buffer
+            # AFTER pipeline.run_once() already flushed its own (Keepa) portion — and in
+            # dry-run-live mode run_once never ran at all — so flush here to persist them, then
+            # publish the whole-cycle digest line. Mondays also run a read-back integrity check
+            # (checksum-verify a sample of each partition). All non-fatal: a lake hiccup counts
+            # in datalake.telemetry()['failures'] and never blocks the digest/heartbeat.
+            try:
+                datalake.set_run_context(run_id)
+                datalake.flush(run_id)
+                summary["lake_digest"] = datalake.digest_line()
+                if _dt.datetime.now(_dt.timezone.utc).weekday() == 0:
+                    ic = datalake.integrity_check()
+                    summary["lake_integrity"] = ic
+                    if ic.get("mismatches") or ic.get("unreadable"):
+                        log.warning("lake integrity issues: %s", redact.redact(str(ic)))
+            except Exception as e:
+                log.warning("data lake flush/integrity failed (non-fatal): %s", e)
+
+        if not dry_run:
+            # V0 idle-token harvester — runs LAST, after the daily pipeline. DISABLED on the Pro
+            # trickle (run_harvest() returns status="disabled" with a blocked-on-upgrade reason,
+            # logged honestly, not silently absent). When enabled (post API-tier upgrade) it banks
+            # the idle-token surplus as raw training data and its lake_digest supersedes the line.
+            try:
+                hres = harvest.run_harvest()
+                summary["harvest"] = hres
+                if hres.get("status") == "disabled":
+                    log.info("idle-token harvester: %s", hres.get("reason"))
+                elif hres.get("lake_digest"):
+                    summary["lake_digest"] = hres["lake_digest"]
+            except Exception as e:
+                log.warning("idle-token harvest failed (non-fatal): %s", e)
 
         health_alert_count = 0
         if not dry_run:
@@ -296,9 +496,20 @@ def main(dry_run: bool = False) -> Dict[str, Any]:
                 log.warning("system_health alert post failed (non-fatal): %s", e)
 
         if not dry_run:
-            line = cross_channel_summary_line(summary, proposals_pending, health_alert_count)
+            # CC1 — the control-center's Review Queue. Same non-fatal isolation as every other
+            # optional post-run step: must never block the digest/heartbeat.
+            queue_pending_total = 0
+            queue_notified = 0
+            try:
+                queue_counts = db.queue_pending_counts()
+                queue_pending_total = sum((queue_counts or {}).values())
+                queue_notified = notify_review_queue(queue_counts)
+            except Exception as e:
+                log.warning("review queue notify failed (non-fatal): %s", e)
+
+            line = cross_channel_summary_line(summary, proposals_pending, health_alert_count, queue_notified)
             post_digest(format_digest(summary, drift_warning, run_id, proposals_pending,
-                                      searches_due, line))
+                                      searches_due, line, queue_pending_total, deals_summary))
         # Code Review 2026-07-02, Finding S1 — REVISED from the earlier "heartbeat still fires
         # on a dry run, proving the machine is alive" design: a dry run pinging success can
         # mask the more dangerous failure mode, a scheduled task that's silently running
@@ -313,8 +524,15 @@ def main(dry_run: bool = False) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the daily scout cycle end to end.")
-    parser.add_argument("--dry-run", action="store_true", help="no external writes/posts")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--dry-run", action="store_true", help="no external writes/posts")
+    mode.add_argument("--dry-run-live", action="store_true",
+                      help="THIS_WEEK.md Prompt W2 - honestly skip Keepa discovery (no key "
+                           "needed yet), but run everything else for real: deals collection, "
+                           "a real runs row, proposals/searches-due/weekly-ops checks, the "
+                           "digest, and the heartbeat. For running the daily cycle before "
+                           "KEEPA_KEY exists.")
     args = parser.parse_args()
-    result = main(dry_run=args.dry_run)
+    result = main(dry_run=args.dry_run, dry_run_live=args.dry_run_live)
     print(json.dumps({k: v for k, v in result.items() if k != "picks"}, indent=2, default=str))
     sys.exit(1 if result.get("error") else 0)

@@ -1,0 +1,93 @@
+# Ranker training — the free daily cloud trainer (DATA_ENGINE_PLAN.md V3 shadow loop).
+# Runs scout/train_ranker.py daily at 08:17 UTC (the :17 offset dodges GitHub's top-of-hour
+# scheduling congestion — same convention as deal-watch.yml/T2). Pulls training rows from
+# Supabase, trains the challenger, evaluates it against the deterministic triage champion on a
+# by-ASIN split, appends learning-hub/tracking/ranker-report.md (in the runner only — the repo
+# copy is updated by local runs), posts the summary to #brain-proposals, and uploads the model
+# artifact BOTH as a workflow artifact and to the Supabase storage bucket models/ (ranker/<date>/
+# + stable ranker/current/) so the local pipeline fetches the current champion at run start.
+#
+# PROMOTION IS HUMAN-ONLY regardless of where training ran: train_ranker.py never writes
+# ai-brain.json (test-enforced); the champion flips only when Mehmet sets the brain key
+# scoring.rankingChampion via fba-brain-updater.
+#
+# Secrets (repo Settings -> Actions): SUPABASE_URL + SUPABASE_SERVICE_KEY exist from T2.
+# DISCORD_WEBHOOK_BRAIN_PROPOSALS + DISCORD_WEBHOOK_SYSTEM_HEALTH must exist too — add them if
+# the summary post logs "no webhook" (train_ranker degrades to an honest no-post, never fails).
+name: train-ranker
+
+on:
+  schedule:
+    - cron: "17 8 * * *"   # daily 08:17 UTC
+  workflow_dispatch: {}     # manual "Run workflow" button
+
+# Never let two trainings overlap (a slow run + the next cron) — same T2 rule: overlapping runs
+# could double-post the proposal and race the ranker/current/ upload.
+concurrency:
+  group: train-ranker
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  train-ranker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install minimal deps
+        run: pip install -r scout/requirements-train.txt
+
+      - name: Train + evaluate (champion/challenger)
+        working-directory: scout
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          DISCORD_WEBHOOK_BRAIN_PROPOSALS: ${{ secrets.DISCORD_WEBHOOK_BRAIN_PROPOSALS }}
+          RANKER_OUT_DIR: ${{ github.workspace }}/ranker-out
+        run: python train_ranker.py
+
+      # The model + metrics as a downloadable workflow artifact (the Supabase storage copy is
+      # what the local pipeline consumes; this one is for humans/debugging). A refused run
+      # produces no files — if-no-files-found keeps that an honest warning, not a failure.
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ranker-${{ github.run_id }}
+          path: ${{ github.workspace }}/ranker-out/
+          if-no-files-found: warn
+          retention-days: 30
+
+      # Same failure alert as deal-watch.yml: a silent nightly training failure gets noticed.
+      - name: Alert on failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_SYSTEM_HEALTH: ${{ secrets.DISCORD_WEBHOOK_SYSTEM_HEALTH }}
+        run: |
+          python - <<'PY'
+          import os, json, urllib.request
+          url = os.getenv("DISCORD_WEBHOOK_SYSTEM_HEALTH")
+          if url:
+              body = {"embeds": [{"title": "⚠ Ranker training failed",
+                                  "description": "scout/train_ranker.py exited non-zero in GitHub Actions. Check the run log (secrets are masked). NOTE: an honest 'refused: not enough data' exits 0 and does NOT trigger this.",
+                                  "color": 0xE24C4C}]}
+              req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                          headers={"Content-Type": "application/json"})
+              try:
+                  urllib.request.urlopen(req, timeout=10)
+              except Exception as e:
+                  print("failure alert post failed:", type(e).__name__)
+          PY
+
+      # Defeat GitHub's 60-day-inactivity auto-disable of scheduled workflows (T2 pattern).
+      - name: Keepalive
+        uses: gautamkrishnar/keepalive-workflow@v2

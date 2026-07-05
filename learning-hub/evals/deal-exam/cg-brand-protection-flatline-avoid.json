@@ -1,0 +1,25 @@
+{
+  "id": "cg-brand-protection-flatline-avoid",
+  "facts": {
+    "price": 34.99,
+    "avg_price_90": 34.99,
+    "amazon_bb_share": 0.18,
+    "oa_profit": 8.0,
+    "oa_roi": 0.3,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo",
+    "sales_rank": 60000,
+    "avg_sales_rank_90": 60000,
+    "est_sales": 100,
+    "offers": 10
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "chart-guide:brand-protection-agency-narrator-diverges",
+  "source": "How to Read a Keepa Chart (FULL Tutorial) Amazon FBA 2024.txt @13:29 \u2014 a dead-flat price line (brand-protection agency 'Pattern' controls the listing); Amazon's own share is only 8-18% (below our 20% rotation threshold) so our mechanical gates don't catch this, yet narrator: 'the likelihood of getting an IP complaint is very high... I would totally skip on this listing.' DIVERGENCE NOTE: a real case where a human-recognizable red flag (suspiciously flat pricing = brand policing) has NO corresponding signal in our current fact set at all \u2014 not something oa_hard_reject or any adjustment can detect from these fields, a genuine gap rather than a near-miss.",
+  "difficulty": "hard"
+}

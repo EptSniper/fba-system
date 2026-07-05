@@ -1,0 +1,32 @@
+{
+  "id": "hc-grocery-referral-banding-at-or-below-15",
+  "facts": {
+    "sales_rank": 50000,
+    "avg_sales_rank_90": 50000,
+    "est_sales": 150,
+    "offers": 10,
+    "weight_lb": 1.0,
+    "buybox_seller": "ThirdPartySellerCo",
+    "amazon_bb_share": 0.0,
+    "has_buybox": true,
+    "brand": "AcmeGrocery",
+    "category": "grocery",
+    "price": 14.0,
+    "avg_price_90": 14.0,
+    "price_low_90": 14.0
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "roi",
+    "profit"
+  ],
+  "expected_profit_approx": 0.57,
+  "expected_roi_approx": 0.081,
+  "tolerance": 0.03,
+  "trap_type": "grocery-referral-banding-at-or-below-threshold",
+  "source": "handcrafted, hand-computed from fees.bandedRates.grocery (priceThreshold=$15, atOrBelowThreshold=8%) at $14. NOTE: first draft of this case wrongly expected verdict=pass, assuming failed roi/profit checks alone would sink it below the review threshold — the exam itself caught this: bsr/sales/offers/buybox still contribute 66/100 pts plus partial roi/profit credit, landing the real score at 75.4 (review). Fixed after independently re-deriving the full weighted score by hand.",
+  "difficulty": "hard"
+}

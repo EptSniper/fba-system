@@ -1,0 +1,31 @@
+{
+  "id": "hc-boundary-bb-share-below-0.19",
+  "facts": {
+    "price": 25.0,
+    "sales_rank": 50000,
+    "avg_sales_rank_90": 50000,
+    "est_sales": 150,
+    "offers": 10,
+    "weight_lb": 1.0,
+    "oa_profit": 8.0,
+    "oa_roi": 0.45,
+    "buybox_seller": "ThirdPartySellerCo",
+    "amazon_bb_share": 0.19,
+    "avg_price_90": 25.0,
+    "avg_offers_90": 10,
+    "has_buybox": true,
+    "price_low_90": 20.0,
+    "brand": "AcmeToys",
+    "category": null
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "amazon-shares-buybox"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "boundary:bb-share-rotation-below",
+  "source": "handcrafted boundary pair for guards.amazonBuyBoxShareMax=0.20 (ai-brain.json) \u2014 0.19 is below the hard-reject threshold but still non-zero, so the softer amazon-shares-buybox ADJUSTMENT (-10 pts) must fire without a hard reject",
+  "difficulty": "hard"
+}

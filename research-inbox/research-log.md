@@ -5,6 +5,33 @@ ingested, transcripts processed, and anything skipped (already known). No secret
 
 <!-- The scheduled task appends entries below this line, newest first. -->
 
+## 2026-07-04 (daily run)
+- **9 new items** (within cap): **2 YouTube queued** to `queue/2026-07-04.json` (rdltezXxIrk Keepa PF
+  tutorial; jeqFx9ZiOhg AMZ Prep every-fee-explained 2026) + **7 text sources** saved to
+  `text-sources/2026-07-04/`, distilled into `research-insights.md`, staged in `corpus-staging.jsonl`
+  (34 → 41 lines, JSON-validated): Ecom Circles 2026 OA guide, B2B Supplier Hub reverse-sourcing workflow,
+  Stealth Seller storefront screen, The Selling Guys 750+ gated-brands tracker (Jul 1 update — flagged as
+  fba-brain-updater review candidate), Eightx Xero/A2X setup, arXiv 2603.02153 (RAG-fusion gains neutralized
+  by reranking — production counter-evidence), arXiv 2605.01664 (claim-level grounding harness for Ask).
+- No transcripts to ingest (only the known-stuck TBFh9vFBq7k RAW). Claude Code had already pulled + ingested
+  yesterday's 3 queued videos earlier today. Dups skipped: 3 videos already in learning-hub/transcripts,
+  1 near-duplicate video, ~7 previously-ingested URLs. Manifest 42 → 51 items; digest written;
+  `CLAUDE_CODE_HANDOFF.md` refreshed (2 videos pending pull).
+
+## 2026-07-03 (daily run)
+- **10 new items recorded** (7 usable, within cap): **3 YouTube queued** to `queue/2026-07-03.json`
+  (PydYmi56Sso Flips4Miles full 2026 OA course; XdUGuD4ouKI Mar-2026 Keepa beginner-to-expert;
+  Cflrv_y9lSA advanced Keepa Parameter Method — covers the gap left by stuck TBFh9vFBq7k) + **4 text
+  sources** saved to `text-sources/2026-07-03/`, distilled into `research-insights.md`, staged in
+  `corpus-staging.jsonl` (27 → 31 lines, JSON-validated): FBA Lead List modern-sourcing/lead-bank piece,
+  Beancount seller chart-of-accounts guide, Seller Snap consolidated 2026 fee map, arXiv 2501.07391
+  RAG best-practices ablation.
+- 3 failures/skips recorded honestly: SellerAmp blog (thin video-wrapper → queued the video instead),
+  BowTiedSlinger (paywall), Lushbinary RAG production guide (JS-rendered, fetch-failed — browser re-fetch
+  candidate). Dups skipped: 3 videos already in learning-hub/transcripts + previously ingested URLs.
+- No transcripts to ingest (only the known-stuck TBFh9vFBq7k RAW). Manifest 29 → 39 items, digest written,
+  `CLAUDE_CODE_HANDOFF.md` refreshed (3 videos now pending pull).
+
 ## 2026-07-02 (daily run)
 - **9 new items** (within the 10 cap): 2 YouTube queued to `queue/2026-07-02.json` (2026 ungating guide
   IBXT2txZtJE; May-2026 SAS full tutorial rHCB-vSCWcI) + **7 text sources** fetched, saved to

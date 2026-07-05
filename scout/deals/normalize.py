@@ -12,7 +12,7 @@ not here; this module never calls a model itself).
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # Ordered so more specific phrasings ("pack of N") are tried before bare "N-pack"/"Npk" forms
 # that could otherwise false-match a stray number elsewhere in a title.
@@ -87,6 +87,84 @@ def core_title(title: str, brand: Optional[str] = None) -> str:
     t = re.sub(r'[,\-|]', ' ', t)
     t = re.sub(r'\s+', ' ', t).strip()
     return t
+
+
+# ---------------------------------------------------------------------------
+# RSS / clearance-page item normalization (TOP100_DEAL_WATCH_PLAN.md T1). Shared by the
+# registry-driven adapters (slickdeals_search / reddit_rss / dealnews_rss / clearance_page) so
+# every source produces the SAME deals-table row shape with an honest extraction_confidence —
+# the old scout/deals/sources/slickdeals.py (the pre-registry frontpage adapter) keeps its own
+# copy for backward compatibility; new adapters use these.
+# ---------------------------------------------------------------------------
+_PRICE_RE = re.compile(r"\$(\d[\d,]*\.?\d*)")
+_REG_RE = re.compile(r"(?:reg\.?|regularly|originally|was|list)\s*:?\s*\$?(\d[\d,]*\.?\d*)", re.I)
+
+
+def parse_prices(text: str) -> Tuple[Optional[float], Optional[float]]:
+    """(current, original) prices parsed from a deal title/text, or (None, None)/(current,
+    None). 'original' comes from an explicit reg./was/list phrase when present, else the second
+    bare price if two appear (the common '$X (Reg. $Y)' shape)."""
+    prices = [float(p.replace(",", "")) for p in _PRICE_RE.findall(text or "")]
+    current = prices[0] if prices else None
+    reg_match = _REG_RE.search(text or "")
+    if reg_match:
+        original = float(reg_match.group(1).replace(",", ""))
+    else:
+        original = prices[1] if len(prices) > 1 else None
+    return current, original
+
+
+def guess_retailer(text: str, known_retailers: List[str]) -> str:
+    """Longest-name-first match of a known retailer inside the text, else 'unknown'. Longest
+    first so 'Sam's Club' wins over a bare 'Club' and 'Best Buy' isn't shadowed by a shorter
+    name (the registry supplies the store-name list, keeping this module registry-agnostic)."""
+    lowered = (text or "").lower()
+    for name in sorted(known_retailers, key=len, reverse=True):
+        if name and name.lower() in lowered:
+            return name
+    return "unknown"
+
+
+def normalize_rss_item(title: str, url: Optional[str], source: str, source_signal: str,
+                       retailer_hint: Optional[str] = None,
+                       known_retailers: Optional[List[str]] = None,
+                       brand: Optional[str] = None) -> Dict[str, Any]:
+    """One RSS/feed item -> a deals-table row (sku/upc unknown — feeds rarely state either; the
+    D2 matcher's title path resolves these later). extraction_confidence is HONEST: high when a
+    real price parsed, low when only a title did — never faked to look cleaner than the parse
+    actually was.
+
+    retailer_hint wins over guessing (a per-store feed like sd-rss:walmart already KNOWS the
+    store); otherwise guess from the title against known_retailers."""
+    current, original = parse_prices(title)
+    discount_pct = None
+    if current is not None and original and original > 0:
+        discount_pct = round((1 - current / original) * 100, 1)
+    retailer = retailer_hint or guess_retailer(title, known_retailers or [])
+    # Confidence: a stated current price is the main signal a row is a real, actionable deal.
+    # No price at all = we saw a headline but couldn't extract the number the matcher needs.
+    if current is not None and original is not None:
+        confidence = 0.9
+    elif current is not None:
+        confidence = 0.75
+    else:
+        confidence = 0.3
+    if retailer == "unknown":
+        confidence = round(confidence * 0.8, 3)
+    return {
+        "retailer": retailer,
+        "source": source,
+        "source_signal": source_signal,
+        "sku": None,
+        "upc": None,
+        "title_raw": title,
+        "brand": brand,
+        "price_current": current,
+        "price_original": original,
+        "discount_pct": discount_pct,
+        "url": url,
+        "extraction_confidence": confidence,
+    }
 
 
 def extract_attributes(title: str, brand: Optional[str] = None,

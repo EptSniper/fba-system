@@ -1,0 +1,22 @@
+{
+  "id": "tr-tommy-tanktops-amazon-buybox-hardreject",
+  "facts": {
+    "price": 42.0,
+    "buybox_seller": "ATVPDKIKX0DER",
+    "offers": 10,
+    "avg_offers_90": 10,
+    "est_sales": 100,
+    "category": null,
+    "brand": "UnspecifiedBrand"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": true,
+  "expected_hard_reject_keyword": "holds the buy box",
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "buybox"
+  ],
+  "trap_type": "transcript:amazon-buybox-hardreject",
+  "source": "LIVE Amazon Online Arbitrage Product Sourcing (For Beginners).txt @06:00 \u2014 Tommy Hilfiger tank tops, Amazon 'holding the whole buy box'; narrator: 'typically when you're a beginner you want to avoid stuff Amazon's holding the whole buy box on'. A REAL practitioner example matching our exact Amazon-Buy-Box hard gate.",
+  "difficulty": "easy"
+}

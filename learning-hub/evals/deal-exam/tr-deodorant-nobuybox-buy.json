@@ -1,0 +1,27 @@
+{
+  "id": "tr-deodorant-nobuybox-buy",
+  "facts": {
+    "price": 20.0,
+    "oa_profit": 7.0,
+    "oa_roi": 0.74,
+    "has_buybox": false,
+    "buybox_seller": null,
+    "buybox_price": null,
+    "est_sales": 3000,
+    "offers": 15,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "sales_rank": 50000,
+    "avg_sales_rank_90": 50000
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "no-featured-offer"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "transcript:strong-margin-but-no-buybox",
+  "source": "I Don't Stop Sourcing Product...txt @01:12:09.679 \u2014 deodorant 3-pack, 3,000 sales/mo, $7 profit/74% ROI, 'no buy box currently'; narrator: 'Banger, banger, banger product'.",
+  "difficulty": "medium"
+}

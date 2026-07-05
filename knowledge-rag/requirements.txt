@@ -5,3 +5,16 @@ faiss-cpu>=1.8
 numpy>=1.26
 # To convert new PDFs into sources/pdfs/*.md, use the system `pdftotext` (poppler-utils)
 # or any PDF reader — no Python PDF dep required.
+
+# ask.py — live Supabase retrieval (a real gap: this was only ever documented in ask.py's own
+# docstring "pip install fastembed requests", never actually captured here — fixed 2026-07-04).
+fastembed>=0.3
+requests>=2.31
+
+# server.py — the warm knowledge server (THIS_WEEK.md Prompt W1). Not needed for ask.py's
+# CLI/cold path; only required to run the optional warm server.
+fastapi>=0.110
+uvicorn>=0.29
+
+# eval_retrieval.py — retrieval eval BM25 baseline (DATA_ENGINE_PLAN.md V1). Pure-python.
+rank_bm25>=0.2.2

@@ -386,6 +386,46 @@ def leads_with_outcomes(limit: int = 500) -> List[Dict[str, Any]]:
         return []
 
 
+def _count_exact(path_and_query: str) -> int:
+    """Row count via PostgREST's `Prefer: count=exact` + a zero-row Range — the count comes
+    back in the Content-Range header ("0-0/N" or "*/0"), exact no matter how large the table
+    grows. Fetch-all-and-len() silently truncates at the server's max-rows cap (default 1000)
+    and undercounts with no error (Code Review 2026-07-03, Finding #5). Raises on any failure —
+    callers decide how to degrade."""
+    r = requests.get(
+        f"{SUPA}/rest/v1/{path_and_query}",
+        headers=_headers({"Prefer": "count=exact", "Range": "0-0"}),
+        timeout=15,
+    )
+    r.raise_for_status()
+    content_range = r.headers.get("Content-Range", "")
+    total = content_range.rsplit("/", 1)[-1]
+    if not total.isdigit():
+        raise ValueError(f"unparseable Content-Range: {content_range!r}")
+    return int(total)
+
+
+def queue_pending_counts() -> Optional[Dict[str, int]]:
+    """Counts for the control-center's Review Queue (CC1) — leads scout marked "review" with
+    no decision recorded yet, and deal_matches still awaiting a human verdict. Uses the SAME
+    PostgREST anti-join filter as control-center/lib/supabase-server.ts's
+    getUndecidedReviewLeads() (left join + decisions=is.null — verified live against this
+    project's PostgREST), so the digest's count and the /queue page select identical row sets.
+    None (not a zero dict) if Supabase is unavailable or either query fails — a failed read
+    must never be misreported as an honestly empty queue."""
+    if not enabled():
+        return None
+    try:
+        pending_leads = _count_exact(
+            "leads?select=id,decisions!left(lead_id)&decisions=is.null&verdict=eq.review"
+        )
+        pending_matches = _count_exact("deal_matches?select=id&human_verdict=is.null")
+        return {"leads": pending_leads, "deal_matches": pending_matches}
+    except Exception as e:
+        print(f"[db] queue_pending_counts failed: {e}")
+        return None
+
+
 # ----------------------------------------------------------------------------
 # SP-API restriction cache (System Blueprint Prompt G3) — account-specific eligibility is
 # slow-changing; cache 7 days to respect the 5 req/s Listings Restrictions rate limit and avoid
@@ -434,6 +474,12 @@ def cache_restriction(asin: str, result: Dict[str, Any]) -> None:
 # insert for skuless rows (most Slickdeals items) or if the migration hasn't landed yet —
 # same graceful-degrade convention as leads/keepa_snapshots.
 # ----------------------------------------------------------------------------
+# Columns that only exist on `deals` after migration 007 lands — stripped from a fallback
+# insert so a pre-007 write degrades gracefully instead of losing the whole row (same pattern
+# as LEADS_MIGRATION_ONLY_FIELDS; see _post()'s migration_only_fields handling).
+DEALS_MIGRATION_ONLY_FIELDS = {"source_signal", "extraction_confidence"}
+
+
 def upsert_deal(row: Dict[str, Any]) -> Optional[int]:
     """Upsert one normalized deal row from a source connector (scout/deals/sources/). Bumps
     last_seen on every re-poll; first_seen is never included here so a re-sighting can't
@@ -448,8 +494,154 @@ def upsert_deal(row: Dict[str, Any]) -> Optional[int]:
     row["last_seen"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
     row.setdefault("seen_date", _dt.date.today().isoformat())
     if row.get("sku"):
-        return _upsert("deals", row, on_conflict="retailer,sku,price_current,seen_date")
-    return _post("deals", row)
+        return _upsert("deals", row, on_conflict="retailer,sku,price_current,seen_date",
+                       migration_only_fields=DEALS_MIGRATION_ONLY_FIELDS)
+    return _post("deals", row, migration_only_fields=DEALS_MIGRATION_ONLY_FIELDS)
+
+
+# ----------------------------------------------------------------------------
+# deal_hints + source_http_cache — the nightly deal watch's "look here first" signal and the
+# polite clearance-page fetcher's cross-run HTTP cache (migration 007, TOP100_DEAL_WATCH_PLAN).
+# Every function here degrades to a no-op / [] / None if migration 007 hasn't landed yet —
+# nothing breaks by waiting, the scout just gets no hints and clearance pages skip conditional
+# GET. I/O only; the AVOID gate + strength math live in scout/deals/run_watch.py.
+# ----------------------------------------------------------------------------
+def _hint_key(brand: Optional[str], store: Optional[str], category: Optional[str]) -> str:
+    """Normalized single natural key for a hint, so the upsert has one non-null column to
+    conflict on (NULL-in-unique-index would treat every partial hint as distinct)."""
+    return "|".join((part or "").strip().lower() for part in (brand, store, category))
+
+
+def upsert_deal_hint(brand: Optional[str], store: Optional[str], category: Optional[str],
+                     strength: float, ttl_hours: int = 72) -> Optional[int]:
+    """Upsert one hint (idempotent on the normalized brand|store|category key once migration
+    007 is applied). Bumps last_seen + strength + expiry on every re-derivation; first_seen is
+    never sent so a re-sighting preserves the original. Returns the row id (None if unavailable
+    or the write failed). Callers MUST have already excluded AVOID brands — this is I/O, it
+    does not re-check the avoid list."""
+    if not enabled():
+        return None
+    now = _dt.datetime.now(_dt.timezone.utc)
+    row = {
+        "hint_key": _hint_key(brand, store, category),
+        "brand": brand, "store": store, "category": category,
+        "strength": strength,
+        "last_seen": now.isoformat(),
+        "expires_at": (now + _dt.timedelta(hours=ttl_hours)).isoformat(),
+    }
+    return _upsert("deal_hints", row, on_conflict="hint_key")
+
+
+def fresh_deal_hints(min_strength: float = 0.0) -> List[Dict[str, Any]]:
+    """Non-expired hints at or above min_strength, strongest first. [] if unavailable or the
+    table is absent — the scout treats an empty list as 'no fresh hints, self-directed
+    discovery', never an error (scout/discovery_hints.py). Expiry is filtered server-side
+    against now() so a stale hint can never leak into a discovery pass."""
+    if not enabled():
+        return []
+    now_iso = _dt.datetime.now(_dt.timezone.utc).isoformat()
+    try:
+        r = requests.get(
+            f"{SUPA}/rest/v1/deal_hints",
+            headers=_headers(),
+            params={"select": "*", "expires_at": f"gt.{now_iso}",
+                    "strength": f"gte.{min_strength}", "order": "strength.desc"},
+            timeout=10,
+        )
+        r.raise_for_status()
+        return r.json() or []
+    except Exception as e:
+        print(f"[db] fresh_deal_hints failed: {e}")
+        return []
+
+
+def get_source_http_cache(source_key: str) -> Optional[Dict[str, Any]]:
+    """Prior ETag/Last-Modified validators for a source_key (for a conditional GET), or None if
+    none stored / unavailable / the table is absent."""
+    if not enabled() or not source_key:
+        return None
+    try:
+        r = requests.get(
+            f"{SUPA}/rest/v1/source_http_cache",
+            headers=_headers(),
+            params={"select": "etag,last_modified", "source_key": f"eq.{source_key}", "limit": "1"},
+            timeout=10,
+        )
+        r.raise_for_status()
+        rows = r.json() or []
+        return rows[0] if rows else None
+    except Exception as e:
+        print(f"[db] get_source_http_cache failed ({source_key}): {e}")
+        return None
+
+
+def set_source_http_cache(source_key: str, etag: Optional[str], last_modified: Optional[str]) -> None:
+    """Store the latest validators after a 200 response. Silent no-op on any failure — the HTTP
+    cache is a politeness optimization, never a hard dependency.
+
+    Does its OWN merge-duplicates POST rather than reusing _upsert(): source_http_cache's PK is
+    `source_key` (no `id` column), and _upsert() reads data[0]["id"] from the returned row,
+    which KeyErrors here and falls back to a plain insert that then 409s on the existing PK
+    (seen live 2026-07-04). return=minimal avoids reading any column back."""
+    if not enabled() or not source_key:
+        return
+    row = {
+        "source_key": source_key, "etag": etag, "last_modified": last_modified,
+        "last_fetched": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+    }
+    try:
+        r = requests.post(
+            f"{SUPA}/rest/v1/source_http_cache?on_conflict=source_key",
+            headers=_headers({"Prefer": "resolution=merge-duplicates,return=minimal"}),
+            json=row, timeout=10,
+        )
+        r.raise_for_status()
+    except Exception as e:
+        print(f"[db] set_source_http_cache failed ({source_key}): {e}")
+
+
+# ----------------------------------------------------------------------------
+# source_status — per-clearance-URL health state (migration 008, TOP100_DEAL_WATCH follow-up).
+# I/O only; the retire/reset transition logic lives in scout/deals/source_status.py. Degrades
+# to {}/no-op if migration 008 hasn't landed. Keyed by url (no `id` column) — the write does
+# its own merge-duplicates POST for the same reason set_source_http_cache does (return=minimal,
+# so _upsert's data[0]["id"] can't KeyError -> 409, the bug caught live 2026-07-04).
+# ----------------------------------------------------------------------------
+def get_all_source_status() -> Dict[str, Dict[str, Any]]:
+    """Every source_status row, as {url: row}. {} if unavailable or the table is absent — the
+    caller treats an unknown URL as 'active, 0 consecutive 403s' (the safe default)."""
+    if not enabled():
+        return {}
+    try:
+        r = requests.get(f"{SUPA}/rest/v1/source_status?select=*", headers=_headers(), timeout=10)
+        r.raise_for_status()
+        return {row["url"]: row for row in (r.json() or []) if row.get("url")}
+    except Exception as e:
+        print(f"[db] get_all_source_status failed: {e}")
+        return {}
+
+
+def upsert_source_status(url: str, mode: str, consecutive_403: int, last_status: Optional[str],
+                         last_status_code: Optional[int], retired_at: Optional[str] = None) -> None:
+    """Persist a clr URL's health after a run. Silent no-op on any failure — source status is a
+    scheduling aid, never a hard dependency."""
+    if not enabled() or not url:
+        return
+    row = {
+        "url": url, "mode": mode, "consecutive_403": consecutive_403,
+        "last_status": last_status, "last_status_code": last_status_code,
+        "last_checked": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+        "retired_at": retired_at,
+    }
+    try:
+        r = requests.post(
+            f"{SUPA}/rest/v1/source_status?on_conflict=url",
+            headers=_headers({"Prefer": "resolution=merge-duplicates,return=minimal"}),
+            json=row, timeout=10,
+        )
+        r.raise_for_status()
+    except Exception as e:
+        print(f"[db] upsert_source_status failed ({url}): {e}")
 
 
 # ----------------------------------------------------------------------------
@@ -512,3 +704,163 @@ def mark_search_run(search_id: Optional[int]) -> None:
         r.raise_for_status()
     except Exception as e:
         print(f"[db] mark_search_run failed ({search_id}): {e}")
+
+
+# ----------------------------------------------------------------------------
+# shadow_outcomes — proxy ("silver") training labels (migration 009, DATA_ENGINE_PLAN.md V1).
+# I/O only; the enqueue/recheck logic lives in scout/shadow_outcomes.py. Degrades to no-op/[]
+# if migration 009 hasn't landed. Idempotent enqueue via merge-duplicates on the natural key
+# (asin, candidate_run_id, checkpoint_day) — return=minimal so a PK-only conflict can't hit the
+# data[0]["id"] KeyError->409 bug (same fix as source_status).
+# ----------------------------------------------------------------------------
+def enqueue_shadow_outcome(row: Dict[str, Any]) -> bool:
+    """Insert one (asin, candidate_run_id, checkpoint_day) shadow row if absent; a duplicate
+    enqueue is a no-op (ignore-duplicates), never resetting the frozen 'then' snapshot. Returns
+    True only when the write actually succeeded, so callers can count honestly instead of
+    reporting phantom enqueues (Review 2026-07-05). Never raises."""
+    return enqueue_shadow_outcomes([row]) == 1
+
+
+def enqueue_shadow_outcomes(rows: List[Dict[str, Any]]) -> int:
+    """Batch enqueue — ONE bulk POST for the whole run's shadow rows instead of 2 sequential
+    round-trips per survivor (400 POSTs on a 200-survivor night). Returns the number of rows
+    actually sent (0 on failure/disabled) — the caller's honest count. Never raises."""
+    rows = [r for r in (rows or []) if r.get("asin")]
+    if not enabled() or not rows:
+        return 0
+    try:
+        r = requests.post(
+            f"{SUPA}/rest/v1/shadow_outcomes?on_conflict=asin,candidate_run_id,checkpoint_day",
+            headers=_headers({"Prefer": "resolution=ignore-duplicates,return=minimal"}),
+            json=rows, timeout=30,
+        )
+        r.raise_for_status()
+        return len(rows)
+    except Exception as e:
+        print(f"[db] enqueue_shadow_outcomes failed ({len(rows)} rows): {e}")
+        return 0
+
+
+def due_shadow_checkpoints(now_iso: Optional[str] = None, limit: int = 500) -> List[Dict[str, Any]]:
+    """Pending shadow rows whose checkpoint has come due (due_at <= now), oldest first. [] if
+    unavailable or migration 009 hasn't landed — never raises."""
+    if not enabled():
+        return []
+    now_iso = now_iso or _dt.datetime.now(_dt.timezone.utc).isoformat()
+    try:
+        r = requests.get(
+            f"{SUPA}/rest/v1/shadow_outcomes?status=eq.pending&due_at=lte.{now_iso}"
+            f"&order=due_at.asc&limit={int(limit)}",
+            headers=_headers(), timeout=10,
+        )
+        r.raise_for_status()
+        return r.json() or []
+    except Exception as e:
+        print(f"[db] due_shadow_checkpoints failed: {e}")
+        return []
+
+
+def complete_shadow_checkpoint(row_id: int, fields: Dict[str, Any]) -> None:
+    """Fill a shadow row's 'now' snapshot + would_have_profited at recheck time. Silent no-op on
+    any failure — never blocks the weekly job."""
+    if not enabled() or row_id is None:
+        return
+    try:
+        r = requests.patch(
+            f"{SUPA}/rest/v1/shadow_outcomes?id=eq.{int(row_id)}",
+            headers=_headers({"Prefer": "return=minimal"}),
+            json=fields, timeout=10,
+        )
+        r.raise_for_status()
+    except Exception as e:
+        print(f"[db] complete_shadow_checkpoint failed ({row_id}): {e}")
+
+
+def _get_paged(path_and_query: str, limit: int, page_size: int = 1000) -> List[Dict[str, Any]]:
+    """Range-header pagination for large reads. PostgREST silently caps a single response at the
+    server's max-rows (default 1000) — a plain `limit=60000` request would return 2% of a 50k-row
+    corpus WITH NO ERROR (Review 2026-07-05). Raises on failure; callers decide how to degrade."""
+    out: List[Dict[str, Any]] = []
+    offset = 0
+    while offset < limit:
+        take = min(page_size, limit - offset)
+        r = requests.get(
+            f"{SUPA}/rest/v1/{path_and_query}",
+            headers=_headers({"Range": f"{offset}-{offset + take - 1}"}), timeout=30,
+        )
+        r.raise_for_status()
+        page = r.json() or []
+        out.extend(page)
+        if len(page) < take:
+            break
+        offset += take
+    return out
+
+
+def all_shadow_outcomes(limit: int = 20000) -> List[Dict[str, Any]]:
+    """Every completed shadow row (status=done, would_have_profited not null), for labels.py's
+    silver tier. Paginated past PostgREST's 1000-row response cap. [] if unavailable or
+    migration 009 hasn't landed — never raises."""
+    if not enabled():
+        return []
+    try:
+        return _get_paged(
+            "shadow_outcomes?status=eq.done&would_have_profited=not.is.null&select=*&order=id.asc",
+            limit=limit)
+    except Exception as e:
+        print(f"[db] all_shadow_outcomes failed: {e}")
+        return []
+
+
+# ----------------------------------------------------------------------------
+# backtest_rows — the backtest engine's derived training rows (migration 010, V2). I/O only; the
+# windowing/leakage/labeling logic lives in scout/backtest.py. Degrades to no-op/[]/0 if migration
+# 010 hasn't landed. Idempotent upsert on (asin, simulation_date) so a re-run overwrites a window
+# rather than duplicating it.
+# ----------------------------------------------------------------------------
+def upsert_backtest_rows(rows: List[Dict[str, Any]]) -> int:
+    """Batch-upsert backtest rows (merge-duplicates on asin+simulation_date, return=minimal so the
+    PK-only shape can't hit the data[0]['id'] 409 bug). Returns the count sent, or 0 on any
+    failure/disabled — never raises."""
+    if not enabled() or not rows:
+        return 0
+    try:
+        r = requests.post(
+            f"{SUPA}/rest/v1/backtest_rows?on_conflict=asin,simulation_date",
+            headers=_headers({"Prefer": "resolution=merge-duplicates,return=minimal"}),
+            json=rows, timeout=30,
+        )
+        r.raise_for_status()
+        return len(rows)
+    except Exception as e:
+        print(f"[db] upsert_backtest_rows failed ({len(rows)} rows): {e}")
+        return 0
+
+
+def all_backtest_rows(limit: int = 60000) -> List[Dict[str, Any]]:
+    """Every backtest row, for labels.py's backtest tier / V3's ranker. Paginated past
+    PostgREST's 1000-row response cap (a flat request would silently truncate the 50k-row
+    corpus). Column-restricted to what training actually reads. [] if unavailable or migration
+    010 hasn't landed — never raises."""
+    if not enabled():
+        return []
+    try:
+        return _get_paged(
+            "backtest_rows?select=asin,simulation_date,features_snapshot,would_have_profited,"
+            "est_profit,label_quality&order=id.asc",
+            limit=limit)
+    except Exception as e:
+        print(f"[db] all_backtest_rows failed: {e}")
+        return []
+
+
+def count_backtest_rows() -> int:
+    """Exact backtest_rows count (for resume + the honest per-tier report line). 0 if unavailable
+    or migration 010 hasn't landed — never raises."""
+    if not enabled():
+        return 0
+    try:
+        return _count_exact("backtest_rows?select=id")
+    except Exception as e:
+        print(f"[db] count_backtest_rows failed: {e}")
+        return 0

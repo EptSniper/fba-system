@@ -18,9 +18,23 @@ import sys
 import tempfile
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import run_daily  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _no_live_deals_collection():
+    """THIS_WEEK.md Prompt W2 wired scout/deals/collect.py's collect_all() into main() as an
+    unconditional (not dry_run) post-run step — a real Slickdeals RSS fetch over the network on
+    every test that calls main(dry_run=False), exactly the class of mistake this file's own
+    SAFETY note above already documents once for discord_router. autouse so every CURRENT and
+    FUTURE test in this file is protected without having to remember to add the patch."""
+    with patch.object(run_daily, "deals_collect") as mock_deals:
+        mock_deals.collect_all.return_value = {"sources": {}, "total_rows": 0, "upserted": 0}
+        yield mock_deals
 
 
 # ---------------------------------------------------------------------------
@@ -67,6 +81,16 @@ def test_digest_surfaces_error():
     digest = run_daily.format_digest({"error": "No KEEPA_KEY set"}, drift_warning=None, run_id=1)
     field_names = [f["name"] for f in digest["embeds"][0]["fields"]]
     assert "⚠ Error" in field_names
+
+
+def test_digest_shows_deal_led_discovery_when_hints_followed():
+    """TOP100_DEAL_WATCH_PLAN.md T3 — the scout's digest reports when discovery followed fresh
+    deal-hint brands. Absent/zero hints_followed -> no such field (self-directed discovery)."""
+    with_hints = run_daily.format_digest({"found": 5, "scored": 5, "picks": [], "hints_followed": 3},
+                                         drift_warning=None, run_id=1)
+    assert any("Deal-led discovery" in f["name"] for f in with_hints["embeds"][0]["fields"])
+    without = run_daily.format_digest({"found": 5, "scored": 5, "picks": []}, drift_warning=None, run_id=1)
+    assert not any("Deal-led discovery" in f["name"] for f in without["embeds"][0]["fields"])
 
 
 # ---------------------------------------------------------------------------
@@ -241,6 +265,128 @@ def test_main_dry_run_never_posts_digest_or_pings_heartbeat():
 
 
 # ---------------------------------------------------------------------------
+# Deals collection wiring + --dry-run-live mode (THIS_WEEK.md Prompt W2)
+# ---------------------------------------------------------------------------
+
+def test_main_calls_deals_collection_on_a_real_run(_no_live_deals_collection):
+    """Deal Finder Build Plan D3 — collect_all() needs no key (Slickdeals RSS is free), so it
+    should run on every real (not dry_run) cycle, independent of whether Keepa succeeds."""
+    with patch.object(run_daily.pipeline, "run_once", return_value={"found": 0, "scored": 0, "picks": []}), \
+            patch.object(run_daily.db, "recent_runs", return_value=[]), \
+            patch.object(run_daily, "check_brain_drift", return_value=None), \
+            patch.object(run_daily.propose_updates, "write_report_with_count", return_value=("", 0)), \
+            patch.object(run_daily, "discord_router"), \
+            patch.object(run_daily, "post_digest"), \
+            patch.object(run_daily, "ping_heartbeat"):
+        run_daily.main(dry_run=False)
+
+    _no_live_deals_collection.collect_all.assert_called_once()
+
+
+def test_main_dry_run_never_calls_deals_collection(_no_live_deals_collection):
+    """A true --dry-run must post/write NOTHING externally, including deals collection (which
+    both upserts to Supabase AND posts a Discord notification — collect_all's own dry_run param
+    isn't even reachable here since main() shouldn't call it at all in this mode)."""
+    with patch.object(run_daily.pipeline, "run_once", return_value={"found": 0, "scored": 0, "picks": []}), \
+            patch.object(run_daily.db, "recent_runs", return_value=[]), \
+            patch.object(run_daily, "check_brain_drift", return_value=None), \
+            patch.object(run_daily, "discord_router"), \
+            patch.object(run_daily, "post_digest"), \
+            patch.object(run_daily, "ping_heartbeat"):
+        run_daily.main(dry_run=True)
+
+    _no_live_deals_collection.collect_all.assert_not_called()
+
+
+def test_dry_run_live_skips_keepa_pipeline_honestly(_no_live_deals_collection):
+    """The core of --dry-run-live: pipeline.run_once() (which raises without a KEEPA_KEY) must
+    never even be CALLED — this is an intentional skip, not an attempted-and-caught failure."""
+    with patch.object(run_daily.pipeline, "run_once") as mock_run_once, \
+            patch.object(run_daily.db, "start_run", return_value=42) as mock_start, \
+            patch.object(run_daily.db, "finish_run") as mock_finish, \
+            patch.object(run_daily, "check_brain_drift", return_value=None), \
+            patch.object(run_daily.propose_updates, "write_report_with_count", return_value=("", 0)), \
+            patch.object(run_daily, "discord_router"), \
+            patch.object(run_daily, "post_digest"), \
+            patch.object(run_daily, "ping_heartbeat") as heartbeat:
+        result = run_daily.main(dry_run=False, dry_run_live=True)
+
+    mock_run_once.assert_not_called()
+    mock_start.assert_called_once()
+    # Status is "skipped", never "failed" — nothing broke, this was never expected to run yet.
+    mock_finish.assert_called_once()
+    assert mock_finish.call_args.kwargs["status"] == "skipped"
+    assert result["run_id"] == 42
+    assert result["dry_run_live"] is True
+    assert result["found"] == 0 and result["scored"] == 0
+    assert "error" not in result
+    heartbeat.assert_called_once_with(True)  # a legitimate, successful (reduced-scope) cycle
+
+
+def test_dry_run_live_still_runs_deals_collection_and_digest(_no_live_deals_collection):
+    """--dry-run-live is "live except Keepa" — deals collection, the digest, and everything
+    else gated on `not dry_run` must still run for real (dry_run_live never sets dry_run=True)."""
+    with patch.object(run_daily.db, "start_run", return_value=1), \
+            patch.object(run_daily.db, "finish_run"), \
+            patch.object(run_daily, "check_brain_drift", return_value=None), \
+            patch.object(run_daily.propose_updates, "write_report_with_count", return_value=("", 0)), \
+            patch.object(run_daily, "discord_router"), \
+            patch.object(run_daily, "post_digest") as post_digest, \
+            patch.object(run_daily, "ping_heartbeat"):
+        run_daily.main(dry_run=False, dry_run_live=True)
+
+    _no_live_deals_collection.collect_all.assert_called_once()
+    post_digest.assert_called_once()
+
+
+def test_dry_run_and_dry_run_live_are_mutually_exclusive_at_the_cli():
+    """argparse should refuse both flags together rather than silently picking one."""
+    import argparse
+    import subprocess
+    import sys as _sys
+    result = subprocess.run(
+        [_sys.executable, "run_daily.py", "--dry-run", "--dry-run-live"],
+        cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        capture_output=True, text=True,
+    )
+    assert result.returncode != 0
+    assert "not allowed with argument" in result.stderr
+
+
+# ---------------------------------------------------------------------------
+# format_digest — deals summary + dry-run-live honesty (THIS_WEEK.md Prompt W2)
+# ---------------------------------------------------------------------------
+
+def test_digest_deals_summary_field_shows_per_source_counts():
+    summary = {"found": 0, "scored": 0, "new_picks": 0, "picks": []}
+    deals_summary = {"sources": {"slickdeals": 8, "bestbuy": 0}, "total_rows": 8, "upserted": 8}
+    digest = run_daily.format_digest(summary, drift_warning=None, run_id=1, deals_summary=deals_summary)
+    field = next(f for f in digest["embeds"][0]["fields"] if f["name"] == "🛒 Retail deals")
+    assert "8 deal(s) collected" in field["value"]
+    assert "slickdeals: 8" in field["value"]
+    assert "matching not yet built" in field["value"]  # never implies more than exists
+
+
+def test_digest_omits_deals_field_when_nothing_collected():
+    """No-op when total_rows is 0/absent — never post a pointless empty field."""
+    summary = {"found": 0, "scored": 0, "new_picks": 0, "picks": []}
+    digest = run_daily.format_digest(summary, drift_warning=None, run_id=1,
+                                     deals_summary={"sources": {}, "total_rows": 0, "upserted": 0})
+    field_names = [f["name"] for f in digest["embeds"][0]["fields"]]
+    assert "🛒 Retail deals" not in field_names
+
+
+def test_digest_dry_run_live_description_is_honest_not_a_quiet_zero():
+    """A dry-run-live cycle's "0 scanned, 0 scored" must NOT read like a normal quiet Keepa
+    result — it's an intentional skip, and the description says so explicitly."""
+    summary = {"found": 0, "scored": 0, "new_picks": 0, "picks": [], "dry_run_live": True}
+    digest = run_daily.format_digest(summary, drift_warning=None, run_id=1)
+    description = digest["embeds"][0]["description"]
+    assert "skipped" in description.lower()
+    assert "KEEPA_KEY" in description
+
+
+# ---------------------------------------------------------------------------
 # Brain-drift detection
 # ---------------------------------------------------------------------------
 
@@ -252,6 +398,9 @@ def test_brain_drift_detects_a_real_difference():
         f2.write('{"a": 2}')
         bundled_path = f2.name
     try:
+        # Only patch the ai-brain.json pair — the other 7 mirrored pairs (Finding S13) are left
+        # pointing at the real repo files, which is fine here since we only assert "some drift
+        # was found", not the exact count/message.
         with patch.object(run_daily, "LOCAL_BRAIN", local_path), \
                 patch.object(run_daily, "BUNDLED_BRAIN", bundled_path):
             warning = run_daily.check_brain_drift()
@@ -261,27 +410,57 @@ def test_brain_drift_detects_a_real_difference():
         os.unlink(bundled_path)
 
 
-def test_brain_drift_silent_when_identical():
-    content = '{"a": 1}'
+def _matched_temp_pair(content='{"a": 1}'):
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f1:
         f1.write(content)
-        local_path = f1.name
+        live_path = f1.name
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f2:
         f2.write(content)
         bundled_path = f2.name
+    return live_path, bundled_path
+
+
+def test_brain_drift_silent_when_identical():
+    # Patches ALL 8 mirrored pairs (Finding S13) to guaranteed-identical temp files — this must
+    # be deterministic regardless of whether the real repo's other hub-data files happen to be
+    # in sync at test time, not incidentally dependent on real-repo state.
+    pairs = [_matched_temp_pair() for _ in range(8)]
+    paths = [p for pair in pairs for p in pair]
     try:
-        with patch.object(run_daily, "LOCAL_BRAIN", local_path), \
-                patch.object(run_daily, "BUNDLED_BRAIN", bundled_path):
+        with patch.object(run_daily, "LOCAL_BRAIN", pairs[0][0]), \
+                patch.object(run_daily, "BUNDLED_BRAIN", pairs[0][1]), \
+                patch.object(run_daily, "OTHER_MIRRORED_HUB_DATA_FILES", pairs[1:]):
             assert run_daily.check_brain_drift() is None
     finally:
-        os.unlink(local_path)
-        os.unlink(bundled_path)
+        for p in paths:
+            os.unlink(p)
 
 
 def test_brain_drift_silent_when_files_missing():
     with patch.object(run_daily, "LOCAL_BRAIN", "/nonexistent/path.json"), \
-            patch.object(run_daily, "BUNDLED_BRAIN", "/also/nonexistent.json"):
+            patch.object(run_daily, "BUNDLED_BRAIN", "/also/nonexistent.json"), \
+            patch.object(run_daily, "OTHER_MIRRORED_HUB_DATA_FILES",
+                        [("/nonexistent/a.json", "/nonexistent/b.json")]):
         assert run_daily.check_brain_drift() is None
+
+
+def test_brain_drift_reports_every_drifted_file_by_name():
+    """Finding S13: a SECOND drifted file (not just ai-brain.json) must be named in the
+    warning, not silently swallowed."""
+    brain_pair = _matched_temp_pair('{"a": 1}')
+    leads_live, leads_bundled = _matched_temp_pair('{"leads": 1}')
+    try:
+        with open(leads_bundled, "w", encoding="utf-8") as f:
+            f.write('{"leads": 2}')  # force this ONE pair to actually differ
+        with patch.object(run_daily, "LOCAL_BRAIN", brain_pair[0]), \
+                patch.object(run_daily, "BUNDLED_BRAIN", brain_pair[1]), \
+                patch.object(run_daily, "OTHER_MIRRORED_HUB_DATA_FILES", [(leads_live, leads_bundled)]):
+            warning = run_daily.check_brain_drift()
+        assert warning is not None
+        assert os.path.basename(leads_bundled) in warning
+    finally:
+        for p in (*brain_pair, leads_live, leads_bundled):
+            os.unlink(p)
 
 
 # ---------------------------------------------------------------------------

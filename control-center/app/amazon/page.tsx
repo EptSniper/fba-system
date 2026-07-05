@@ -2,6 +2,11 @@ import { ArrowUpRight, Boxes, CircleDollarSign, HeartPulse, ListPlus, Send, Stor
 import { getInventory, getMoney } from "@/lib/data";
 import { Badge, PageHeader, Panel } from "@/components/ui";
 
+// Reads live sibling learning-hub/ files on every request (Code Review 2026-07-02, Finding
+// CS8) — without this, Next.js may statically cache the page at build time and serve stale
+// data even though the underlying file changed.
+export const dynamic = "force-dynamic";
+
 const WORKSPACES = [
   { title: "Account Health", description: "Policy compliance, order defects, intellectual-property complaints, and account status.", href: "https://sellercentral.amazon.com/performance/dashboard", icon: HeartPulse, status: "Seller Central" },
   { title: "Manage All Inventory", description: "Search listings, update prices and quantities, and inspect active or inactive offers.", href: "https://sellercentral.amazon.com/inventory", icon: Boxes, status: "Seller Central" },

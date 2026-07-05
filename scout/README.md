@@ -36,7 +36,13 @@ research criteria, posts the winners to **Discord**, logs everything to SQLite, 
 | `analyst.py` | LLM second-opinion pass over gate-survivors (needs `ANTHROPIC_API_KEY`). See "Scout agent" section below. |
 | `reflect.py` | Weekly brand-memory reflection; `memory_report.py` measures whether it helps. |
 | `mcp_server.py` | Read-only MCP server over the scout's Supabase brain (Python 3.10+ only). See "Scout agent" section below. |
+| `run_all_tests.py` | Discovers and runs every test file across `scout/`, `scout_pro/`, and `knowledge-rag/`, prints one aggregate pass/fail line. Requires `pytest`. |
 | `requirements.txt`, `.env.example` | Dependencies and config template. |
+
+**Tests, all of them:** `python run_all_tests.py` from this directory runs scout's + scout_pro's +
+knowledge-rag's full suites in one shot (427 tests total as of 2026-07-04: 382 scout, 36
+scout_pro, 9 knowledge-rag) and prints one aggregate line. Individual sections below also list
+their own narrower `pytest` invocations for faster iteration on one area.
 
 ---
 
@@ -133,9 +139,11 @@ reminds you to verify that by hand.
 Set `SCOUT_MODE=PL` to use the old private-label scorer.
 (The guard thresholds also load from the brain's `guards` block — `.env` is just an override.)
 
-**Tests:** `python tests/test_scoring.py` (no dependencies) or `python -m pytest tests/` — 15 tests
-locking the profit/ROI math, the OA scorer, the hard gates, the brand logic, and the price-spike /
-offers-rising / Amazon-Buy-Box-share guards.
+**Tests:** `python tests/test_scoring.py` (no dependencies) or `python -m pytest tests/test_scoring.py` —
+28 tests locking the profit/ROI math, the OA scorer, the hard gates, the brand logic, and the
+price-spike / offers-rising / Amazon-Buy-Box-share guards. Run the WHOLE scout suite with
+`python -m pytest tests/`, or every project's suite at once (scout + scout_pro + knowledge-rag)
+with `python run_all_tests.py` from this directory — see "Tests, all of them" below.
 
 **Confirmed + still open (from the processed transcripts):** the criteria above match what the courses teach,
 and the offer-count-trend and Buy-Box-rotation upgrades the videos imply are now **implemented**
@@ -222,29 +230,88 @@ free [healthchecks.io](https://healthchecks.io) heartbeat on success or its `/fa
 failure — a webhook alone can't tell you a machine never woke up; the heartbeat closes that gap.
 
 ```
-python run_daily.py             # real run — needs KEEPA_KEY in .env
-python run_daily.py --dry-run    # no external writes/posts, prints the summary
+python run_daily.py               # real run — needs KEEPA_KEY in .env
+python run_daily.py --dry-run      # no external writes/posts, prints the summary
+python run_daily.py --dry-run-live # THIS_WEEK.md Prompt W2 — no KEEPA_KEY yet? Keepa discovery
+                                    # is honestly SKIPPED (status="skipped", never "failed"),
+                                    # but deals collection, the runs row, the digest, and the
+                                    # heartbeat all still run for real. Drop this flag once
+                                    # KEEPA_KEY is configured (HUMAN_TODO.md item 2).
 ```
 
 Set `HEALTHCHECK_URL` in `.env` (optional; the heartbeat step no-ops honestly without it) to a
 check URL from your free healthchecks.io account.
 
-**Windows Task Scheduler** (acceptable to start with; note it needs the machine awake):
-
+**Windows Task Scheduler** — registered for real (2026-07-04, THIS_WEEK.md Prompt W2), task
+name `"FBA Scout Daily"`, daily 07:30, running `run_daily.py --dry-run-live` (see the note
+above about dropping that flag once a Keepa key exists). Registered via an XML definition
+(`schtasks /Create /XML ...`) specifically so **"Run task as soon as possible after a scheduled
+start is missed"** (`StartWhenAvailable`) could be set programmatically instead of left as a
+manual GUI checkbox — verify it's still set with:
 ```
-schtasks /Create /TN "FBA Scout Daily" /TR "python C:\path\to\scout\run_daily.py" ^
-  /SC DAILY /ST 07:00 /RL LIMITED /F
+schtasks /Query /TN "FBA Scout Daily" /XML | findstr StartWhenAvailable
 ```
-Then open Task Scheduler → the task's Properties → **Settings** tab → enable **"Run task as
-soon as possible after a scheduled start is missed"** (schtasks has no single CLI flag for this;
-it's a checkbox). Without it, a sleeping/off PC silently skips the whole day — the healthchecks
-heartbeat is your backstop for exactly that failure mode.
+A from-scratch equivalent (e.g. on a new machine) via the plain CLI form (note this variant
+does NOT set `StartWhenAvailable` — you'd still need the GUI checkbox afterward, Task
+Scheduler → the task's Properties → **Settings** tab):
+```
+schtasks /Create /TN "FBA Scout Daily" /TR "python C:\path\to\scout\run_daily.py --dry-run-live" ^
+  /SC DAILY /ST 07:30 /RL LIMITED /F
+```
+Without "run when missed" enabled, a sleeping/off PC silently skips the whole day — the
+healthchecks heartbeat is your backstop for exactly that failure mode.
 
 **Cron** (for a future ~$5/mo VPS, once the machine needs to stay always-on):
 
 ```
 0 7 * * * cd /path/to/scout && /usr/bin/python3 run_daily.py >> run_daily.log 2>&1
 ```
+
+---
+
+## Git pre-commit guard (THIS_WEEK.md Prompt W2)
+
+Every `git commit` runs `scripts/pre-commit.py` (via the `.git/hooks/pre-commit` stub git
+actually invokes — hooks aren't tracked/synced by git itself, so the real logic lives in the
+tracked script instead):
+
+1. **Secrets scan** of every staged file's INDEX content (what's actually about to be
+   committed) — reuses `redact.py`'s own patterns directly: real env-secret values (skipping
+   template placeholders like `<FILL_ME>`), `key=`/`token=`/`secret=` query params, Discord
+   webhook URLs, and JWT-shaped strings (Supabase keys).
+2. **Fast tests** — `test_scoring.py` + `test_db_idempotency.py` + `test_discord_router.py`
+   (~1s total).
+
+Either failure blocks the commit with a clear message (never prints the actual secret value).
+**Emergency bypass:** `git commit --no-verify` skips both checks — if you ever use it, run
+`python scripts/pre-commit.py` manually right after and fix anything it flags; a skipped check
+should never become a silently-never-checked one.
+
+---
+
+## Top-100 deal watch (`deals/run_watch.py`, TOP100_DEAL_WATCH_PLAN.md)
+
+A SECOND, standalone job (separate from the scout's `run_daily.py`) that watches the 100 ranked
+OA deal sources in `learning-hub/data/top100-sources.json` and writes two things to Supabase:
+real `deals` rows, and brand-anchored `deal_hints` the scout reads as its FIRST discovery pass
+("look where the deals are showing up"). It never edits `ai-brain.json` or the scout's config —
+hints are DATA, not rules. AVOID-listed brands (Nike/adidas/Disney) are enforced twice as
+signal-only: they can appear in the digest, but never become a hint or a buy.
+
+```
+python -m deals.run_watch             # real run: collect -> upsert deals -> derive+upsert hints -> #retail-deals digest
+python -m deals.run_watch --dry-run   # collect + derive only; NO Supabase writes, NO Discord post
+```
+
+Needs only `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `DISCORD_WEBHOOK_RETAIL_DEALS` (+ optional
+`WOOT_API_KEY`, `BESTBUY_API_KEY`, `HEALTHCHECK_URL_DEALWATCH`) — no Keepa, no Anthropic. Tier
+scheduling + concurrent per-store feeds keep a full run comfortably under 5 minutes.
+
+**Where it runs:** the intended home is the FREE GitHub Actions cloud runner at 9 PM ET
+(`.github/workflows/deal-watch.yml`; one-time repo/secrets setup is HUMAN_TODO.md §3e). Until
+that's set up — and as a permanent fallback — it runs locally via Task Scheduler exactly like
+the scout (a "FBA Deal Watch" task is registered). The two jobs share one brain through
+Supabase and never need each other online.
 
 ---
 
@@ -296,13 +363,14 @@ Keepa. `scout/deals/`:
 | `brain_config.py` | Reads `ai-brain.json`'s `dealFinder` block (sources, confidence bands, price-sanity ratio, the manual discount-stack table) — single source, same convention as `config.py`. |
 | `sources/slickdeals.py` | Official Slickdeals RSS feeds. No API key needed. Crowd-visible, so margins compress fast on anything front-paged. |
 | `sources/bestbuy.py` | Best Buy Products API — the only major US big-box with a free, open developer API (`onSale=true`, UPCs included). Needs `BESTBUY_API_KEY` (see `.env.example`); honestly no-ops without one. |
-| `collect.py` | Runs every enabled source, upserts results via `db.upsert_deal()` (idempotent on retailer+sku+price+day once migration 003 lands). |
+| `collect.py` | Runs every enabled source, upserts results via `db.upsert_deal()` (idempotent on retailer+sku+price+day — migration 003 is applied to the live Supabase project as of 2026-07-03). |
 
 ```bash
 python -c "from deals import collect; print(collect.collect_all(dry_run=True))"
 ```
 
-**Status (2026-07-02):** D1 only — sources + storage. **Not yet built:** the AI matcher
+**Status (2026-07-03):** D1 only — sources + storage; migration 003 applied and idempotency
+verified live. **Not yet built:** the AI matcher
 (deal → candidate ASIN, Prompt D2, needs `ANTHROPIC_API_KEY` + `KEEPA_KEY`), the
 `run_daily.py`/control-center wiring (Prompt D3), and Tier-2 affiliate sources — Impact.com,
 Walmart.io (Prompt D4, needs affiliate approvals). See
@@ -391,10 +459,50 @@ It inherits the same `.env` (service-role Supabase access) as the rest of the sc
 sensitive, never expose it beyond localhost.
 
 **Tests:** `python -m pytest tests/test_scout_agent_s2.py tests/test_mcp_server.py
-tests/test_analyst.py tests/test_reflect_and_memory.py` (or run each standalone — no pytest in
-this dev environment; see the note under Deal Finder above).
+tests/test_analyst.py tests/test_reflect_and_memory.py` — or, if pytest isn't installed
+(`pip install pytest`), most individual files also run standalone via
+`python tests/test_X.py`. `run_all_tests.py` (below) requires pytest.
 
 ---
+
+## Raw data lake (`datalake.py`, DATA_ENGINE_PLAN.md V0)
+
+Every EXTERNAL response the scout receives is archived RAW at the boundary — Keepa
+product/finder/seller responses, the deal sources' RSS/API bodies, low-confidence or changed
+clearance HTML, the analyst's exact input+output, and each run summary. This is the regenerable
+ground truth: features, scores and verdicts live only in Supabase and can always be rebuilt from
+the lake, so nothing derivable is ever stored twice.
+
+- **Where:** `DATA_LAKE_DIR` (default `C:\fba-data-lake`, deliberately **OUTSIDE** the
+  OneDrive-synced project — a multi-GB lake inside OneDrive would sync-thrash your cloud and
+  disk; `datalake.py` prints a loud warning if you point it back inside the project).
+- **Format:** append-only, zstd-compressed Parquet (`DATALAKE_ZSTD_LEVEL`, default 12),
+  Hive-partitioned `<source>/date=YYYY-MM-DD/part-*.parquet`, one file per source per run.
+- **Dedupe:** a sqlite manifest keyed `(source, entity_id, endpoint)` skips re-storing an
+  identical payload (its `last_seen` just bumps); a changed payload appends. Re-pulling the same
+  ASIN next week costs nothing on disk if it hasn't moved.
+- **Never breaks the pipeline:** archiving is best-effort and self-isolating — a lake failure is
+  counted in `datalake.telemetry()['failures']` and swallowed, never propagated into a scout run.
+  With `pyarrow` absent, archiving cleanly no-ops.
+- **Disabled under test:** `DATALAKE_ENABLED=0` (set by `tests/conftest.py`) so the suite never
+  touches the real lake; it's ON by default in production.
+- **Ops:** the daily digest carries a `🗄️ Data lake` line (`lake: +N rows, +X MB, total Y GB,
+  dedupe Z%`); Mondays run a read-back checksum integrity check that raises a `system_health`
+  alert on any mismatch/unreadable file.
+
+### Backup story (honest)
+
+**The lake on local disk is a SINGLE copy.** zstd Parquet + the sqlite manifest are durable
+against process crashes, but not against a dead drive. As the corpus grows into real training
+data (V1 shadow labels, V2 backtest rows), copy `DATA_LAKE_DIR` to a second location:
+
+- simplest: a scheduled `robocopy C:\fba-data-lake E:\fba-data-lake-backup /MIR` to an external
+  drive (weekly is plenty — the lake is append-mostly);
+- or a cloud object bucket (`rclone sync` to Backblaze B2 / S3) if you want off-site.
+
+This is a **HUMAN_TODO** — the code cannot provision your backup target. CC3's weekly Supabase
+backup will land INTO the lake (`<root>/supabase_backup/date=.../`), so backing up the lake dir
+also backs up the database export — one backup target, not two.
 
 ## Data & compliance notes
 

@@ -8,8 +8,6 @@ package constraint, not a bug). These tests therefore cover the query functions 
 read-only db functions. build_server()/FastMCP wiring is exercised only for its honest
 ImportError when the package is absent.
 """
-import ast
-import inspect
 import os
 import sys
 from unittest.mock import patch
@@ -18,21 +16,45 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import db  # noqa: E402
 import mcp_server  # noqa: E402
+from ast_guards import find_module_calls  # noqa: E402
 
 # The ONLY db functions this module may call — every one is read-only. Anything else showing
-# up as `db.<name>` in the source is a bug this test catches structurally, not by string luck.
+# up as `db.<name>` in the source (or via `from db import <name>` + a bare call, or `import db
+# as <alias>` + `<alias>.<name>` — Code Review 2026-07-02, Finding S9) is a bug this test
+# catches structurally, not by string luck.
 _ALLOWED_DB_CALLS = {"get_lead", "top_leads_raw", "leads_by_brand", "recent_runs"}
 
 
 def test_mcp_server_only_calls_allowlisted_read_only_db_functions():
-    tree = ast.parse(inspect.getsource(mcp_server))
-    found = set()
-    for node in ast.walk(tree):
-        if (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
-                and node.value.id == "db"):
-            found.add(node.attr)
-    assert found, "expected at least one db.<...> reference in mcp_server.py"
+    found = find_module_calls(mcp_server, "db", {"db"})
+    assert found, "expected at least one db call in mcp_server.py"
     assert found <= _ALLOWED_DB_CALLS, f"unexpected db call(s) in mcp_server.py: {found - _ALLOWED_DB_CALLS}"
+
+
+def test_mcp_server_from_import_bypass_is_still_caught():
+    """Regression for Finding S9: a hypothetical `from db import queue_brand_search` + a bare
+    `queue_brand_search(...)` call has no `db.` prefix at all — the ORIGINAL guard (a plain
+    `db.<name>` attribute scan) would have missed this entirely. Prove find_module_calls() still
+    catches it, against a raw source snippet (mcp_server.py itself doesn't do this)."""
+    fake_source = (
+        "from db import queue_brand_search\n"
+        "def f():\n"
+        "    return queue_brand_search('x')\n"
+    )
+    found = find_module_calls(fake_source, "db", {"db"})
+    assert "queue_brand_search" in found
+
+
+def test_mcp_server_aliased_import_bypass_is_still_caught():
+    """Regression for Finding S9: `import db as d` then `d.<name>(...)` — the alias isn't
+    literally "db", so a scan hardcoded to node.value.id == "db" would miss it."""
+    fake_source = (
+        "import db as d\n"
+        "def f():\n"
+        "    return d.queue_brand_search('x')\n"
+    )
+    found = find_module_calls(fake_source, "db", {"db"})
+    assert "queue_brand_search" in found
 
 
 def test_build_server_raises_honest_import_error_without_mcp_package():
@@ -118,13 +140,13 @@ def test_why_rejected_no_explanation_stored():
     assert "No structured explanation" in result["message"]
 
 
-def test_why_rejected_returns_stored_gates_and_adjustments():
+def test_why_rejected_returns_stored_scored_checks_and_adjustments():
     explanation = {"verdict": "pass", "score": 20, "hard_reject": "Amazon holds the Buy Box",
-                  "gates": [{"name": "bsr", "passed": True}], "adjustments": []}
+                  "scored_checks": [{"name": "bsr", "passed": True}], "adjustments": []}
     with patch.object(mcp_server.db, "get_lead", return_value={"asin": "B0X", "explanation": explanation}):
         result = mcp_server.why_rejected("B0X")
     assert result["hard_reject"] == "Amazon holds the Buy Box"
-    assert result["gates"] == explanation["gates"]
+    assert result["scored_checks"] == explanation["scored_checks"]
 
 
 # ---------------------------------------------------------------------------

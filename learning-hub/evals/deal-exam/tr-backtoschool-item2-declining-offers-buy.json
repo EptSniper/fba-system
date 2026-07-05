@@ -1,0 +1,24 @@
+{
+  "id": "tr-backtoschool-item2-declining-offers-buy",
+  "facts": {
+    "price": 7.0,
+    "oa_profit": 2.5,
+    "oa_roi": 2.57,
+    "est_sales": 60000,
+    "offers": 40,
+    "avg_offers_90": 85,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "profit"
+  ],
+  "trap_type": "transcript:high-volume-declining-offers-buy",
+  "source": "Back To School LIVE Amazon Online Arbitrage Product Research.txt @00:07:08.639 \u2014 60,000/mo, sellers dropped 85->40, 257% ROI/$2.50 profit; narrator: 'something that you do all day'. Offers DROPPING (not rising) \u2014 no offers-rising adjustment expected.",
+  "difficulty": "hard"
+}

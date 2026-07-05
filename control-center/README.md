@@ -18,11 +18,13 @@ Requires Node 18+.
 ## Main workspaces
 
 - **Today:** next action, business KPIs, ingestion state, picks, and profit status.
-- **Find:** interactive OA calculator with hard gates and explicit limitations.
+- **Find:** interactive OA calculator with scored criteria, the real hard-reject conditions
+  (Amazon Buy Box, brand/IP risk), and explicit limitations.
 - **Amazon Ops:** Account Health, inventory, payments, inbound, listing, and fee tools,
   plus the planned SP-API connection sequence.
-- **Ask:** live, read-only Supabase semantic search over the 1,224-chunk knowledge corpus,
-  with a concise zero-cost cited answer, source-tier reranking, runtime health, retry,
+- **Ask:** live, read-only Supabase semantic search over the knowledge corpus (chunk count
+  grows with every research-pipeline run — see the live badge on the page, not a number pinned
+  here), with a concise zero-cost cited answer, source-tier reranking, runtime health, retry,
   expandable evidence, deterministic fallback, and a 15-minute repeat-query cache.
 - **Scout Intelligence:** readiness, evidence flywheel, model-promotion rules, drift
   controls, and the explicit no-total-accuracy guardrail.

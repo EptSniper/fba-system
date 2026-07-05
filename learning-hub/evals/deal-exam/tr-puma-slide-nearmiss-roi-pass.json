@@ -1,0 +1,23 @@
+{
+  "id": "tr-puma-slide-nearmiss-roi-pass",
+  "facts": {
+    "price": 25.5,
+    "oa_profit": 3.0,
+    "oa_roi": 0.23,
+    "est_sales": 196,
+    "offers": 11,
+    "category": null,
+    "brand": "Puma",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "roi"
+  ],
+  "trap_type": "transcript:narrator-diverges-on-volatility",
+  "source": "Back to School Sale Live Sourcing for Beginners + Live Q and A.txt @00:16:04.639 \u2014 Puma slide (revisited), 23% ROI (target 30%) / exactly $3 profit; narrator ultimately passes ('I'm sure the price is going to go down'). Profit sits exactly at our $3 floor (passes that check); only ROI misses. CORRECTION: with a fair baseline (bsr/offers filled in) the real weighted score clears the review threshold \u2014 the narrator's actual reason for passing was price VOLATILITY ('I'm sure the price is going to go down'), a forward-looking concern our snapshot-based scorer has no field for. Kept as review (matching the honest computed score) with this as a documented narrator-vs-scorer divergence, not forced to match the narrator's outcome.",
+  "difficulty": "hard"
+}

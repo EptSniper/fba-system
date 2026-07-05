@@ -13,8 +13,20 @@ Requires a paid KEEPA_KEY (and DISCORD_WEBHOOK_URL to actually post) in .env.
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import time
+
+
+def _print_summary(summary) -> None:
+    """Print the cycle summary as ASCII-safe JSON, not a raw dict repr (Code Review 2026-07-02,
+    nit). A raw `print(dict)` writes scoring.py's ✓/✗/→/★ reason strings verbatim, which raises
+    UnicodeEncodeError on a plain Windows console (cp1252) the moment a --dry-run cycle scores
+    any real candidate — reproduced directly: `print({'reason': 'BSR 25,000 ✓'})` crashes
+    under cp1252. json.dumps defaults to ensure_ascii=True, escaping every non-ASCII character
+    instead of writing it raw, matching the pattern run_daily.py's own console print already
+    uses safely."""
+    print(json.dumps(summary, indent=2, default=str))
 
 
 def _setup_logging(verbose: bool) -> None:
@@ -58,7 +70,7 @@ def main() -> None:
         except Exception as e:
             logging.getLogger("scout").error("%s", e)
             raise SystemExit(1)
-        print(summary)
+        _print_summary(summary)
         return
 
     # --loop
@@ -67,7 +79,7 @@ def main() -> None:
     try:
         while True:
             try:
-                print(cycle())
+                _print_summary(cycle())
             except Exception as e:  # keep the loop alive across transient errors
                 logging.getLogger("scout").exception("cycle failed: %s", e)
             time.sleep(interval_s)

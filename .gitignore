@@ -23,3 +23,7 @@ node_modules/
 # vendored external tool (its own separate GitHub-tracked repo, not project code) — do not
 # nest its history inside this repo
 ui-ux-pro-max-skill/
+
+# Ranker model binaries (train_ranker.py artifacts + the fetched cloud champion) — versioned
+# copies live in the Supabase storage bucket models/, not in git.
+learning-hub/models/

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs";
-import path from "node:path";
 import type { CaptureEvent, CaptureKind, Inventory, Leads } from "@/lib/types";
+import { appendEvent, eventsPath, hubDataPath, hubMissing, readJson } from "@/lib/events-server";
 
 // Node runtime (needs fs) and never cached — every request reads/writes live files.
 export const runtime = "nodejs";
@@ -10,11 +10,14 @@ export const dynamic = "force-dynamic";
 // Capture is a LOCAL-OPERATOR feature. It writes to the sibling learning-hub/data folder,
 // which does not exist on serverless (Vercel). There it returns a clear 503 instead of crashing.
 // It never performs an external action — it only records what the human already did.
-const DATA = path.join(process.cwd(), "..", "learning-hub", "data");
-const EVENTS = path.join(DATA, "events.jsonl");
+const EVENTS = eventsPath();
 
 const KINDS: CaptureKind[] = ["lead", "decision", "inventory", "outcome"];
-const LEAD_STATUS = ["idea", "researching", "buy", "ordered", "sold", "passed"];
+// "review" (Code Review 2026-07-02, Finding CS1) — a candidate that's been analyzed and needs
+// a human look before moving on, matching the deal-analyzer's own REVIEW verdict and the one
+// real captured lead already on file, which predates this allowlist and used "review" as its
+// status. Order roughly matches the pipeline's natural progression.
+const LEAD_STATUS = ["idea", "researching", "review", "buy", "ordered", "sold", "passed"];
 const DECISIONS = ["buy", "test", "wait", "pass"];
 
 // ---- tiny, dependency-free validators -------------------------------------------------
@@ -29,35 +32,26 @@ function num(v: unknown): number | undefined {
   const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
   return Number.isFinite(n) ? n : undefined;
 }
+
+// leads.json's roi is stored as a FRACTION. The two known writers now DECLARE their unit
+// (deal-analyzer sends roiUnit:"fraction", the Log form sends roiUnit:"percent"), so
+// conversion is explicit, not guessed. The magnitude heuristic survives ONLY as a legacy
+// fallback for callers that predate the unit field — it corrupts legitimate values on both
+// sides of its threshold (a real 180% ROI fraction 1.8 → 0.018; a percent entry "1.4" → 140%),
+// which is exactly why declared units replaced it (Code Review 2026-07-03, Finding #2;
+// original heuristic from 2026-07-02 Finding CB2).
+function normalizeRoiToFraction(v: number | undefined, unit: unknown): number | undefined {
+  if (v === undefined) return undefined;
+  if (unit === "fraction") return v;
+  if (unit === "percent") return v / 100;
+  return v > 1.5 ? v / 100 : v; // legacy writers only — no unit declared
+}
 function intNonNeg(v: unknown): number | undefined {
   const n = num(v);
   return n === undefined ? undefined : Math.max(0, Math.round(n));
 }
 function today(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-function hubMissing(): boolean {
-  return !fs.existsSync(DATA);
-}
-
-function readJson<T>(file: string): T | null {
-  try {
-    return JSON.parse(fs.readFileSync(file, "utf8")) as T;
-  } catch {
-    return null;
-  }
-}
-
-function appendEvent(kind: CaptureKind, payload: Record<string, unknown>): CaptureEvent {
-  const event: CaptureEvent = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    ts: new Date().toISOString(),
-    kind,
-    payload,
-  };
-  fs.appendFileSync(EVENTS, JSON.stringify(event) + "\n", "utf8");
-  return event;
 }
 
 // ---- aggregate updates (only leads + inventory get an aggregate; see note below) ------
@@ -68,13 +62,16 @@ function appendEvent(kind: CaptureKind, payload: Record<string, unknown>): Captu
 // event (appendEvent) is written unconditionally by the caller, but the caller must NOT report
 // a bare "ok: true" success when the aggregate silently no-op'd (missing/corrupt JSON file):
 // that would be a fake-success response for a partially-failed write.
-function applyLead(p: { product: string; asin?: string; roi?: number; status: string }): boolean {
-  const leads = readJson<Leads>(path.join(DATA, "leads.json"));
+function applyLead(p: { product: string; asin?: string; roi?: number; status: string; notes?: string }): boolean {
+  const leads = readJson<Leads>(hubDataPath("leads.json"));
   if (!leads) return false;
-  leads.leads.push({ product: p.product, asin: p.asin, roi: p.roi, status: p.status });
+  // notes was accepted in the request payload but silently dropped here before (Code Review
+  // 2026-07-02, Finding CS1/CS2) — captured in the append-only ledger event but never actually
+  // reaching leads.json, so it could never show up on the Leads page.
+  leads.leads.push({ product: p.product, asin: p.asin, roi: p.roi, status: p.status, notes: p.notes });
   leads.pipeline[p.status] = (leads.pipeline[p.status] ?? 0) + 1;
   leads.updated = today();
-  fs.writeFileSync(path.join(DATA, "leads.json"), JSON.stringify(leads, null, 2) + "\n", "utf8");
+  fs.writeFileSync(hubDataPath("leads.json"), JSON.stringify(leads, null, 2) + "\n", "utf8");
   return true;
 }
 
@@ -86,7 +83,7 @@ function applyInventory(p: {
   inTransit: number;
   status: string;
 }): boolean {
-  const inv = readJson<Inventory>(path.join(DATA, "inventory.json"));
+  const inv = readJson<Inventory>(hubDataPath("inventory.json"));
   if (!inv) return false;
   // Upsert by asin (if given) else by product name.
   const match = (it: Inventory["items"][number]) =>
@@ -109,7 +106,7 @@ function applyInventory(p: {
   };
   inv.connected = true; // it now reflects manually-tracked real units
   inv.updated = today();
-  fs.writeFileSync(path.join(DATA, "inventory.json"), JSON.stringify(inv, null, 2) + "\n", "utf8");
+  fs.writeFileSync(hubDataPath("inventory.json"), JSON.stringify(inv, null, 2) + "\n", "utf8");
   return true;
 }
 
@@ -174,7 +171,7 @@ export async function POST(req: Request) {
       const payload = {
         product,
         asin: str(body.asin, 20) || undefined,
-        roi: num(body.roi),
+        roi: normalizeRoiToFraction(num(body.roi), body.roiUnit),
         status,
         sourceSite: str(body.sourceSite, 80) || undefined,
         notes: str(body.notes, 500) || undefined,

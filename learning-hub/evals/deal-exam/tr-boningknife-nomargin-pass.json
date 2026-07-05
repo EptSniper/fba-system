@@ -1,0 +1,24 @@
+{
+  "id": "tr-boningknife-nomargin-pass",
+  "facts": {
+    "price": 40.0,
+    "oa_profit": 0.0,
+    "oa_roi": 0.0,
+    "est_sales": 200,
+    "offers": null,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [
+    "roi",
+    "profit"
+  ],
+  "trap_type": "transcript:no-margin-pass",
+  "source": "I Don't Stop Sourcing Product...txt @00:19:33.520 \u2014 boning knife, retail price ($40) matches Amazon sell price with no margin at all; narrator: 'that's not going to be good'.",
+  "difficulty": "easy"
+}

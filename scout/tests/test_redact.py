@@ -36,6 +36,19 @@ def test_redact_masks_generic_token_and_secret_params():
     assert "shh12345" not in redact.redact("url?secret=shh12345")
 
 
+def test_redact_ignores_code_shapes_not_secrets():
+    """Regression guard (Session 52): the query-param pattern used to flag ordinary source code
+    as a leaked secret — JSX `key={...}` props, `sorted(key=lambda ...)`/`key=len` sort kwargs,
+    and `api_key=os.environ[...]` env lookups. None of these carry a literal secret value."""
+    for text in (
+        "return items.map(i => <Row key={i.id} />)",
+        "rows.sort(key=lambda r: r.score)",
+        "sorted(values, key=len)",
+        'anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])',
+    ):
+        assert redact.redact(text) == text, f"should be unchanged: {text!r}"
+
+
 def test_redact_masks_discord_webhook_urls():
     text = "post failed: https://discord.com/api/webhooks/1234567890123/AbCdEf-123_XyZ end"
     out = redact.redact(text)
@@ -57,6 +70,24 @@ def test_redact_handles_multiple_distinct_secrets_in_one_string():
         out = redact.redact(text)
     assert "firstsecretvalue" not in out
     assert "secondsecretvalue" not in out
+
+
+def test_redact_masks_jwt_shaped_strings():
+    """THIS_WEEK.md Prompt W2 — a JWT (Supabase anon/service_role keys are JWTs) must be
+    masked even when it ISN'T the current value of a *KEY*/*TOKEN*/*WEBHOOK* env var (e.g. an
+    old rotated key committed accidentally) — scripts/pre-commit.py's secrets scan relies on
+    this pattern matching independent of process environment."""
+    fake_jwt = ("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZha2UifQ."
+                "AbCdEf1234567890_-signature")
+    out = redact.redact(f"found a leaked key: {fake_jwt} in the diff")
+    assert fake_jwt not in out
+    assert "***REDACTED***" in out
+
+
+def test_redact_does_not_mangle_non_jwt_dotted_text():
+    text = "see learning-hub/data/ai-brain.json for the criteria.minRoi value"
+    assert redact.redact(text) == text
 
 
 def test_redact_leaves_ordinary_text_unchanged():

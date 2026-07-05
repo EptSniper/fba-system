@@ -1,0 +1,23 @@
+{
+  "id": "tr-goodfellow-boxers-min-sales-boundary",
+  "facts": {
+    "price": 37.47,
+    "sales_rank": 150000,
+    "avg_sales_rank_90": 150000,
+    "oa_profit": 6.0,
+    "oa_roi": 0.34,
+    "est_sales": 50,
+    "offers": null,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [],
+  "expected_failed_check_names": [],
+  "trap_type": "transcript:min-sales-boundary-clean-buy",
+  "source": "Online Arbitrage Sourcing Secrets 99%...txt @00:00:49.000 \u2014 Goodfellow boxers, BSR<200k, exactly 50 sales/mo (our floor), $6 profit/34% ROI after a gift-card discount; narrator: 'fits our basic winning product criteria'.",
+  "difficulty": "medium"
+}

@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import memory_report  # noqa: E402
 import reflect  # noqa: E402
+from ast_guards import open_call_targets_containing  # noqa: E402
 
 
 def _fake_tool_use_block(name, input_dict):
@@ -30,27 +31,18 @@ def _fake_tool_use_block(name, input_dict):
 
 # ---------------------------------------------------------------------------
 # AST guards — real open()-target checks, not blanket text bans (a naive substring ban on
-# "ai-brain.json" false-positives on this module's own honest docstrings/comments).
+# "ai-brain.json" false-positives on this module's own honest docstrings/comments). Uses the
+# shared ast_guards helpers (Code Review 2026-07-02, Finding S9) which also catch os/io/codecs-
+# style open() and pathlib .write_text()/.write_bytes()/.open() method calls — a bare
+# `node.func.id == "open"` check (this file's original local helper) misses both.
 # ---------------------------------------------------------------------------
 
-def _open_call_targets_containing(module, needle):
-    tree = ast.parse(inspect.getsource(module))
-    hits = []
-    for node in ast.walk(tree):
-        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                and node.func.id == "open" and node.args):
-            arg = node.args[0]
-            if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and needle in arg.value:
-                hits.append(arg.value)
-    return hits
-
-
 def test_reflect_never_opens_ai_brain_json():
-    assert _open_call_targets_containing(reflect, "ai-brain.json") == []
+    assert open_call_targets_containing(reflect, "ai-brain.json") == []
 
 
 def test_memory_report_never_opens_ai_brain_json():
-    assert _open_call_targets_containing(memory_report, "ai-brain.json") == []
+    assert open_call_targets_containing(memory_report, "ai-brain.json") == []
 
 
 def test_reflect_never_calls_scoring_functions():
@@ -65,8 +57,8 @@ def test_reflect_never_calls_scoring_functions():
 # ---------------------------------------------------------------------------
 
 def test_slug_normalizes_brand_name():
-    assert reflect._slug("Mrs. Meyer's") == "mrs-meyer-s"
-    assert reflect._slug("  Jellycat  ") == "jellycat"
+    assert reflect.slug("Mrs. Meyer's") == "mrs-meyer-s"
+    assert reflect.slug("  Jellycat  ") == "jellycat"
 
 
 def test_read_memory_note_none_when_absent():

@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import db  # noqa: E402
 import propose_updates  # noqa: E402
+from ast_guards import assert_only_write_target, open_call_targets_containing  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -24,18 +25,12 @@ import propose_updates  # noqa: E402
 # ---------------------------------------------------------------------------
 
 def test_propose_updates_has_no_write_path_to_ai_brain_json():
-    """Static guard via real AST parsing: every open(...) call in the module must target
+    """Static guard via real AST parsing: every write-like call in the module (bare open(),
+    os/io/codecs-style open(), pathlib .write_text()/.write_bytes()/.open() method calls — Code
+    Review 2026-07-02, Finding S9 broadened this beyond a bare open() scan) must target
     REPORT_PATH — never ai-brain.json. This is THE non-negotiable of Prompt G5."""
-    tree = ast.parse(inspect.getsource(propose_updates))
-    open_calls = [
-        node for node in ast.walk(tree)
-        if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "open"
-    ]
-    assert open_calls, "expected at least one open() call (writing the report)"
-    for call in open_calls:
-        first_arg = call.args[0] if call.args else None
-        target = getattr(first_arg, "id", None)
-        assert target == "REPORT_PATH", f"open() call targets {target!r}, not REPORT_PATH"
+    assert_only_write_target(propose_updates, "REPORT_PATH")
+    assert open_call_targets_containing(propose_updates, "ai-brain.json") == []
     # The module doesn't even define a path constant for ai-brain.json (unlike labels.py,
     # which deliberately READS it for min_labeled_rows) — it can't write what it never opens.
     assert "BRAIN_PATH" not in inspect.getsource(propose_updates)
@@ -45,10 +40,10 @@ def test_propose_updates_has_no_write_path_to_ai_brain_json():
 # Outcome-driven — honest small-sample wording (the brief's own worked example)
 # ---------------------------------------------------------------------------
 
-def _lead(asin, gate_name=None, adj_name=None, gate_passed=False, profit=-5.0):
-    explanation = {"gates": [], "adjustments": []}
-    if gate_name:
-        explanation["gates"].append({"name": gate_name, "passed": gate_passed})
+def _lead(asin, check_name=None, adj_name=None, check_passed=False, profit=-5.0):
+    explanation = {"scored_checks": [], "adjustments": []}
+    if check_name:
+        explanation["scored_checks"].append({"name": check_name, "passed": check_passed})
     if adj_name:
         explanation["adjustments"].append({"name": adj_name, "points": -10, "reason": "x"})
     return {"asin": asin, "brand": "TestBrand", "explanation": explanation,
@@ -56,35 +51,35 @@ def _lead(asin, gate_name=None, adj_name=None, gate_passed=False, profit=-5.0):
 
 
 def test_outcome_driven_reports_small_sample_honestly():
-    leads = [_lead(f"B0{i:04d}", gate_name="offers", gate_passed=False) for i in range(2)]
+    leads = [_lead(f"B0{i:04d}", check_name="offers", check_passed=False) for i in range(2)]
     with patch.object(db, "leads_with_outcomes", return_value=leads):
         proposals = propose_updates.outcome_driven_proposals()
-    matching = [p for p in proposals if "gate:offers=fail" in p["finding"]]
-    assert matching, "expected a finding for the failed offers gate"
+    matching = [p for p in proposals if "check:offers=fail" in p["finding"]]
+    assert matching, "expected a finding for the failed offers check"
     assert matching[0]["confidence"] == "too small to act"
     assert matching[0]["sample_size"] == 2
 
 
 def test_outcome_driven_reports_strong_signal_at_scale():
-    leads = [_lead(f"B0{i:04d}", gate_name="roi", gate_passed=False) for i in range(12)]
+    leads = [_lead(f"B0{i:04d}", check_name="roi", check_passed=False) for i in range(12)]
     with patch.object(db, "leads_with_outcomes", return_value=leads):
         proposals = propose_updates.outcome_driven_proposals()
-    matching = [p for p in proposals if "gate:roi=fail" in p["finding"]]
+    matching = [p for p in proposals if "check:roi=fail" in p["finding"]]
     assert matching[0]["confidence"] == "strong signal"
     assert matching[0]["sample_size"] == 12
 
 
 # ---------------------------------------------------------------------------
-# Data-driven — dead gate, cold/IP-cliff brand, token-cost drift (fixture telemetry)
+# Data-driven — dead check, cold/IP-cliff brand, token-cost drift (fixture telemetry)
 # ---------------------------------------------------------------------------
 
-def test_data_driven_flags_dead_gate_at_100_percent_reject():
-    leads = [_lead(f"B0{i:04d}", gate_name="bsr", gate_passed=False) for i in range(6)]
+def test_data_driven_flags_dead_check_at_100_percent_reject():
+    leads = [_lead(f"B0{i:04d}", check_name="bsr", check_passed=False) for i in range(6)]
     with patch.object(db, "leads_with_outcomes", return_value=leads), \
             patch.object(db, "recent_runs", return_value=[]):
         proposals = propose_updates.data_driven_proposals()
-    matching = [p for p in proposals if "gate:bsr=fail" in p["finding"] and "100%" in p["finding"]]
-    assert matching, f"expected a dead-gate finding, got: {proposals}"
+    matching = [p for p in proposals if "check:bsr=fail" in p["finding"] and "100%" in p["finding"]]
+    assert matching, f"expected a dead-check finding, got: {proposals}"
 
 
 def test_data_driven_flags_repeated_ip_cliff_brand():
@@ -200,7 +195,7 @@ def test_notify_brain_proposals_noop_when_empty():
 
 def test_notify_brain_proposals_sends_short_embed_with_top_finding():
     proposals = [
-        {"kind": "outcome-driven", "finding": "gate:bsr=fail lost 5/6 times", "sample_size": 6,
+        {"kind": "outcome-driven", "finding": "check:bsr=fail lost 5/6 times", "sample_size": 6,
          "confidence": "strong signal", "ai_brain_key": None},
         {"kind": "data-driven", "finding": "second finding", "sample_size": 2,
          "confidence": "too small to act", "ai_brain_key": None},
@@ -212,7 +207,7 @@ def test_notify_brain_proposals_sends_short_embed_with_top_finding():
     stream, embed = mock_router.send.call_args[0]
     assert stream == "brain_proposals"
     assert "2 new brain proposal" in embed["title"]
-    assert "gate:bsr=fail" in embed["description"]
+    assert "check:bsr=fail" in embed["description"]
 
 
 def test_write_report_with_count_notifies_when_proposals_exist():

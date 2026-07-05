@@ -146,6 +146,110 @@ def test_deal_finder_block_degrades_to_empty_dict_on_bad_path():
         assert brain_config.confidence_bands() == {"auto_accept": 0.90, "review": 0.60}
 
 
+# ---------------------------------------------------------------------------
+# deal_hints + source_http_cache (migration 007, TOP100_DEAL_WATCH_PLAN.md)
+# ---------------------------------------------------------------------------
+def test_hint_key_is_normalized():
+    assert db._hint_key("Jellycat", "Target", "Toys") == "jellycat|target|toys"
+    assert db._hint_key("Yeti", None, None) == "yeti||"
+
+
+def test_upsert_deal_hint_sets_expiry_and_conflicts_on_hint_key():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.post.return_value = _mock_response([{"id": 5}])
+        result = db.upsert_deal_hint("Jellycat", "Target", "toys", strength=2.5, ttl_hours=72)
+    assert result == 5
+    url = mock_requests.post.call_args[0][0]
+    body = mock_requests.post.call_args[1]["json"]
+    assert "on_conflict=hint_key" in url
+    assert body["hint_key"] == "jellycat|target|toys" and body["strength"] == 2.5
+    assert "expires_at" in body and "first_seen" not in body  # never overwrite original first_seen
+
+
+def test_upsert_deal_hint_noop_without_db():
+    with patch.object(db, "SUPA", ""), patch.object(db, "KEY", ""):
+        assert db.upsert_deal_hint("X", None, None, 1.0) is None
+
+
+def test_fresh_deal_hints_filters_expiry_and_strength_server_side():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.return_value = _mock_response([{"brand": "Yeti", "strength": 3}])
+        rows = db.fresh_deal_hints(min_strength=2)
+    assert rows == [{"brand": "Yeti", "strength": 3}]
+    params = mock_requests.get.call_args[1]["params"]
+    assert params["strength"] == "gte.2"
+    assert params["expires_at"].startswith("gt.")  # non-expired only
+    assert params["order"] == "strength.desc"
+
+
+def test_fresh_deal_hints_degrades_to_empty_on_error():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.side_effect = Exception("boom")
+        assert db.fresh_deal_hints() == []
+
+
+def test_source_http_cache_get_and_set_roundtrip_shape():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.return_value = _mock_response([{"etag": "v1", "last_modified": "Mon"}])
+        cached = db.get_source_http_cache("http://x/sale")
+        assert cached == {"etag": "v1", "last_modified": "Mon"}
+        mock_requests.post.return_value = _mock_response([{"source_key": "http://x/sale"}])
+        db.set_source_http_cache("http://x/sale", "v2", "Tue")
+        body = mock_requests.post.call_args[1]["json"]
+        assert body["source_key"] == "http://x/sale" and body["etag"] == "v2"
+
+
+def test_get_all_source_status_keys_by_url():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.return_value = _mock_response(
+            [{"url": "http://a/clr", "mode": "sd-rss-only", "consecutive_403": 2}])
+        out = db.get_all_source_status()
+    assert out == {"http://a/clr": {"url": "http://a/clr", "mode": "sd-rss-only", "consecutive_403": 2}}
+
+
+def test_upsert_source_status_uses_dedicated_conflict_safe_post():
+    """Like source_http_cache, source_status has no `id` column (PK is url) — the write must NOT
+    route through _upsert (which reads data[0]['id'] -> 409). return=minimal, on_conflict=url."""
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.post.return_value = _mock_response([], status=200)
+        db.upsert_source_status("http://a/clr", "sd-rss-only", 2, "forbidden", 403, retired_at="2026-07-04T00:00:00Z")
+    url = mock_requests.post.call_args[0][0]
+    body = mock_requests.post.call_args[1]["json"]
+    prefer = mock_requests.post.call_args[1]["headers"]["Prefer"]
+    assert "on_conflict=url" in url and "return=minimal" in prefer
+    assert body["mode"] == "sd-rss-only" and body["consecutive_403"] == 2 and body["retired_at"] == "2026-07-04T00:00:00Z"
+
+
+def test_source_status_helpers_noop_without_db():
+    with patch.object(db, "SUPA", ""), patch.object(db, "KEY", ""):
+        assert db.get_all_source_status() == {}
+        assert db.upsert_source_status("u", "active", 0, None, None) is None
+
+
+def test_upsert_deal_strips_007_columns_on_pre_migration_insert():
+    """A deal row carrying source_signal/extraction_confidence must still write (minus those
+    two columns) if migration 007 hasn't landed — never lose the whole row (Finding B2 pattern)."""
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        # First POST (with the new columns) fails; retry (stripped) succeeds.
+        fail = _mock_response({}, status=400)
+        ok = _mock_response([{"id": 9}])
+        mock_requests.post.side_effect = [fail, ok]
+        result = db.upsert_deal({
+            "retailer": "Target", "source": "slickdeals", "title_raw": "X",
+            "price_current": 1.99, "source_signal": "sd-rss", "extraction_confidence": 0.9,
+        })
+    assert result == 9
+    retried_body = mock_requests.post.call_args_list[-1][1]["json"]
+    assert "source_signal" not in retried_body and "extraction_confidence" not in retried_body
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     passed = 0

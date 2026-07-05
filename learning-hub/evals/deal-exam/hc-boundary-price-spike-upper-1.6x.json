@@ -1,0 +1,31 @@
+{
+  "id": "hc-boundary-price-spike-upper-1.6x",
+  "facts": {
+    "price": 32.0,
+    "sales_rank": 50000,
+    "avg_sales_rank_90": 50000,
+    "est_sales": 150,
+    "offers": 10,
+    "weight_lb": 1.0,
+    "oa_profit": 8.0,
+    "oa_roi": 0.45,
+    "buybox_seller": "ThirdPartySellerCo",
+    "amazon_bb_share": 0.0,
+    "avg_price_90": 20.0,
+    "avg_offers_90": 10,
+    "has_buybox": true,
+    "price_low_90": 20.0,
+    "brand": "AcmeToys",
+    "category": null
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "price-spike"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "boundary:price-spike-upper",
+  "source": "handcrafted boundary pair for OA_PRICE_SPIKE_RATIO=1.5 \u2014 ratio=1.6 crosses into the spike adjustment (caution must NOT also fire \u2014 mutually exclusive via elif)",
+  "difficulty": "hard"
+}

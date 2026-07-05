@@ -55,6 +55,31 @@ def test_good_candidate_passes_hard_gate():
     assert scoring.oa_hard_reject(_base()) is None
 
 
+def test_oa_hard_reject_has_exactly_these_5_conditions():
+    """Enumeration guard (Code Review 2026-07-02, Finding S4): oa_hard_reject() is the ONLY
+    unconditional reject path (applies regardless of score) — everything else in scoring.py
+    (the 6 scored_checks, brand/price/offers adjustments) is a point penalty, never a reject on
+    its own. If a 6th hard-reject condition is ever added or one of these 5 removed, this test
+    should be updated deliberately, not silently drift."""
+    amazon_buybox = _base(buybox_seller=config.AMAZON_SELLER_ID)
+    amazon_rotation = _base(amazon_bb_share=0.40)
+    avoid_brand = _base(brand="Nike")
+    ip_cliff = _base(offers=1, avg_offers_90=30)
+    no_price = _base(price=None)
+    healthy = _base()
+
+    assert scoring.oa_hard_reject(amazon_buybox) is not None
+    assert scoring.oa_hard_reject(amazon_rotation) is not None
+    assert scoring.oa_hard_reject(avoid_brand) is not None
+    assert scoring.oa_hard_reject(ip_cliff) is not None
+    assert scoring.oa_hard_reject(no_price) is not None
+    assert scoring.oa_hard_reject(healthy) is None
+
+    # None of these 5 appear anywhere in scored_checks — they are a wholly separate mechanism.
+    scored_check_names = {c["name"] for c in scoring.explain_oa(healthy)["scored_checks"]}
+    assert scored_check_names == {"bsr", "sales", "offers", "roi", "profit", "buybox"}
+
+
 def test_price_spike_detected_and_penalized():
     spike = _base(avg_price_90=10.0)  # 30 >> 10 * 1.5
     assert scoring._price_spike(spike)
@@ -139,13 +164,29 @@ def test_no_featured_offer_penalized():
 # --- Phase 1, Prompt 1.2: category fees, grocery ROI exception, offer-band bonus, explain-why ---
 
 def test_category_fee_selection():
-    # A recognized category (grocery, 8% referral) should differ from the flat-15% no-category
-    # baseline; an unrecognized category must fall back to the 15% default rate.
-    profit_default, _ = scoring.estimate_oa_profit_roi(30.0, 1.0)
-    profit_grocery, _ = scoring.estimate_oa_profit_roi(30.0, 1.0, category="grocery")
-    profit_unknown, _ = scoring.estimate_oa_profit_roi(30.0, 1.0, category="Some Made-Up Category")
-    assert profit_grocery > profit_default, "grocery's 8% referral should mean MORE profit than flat 15%"
+    # A recognized category (grocery, 8% referral AT/BELOW its $15 price band — Finding CS6)
+    # should differ from the flat-15% no-category baseline at a price inside that band; an
+    # unrecognized category must fall back to the 15% default rate.
+    profit_default, _ = scoring.estimate_oa_profit_roi(12.0, 1.0)
+    profit_grocery, _ = scoring.estimate_oa_profit_roi(12.0, 1.0, category="grocery")
+    profit_unknown, _ = scoring.estimate_oa_profit_roi(12.0, 1.0, category="Some Made-Up Category")
+    assert profit_grocery > profit_default, "grocery's 8% referral (<=$15 band) should mean MORE profit than flat 15%"
     assert round(profit_unknown, 2) == round(profit_default, 2), "unknown category must fall back to the 15% default rate"
+
+
+def test_grocery_referral_rate_is_banded_by_price():
+    """Regression for Code Review 2026-07-02, Finding CS6: grocery's referral rate used to be a
+    flat 8% regardless of price, overstating profit/ROI above $15 (the real Amazon rule is 8%
+    at/below $15, 15% above). Below the threshold must use the cheaper rate; above it must match
+    the flat 15% default exactly (not still get the 8% discount)."""
+    profit_below, _ = scoring.estimate_oa_profit_roi(12.0, 1.0, category="grocery")
+    profit_default_below, _ = scoring.estimate_oa_profit_roi(12.0, 1.0)
+    assert profit_below > profit_default_below
+
+    profit_above, _ = scoring.estimate_oa_profit_roi(30.0, 1.0, category="grocery")
+    profit_default_above, _ = scoring.estimate_oa_profit_roi(30.0, 1.0)
+    assert round(profit_above, 2) == round(profit_default_above, 2), \
+        "above the $15 threshold, grocery must charge the same 15% as the default rate, not still 8%"
 
 
 def test_category_fee_floor_applies():
@@ -161,18 +202,18 @@ def test_category_fee_floor_applies():
 
 
 def test_grocery_roi_exception_lowers_the_bar():
-    # A candidate whose ROI clears 25% but not the plain 30% bar must pass the ROI gate when
-    # tagged "grocery" and use the grocery bar; plain must use the standard 30% bar.
+    # A candidate whose ROI clears 25% but not the plain 30% bar must pass the ROI scored-check
+    # when tagged "grocery" and use the grocery bar; plain must use the standard 30% bar.
     cand = _base(price=25.0)
     ex_plain = scoring.explain_oa(cand)
     ex_grocery = scoring.explain_oa(dict(cand, category="grocery"))
-    roi_gate_plain = next(g for g in ex_plain["gates"] if g["name"] == "roi")
-    roi_gate_grocery = next(g for g in ex_grocery["gates"] if g["name"] == "roi")
+    roi_check_plain = next(c for c in ex_plain["scored_checks"] if c["name"] == "roi")
+    roi_check_grocery = next(c for c in ex_grocery["scored_checks"] if c["name"] == "roi")
     assert ex_grocery["min_roi_applied"] == config.OA_GROCERY_MIN_ROI
     assert ex_plain["min_roi_applied"] == config.CRITERIA_OA["min_roi"]
     # Grocery's ROI actual is also higher than plain's because the referral rate itself is
     # lower for grocery — both effects (lower fee, lower bar) point the same direction.
-    assert roi_gate_grocery["actual"] >= roi_gate_plain["actual"]
+    assert roi_check_grocery["actual"] >= roi_check_plain["actual"]
 
 
 def test_offer_band_bonus_applies_at_5_to_7_only():
@@ -197,10 +238,10 @@ def test_offer_band_bonus_applies_at_5_to_7_only():
 
 def test_explain_oa_structure_names_every_adjustment():
     ex = scoring.explain_oa(_base())
-    assert set(["verdict", "score", "gates", "adjustments", "hard_reject"]).issubset(ex.keys())
-    assert len(ex["gates"]) == 6
-    for g in ex["gates"]:
-        assert set(["name", "passed", "actual", "threshold"]).issubset(g.keys())
+    assert set(["verdict", "score", "scored_checks", "adjustments", "hard_reject"]).issubset(ex.keys())
+    assert len(ex["scored_checks"]) == 6
+    for c in ex["scored_checks"]:
+        assert set(["name", "passed", "actual", "threshold"]).issubset(c.keys())
     for a in ex["adjustments"]:
         assert set(["name", "points", "reason"]).issubset(a.keys())
         assert isinstance(a["points"], (int, float))

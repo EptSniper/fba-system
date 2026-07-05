@@ -1,0 +1,25 @@
+{
+  "id": "tr-adidas-ultraboost-conditional",
+  "facts": {
+    "price": 138.0,
+    "oa_profit": 30.0,
+    "oa_roi": 0.5,
+    "est_sales": null,
+    "offers": null,
+    "amazon_bb_share": 0.15,
+    "category": null,
+    "brand": "Adidas",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": true,
+  "expected_hard_reject_keyword": "brand hard-gated",
+  "expected_adjustment_names": [
+    "avoid-brand",
+    "amazon-shares-buybox"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "transcript:narrator-diverges-from-avoid-brand-gate",
+  "source": "How To Find Products Using Keepa Product Finder...txt @00:02:55.000 \u2014 Adidas Ultra Boost, Amazon 'in stock and sharing the buy box'; narrator floats buying 'just a couple units' if sourced under $90 (profit/roi here are a rough estimate at a $90 cost, not stated exactly). DIVERGENCE NOTE: narrator is open to a small test buy on an avoid-listed brand \u2014 our hard gate says no regardless of the numbers. This is the exam's clearest real example of the scorer being intentionally STRICTER than practitioner risk tolerance.",
+  "difficulty": "medium"
+}

@@ -1,8 +1,16 @@
 {
   "source": "learning-hub/tracking/product-leads.md",
-  "updated": "2026-07-01",
+  "updated": "2026-07-02",
   "note": "Machine-readable mirror of product-leads.md. The example row in the .md is a template, not a real lead. Added a 'review' pipeline stage to match the .md status key (idea/researching/review/buy/ordered/sold/passed).",
-  "pipeline": { "idea": 0, "researching": 0, "review": 1, "buy": 0, "ordered": 0, "sold": 0, "passed": 0 },
+  "pipeline": {
+    "idea": 0,
+    "researching": 0,
+    "review": 1,
+    "buy": 0,
+    "ordered": 0,
+    "sold": 0,
+    "passed": 0
+  },
   "leads": [
     {
       "date": "2026-06-30",

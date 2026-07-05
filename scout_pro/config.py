@@ -58,7 +58,16 @@ MODEL_REGISTRY_DIR: str = os.getenv("MODEL_REGISTRY_DIR", "model_registry")
 # ---------------------------------------------------------------------------
 KEEPA_KEY: str | None = os.getenv("KEEPA_KEY") or None
 KEEPA_DOMAIN: str = os.getenv("KEEPA_DOMAIN", "US")
-DISCORD_WEBHOOK_URL: str | None = os.getenv("DISCORD_WEBHOOK_URL") or None
+# scout_pro posts pick alerts, the same kind of message scout/'s discord_router.py routes to
+# its "scout_picks" stream (DISCORD_WEBHOOK_SCOUT_PICKS) — read that same, already-provisioned
+# channel first so scout_pro doesn't silently no-op forever waiting on a bare DISCORD_WEBHOOK_URL
+# that no real .env file actually sets. Falls back to DISCORD_WEBHOOK_URL for anyone who set the
+# old bare name directly. (Code Review 2026-07-02, Finding S14 — scout_pro doesn't import
+# scout/discord_router.py; it's a standalone, simpler poster by design, see the README note on
+# scout_pro's deliberate divergences.)
+DISCORD_WEBHOOK_URL: str | None = (
+    os.getenv("DISCORD_WEBHOOK_SCOUT_PICKS") or os.getenv("DISCORD_WEBHOOK_URL") or None
+)
 
 # Owned-account truth (optional; connectors are documented stubs until wired).
 SP_API_REFRESH_TOKEN: str | None = os.getenv("SP_API_REFRESH_TOKEN") or None

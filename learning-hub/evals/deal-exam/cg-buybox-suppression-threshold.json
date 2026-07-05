@@ -1,0 +1,23 @@
+{
+  "id": "cg-buybox-suppression-threshold",
+  "facts": {
+    "price": 84.0,
+    "avg_price_90": 60.0,
+    "oa_profit": 15.0,
+    "oa_roi": 0.3,
+    "offers": 7,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "review",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "price-caution"
+  ],
+  "expected_failed_check_names": [],
+  "trap_type": "chart-guide:buybox-suppression-price-threshold",
+  "source": "Keepa Charts The Ultimate Amazon FBA Tutorial for 2026.txt @49:35 \u2014 'the competitive price threshold seems to be $84.86 \u2014 once it gets above $84 it seems that Amazon pulls the buy box away'; used a $60 avg_price_90 (a typical winning-seller price band the video cites, e.g. $52.40-$54.61) against the $84 threshold price to test our spike detector (ratio 1.4 \u2014 right at/near our 1.5x trigger; check carefully). CORRECTION: 84/60=1.4 falls in the [1.15,1.5) caution band, not the >=1.5 spike trigger \u2014 first draft mis-called which side of the line this landed on.",
+  "difficulty": "hard"
+}

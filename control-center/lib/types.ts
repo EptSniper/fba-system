@@ -26,7 +26,19 @@ export type Inventory = {
   connected: boolean;
   note?: string;
   summary: { unitsOwned: number; atFba: number; inTransit: number; lowStock: number };
-  items: { product: string; asin?: string; owned: number; atFba: number; inTransit?: number; status: string }[];
+  items: {
+    product: string;
+    asin?: string;
+    owned: number;
+    atFba: number;
+    inTransit?: number;
+    status: string;
+    // Added for CC2's aged-inventory countdown / cut-loss list (lib/aged-inventory.ts).
+    // Optional: no capture flow writes these yet (inventory is genuinely empty today) — both
+    // are honest gaps, not omissions, until a real receiving/sale-tracking flow populates them.
+    receivedAt?: string;
+    lastSaleAt?: string | null;
+  }[];
   restock: { product: string; daysLeft: number }[];
 };
 
@@ -46,7 +58,7 @@ export type Leads = {
   source: string;
   updated: string;
   pipeline: Record<string, number>;
-  leads: { product: string; asin?: string; roi?: number; status: string }[];
+  leads: { product: string; asin?: string; roi?: number; status: string; notes?: string }[];
 };
 
 export type Pick = {
@@ -89,10 +101,53 @@ export type Brain = {
   guards?: Record<string, unknown> & { restrictionKeywords?: Record<string, string[]> };
   // Added Phase 1 (Scout + Deal-Finder Expert Upgrade Brief, Prompt 1.1) — category referral
   // rates + the 5-7 offer "goldilocks" bonus. Optional: older bundled snapshots won't have these.
-  fees?: { referralRates: Record<string, number>; minReferralFee: number };
-  scoring?: { preferredOffers: { min: number; max: number; bonus: number } };
+  fees?: {
+    referralRates: Record<string, number>;
+    minReferralFee: number;
+    fuelSurcharge?: number;
+    prepCost?: number;
+    // Price-banded rates (Code Review 2026-07-02, Finding CS6) — e.g. grocery is really 8% at
+    // or below priceThreshold, 15% above it; referralRates.grocery alone is the wrong flat rate
+    // once price exceeds the threshold.
+    bandedRates?: Record<string, { priceThreshold: number; atOrBelowThreshold: number; aboveThreshold: number }>;
+  };
+  scoring?: {
+    preferredOffers: { min: number; max: number; bonus: number };
+    // Single-sourced thresholds (R3 nits) — deal-analyzer.tsx used to hardcode these
+    // independently of ai-brain.json's own scoring.worstCaseLossBarUsd/marginHealthThreshold.
+    worstCaseLossBarUsd?: number;
+    marginHealthThreshold?: number;
+  };
   brands: { friendly: string[]; avoid: string[]; source: string };
   tools: string[];
+  // Operational doctrine + 2026 policy facts (Scout Agent Build Plan sec 3.5-3.8) — informational
+  // only, not consumed by scoring math. Added Code Review 2026-07-02, Finding CS3: this data
+  // existed in ai-brain.json but was never rendered anywhere in the control-center.
+  operations?: {
+    seasonal2026?: {
+      primeDayWindow?: { start: string; end: string; role: string };
+      backToSchoolBuyWindow?: string;
+      q4ArrivalDeadline?: string;
+      q4StopSpeculativeBuysAfterWeek?: number;
+      toysBuyWindows?: string[];
+      januaryReturnsWave?: boolean;
+      biasQ4TowardLowReturnCategories?: boolean;
+    };
+    bankroll?: {
+      cashReservePct?: number;
+      cutLossDays?: number;
+      agedSurchargeDay?: number;
+      buckets?: string[];
+    };
+  };
+  policy2026?: {
+    payoutHoldDaysAfterDelivery?: number;
+    payoutHoldEffective?: string;
+    comminglingEnded?: boolean;
+    comminglingEndedEffective?: string;
+    feeIncreasePerUnit?: number;
+    feeIncreaseEffective?: string;
+  };
   dealSourcing?: {
     principle?: string;
     retailers?: string[];
@@ -109,11 +164,6 @@ export type Brain = {
     ragCorpus?: RagCorpus;
   };
   ingestionLog: { date: string; type: string; item: string; effect: string }[];
-};
-
-export type Knowledge = {
-  updated?: string;
-  documents?: { path: string; title: string; type: string }[];
 };
 
 export type RagManifestSource = {

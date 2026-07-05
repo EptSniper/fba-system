@@ -60,6 +60,29 @@ point, this is the full stack.
 | `discord_notify.py` | Rich alerts (calibrated confidence, compliance, deep link, backoff). |
 | `run_scout.py` / `train.py` / `backfill.py` | CLIs. |
 
+### Deliberate divergences from `../scout/` (Code Review 2026-07-02, Finding S14)
+
+scout_pro is a separate, independent implementation — it does not import or share `../scout/`'s
+gating code, and two of its gates are **intentionally stricter**, not out of sync by accident:
+
+- **Margin is a HARD gate here, a scored signal there.** `gates.py`'s `hard_gates()` rejects any
+  candidate below `GATE_MARGIN_FLOOR` (15% net margin default) outright, regardless of every
+  other signal. `../scout/scoring.py` treats ROI/profit as two of its six **scored** checks
+  (`OA_WEIGHTS`) — a candidate can miss one and still clear the review threshold on the others.
+  scout_pro's stricter stance matches the paper's "compliance/viability gates first, model only
+  sees survivors" design; `scout/`'s softer stance matches its own simpler, more permissive
+  rule-score philosophy. Neither is a bug.
+- **"grocery" is HARD-BLOCKED here, explicitly ALLOWED (with a relaxed ROI bar) there.**
+  `GATE_FORBIDDEN_CATEGORIES` includes `grocery` by default — scout_pro never surfaces a grocery
+  candidate at all. `../scout/scoring.py` + `ai-brain.json`'s `criteria.exceptions.groceryMinRoi`
+  do the opposite: grocery is a recognized, allowed category with a LOWER ROI bar (25% vs the
+  standard 30%), since thin-margin grocery items are a known-legitimate OA pattern. If you want
+  scout_pro to source grocery too, remove `grocery` from `GATE_FORBIDDEN_CATEGORIES` in `.env` —
+  it's an env override, not a code change.
+- The OA-mode hard gates (`oa_hard_gates()`) DO intentionally mirror `../scout/scoring.py`'s
+  `oa_hard_reject()` exactly (same 5 conditions, same order) — those two are meant to match.
+  Only the non-OA `hard_gates()` above (margin/crowding/oversize/compliance-keyword) diverges.
+
 ---
 
 ## Setup
@@ -71,8 +94,10 @@ pip install -r requirements.txt
 cp .env.example .env          # then edit
 ```
 
-Minimum to run live: set **`KEEPA_KEY`** (paid) and optionally **`DISCORD_WEBHOOK_URL`**.
-Defaults use SQLite + scikit-learn so nothing else is required. For Postgres, set
+Minimum to run live: set **`KEEPA_KEY`** (paid) and optionally **`DISCORD_WEBHOOK_SCOUT_PICKS`**
+(preferred — the same "scout_picks" channel `scout/`'s discord_router.py already posts to; a
+bare `DISCORD_WEBHOOK_URL` also works as a fallback if you'd rather keep scout_pro's alerts
+separate). Defaults use SQLite + scikit-learn so nothing else is required. For Postgres, set
 `DATABASE_URL` and `pip install "psycopg[binary]"`. LightGBM and pyarrow are
 recommended but optional (the code falls back to sklearn and skips Parquet).
 

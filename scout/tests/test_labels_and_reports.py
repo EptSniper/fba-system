@@ -18,6 +18,7 @@ import db  # noqa: E402
 import labels  # noqa: E402
 import tuning_report  # noqa: E402
 import calibration_report  # noqa: E402
+from ast_guards import assert_only_write_target, open_call_targets_containing  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -160,18 +161,12 @@ def test_label_from_outcome_falls_back_to_profit():
 
 def test_tuning_report_has_no_write_path_to_ai_brain_json():
     """Static guard via real AST parsing (not text-matching, which false-positives on the
-    module's own docstrings): every `open(...)` call in the file must target REPORT_PATH.
+    module's own docstrings): every write-like call in the file (bare open(), os/io/codecs-style
+    open(), and pathlib .write_text()/.write_bytes()/.open() method calls — Code Review
+    2026-07-02, Finding S9 broadened this beyond a bare open() scan) must target REPORT_PATH.
     Catches a future edit accidentally adding an ai-brain.json write/auto-apply path."""
-    tree = ast.parse(inspect.getsource(tuning_report))
-    open_calls = [
-        node for node in ast.walk(tree)
-        if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "open"
-    ]
-    assert open_calls, "expected at least one open() call (writing the report)"
-    for call in open_calls:
-        first_arg = call.args[0] if call.args else None
-        target = getattr(first_arg, "id", None)  # only cares about a plain Name reference
-        assert target == "REPORT_PATH", f"open() call targets {target!r}, not REPORT_PATH"
+    assert_only_write_target(tuning_report, "REPORT_PATH")
+    assert open_call_targets_containing(tuning_report, "ai-brain.json") == []
     # The module doesn't even define a path constant for ai-brain.json (unlike labels.py,
     # which deliberately READS it, via BRAIN_PATH, only for min_labeled_rows).
     assert "BRAIN_PATH" not in inspect.getsource(tuning_report)
@@ -188,7 +183,7 @@ def test_tuning_report_flags_lopsided_pattern_with_enough_samples():
     for i in range(4):
         leads.append({
             "asin": f"B0BAD{i:04d}",
-            "explanation": {"gates": [], "adjustments": [{"name": "price-spike", "points": -15, "reason": "x"}]},
+            "explanation": {"scored_checks": [], "adjustments": [{"name": "price-spike", "points": -15, "reason": "x"}]},
             "outcomes": [{"actual_profit": -5.0}],
         })
     with patch.object(db, "leads_with_outcomes", return_value=leads):
@@ -200,7 +195,7 @@ def test_tuning_report_flags_lopsided_pattern_with_enough_samples():
 
 def test_tuning_report_does_not_suggest_below_sample_floor():
     leads = [{
-        "asin": "B0SINGLE", "explanation": {"gates": [], "adjustments": [{"name": "ip-cliff", "points": -20, "reason": "x"}]},
+        "asin": "B0SINGLE", "explanation": {"scored_checks": [], "adjustments": [{"name": "ip-cliff", "points": -20, "reason": "x"}]},
         "outcomes": [{"actual_profit": -5.0}],
     }]
     with patch.object(db, "leads_with_outcomes", return_value=leads):

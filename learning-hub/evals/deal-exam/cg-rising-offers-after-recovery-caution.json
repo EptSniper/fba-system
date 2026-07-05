@@ -1,0 +1,25 @@
+{
+  "id": "cg-rising-offers-after-recovery-caution",
+  "facts": {
+    "price": 38.0,
+    "avg_offers_90": 4.0,
+    "offers": 6.0,
+    "oa_profit": 5.58,
+    "oa_roi": 0.24,
+    "category": null,
+    "brand": "UnspecifiedBrand",
+    "buybox_seller": "ThirdPartySellerCo"
+  },
+  "expected_verdict": "pass",
+  "expected_hard_reject": false,
+  "expected_hard_reject_keyword": null,
+  "expected_adjustment_names": [
+    "offers-rising"
+  ],
+  "expected_failed_check_names": [
+    "roi"
+  ],
+  "trap_type": "chart-guide:offers-rising-plus-roi-miss",
+  "source": "Keepa Charts The Ultimate Amazon FBA Tutorial for 2026.txt @65:29 \u2014 seller count climbing again (1->6, ratio 1.5 over our 1.4x trigger) after a prior recovery, price starting to fall; $5.58 profit/24% ROI (below our 30% floor); narrator: 'I'm probably going to hold on for this one.'",
+  "difficulty": "medium"
+}

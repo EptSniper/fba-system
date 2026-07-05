@@ -1,0 +1,1583 @@
+{
+  "$comment": "TOP-100 OA deal sources registry — SINGLE SOURCE for the deal finder's daily watch. Compiled from web research 2026-07-04 (sources: ClearTheShelf, OABeans Dec-2025, Seller Assistant, Tactical Arbitrage site list, SourceMogul, Ippei, Aura 2026). Detection methods are FREE and ToS-clean only. detect codes: sd-rss = Slickdeals search RSS (newsearch.php?searcharea=deals&searchin=first&rss=1&q=<q>); clr = official clearance/sale page, ONE polite fetch/day (respect robots.txt, honest UA, conditional GET); api = official free API; aff = affiliate product feed (free, needs approval — network named); nl = newsletter-only (manual); none = manual/RA only. flags: C = cancels/limits reseller-pattern orders; AVOID = brand on our avoid list, signal-only never source; VERIFY = URL/network unverified, confirm on first wire-up; IP = elevated IP-complaint brand, check eligibility first. Consumed by scout/deals (T1 prompt in TOP100_DEAL_WATCH_PLAN.md). Edit via the fba-brain-updater conventions (provenance + journal).",
+  "updated": "2026-07-04 (Claude Code: fixed Target clr URL /c/clearance -> /c/clearance/-/N-5q0ga [old one 404s, verified via web], cleared its VERIFY flag; deal-watch source-status handling added — clr URLs that 403 twice consecutively retire to sd-rss-only)",
+  "aggregates": [
+    {
+      "name": "Slickdeals frontpage",
+      "url": "https://slickdeals.net/newsearch.php?mode=frontpage&searcharea=deals&searchin=first&rss=1",
+      "method": "rss",
+      "note": "community-vetted firehose covering effectively all 100 stores"
+    },
+    {
+      "name": "Slickdeals per-store",
+      "urlPattern": "https://slickdeals.net/newsearch.php?searcharea=deals&searchin=first&rss=1&q={query}",
+      "method": "rss",
+      "note": "the per-store workhorse; q = store name"
+    },
+    {
+      "name": "Reddit deals subs",
+      "urls": [
+        "https://www.reddit.com/r/deals/.rss",
+        "https://www.reddit.com/r/GameDeals/.rss",
+        "https://www.reddit.com/r/buildapcsales/.rss",
+        "https://www.reddit.com/r/frugalmalefashion/.rss"
+      ],
+      "method": "rss",
+      "note": "descriptive User-Agent required; r/legodeal name VERIFY"
+    },
+    {
+      "name": "DealNews category feeds",
+      "url": "https://www.dealnews.com/info/rss/",
+      "method": "rss",
+      "flags": [
+        "VERIFY"
+      ],
+      "note": "editor-curated, spans most Tier 1-2; confirm exact feed URLs"
+    },
+    {
+      "name": "Woot API",
+      "url": "https://developer.woot.com",
+      "method": "api",
+      "note": "official free API, Amazon-side closeouts"
+    }
+  ],
+  "tier1": [
+    {
+      "rank": 1,
+      "name": "Walmart",
+      "domain": "walmart.com",
+      "cats": [
+        "toys",
+        "grocery",
+        "home",
+        "hba"
+      ],
+      "edge": "deepest clearance + rollbacks + price mistakes",
+      "detect": [
+        "sd-rss:walmart",
+        "clr:https://www.walmart.com/shop/deals",
+        "aff:impact"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 2,
+      "name": "Target",
+      "domain": "target.com",
+      "cats": [
+        "toys",
+        "home",
+        "beauty",
+        "grocery"
+      ],
+      "edge": "weekly clearance cadence, Circle offers, gift-card promos",
+      "detect": [
+        "sd-rss:target",
+        "clr:https://www.target.com/c/clearance/-/N-5q0ga",
+        "aff:impact"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 3,
+      "name": "Kohl's",
+      "domain": "kohls.com",
+      "cats": [
+        "toys",
+        "kitchen",
+        "home",
+        "apparel"
+      ],
+      "edge": "code stacking + Kohl's Cash, forgiving cancellations",
+      "detect": [
+        "sd-rss:kohls",
+        "clr:https://www.kohls.com/sale-event/clearance.jsp",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 4,
+      "name": "Home Depot",
+      "domain": "homedepot.com",
+      "cats": [
+        "tools",
+        "hardware",
+        "seasonal"
+      ],
+      "edge": "Special Buy of the Day + clearance cycles, tax-exempt friendly",
+      "detect": [
+        "clr:https://www.homedepot.com/SpecialBuy/SpecialBuyOfTheDay",
+        "sd-rss:home depot",
+        "aff:impact"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 5,
+      "name": "Lowe's",
+      "domain": "lowes.com",
+      "cats": [
+        "tools",
+        "appliances",
+        "cleaning",
+        "pet"
+      ],
+      "edge": "deep clearance, tax-exempt program",
+      "detect": [
+        "sd-rss:lowes",
+        "clr:VERIFY",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 6,
+      "name": "Best Buy",
+      "domain": "bestbuy.com",
+      "cats": [
+        "electronics",
+        "appliances"
+      ],
+      "edge": "ONLY full official retailer API (onSale/openBox flags + UPC)",
+      "detect": [
+        "api:https://developer.bestbuy.com",
+        "sd-rss:best buy",
+        "aff:impact"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 7,
+      "name": "Walgreens",
+      "domain": "walgreens.com",
+      "cats": [
+        "beauty",
+        "hba",
+        "vitamins"
+      ],
+      "edge": "BOGO + myWalgreens stacking, reseller-gentle",
+      "detect": [
+        "sd-rss:walgreens",
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 8,
+      "name": "CVS",
+      "domain": "cvs.com",
+      "cats": [
+        "hba",
+        "vitamins"
+      ],
+      "edge": "ExtraBucks + coupon stacking",
+      "detect": [
+        "clr:https://www.cvs.com/shop/sale",
+        "sd-rss:cvs",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 9,
+      "name": "Chewy",
+      "domain": "chewy.com",
+      "cats": [
+        "pet"
+      ],
+      "edge": "top OA pet source, rarely cancels",
+      "detect": [
+        "clr:https://www.chewy.com/deals",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 10,
+      "name": "GameStop",
+      "domain": "gamestop.com",
+      "cats": [
+        "games",
+        "collectibles",
+        "plush"
+      ],
+      "edge": "brutal clearance cycles",
+      "detect": [
+        "sd-rss:gamestop",
+        "clr:https://www.gamestop.com/deals"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 11,
+      "name": "Macy's",
+      "domain": "macys.com",
+      "cats": [
+        "beauty",
+        "home",
+        "toys",
+        "apparel"
+      ],
+      "edge": "stackable promos + Backstage",
+      "detect": [
+        "sd-rss:macys",
+        "clr:VERIFY",
+        "aff:VERIFY"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 12,
+      "name": "JCPenney",
+      "domain": "jcpenney.com",
+      "cats": [
+        "bedding",
+        "home",
+        "toys"
+      ],
+      "edge": "coupon stacking, huge clearance",
+      "detect": [
+        "sd-rss:jcpenney",
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 13,
+      "name": "Sam's Club",
+      "domain": "samsclub.com",
+      "cats": [
+        "grocery",
+        "hba"
+      ],
+      "edge": "Instant Savings, multipack ASIN plays, tax-exempt",
+      "detect": [
+        "sd-rss:sams club",
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 14,
+      "name": "Costco",
+      "domain": "costco.com",
+      "cats": [
+        "grocery",
+        "seasonal",
+        "toys"
+      ],
+      "edge": "Hot Buys / monthly savings",
+      "detect": [
+        "clr:https://www.costco.com/hot-buys.html",
+        "sd-rss:costco"
+      ],
+      "flags": [
+        "C",
+        "VERIFY"
+      ]
+    },
+    {
+      "rank": 15,
+      "name": "BJ's Wholesale",
+      "domain": "bjs.com",
+      "cats": [
+        "grocery",
+        "hba"
+      ],
+      "edge": "Sam's profile, lower competition",
+      "detect": [
+        "clr:VERIFY",
+        "sd-rss:bjs"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 16,
+      "name": "Dick's Sporting Goods",
+      "domain": "dickssportinggoods.com",
+      "cats": [
+        "sporting",
+        "shoes",
+        "fan gear"
+      ],
+      "edge": "ScoreCard + deep clearance",
+      "detect": [
+        "sd-rss:dicks",
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 17,
+      "name": "Ulta",
+      "domain": "ulta.com",
+      "cats": [
+        "beauty"
+      ],
+      "edge": "21 Days of Beauty, GWPs",
+      "detect": [
+        "sd-rss:ulta",
+        "clr:VERIFY"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 18,
+      "name": "Bath & Body Works",
+      "domain": "bathandbodyworks.com",
+      "cats": [
+        "hpc",
+        "candles"
+      ],
+      "edge": "Semi-Annual Sale (Jan/June) is an OA event",
+      "detect": [
+        "sd-rss:bath body works",
+        "clr:https://www.bathandbodyworks.com/c/sale"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 19,
+      "name": "Michaels",
+      "domain": "michaels.com",
+      "cats": [
+        "crafts",
+        "kids",
+        "seasonal"
+      ],
+      "edge": "rotating 40-70% clearance + coupons",
+      "detect": [
+        "sd-rss:michaels",
+        "clr:VERIFY",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 20,
+      "name": "Barnes & Noble",
+      "domain": "barnesandnoble.com",
+      "cats": [
+        "books",
+        "toys",
+        "games"
+      ],
+      "edge": "50% toy clearances",
+      "detect": [
+        "sd-rss:barnes noble",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 21,
+      "name": "Office Depot",
+      "domain": "officedepot.com",
+      "cats": [
+        "office",
+        "tech"
+      ],
+      "edge": "deep clearance, tax-exempt friendly",
+      "detect": [
+        "sd-rss:office depot",
+        "clr:VERIFY",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 22,
+      "name": "Staples",
+      "domain": "staples.com",
+      "cats": [
+        "office",
+        "tech"
+      ],
+      "edge": "same profile as Office Depot",
+      "detect": [
+        "sd-rss:staples",
+        "clr:https://www.staples.com/deals"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 23,
+      "name": "Academy Sports",
+      "domain": "academy.com",
+      "cats": [
+        "sporting",
+        "outdoor",
+        "toys"
+      ],
+      "edge": "strong clearance, lower coastal competition",
+      "detect": [
+        "sd-rss:academy",
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 24,
+      "name": "Petco",
+      "domain": "petco.com",
+      "cats": [
+        "pet"
+      ],
+      "edge": "sales + repeat-delivery promos",
+      "detect": [
+        "clr:VERIFY",
+        "sd-rss:petco"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 25,
+      "name": "PetSmart",
+      "domain": "petsmart.com",
+      "cats": [
+        "pet"
+      ],
+      "edge": "clearance + loyalty offers",
+      "detect": [
+        "clr:https://www.petsmart.com/sale/",
+        "sd-rss:petsmart"
+      ],
+      "flags": []
+    }
+  ],
+  "tier2": [
+    {
+      "rank": 26,
+      "name": "Ace Hardware",
+      "domain": "acehardware.com",
+      "cats": [
+        "tools",
+        "grill",
+        "home"
+      ],
+      "edge": "Red Hot Buys monthly",
+      "detect": [
+        "clr:VERIFY",
+        "sd-rss:ace hardware"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 27,
+      "name": "Tractor Supply",
+      "domain": "tractorsupply.com",
+      "cats": [
+        "farm",
+        "pet",
+        "tools",
+        "toys"
+      ],
+      "edge": "low OA competition",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 28,
+      "name": "Menards",
+      "domain": "menards.com",
+      "cats": [
+        "hardware",
+        "home"
+      ],
+      "edge": "11% rebate events; rebate math is the edge",
+      "detect": [
+        "sd-rss:menards",
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 29,
+      "name": "Northern Tool",
+      "domain": "northerntool.com",
+      "cats": [
+        "tools",
+        "equipment"
+      ],
+      "edge": "niche tool clearance",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 30,
+      "name": "Zoro",
+      "domain": "zoro.com",
+      "cats": [
+        "tools",
+        "industrial"
+      ],
+      "edge": "constant 15-25% codes, never hassles resellers",
+      "detect": [
+        "nl",
+        "sd-rss:zoro"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 31,
+      "name": "WebstaurantStore",
+      "domain": "webstaurantstore.com",
+      "cats": [
+        "kitchen",
+        "restaurant"
+      ],
+      "edge": "odd catalog = low competition",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 32,
+      "name": "Hobby Lobby",
+      "domain": "hobbylobby.com",
+      "cats": [
+        "crafts",
+        "seasonal"
+      ],
+      "edge": "rotating 40%-off category weeks",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 33,
+      "name": "Woot",
+      "domain": "woot.com",
+      "cats": [
+        "closeouts",
+        "electronics"
+      ],
+      "edge": "Amazon-owned daily closeouts",
+      "detect": [
+        "api:https://developer.woot.com"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 34,
+      "name": "Sierra",
+      "domain": "sierra.com",
+      "cats": [
+        "outdoor",
+        "apparel",
+        "gear"
+      ],
+      "edge": "TJX off-price; whole site is clearance",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 35,
+      "name": "T.J. Maxx",
+      "domain": "tjmaxx.tjx.com",
+      "cats": [
+        "home",
+        "beauty",
+        "toys"
+      ],
+      "edge": "off-price, ships",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 36,
+      "name": "Marshalls",
+      "domain": "marshalls.com",
+      "cats": [
+        "home",
+        "apparel"
+      ],
+      "edge": "off-price, ships since 2019",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 37,
+      "name": "Nordstrom Rack",
+      "domain": "nordstromrack.com",
+      "cats": [
+        "apparel",
+        "beauty",
+        "shoes"
+      ],
+      "edge": "Clear-the-Rack extra 25% events",
+      "detect": [
+        "nl",
+        "sd-rss:nordstrom rack"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 38,
+      "name": "Boscov's",
+      "domain": "boscovs.com",
+      "cats": [
+        "home",
+        "toys",
+        "apparel"
+      ],
+      "edge": "regional dept store, low-competition gem",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 39,
+      "name": "Belk",
+      "domain": "belk.com",
+      "cats": [
+        "apparel",
+        "home"
+      ],
+      "edge": "Southern dept store, big code stacking",
+      "detect": [
+        "sd-rss:belk",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 40,
+      "name": "Bealls",
+      "domain": "bealls.com",
+      "cats": [
+        "apparel",
+        "home"
+      ],
+      "edge": "off-price, ships",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 41,
+      "name": "Big Lots",
+      "domain": "biglots.com",
+      "cats": [
+        "closeouts"
+      ],
+      "edge": "closeouts; relaunched post-2024 bankruptcy",
+      "detect": [
+        "nl",
+        "sd-rss:big lots"
+      ],
+      "flags": [
+        "VERIFY"
+      ]
+    },
+    {
+      "rank": 42,
+      "name": "Five Below",
+      "domain": "fivebelow.com",
+      "cats": [
+        "toys",
+        "novelty"
+      ],
+      "edge": "multipack bundle plays",
+      "detect": [
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 43,
+      "name": "Dollar Tree",
+      "domain": "dollartree.com",
+      "cats": [
+        "variety"
+      ],
+      "edge": "online case packs = built-in multipacks",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 44,
+      "name": "Dollar General",
+      "domain": "dollargeneral.com",
+      "cats": [
+        "hba",
+        "toys"
+      ],
+      "edge": "clearance + penny-list culture",
+      "detect": [
+        "nl",
+        "sd-rss:dollar general"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 45,
+      "name": "Kroger",
+      "domain": "kroger.com",
+      "cats": [
+        "grocery",
+        "hba"
+      ],
+      "edge": "digital coupons; owns Vitacost",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 46,
+      "name": "Meijer",
+      "domain": "meijer.com",
+      "cats": [
+        "grocery",
+        "toys"
+      ],
+      "edge": "Midwest big-box, mPerks",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 47,
+      "name": "H-E-B",
+      "domain": "heb.com",
+      "cats": [
+        "grocery"
+      ],
+      "edge": "cult TX brands resell well; ships shelf-stable",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 48,
+      "name": "Hy-Vee",
+      "domain": "hy-vee.com",
+      "cats": [
+        "grocery"
+      ],
+      "edge": "regional grocer = low competition",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 49,
+      "name": "Vitacost",
+      "domain": "vitacost.com",
+      "cats": [
+        "grocery",
+        "supplements"
+      ],
+      "edge": "constant 20% codes, reseller-tolerant",
+      "detect": [
+        "nl",
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 50,
+      "name": "Vitamin Shoppe",
+      "domain": "vitaminshoppe.com",
+      "cats": [
+        "supplements"
+      ],
+      "edge": "BOGO cycles",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 51,
+      "name": "GNC",
+      "domain": "gnc.com",
+      "cats": [
+        "supplements"
+      ],
+      "edge": "deep sale section",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 52,
+      "name": "iHerb",
+      "domain": "iherb.com",
+      "cats": [
+        "supplements",
+        "hba"
+      ],
+      "edge": "weekly brand sales; watch expiry dates",
+      "detect": [
+        "clr:https://www.iherb.com/specials",
+        "nl"
+      ],
+      "flags": [
+        "VERIFY"
+      ]
+    },
+    {
+      "rank": 53,
+      "name": "Sally Beauty",
+      "domain": "sallybeauty.com",
+      "cats": [
+        "beauty"
+      ],
+      "edge": "salon brands",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 54,
+      "name": "Sephora",
+      "domain": "sephora.com",
+      "cats": [
+        "beauty"
+      ],
+      "edge": "sale events; heavy Amazon-side gating",
+      "detect": [
+        "nl",
+        "aff:rakuten"
+      ],
+      "flags": [
+        "C",
+        "IP"
+      ]
+    },
+    {
+      "rank": 55,
+      "name": "Hot Topic",
+      "domain": "hottopic.com",
+      "cats": [
+        "pop-culture",
+        "plush"
+      ],
+      "edge": "licensed collectibles + Funko",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 56,
+      "name": "Disney Store",
+      "domain": "disneystore.com",
+      "cats": [
+        "toys",
+        "plush"
+      ],
+      "edge": "exclusives; twice-yearly sales; Disney is avoid-listed as a BRAND on Amazon (ai-brain.json brands.avoid) — signal-only, never a source",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": [
+        "AVOID",
+        "C",
+        "IP"
+      ]
+    },
+    {
+      "rank": 57,
+      "name": "Build-A-Bear",
+      "domain": "buildabear.com",
+      "cats": [
+        "plush"
+      ],
+      "edge": "online-exclusive collabs flip hard",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 58,
+      "name": "DSW",
+      "domain": "dsw.com",
+      "cats": [
+        "shoes"
+      ],
+      "edge": "clearance + VIP certs",
+      "detect": [
+        "sd-rss:dsw",
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 59,
+      "name": "Famous Footwear",
+      "domain": "famousfootwear.com",
+      "cats": [
+        "shoes"
+      ],
+      "edge": "BOGO-half cycles",
+      "detect": [
+        "nl",
+        "sd-rss:famous footwear"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 60,
+      "name": "6pm",
+      "domain": "6pm.com",
+      "cats": [
+        "shoes",
+        "apparel"
+      ],
+      "edge": "Zappos outlet; whole site is clearance",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    }
+  ],
+  "tier3": [
+    {
+      "rank": 61,
+      "name": "Nike",
+      "domain": "nike.com",
+      "cats": [
+        "shoes",
+        "apparel"
+      ],
+      "edge": "SIGNAL ONLY — avoid-listed brand, top IP filer",
+      "detect": [
+        "sd-rss:nike"
+      ],
+      "flags": [
+        "AVOID",
+        "C",
+        "IP"
+      ]
+    },
+    {
+      "rank": 62,
+      "name": "adidas",
+      "domain": "adidas.com",
+      "cats": [
+        "shoes",
+        "apparel"
+      ],
+      "edge": "SIGNAL ONLY — avoid-listed",
+      "detect": [
+        "sd-rss:adidas"
+      ],
+      "flags": [
+        "AVOID",
+        "C",
+        "IP"
+      ]
+    },
+    {
+      "rank": 63,
+      "name": "Carter's / OshKosh",
+      "domain": "carters.com",
+      "cats": [
+        "baby",
+        "kids apparel"
+      ],
+      "edge": "THE clothing-OA store: doorbusters + stacking, reseller-tolerant; friendly-listed brand",
+      "detect": [
+        "clr:VERIFY",
+        "nl",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 64,
+      "name": "Gap Factory",
+      "domain": "gapfactory.com",
+      "cats": [
+        "apparel"
+      ],
+      "edge": "outlet + constant extra-%-off; friendly-listed brand",
+      "detect": [
+        "nl",
+        "sd-rss:gap factory"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 65,
+      "name": "Old Navy",
+      "domain": "oldnavy.gap.com",
+      "cats": [
+        "apparel",
+        "kids"
+      ],
+      "edge": "Sun/Mon markdown cadence; kids multipacks",
+      "detect": [
+        "nl",
+        "sd-rss:old navy"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 66,
+      "name": "Crocs",
+      "domain": "crocs.com",
+      "cats": [
+        "footwear"
+      ],
+      "edge": "flash sales + Jibbitz; friendly-listed but verify eligibility",
+      "detect": [
+        "nl",
+        "sd-rss:crocs"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 67,
+      "name": "LEGO",
+      "domain": "lego.com",
+      "cats": [
+        "toys"
+      ],
+      "edge": "retiring-set + GWP arbitrage; friendly-listed; strict qty caps",
+      "detect": [
+        "clr:https://www.lego.com/en-us/categories/sales-and-deals",
+        "aff:rakuten"
+      ],
+      "flags": [
+        "C"
+      ]
+    },
+    {
+      "rank": 68,
+      "name": "Under Armour Outlet",
+      "domain": "underarmour.com",
+      "cats": [
+        "apparel"
+      ],
+      "edge": "outlet extra-%-off codes; friendly-listed",
+      "detect": [
+        "nl",
+        "sd-rss:under armour",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 69,
+      "name": "PUMA",
+      "domain": "us.puma.com",
+      "cats": [
+        "shoes",
+        "apparel"
+      ],
+      "edge": "frequent 30-50% + stack codes; friendly-listed",
+      "detect": [
+        "nl",
+        "sd-rss:puma"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 70,
+      "name": "Joe's New Balance Outlet",
+      "domain": "joesnewbalanceoutlet.com",
+      "cats": [
+        "shoes"
+      ],
+      "edge": "legendary OA shoe outlet; Daily Deals page; New Balance friendly-listed",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 71,
+      "name": "Skechers",
+      "domain": "skechers.com",
+      "cats": [
+        "shoes"
+      ],
+      "edge": "core-SKU replens",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 72,
+      "name": "Columbia",
+      "domain": "columbia.com",
+      "cats": [
+        "outdoor apparel"
+      ],
+      "edge": "web-specials outlet",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 73,
+      "name": "The North Face",
+      "domain": "thenorthface.com",
+      "cats": [
+        "outdoor apparel"
+      ],
+      "edge": "outlet/last-chance; IP-cautious brand",
+      "detect": [
+        "nl"
+      ],
+      "flags": [
+        "IP"
+      ]
+    },
+    {
+      "rank": 74,
+      "name": "Levi's",
+      "domain": "levi.com",
+      "cats": [
+        "apparel"
+      ],
+      "edge": "deep stackable sale codes",
+      "detect": [
+        "nl",
+        "sd-rss:levis"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 75,
+      "name": "Lands' End",
+      "domain": "landsend.com",
+      "cats": [
+        "apparel"
+      ],
+      "edge": "perpetual %-off codes",
+      "detect": [
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 76,
+      "name": "Eddie Bauer",
+      "domain": "eddiebauer.com",
+      "cats": [
+        "apparel",
+        "outdoor"
+      ],
+      "edge": "50-60% clearance events",
+      "detect": [
+        "nl",
+        "sd-rss:eddie bauer"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 77,
+      "name": "Carhartt",
+      "domain": "carhartt.com",
+      "cats": [
+        "workwear"
+      ],
+      "edge": "rare sales, instant sell-through; IP-cautious",
+      "detect": [
+        "nl"
+      ],
+      "flags": [
+        "IP"
+      ]
+    },
+    {
+      "rank": 78,
+      "name": "Hasbro Pulse",
+      "domain": "hasbropulse.com",
+      "cats": [
+        "toys"
+      ],
+      "edge": "brand-direct sales + exclusives",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 79,
+      "name": "Mattel Shop",
+      "domain": "shop.mattel.com",
+      "cats": [
+        "toys"
+      ],
+      "edge": "Hot Wheels/Barbie direct clearance; Hot Wheels friendly-listed",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 80,
+      "name": "Melissa & Doug",
+      "domain": "melissaanddoug.com",
+      "cats": [
+        "toys"
+      ],
+      "edge": "Shopify sale collection = clean fetch",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 81,
+      "name": "Learning Resources",
+      "domain": "learningresources.com",
+      "cats": [
+        "edu toys"
+      ],
+      "edge": "sale/clearance page",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 82,
+      "name": "Fat Brain Toys",
+      "domain": "fatbraintoys.com",
+      "cats": [
+        "specialty toys"
+      ],
+      "edge": "low competition clearance",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 83,
+      "name": "Entertainment Earth",
+      "domain": "entertainmentearth.com",
+      "cats": [
+        "collectibles"
+      ],
+      "edge": "big clearance + affiliate program",
+      "detect": [
+        "clr:VERIFY",
+        "nl",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 84,
+      "name": "BigBadToyStore",
+      "domain": "bigbadtoystore.com",
+      "cats": [
+        "collectibles"
+      ],
+      "edge": "collectibles clearance",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 85,
+      "name": "Yankee Candle",
+      "domain": "yankeecandle.com",
+      "cats": [
+        "candles"
+      ],
+      "edge": "Semi-Annual Sale = OA feeding frenzy",
+      "detect": [
+        "nl",
+        "sd-rss:yankee candle"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 86,
+      "name": "e.l.f. Cosmetics",
+      "domain": "elfcosmetics.com",
+      "cats": [
+        "beauty"
+      ],
+      "edge": "cheap beauty, sale + GWP",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 87,
+      "name": "Sur La Table",
+      "domain": "surlatable.com",
+      "cats": [
+        "kitchen"
+      ],
+      "edge": "deep clearance on premium brands",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 88,
+      "name": "Zwilling",
+      "domain": "zwilling.com",
+      "cats": [
+        "kitchen"
+      ],
+      "edge": "Staub/Henckels flash sales",
+      "detect": [
+        "nl",
+        "sd-rss:zwilling"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 89,
+      "name": "Le Creuset",
+      "domain": "lecreuset.com",
+      "cats": [
+        "kitchen"
+      ],
+      "edge": "Factory-to-Table events",
+      "detect": [
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 90,
+      "name": "Lodge Cast Iron",
+      "domain": "lodgecastiron.com",
+      "cats": [
+        "kitchen"
+      ],
+      "edge": "factory seconds/sales",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 91,
+      "name": "Corelle Brands",
+      "domain": "corelle.com",
+      "cats": [
+        "dinnerware"
+      ],
+      "edge": "Shopify sale collections",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 92,
+      "name": "REI Outlet",
+      "domain": "rei.com",
+      "cats": [
+        "outdoor"
+      ],
+      "edge": "gear clearance",
+      "detect": [
+        "clr:https://www.rei.com/outlet",
+        "aff:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 93,
+      "name": "Bass Pro / Cabela's",
+      "domain": "basspro.com",
+      "cats": [
+        "outdoor"
+      ],
+      "edge": "Bargain Cave clearance",
+      "detect": [
+        "clr:VERIFY",
+        "sd-rss:bass pro"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 94,
+      "name": "Scheels",
+      "domain": "scheels.com",
+      "cats": [
+        "sporting"
+      ],
+      "edge": "regional, low competition",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 95,
+      "name": "Blain's Farm & Fleet",
+      "domain": "farmandfleet.com",
+      "cats": [
+        "farm",
+        "toys",
+        "tools"
+      ],
+      "edge": "Midwest farm-store gem, ships nationally",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 96,
+      "name": "Rural King",
+      "domain": "ruralking.com",
+      "cats": [
+        "farm",
+        "tools"
+      ],
+      "edge": "same farm-store profile",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 97,
+      "name": "B&H Photo",
+      "domain": "bhphotovideo.com",
+      "cats": [
+        "electronics"
+      ],
+      "edge": "Deal Zone daily page is script-friendly",
+      "detect": [
+        "clr:VERIFY",
+        "sd-rss:b&h"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 98,
+      "name": "Adorama",
+      "domain": "adorama.com",
+      "cats": [
+        "electronics"
+      ],
+      "edge": "daily deals",
+      "detect": [
+        "clr:VERIFY",
+        "nl"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 99,
+      "name": "Monoprice",
+      "domain": "monoprice.com",
+      "cats": [
+        "electronics"
+      ],
+      "edge": "closeouts",
+      "detect": [
+        "nl",
+        "sd-rss:monoprice"
+      ],
+      "flags": []
+    },
+    {
+      "rank": 100,
+      "name": "Martie",
+      "domain": "martie.com",
+      "cats": [
+        "grocery closeouts"
+      ],
+      "edge": "online Grocery Outlet; genuinely low competition; Shopify new-arrivals",
+      "detect": [
+        "clr:VERIFY"
+      ],
+      "flags": []
+    }
+  ],
+  "dead": [
+    "Joann (liquidated 2025)",
+    "Rite Aid (liquidated 2025)",
+    "Tuesday Morning",
+    "Christmas Tree Shops",
+    "LuckyVitamin",
+    "Boxed",
+    "Sears/Kmart (functionally dead)",
+    "HomeGoods ecom (shut 2023)",
+    "Ollie's (no ecom — RA only)",
+    "Grocery Outlet (no ecom — RA only)",
+    "Burlington/Ross (no ecom — RA only)"
+  ]
+}

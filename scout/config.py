@@ -141,6 +141,13 @@ OA_GROCERY_MIN_ROI: float = _f("OA_GROCERY_MIN_ROI", 0.25)
 REFERRAL_RATES: dict = {"default": 0.15}
 MIN_REFERRAL_FEE: float = _f("MIN_REFERRAL_FEE", 0.30)
 
+# Price-banded referral rates for categories where a single flat rate is wrong (Code Review
+# 2026-07-02, Finding CS6) — e.g. grocery is really 8% at/below $15 and 15% above it, and most
+# of the $8-$60 OA price band sits above $15, so the old flat 0.08 overstated profit/ROI there.
+# {category: {"priceThreshold": float, "atOrBelowThreshold": float, "aboveThreshold": float}}.
+# Loaded from ai-brain.json's fees.bandedRates; empty (no banding) if the brain has none.
+BANDED_REFERRAL_RATES: dict = {}
+
 # The 5-7 seller "goldilocks" offer band: a scoring BONUS (not a gate — the hard band stays
 # CRITERIA_OA["min_offers"]/["max_offers"], 3-25). From ai-brain.json scoring.preferredOffers.
 PREFERRED_OFFERS: dict = {"min": 5, "max": 7, "bonus": 5}
@@ -166,6 +173,36 @@ TRIAGE_STRESSED_PRICE_FACTOR: float = _f("TRIAGE_STRESSED_PRICE_FACTOR", 0.90)
 OPERATIONS: dict = {}
 POLICY_2026: dict = {}
 
+# ----------------------------------------------------------------------------
+# Scoring adjustment magnitudes, IP-cliff shape, worst-case-loss bar, and the assumed daily
+# Keepa token budget — defaults match scoring.py's historical hardcoded values exactly.
+# ai-brain.json's scoring.adjustments/ipCliffShape/worstCaseLossBarUsd/scoreThreshold/topN/
+# assumedDailyTokens can override any of these (Code Review 2026-07-02, Finding S5) so a
+# tuning change is a brain edit, not a code edit.
+# ----------------------------------------------------------------------------
+OA_ADJ_FRIENDLY_BRAND: float = _f("OA_ADJ_FRIENDLY_BRAND", 5.0)
+OA_ADJ_PRICE_SPIKE: float = _f("OA_ADJ_PRICE_SPIKE", -15.0)
+OA_ADJ_PRICE_CAUTION: float = _f("OA_ADJ_PRICE_CAUTION", -5.0)
+OA_ADJ_OFFERS_RISING: float = _f("OA_ADJ_OFFERS_RISING", -12.0)
+OA_ADJ_AMAZON_SHARES_BUYBOX: float = _f("OA_ADJ_AMAZON_SHARES_BUYBOX", -10.0)
+OA_ADJ_IP_CLIFF: float = _f("OA_ADJ_IP_CLIFF", -20.0)
+OA_ADJ_WORST_CASE_LOSS: float = _f("OA_ADJ_WORST_CASE_LOSS", -10.0)
+OA_ADJ_NO_FEATURED_OFFER: float = _f("OA_ADJ_NO_FEATURED_OFFER", -8.0)
+OA_ADJ_GENERIC_BRAND: float = _f("OA_ADJ_GENERIC_BRAND", -8.0)
+
+# IP-cliff shape: a listing is "cliffed" when its 90-day avg offer count was once >= this
+# (a real crowd existed) and its CURRENT offer count has collapsed to <= this.
+OA_IP_CLIFF_MIN_AVG_OFFERS: float = _f("OA_IP_CLIFF_MIN_AVG_OFFERS", 8.0)
+OA_IP_CLIFF_MAX_CURRENT_OFFERS: float = _f("OA_IP_CLIFF_MAX_CURRENT_OFFERS", 2.0)
+
+# A loss <= this ($/unit) at the 90-day low Buy-Box price is tolerated without penalty; above
+# it applies OA_ADJ_WORST_CASE_LOSS.
+OA_WORST_CASE_LOSS_BAR: float = _f("OA_WORST_CASE_LOSS_BAR", 2.0)
+
+# System Blueprint's assumed daily Keepa token budget — propose_updates.py flags a real drift
+# against this in the weekly brain-proposal report.
+ASSUMED_DAILY_TOKENS: int = _i("ASSUMED_DAILY_TOKENS", 7500)
+
 # SINGLE SOURCE OF TRUTH: ai-brain.json's `criteria` override the defaults above (same
 # file the control center reads). Feed Claude new guidance -> brain updates -> the rater's
 # thresholds change too. Falls back to defaults/.env if the brain is absent.
@@ -174,6 +211,13 @@ def _load_oa_criteria_from_brain() -> None:
     global OA_GROCERY_MIN_ROI, REFERRAL_RATES, MIN_REFERRAL_FEE, PREFERRED_OFFERS
     global RESTRICTION_KEYWORDS, OA_PRICE_CAUTION_RATIO, OPERATIONS, POLICY_2026
     global TRIAGE_STRESSED_PRICE_FACTOR
+    global OA_ADJ_FRIENDLY_BRAND, OA_ADJ_PRICE_SPIKE, OA_ADJ_PRICE_CAUTION, OA_ADJ_OFFERS_RISING
+    global OA_ADJ_AMAZON_SHARES_BUYBOX, OA_ADJ_IP_CLIFF, OA_ADJ_WORST_CASE_LOSS
+    global OA_ADJ_NO_FEATURED_OFFER, OA_ADJ_GENERIC_BRAND
+    global OA_IP_CLIFF_MIN_AVG_OFFERS, OA_IP_CLIFF_MAX_CURRENT_OFFERS, OA_WORST_CASE_LOSS_BAR
+    global SCORE_THRESHOLD, TOP_N, ASSUMED_DAILY_TOKENS
+    global FUEL_SURCHARGE, OA_PREP_COST
+    global BANDED_REFERRAL_RATES
     import json
     import os as _os
     path = _os.path.join(_os.path.dirname(__file__), "..", "learning-hub", "data", "ai-brain.json")
@@ -226,25 +270,85 @@ def _load_oa_criteria_from_brain() -> None:
             REFERRAL_RATES.setdefault("default", 0.15)
         if isinstance(fees.get("minReferralFee"), (int, float)):
             MIN_REFERRAL_FEE = float(fees["minReferralFee"])
+        # Price-banded rates (Finding CS6) — categories where a flat rate is wrong (e.g. grocery:
+        # 8% at/below a price threshold, 15% above it).
+        banded = fees.get("bandedRates", {}) or {}
+        if isinstance(banded, dict) and banded:
+            parsed_bands = {}
+            for cat, band in banded.items():
+                if not isinstance(band, dict):
+                    continue
+                required = ("priceThreshold", "atOrBelowThreshold", "aboveThreshold")
+                if all(isinstance(band.get(k), (int, float)) for k in required):
+                    parsed_bands[cat] = {k: float(band[k]) for k in required}
+            if parsed_bands:
+                BANDED_REFERRAL_RATES = parsed_bands
+        # Fuel surcharge + prep cost (Finding S6) — single-sourced with the control-center's
+        # deal-analyzer.tsx so a fee-schedule change is one brain edit, not two hardcoded
+        # constants drifting apart.
+        if isinstance(fees.get("fuelSurcharge"), (int, float)):
+            FUEL_SURCHARGE = float(fees["fuelSurcharge"])
+        if isinstance(fees.get("prepCost"), (int, float)):
+            OA_PREP_COST = float(fees["prepCost"])
+        scoring_block = brain.get("scoring", {}) or {}
         # Preferred-offer-band bonus (scoring.preferredOffers).
-        pref = brain.get("scoring", {}).get("preferredOffers", {}) or {}
+        pref = scoring_block.get("preferredOffers", {}) or {}
         if isinstance(pref, dict) and pref:
             PREFERRED_OFFERS = {
                 "min": int(pref.get("min", PREFERRED_OFFERS["min"])),
                 "max": int(pref.get("max", PREFERRED_OFFERS["max"])),
                 "bonus": float(pref.get("bonus", PREFERRED_OFFERS["bonus"])),
             }
-    except Exception:
-        pass
+        # Scoring adjustment magnitudes (Finding S5) — each key is optional; only overrides the
+        # ones the brain actually sets, everything else keeps its .env/hardcoded default.
+        adj = scoring_block.get("adjustments", {}) or {}
+        _adj_map = {
+            "friendlyBrand": "OA_ADJ_FRIENDLY_BRAND", "priceSpike": "OA_ADJ_PRICE_SPIKE",
+            "priceCaution": "OA_ADJ_PRICE_CAUTION", "offersRising": "OA_ADJ_OFFERS_RISING",
+            "amazonSharesBuybox": "OA_ADJ_AMAZON_SHARES_BUYBOX", "ipCliff": "OA_ADJ_IP_CLIFF",
+            "worstCaseLoss": "OA_ADJ_WORST_CASE_LOSS", "noFeaturedOffer": "OA_ADJ_NO_FEATURED_OFFER",
+            "genericBrand": "OA_ADJ_GENERIC_BRAND",
+        }
+        if isinstance(adj, dict):
+            for bk, var_name in _adj_map.items():
+                if isinstance(adj.get(bk), (int, float)):
+                    globals()[var_name] = float(adj[bk])
+        # IP-cliff shape + worst-case-loss bar.
+        shape = scoring_block.get("ipCliffShape", {}) or {}
+        if isinstance(shape.get("minAvgOffers"), (int, float)):
+            OA_IP_CLIFF_MIN_AVG_OFFERS = float(shape["minAvgOffers"])
+        if isinstance(shape.get("maxCurrentOffers"), (int, float)):
+            OA_IP_CLIFF_MAX_CURRENT_OFFERS = float(shape["maxCurrentOffers"])
+        if isinstance(scoring_block.get("worstCaseLossBarUsd"), (int, float)):
+            OA_WORST_CASE_LOSS_BAR = float(scoring_block["worstCaseLossBarUsd"])
+        # Pipeline behaviour + assumed token budget.
+        if isinstance(scoring_block.get("scoreThreshold"), (int, float)):
+            SCORE_THRESHOLD = float(scoring_block["scoreThreshold"])
+        if isinstance(scoring_block.get("topN"), (int, float)):
+            TOP_N = int(scoring_block["topN"])
+        if isinstance(scoring_block.get("assumedDailyTokens"), (int, float)):
+            ASSUMED_DAILY_TOKENS = int(scoring_block["assumedDailyTokens"])
+    except Exception as e:
+        # Never fatal (the .env/hardcoded defaults still apply), but never silent either — a
+        # malformed ai-brain.json quietly ignored would mean thresholds silently reverting.
+        print(f"[config] WARNING: could not load overrides from ai-brain.json: {e}")
 
 
 _load_oa_criteria_from_brain()
 
 
-def referral_rate_for(category: str | None) -> float:
-    """Category-aware referral rate; falls back to REFERRAL_RATES['default']."""
+def referral_rate_for(category: str | None, price: float | None = None) -> float:
+    """Category-aware referral rate; falls back to REFERRAL_RATES['default'].
+
+    price: optional (Finding CS6) — when given AND the category has a price band in
+    BANDED_REFERRAL_RATES (e.g. grocery: 8% at/below $15, 15% above), returns the banded rate
+    instead of the flat REFERRAL_RATES value, which is wrong on either side of the threshold.
+    Omitting price keeps the old flat-rate behavior exactly (backward compatible)."""
     if category:
         key = str(category).strip().lower().replace(" ", "_").replace("&", "")
+        if price is not None and key in BANDED_REFERRAL_RATES:
+            band = BANDED_REFERRAL_RATES[key]
+            return band["atOrBelowThreshold"] if price <= band["priceThreshold"] else band["aboveThreshold"]
         rate = REFERRAL_RATES.get(key)
         if rate is not None:
             return rate

@@ -8,6 +8,7 @@ wording the report/Discord post rely on.
 import os
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -102,6 +103,109 @@ class TrainAndEvaluateTest(unittest.TestCase):
         import backtest
         train, val = backtest.split_by_asin(rows, val_fraction=0.3)
         self.assertFalse({r["asin"] for r in train} & {r["asin"] for r in val})
+
+
+class TrainingSetFingerprintTest(unittest.TestCase):
+    """Session 55: the skip-if-unchanged cadence guard. The fingerprint must be stable across
+    row REORDERING (Supabase pagination order isn't guaranteed) and must change whenever a row
+    is added or an existing row's content changes (a re-simulated backtest window flipping its
+    label) — a plain row-count comparison would miss the latter."""
+
+    def _row(self, asin="B001", label=True, quality="backtest", sim="2026-01-01"):
+        return {"asin": asin, "source": "backtest", "label": label, "label_quality": quality,
+                "simulation_date": sim}
+
+    def test_same_rows_same_fingerprint_regardless_of_order(self):
+        rows = [self._row("B001"), self._row("B002"), self._row("B003")]
+        fp1 = tr.training_set_fingerprint({"rows": rows})
+        fp2 = tr.training_set_fingerprint({"rows": list(reversed(rows))})
+        self.assertEqual(fp1, fp2)
+
+    def test_new_row_changes_fingerprint(self):
+        base = [self._row("B001"), self._row("B002")]
+        fp1 = tr.training_set_fingerprint({"rows": base})
+        fp2 = tr.training_set_fingerprint({"rows": base + [self._row("B003")]})
+        self.assertNotEqual(fp1, fp2)
+        self.assertEqual(fp2["row_count"], fp1["row_count"] + 1)
+
+    def test_relabeled_row_changes_fingerprint_at_same_row_count(self):
+        """A re-simulated backtest window can flip would_have_profited without adding a row —
+        row_count alone would miss this; the content hash must not."""
+        fp1 = tr.training_set_fingerprint({"rows": [self._row("B001", label=True)]})
+        fp2 = tr.training_set_fingerprint({"rows": [self._row("B001", label=False)]})
+        self.assertEqual(fp1["row_count"], fp2["row_count"])
+        self.assertNotEqual(fp1["content_hash"], fp2["content_hash"])
+
+    def test_empty_rows_is_stable(self):
+        fp1 = tr.training_set_fingerprint({"rows": []})
+        fp2 = tr.training_set_fingerprint({})
+        self.assertEqual(fp1, fp2)
+        self.assertEqual(fp1["row_count"], 0)
+
+
+class FingerprintStorageTest(unittest.TestCase):
+    """fetch_last_fingerprint/upload_fingerprint — mocked network only, same pattern as
+    test_raw_inbox.py. Both must degrade to an honest no-op, never raise, when Supabase env or
+    the network is unavailable."""
+
+    def test_fetch_returns_none_without_supabase_env(self):
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("SUPABASE_URL", None)
+            os.environ.pop("SUPABASE_SERVICE_KEY", None)
+            self.assertIsNone(tr.fetch_last_fingerprint())
+
+    def test_fetch_returns_none_on_404_first_ever_run(self):
+        resp = mock.Mock(status_code=404)
+        with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://x.supabase.co",
+                                          "SUPABASE_SERVICE_KEY": "k"}), \
+             mock.patch("requests.get", return_value=resp):
+            self.assertIsNone(tr.fetch_last_fingerprint())
+
+    def test_fetch_returns_stored_json_on_200(self):
+        resp = mock.Mock(status_code=200)
+        resp.json.return_value = {"row_count": 42, "content_hash": "abc"}
+        with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://x.supabase.co",
+                                          "SUPABASE_SERVICE_KEY": "k"}), \
+             mock.patch("requests.get", return_value=resp):
+            self.assertEqual(tr.fetch_last_fingerprint(), {"row_count": 42, "content_hash": "abc"})
+
+    def test_fetch_never_raises_on_network_error(self):
+        with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://x.supabase.co",
+                                          "SUPABASE_SERVICE_KEY": "k"}), \
+             mock.patch("requests.get", side_effect=RuntimeError("network down")):
+            self.assertIsNone(tr.fetch_last_fingerprint())
+
+    def test_upload_returns_false_without_supabase_env(self):
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("SUPABASE_URL", None)
+            os.environ.pop("SUPABASE_SERVICE_KEY", None)
+            self.assertFalse(tr.upload_fingerprint({"row_count": 1, "content_hash": "x"}))
+
+    def test_upload_posts_fingerprint_json(self):
+        posted = []
+
+        def fake_post(url, headers=None, json=None, data=None, timeout=None):
+            posted.append({"url": url, "data": data})
+            resp = mock.Mock(status_code=200)
+            resp.raise_for_status = lambda: None
+            resp.text = ""
+            return resp
+
+        with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://x.supabase.co",
+                                          "SUPABASE_SERVICE_KEY": "k"}), \
+             mock.patch("requests.post", side_effect=fake_post):
+            ok = tr.upload_fingerprint({"row_count": 7, "content_hash": "deadbeef"})
+        self.assertTrue(ok)
+        upload_call = posted[-1]
+        self.assertIn("ranker/current/fingerprint.json", upload_call["url"])
+        import json as _json
+        self.assertEqual(_json.loads(upload_call["data"]), {"row_count": 7, "content_hash": "deadbeef"})
+
+    def test_upload_never_raises_on_network_error(self):
+        with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://x.supabase.co",
+                                          "SUPABASE_SERVICE_KEY": "k"}), \
+             mock.patch("requests.post", side_effect=RuntimeError("network down")):
+            self.assertFalse(tr.upload_fingerprint({"row_count": 1, "content_hash": "x"}))
 
 
 if __name__ == "__main__":

@@ -1,12 +1,19 @@
-# Ranker training — the free daily cloud trainer (DATA_ENGINE_PLAN.md V3 shadow loop).
-# Runs scout/train_ranker.py daily at 08:17 UTC (the :17 offset dodges GitHub's top-of-hour
-# scheduling congestion — same convention as deal-watch.yml/T2). Pulls training rows from
-# Supabase, trains the challenger, evaluates it against the deterministic triage champion on a
-# by-ASIN split, appends learning-hub/tracking/ranker-report.md (in the runner only — the repo
-# copy is updated by local runs), posts the summary to #brain-proposals, and uploads the model
-# to the Supabase storage bucket models/ (ranker/<date>/ + stable ranker/current/) so the local
-# pipeline fetches the current champion at run start (the sole distribution channel — no
-# GitHub-hosted workflow-artifact copy; see the marketplace-action-free note below).
+# Ranker training — the free cloud trainer (DATA_ENGINE_PLAN.md V3 shadow loop).
+# Runs scout/train_ranker.py every 6 hours at :23 past (00:23/06:23/12:23/18:23 UTC — the :23
+# off-hour offset dodges GitHub's top-of-hour scheduling congestion, same convention as
+# deal-watch.yml/T2, just its own offset). Pulls training rows from Supabase, trains the
+# challenger, evaluates it against the deterministic triage champion on a by-ASIN split, appends
+# learning-hub/tracking/ranker-report.md (in the runner only — the repo copy is updated by local
+# runs), posts the summary to #brain-proposals, and uploads the model to the Supabase storage
+# bucket models/ (ranker/<date>/ + stable ranker/current/) so the local pipeline fetches the
+# current champion at run start (the sole distribution channel — no GitHub-hosted
+# workflow-artifact copy; see the marketplace-action-free note below).
+#
+# SKIP-IF-UNCHANGED (Session 55): most 6-hour ticks won't have new labeled data yet.
+# train_ranker.py fingerprints the training set (row count + a content hash) before training and
+# compares it to the last run's, stored at ranker/current/fingerprint.json next to the model.
+# Unchanged -> exits 0 with a one-line "no new data — skipped" log, no Discord post, no model fit.
+# Changed (or first-ever run) -> trains and posts exactly as before.
 #
 # PROMOTION IS HUMAN-ONLY regardless of where training ran: train_ranker.py never writes
 # ai-brain.json (test-enforced); the champion flips only when Mehmet sets the brain key
@@ -19,8 +26,8 @@ name: train-ranker
 
 on:
   schedule:
-    - cron: "17 8 * * *"   # daily 08:17 UTC
-  workflow_dispatch: {}     # manual "Run workflow" button
+    - cron: "23 */6 * * *"   # every 6 hours at :23 (00:23/06:23/12:23/18:23 UTC)
+  workflow_dispatch: {}       # manual "Run workflow" button
 
 # Never let two trainings overlap (a slow run + the next cron) — same T2 rule: overlapping runs
 # could double-post the proposal and race the ranker/current/ upload.

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import hashlib
 import json
 import os
 import sys
@@ -36,6 +37,7 @@ sys.path.insert(0, HERE)
 REPORT_PATH = os.path.join(HERE, "..", "learning-hub", "tracking", "ranker-report.md")
 MODELS_DIR = os.path.join(HERE, "..", "learning-hub", "models", "ranker")
 BUCKET = "models"
+FINGERPRINT_NAME = "fingerprint.json"
 
 # Numeric subset of db.PRE_DECISION_FEATURES — the ONLY model inputs (leakage contract).
 NUMERIC_FEATURES = ("price", "weight_lb", "sales_rank", "est_sales", "offers",
@@ -50,6 +52,75 @@ def build_dataset() -> Dict[str, Any]:
     import labels
     assembled = labels.assemble_training_rows(include_silver=True, include_backtest=True)
     return assembled
+
+
+def training_set_fingerprint(assembled: Dict[str, Any]) -> Dict[str, Any]:
+    """A cheap signature of the CURRENT training set: row count + a content hash of every row's
+    identifying tuple (asin, source, label, label_quality, and whichever date/checkpoint field
+    distinguishes windows within a tier). Rows are upserted on natural keys (asin+simulation_date,
+    asin+checkpoint_day, ...) rather than given a stable integer id we can read cheaply across all
+    three tiers, so a content hash serves the same purpose as "latest row ids" here: it changes
+    the moment anything is added OR an existing row's content changes (e.g. a re-simulated
+    backtest window flipping its label) — a plain row-count comparison would miss that second
+    case. Comparing this against the last run's stored fingerprint answers "is there anything new
+    to train on since last time?" without a second, separate expensive pull."""
+    rows = assembled.get("rows") or []
+    keys = sorted(
+        "|".join(str(x) for x in (
+            r.get("asin"), r.get("source"), r.get("label"), r.get("label_quality"),
+            r.get("simulation_date") or r.get("checkpoint_day") or "",
+        ))
+        for r in rows
+    )
+    digest = hashlib.sha256("\n".join(keys).encode("utf-8")).hexdigest()
+    return {"row_count": len(rows), "content_hash": digest}
+
+
+def fetch_last_fingerprint() -> Optional[Dict[str, Any]]:
+    """The previous run's training_set_fingerprint(), stored next to the model artifacts in
+    Supabase storage (ranker/current/fingerprint.json). None on a first-ever run, missing env, or
+    any failure — never raises; a missing fingerprint just means "don't skip, nothing to compare"."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return None
+        r = requests.get(f"{supa}/storage/v1/object/{BUCKET}/ranker/current/{FINGERPRINT_NAME}",
+                         headers=_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return None
+        return r.json()
+    except Exception as e:
+        print(f"[train_ranker] fetch_last_fingerprint failed (non-fatal): {type(e).__name__}")
+        return None
+
+
+def upload_fingerprint(fp: Dict[str, Any]) -> bool:
+    """Store this run's fingerprint next to the model, for the NEXT run's skip-check. Best-effort
+    — never raises. Runs regardless of refused/trained outcome so a repeated refusal with no new
+    data also correctly skips next time instead of re-posting the same refusal every cadence."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        try:
+            r = requests.post(f"{supa}/storage/v1/bucket", headers=_storage_headers(),
+                              json={"id": BUCKET, "name": BUCKET, "public": False}, timeout=15)
+            if r.status_code not in (200, 201) and "already exists" not in r.text.lower():
+                print(f"[train_ranker] bucket create: HTTP {r.status_code} (continuing)")
+        except Exception as e:
+            print(f"[train_ranker] bucket create failed (continuing): {type(e).__name__}")
+        r = requests.post(
+            f"{supa}/storage/v1/object/{BUCKET}/ranker/current/{FINGERPRINT_NAME}",
+            headers={**_storage_headers(), "x-upsert": "true", "Content-Type": "application/json"},
+            data=json.dumps(fp).encode("utf-8"), timeout=30,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"[train_ranker] upload_fingerprint failed (non-fatal): {type(e).__name__}")
+        return False
 
 
 def build_matrix(rows: List[Dict[str, Any]]) -> Tuple[Any, Any]:
@@ -313,6 +384,15 @@ def main(argv=None) -> int:
         pass
 
     assembled = build_dataset()
+    fp = training_set_fingerprint(assembled)
+
+    if not args.dry_run:
+        last_fp = fetch_last_fingerprint()
+        if last_fp is not None and fp == last_fp:
+            print(f"[train_ranker] no new data since last run (row_count={fp['row_count']}) — "
+                 "skipped (no Discord post, no training)")
+            return 0
+
     result = train_and_evaluate(assembled)
     block = render_report(result)
     append_report(block)
@@ -323,6 +403,9 @@ def main(argv=None) -> int:
         uploaded = upload_to_storage(paths, _dt.date.today().isoformat())
         print(f"[train_ranker] artifacts: {len(paths)} saved, {uploaded} uploaded to storage")
     if not args.dry_run:
+        # Stored regardless of refused/trained so a repeated refusal with no new data also
+        # skips next time, instead of re-posting the same "not enough data" message every cadence.
+        upload_fingerprint(fp)
         post_summary(result)
     # A refusal is an HONEST outcome, not a failure — exit 0 so the scheduled job stays green
     # until data exists; real errors raise and exit non-zero via the traceback.

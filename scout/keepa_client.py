@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import os
+import threading
 from typing import Any, Dict, List, Optional
 
 import config
@@ -96,6 +97,82 @@ def _delta(before: Optional[int], after: Optional[int]) -> Optional[int]:
     if isinstance(before, int) and isinstance(after, int) and after >= before:
         return after - before
     return None
+
+
+# ----------------------------------------------------------------------------
+# Hard overdraw guard (Session 55). LIVE-CONFIRMED: the Keepa balance hit -100 tokens — a
+# batched request was sized off an ESTIMATE without ever checking the actual bank first, and
+# Keepa charges the full batch cost upfront and ALLOWS negative balances (the consequence is
+# ~100 minutes of enforced lockout at the 1 token/min Pro-trickle refill rate, not money, but a
+# real availability hit to every job sharing this one key). This is the SINGLE CHOKE POINT: every
+# request-making function in this file (enrich, query_history, the search-API fallback) routes
+# through _guard_batch() before firing, so no caller — tracked or ad-hoc, today's collectors or
+# a future one — can repeat this by forgetting to check its own budget first.
+#
+# Per-unit costs are the OBSERVED values from live telemetry (Sessions 51/54/55), not estimates:
+ENRICH_TOKENS_PER_ASIN = 3     # enrich(): stats=90, rating=True, buybox=True, history=False
+HISTORY_TOKENS_PER_ASIN = 1    # query_history(): stats=90, rating=False, history=True
+SEARCH_TOKENS_PER_TERM = 10    # the flat-rate product-search fallback (Pro-plan PF substitute)
+SELLER_QUERY_TOKENS_ESTIMATE = 10  # seller_asins() — UNVERIFIED, conservative placeholder;
+                                    # not on any active collector's path today, guarded anyway.
+
+_guard_lock = threading.Lock()
+_guard_stats = {"skips": 0, "caps": 0}
+
+
+def guard_telemetry() -> Dict[str, int]:
+    """Counts of overdraw-guard interventions this process — for the daily digest's honest
+    'N runs skipped due to negative Keepa balance' line."""
+    return dict(_guard_stats)
+
+
+def reset_guard_telemetry() -> None:
+    for k in _guard_stats:
+        _guard_stats[k] = 0
+
+
+def current_tokens_left(api, refresh: bool = True) -> Optional[int]:
+    """The REAL current bank — MAY BE NEGATIVE (Keepa allows overdraw). `api.tokens_left` reads
+    STALE (often a leftover 0) until either a request has been made or `update_status()` (a
+    free, no-token-cost probe) is called explicitly — LIVE-CONFIRMED 2026-07-06 (Session 54): a
+    naive read showed 0 when the true balance was actually -68. Returns None (not 0) when the
+    attribute is genuinely unreadable, so callers can tell 'unknown' from 'exactly zero'."""
+    if refresh:
+        try:
+            api.update_status()
+        except Exception:
+            pass
+    v = getattr(api, "tokens_left", None)
+    return int(v) if isinstance(v, (int, float)) else None
+
+
+def _guard_batch(api, requested_n: int, tokens_per_unit: int, label: str) -> "tuple[int, bool]":
+    """THE choke point. Before spending on `requested_n` units (ASINs, search terms) each
+    costing ~tokens_per_unit, cap `requested_n` so the ESTIMATED total cost never exceeds the
+    CURRENTLY BANKED tokens — WE must refuse to ask for more than we can afford; Keepa will not
+    refuse it for us (it bills the full batch upfront and allows the balance to go negative).
+    Returns (capped_n, skip_entirely). skip_entirely=True means the bank is empty/negative right
+    now — the caller must return its own honest empty result, not attempt anything.
+    requested_n<=0 is passed through unchanged (nothing to guard)."""
+    if requested_n <= 0:
+        return requested_n, False
+    tokens_left = current_tokens_left(api)
+    if tokens_left is None:
+        return requested_n, False  # can't read the bank — degrade to trusting the caller's sizing
+    available = max(tokens_left, 0)
+    if available <= 0:
+        with _guard_lock:
+            _guard_stats["skips"] += 1
+        print(f"[keepa] token guard: bank empty/negative ({tokens_left}) — skipping {label} "
+             f"entirely (refills at 1 token/min)")
+        return 0, True
+    capped = max(1, available // max(1, tokens_per_unit))
+    if capped < requested_n:
+        with _guard_lock:
+            _guard_stats["caps"] += 1
+        print(f"[keepa] token guard: capping {label} from {requested_n} to {capped} "
+             f"(bank={tokens_left}, ~{tokens_per_unit} tokens/unit)")
+    return min(requested_n, capped), False
 
 
 def get_client(key: Optional[str] = None):
@@ -394,12 +471,21 @@ def find_candidates(criteria: Optional[Dict[str, Any]] = None,
         # available on Pro (10 tokens/term), so fall back to searching the seed brands — weaker
         # filtering (no BSR/offer-count server-side; our own gates still apply downstream) but a
         # working nightly discovery until the API-tier upgrade. Other errors re-raise unchanged.
-        fallback_terms = list(params.get("brand") or [])  # seeds only exist in OA mode
+        fallback_terms = list(params.get("brand") or [])[:3]  # seeds only exist in OA mode
         if "REQUEST_REJECTED" not in str(e) or not fallback_terms:
             raise
-        print("[keepa] Product Finder rejected on this plan; falling back to brand SEARCH "
-              f"({min(len(fallback_terms), 3)} term(s), 10 tokens each)")
-        asins = _search_asins(fallback_terms[:3], limit)
+        # Overdraw guard (Session 55): each search term is a flat SEARCH_TOKENS_PER_TERM cost —
+        # cap how many terms we even ATTEMPT so the estimate never exceeds the currently banked
+        # tokens (Keepa bills the full request upfront and allows the balance to go negative;
+        # we must refuse to ask for more than we can afford, since it will not refuse for us).
+        capped_n, skip = _guard_batch(api, len(fallback_terms), SEARCH_TOKENS_PER_TERM, "brand search")
+        if skip:
+            asins = []
+        else:
+            fallback_terms = fallback_terms[:capped_n]
+            print("[keepa] Product Finder rejected on this plan; falling back to brand SEARCH "
+                  f"({len(fallback_terms)} term(s), {SEARCH_TOKENS_PER_TERM} tokens each)")
+            asins = _search_asins(fallback_terms, limit)
     after = _tokens_consumed(api)
     asins = list(asins or [])[:limit]
     # Archive the raw finder response (the params + ASIN set it returned). Keyed by params_hash
@@ -464,6 +550,15 @@ def enrich(asins: List[str], api=None, wait: bool = True) -> List[Dict[str, Any]
     _require_keepa()
     api = api or get_client()
 
+    # Overdraw guard (Session 55): cap the batch so its ESTIMATED cost never exceeds the
+    # currently banked tokens — Keepa bills the full batch upfront and allows the balance to go
+    # negative, so WE must refuse to over-ask rather than trust Keepa to refuse it for us.
+    asins = list(asins)
+    capped_n, skip = _guard_batch(api, len(asins), ENRICH_TOKENS_PER_ASIN, "enrich")
+    if skip:
+        return []
+    asins = asins[:capped_n]
+
     # stats=90 computes 90-day stats incl. salesRankDrops30/90; rating=True pulls
     # rating + review counts; buybox=True returns buyBoxStats (Amazon's Buy-Box win
     # share, for the rotation guard). These extra fields can cost more Keepa tokens.
@@ -516,6 +611,14 @@ def query_history(asins: List[str], api=None, days: int = 365, wait: bool = True
         return []
     _require_keepa()
     api = api or get_client()
+
+    # Overdraw guard (Session 55) — same reasoning as enrich() above.
+    asins = list(asins)
+    capped_n, skip = _guard_batch(api, len(asins), HISTORY_TOKENS_PER_ASIN, "query_history")
+    if skip:
+        return []
+    asins = asins[:capped_n]
+
     before = _tokens_consumed(api)
     products = _with_deadline(
         api.query, list(asins), domain=config.KEEPA_DOMAIN,
@@ -579,6 +682,12 @@ def seller_asins(seller_id: str, api=None) -> List[str]:
     """Return the ASINs in a seller's catalog via Keepa's seller data."""
     _require_keepa()
     api = api or get_client()
+    # Overdraw guard (Session 55): a single seller_query is one "unit" at an unverified but
+    # conservative estimated cost — not on any active collector's path today, guarded anyway
+    # since this is the single choke point every Keepa-calling function routes through.
+    _capped_n, skip = _guard_batch(api, 1, SELLER_QUERY_TOKENS_ESTIMATE, "seller_query")
+    if skip:
+        return []
     before = _tokens_consumed(api)
     res = api.seller_query(seller_id, domain=config.KEEPA_DOMAIN)
     after = _tokens_consumed(api)

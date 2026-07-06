@@ -555,6 +555,61 @@ def test_format_digest_includes_cross_channel_field_when_given():
     assert "🔀 This cycle" in field_names
 
 
+# ---------------------------------------------------------------------------
+# hourly_collection_summary + the negative-balance digest line (Session 55)
+# ---------------------------------------------------------------------------
+
+def test_hourly_collection_summary_none_when_no_runs_today():
+    with patch.object(run_daily.db, "hourly_runs_today", return_value=[]):
+        assert run_daily.hourly_collection_summary() is None
+
+
+def test_hourly_collection_summary_aggregates_totals():
+    runs = [
+        {"tokens_consumed": 10, "asins_scanned": 3, "tokens_left_end": 5},
+        {"tokens_consumed": 7, "asins_scanned": 2, "tokens_left_end": -20},
+    ]
+    with patch.object(run_daily.db, "hourly_runs_today", return_value=runs), \
+         patch.object(run_daily.db, "count_backtest_rows", return_value=228):
+        summary = run_daily.hourly_collection_summary()
+    assert summary["runs_fired"] == 2
+    assert summary["tokens_spent"] == 17
+    assert summary["asins_scanned"] == 5
+    assert summary["backtest_rows"] == 228
+    assert summary["negative_balance_skips"] == 1  # only the -20 run
+
+
+def test_hourly_collection_summary_counts_zero_negative_skips_honestly():
+    runs = [{"tokens_consumed": 10, "asins_scanned": 3, "tokens_left_end": 40}]
+    with patch.object(run_daily.db, "hourly_runs_today", return_value=runs), \
+         patch.object(run_daily.db, "count_backtest_rows", return_value=0):
+        summary = run_daily.hourly_collection_summary()
+    assert summary["negative_balance_skips"] == 0
+
+
+def test_format_digest_shows_negative_balance_warning():
+    """The overdraw guard's own honest signal must surface in the digest, not stay buried in a
+    log line only Claude Code ever reads."""
+    digest = run_daily.format_digest(
+        {"found": 0, "scored": 0, "hourly_collection": {
+            "runs_fired": 4, "tokens_spent": 0, "asins_scanned": 0, "backtest_rows": 228,
+            "negative_balance_skips": 4}},
+        drift_warning=None, run_id=1)
+    fields = {f["name"]: f["value"] for f in digest["embeds"][0]["fields"]}
+    assert "⏱️ Hourly collector (today)" in fields
+    assert "empty/negative" in fields["⏱️ Hourly collector (today)"]
+
+
+def test_format_digest_omits_negative_balance_warning_when_zero():
+    digest = run_daily.format_digest(
+        {"found": 0, "scored": 0, "hourly_collection": {
+            "runs_fired": 4, "tokens_spent": 40, "asins_scanned": 10, "backtest_rows": 228,
+            "negative_balance_skips": 0}},
+        drift_warning=None, run_id=1)
+    fields = {f["name"]: f["value"] for f in digest["embeds"][0]["fields"]}
+    assert "empty/negative" not in fields["⏱️ Hourly collector (today)"]
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     passed = 0

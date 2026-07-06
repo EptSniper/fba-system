@@ -58,20 +58,13 @@ TOKENS_PER_CANDIDATE_ESTIMATE = 3     # sizing only — real spend is always mea
 
 
 def _observed_tokens_left(api) -> int:
-    """The ACTUAL current bank, read from live Keepa telemetry — never an assumed tier.
-
-    LIVE-CONFIRMED 2026-07-06 (Session 54, first real dispatch): `api.tokens_left` reads a STALE
-    0 immediately after connecting — it is only populated after a request. `api.update_status()`
-    is a free, no-token-cost probe (confirmed: it revealed the true balance was -68, i.e. the
-    account was in token DEBT from earlier live-testing, not the stale 0 a naive read showed) —
-    call it first so a real positive balance is never missed. A negative balance (debt) or an
-    unreadable attribute both honestly return 0 (nothing to spend), never a crash or a guess."""
-    try:
-        api.update_status()
-    except Exception:
-        pass  # degrade to whatever tokens_left already holds rather than fail the whole run
-    v = getattr(api, "tokens_left", None)
-    return int(v) if isinstance(v, (int, float)) and v > 0 else 0
+    """The ACTUAL current bank, floored at 0 for THIS function's purpose (deciding whether
+    there's anything to spend) — the real, possibly-negative value lives in
+    keepa_client.current_tokens_left(), the single source of truth every guarded Keepa call
+    also reads from. Delegating here (rather than re-probing separately) avoids two different
+    modules disagreeing about what "the bank" currently holds."""
+    v = keepa_client.current_tokens_left(api)
+    return v if isinstance(v, int) and v > 0 else 0
 
 
 # --- non-blocking wrappers around keepa_client, for injection into shadow_outcomes/backtest ---
@@ -244,10 +237,16 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         summary["lake_digest"] = datalake.digest_line()
         elapsed = (_dt.datetime.now(_dt.timezone.utc) - t0).total_seconds()
         summary["elapsed_seconds"] = round(elapsed, 1)
+        # Session 55: the real balance AT THE END of this run (may be negative — Keepa allows
+        # overdraw) + how many times the overdraw guard had to intervene this run, both for the
+        # daily digest's honest "N runs skipped due to negative Keepa balance" line.
+        summary["tokens_left_end"] = keepa_client.current_tokens_left(api, refresh=True)
+        summary["guard"] = keepa_client.guard_telemetry()
         db.finish_run(
             run_id, "failed" if error_summary else "success",
             asins_scanned=(summary.get("scan") or {}).get("candidates"),
             tokens_consumed=summary.get("tokens_spent_total"),
+            tokens_left_end=summary.get("tokens_left_end"),
             error_summary=error_summary,
         )
 

@@ -257,10 +257,14 @@ def format_digest(summary: Dict[str, Any], drift_warning: Optional[str],
                                "inline": False})
     hourly = summary.get("hourly_collection")
     if hourly:
-        embed["fields"].append({"name": "⏱️ Hourly collector (today)", "value": (
-            f"{hourly['runs_fired']} burst(s) fired, {hourly['tokens_spent']} tokens spent, "
-            f"{hourly['asins_scanned']} ASINs scanned, {hourly['backtest_rows']} backtest rows total"),
-            "inline": False})
+        line = (f"{hourly['runs_fired']} burst(s) fired, {hourly['tokens_spent']} tokens spent, "
+               f"{hourly['asins_scanned']} ASINs scanned, {hourly['backtest_rows']} backtest rows total")
+        if hourly.get("negative_balance_skips"):
+            # Session 55 — the overdraw guard's own honest signal: these bursts found the bank
+            # empty/negative and correctly skipped rather than repeat the live -100 overdraw.
+            line += (f" (⚠ {hourly['negative_balance_skips']} skipped — Keepa balance "
+                    f"empty/negative, refills at 1 token/min)")
+        embed["fields"].append({"name": "⏱️ Hourly collector (today)", "value": line, "inline": False})
     return {"username": "FBA Scout — Daily Digest", "embeds": [embed]}
 
 
@@ -273,8 +277,9 @@ def drain_inbox_digest_line(stats: Dict[str, Any]) -> str:
 
 def hourly_collection_summary() -> Optional[Dict[str, Any]]:
     """Today's hourly-collector totals for the digest: bursts fired, tokens spent, ASINs
-    scanned, current backtest row count. None if unavailable or no bursts have fired yet today
-    (an honest absence, not a zero-filled fabrication)."""
+    scanned, current backtest row count, and (Session 55) how many bursts found the Keepa
+    balance empty/negative and correctly skipped spending anything. None if unavailable or no
+    bursts have fired yet today (an honest absence, not a zero-filled fabrication)."""
     try:
         runs = db.hourly_runs_today()
     except Exception as e:
@@ -284,12 +289,17 @@ def hourly_collection_summary() -> Optional[Dict[str, Any]]:
         return None
     tokens = sum(r.get("tokens_consumed") or 0 for r in runs)
     asins = sum(r.get("asins_scanned") or 0 for r in runs)
+    # A run whose balance was negative AT THE END never had anything positive to spend this
+    # cycle — collect_hourly.py's own guard means it correctly skipped rather than overdrew.
+    negative_balance_skips = sum(
+        1 for r in runs if isinstance(r.get("tokens_left_end"), (int, float)) and r["tokens_left_end"] < 0
+    )
     try:
         backtest_rows = db.count_backtest_rows()
     except Exception:
         backtest_rows = None
     return {"runs_fired": len(runs), "tokens_spent": tokens, "asins_scanned": asins,
-           "backtest_rows": backtest_rows}
+           "backtest_rows": backtest_rows, "negative_balance_skips": negative_balance_skips}
 
 
 def cross_channel_summary_line(summary: Dict[str, Any], proposals_pending: int,

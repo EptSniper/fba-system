@@ -35,11 +35,16 @@ _QUERY_PARAM_PATTERN = re.compile(
     # `api_key=os.environ[...]` env lookups. Found live 2026-07-05 (Session 52): the original
     # pattern flagged 34 files on one ordinary commit, none a real secret — every hit was one of
     # these four code shapes. The character class also excludes brace/paren/bracket as a second
-    # line of defense against the same shapes. `\1` (Session 55, 2026-07-06) excludes a
-    # same-name kwarg pass-through (`token=token`, `key=key`, ... — scout/signals/ebay.py's
-    # `sold_comps(upc, token=token)`): a real secret VALUE never happens to equal its own
-    # parameter name's literal text, so this can't hide an actual leak.
-    r"(?!\{)(?!\()(?!lambda\b)(?!len\b)(?!os\.environ\b)(?!\1\b)"
+    # line of defense against the same shapes. The `(?!\1(?![\w-]))` lookahead (fixed
+    # 2026-07-06 after review) excludes a same-name kwarg pass-through (`token=token`, `key=key`
+    # — scout/signals/ebay.py's `sold_comps(upc, token=token)`) ONLY when the value is EXACTLY the
+    # parameter name (nothing word/hyphen follows). The earlier `\1\b` form was too broad: `\b`
+    # matches before a hyphen, so a real secret whose value merely STARTS with its param name
+    # (e.g. a Mailgun-style vendor key, or a "-live-" prefixed token — both real vendor
+    # conventions) escaped redaction entirely (live-confirmed leak). Requiring "not followed by
+    # [\w-]" means only the bare
+    # identifier `token`/`key` is exempted; `key-…`/`keyvalue…` are redacted as real values.
+    r"(?!\{)(?!\()(?!lambda\b)(?!len\b)(?!os\.environ\b)(?!\1(?![\w-]))"
     r"([^&\s\"'<>{}()\[\]]+)"
 )
 

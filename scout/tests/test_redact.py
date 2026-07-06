@@ -51,8 +51,8 @@ def test_redact_ignores_code_shapes_not_secrets():
 
 def test_redact_ignores_same_name_kwarg_passthrough():
     """Regression guard (Session 55): scout/signals/ebay.py's `sold_comps(upc, token=token)` —
-    a plain Python kwarg pass-through, not a secret. A real secret VALUE never happens to equal
-    its own parameter name's literal text, so excluding this shape can't hide an actual leak."""
+    a plain Python kwarg pass-through, not a secret. Only the EXACT bare identifier is exempted
+    (see test_redact_masks_prefix_named_secrets below for why "exact" matters)."""
     for text in (
         "comps = sold_comps(upc, token=token)",
         "return fetch(url, key=key)",
@@ -60,6 +60,24 @@ def test_redact_ignores_same_name_kwarg_passthrough():
         "build(api_key=api_key)",
     ):
         assert redact.redact(text) == text, f"should be unchanged: {text!r}"
+
+
+def test_redact_masks_prefix_named_secrets():
+    """Regression guard (Session 55 review fix, 2026-07-06): the FIRST version of the kwarg-
+    passthrough exclusion used `\\1\\b` as the lookahead, which matches before a hyphen too —
+    so a REAL secret whose value merely starts with its own parameter name (a real vendor
+    convention: Mailgun-style keys are literally 'key-xxxx...', many services issue
+    'token-live-xxxx...') escaped redaction entirely. The fix requires the value to be EXACTLY
+    the parameter name (nothing word/hyphen following) before exempting it."""
+    for text, secret_fragment in (
+        ("https://api.mailgun.net/v3/x?key=key-3ax6xnjp29jd6fds4gc373sgvjxteol0", "key-3ax6xnjp29jd6fds4gc373sgvjxteol0"),
+        ("token=token-live-8f3a9b2c4d5e6f7a8b9c0d1e2f3a4b5c", "token-live-8f3a9b2c4d5e6f7a8b9c0d1e2f3a4b5c"),
+        ("api_key=api_key12345678901234", "api_key12345678901234"),
+        ("secret=secretvalue123456789", "secretvalue123456789"),
+    ):
+        out = redact.redact(text)
+        assert secret_fragment not in out, f"secret leaked through unredacted: {text!r} -> {out!r}"
+        assert redact._MASK in out, f"expected a mask marker in: {out!r}"
 
 
 def test_redact_masks_discord_webhook_urls():

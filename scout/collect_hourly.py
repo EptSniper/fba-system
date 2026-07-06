@@ -47,6 +47,7 @@ import keepa_client
 import model as model_mod
 import pipeline
 import predictions
+import redact
 import scoring
 import shadow_outcomes
 
@@ -176,8 +177,9 @@ def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[
     try:
         asins = _find_no_wait(api=api, brand_seeds=hints, limit=limit)
     except Exception as e:
-        log.warning("hourly hint-led finder failed (non-fatal): %s", e)
-        return {"status": "error", "reason": str(e), "tokens_spent": 0, "candidates": 0,
+        reason = redact.redact(str(e))
+        log.warning("hourly hint-led finder failed (non-fatal): %s", reason)
+        return {"status": "error", "reason": reason, "tokens_spent": 0, "candidates": 0,
                 "leads_logged": 0, "survivors": 0}
     if not asins:
         after = keepa_client._tokens_consumed(api)
@@ -188,9 +190,10 @@ def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[
     try:
         enriched = _enrich_no_wait(asins, api=api)
     except Exception as e:
-        log.warning("hourly hint-led enrich failed (non-fatal): %s", e)
+        reason = redact.redact(str(e))
+        log.warning("hourly hint-led enrich failed (non-fatal): %s", reason)
         after = keepa_client._tokens_consumed(api)
-        return {"status": "error", "reason": str(e),
+        return {"status": "error", "reason": reason,
                 "tokens_spent": keepa_client._delta(before, after) or 0,
                 "candidates": len(asins), "leads_logged": 0, "survivors": 0}
 
@@ -255,7 +258,7 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
     try:
         api = api or keepa_client.get_client()
     except Exception as e:
-        return {"status": "error", "reason": str(e)}
+        return {"status": "error", "reason": redact.redact(str(e))}
 
     run_id = db.start_run(host="github-actions-hourly")
     datalake.set_run_context(run_id)
@@ -307,7 +310,7 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         )
         return summary
     except Exception as e:
-        error_summary = str(e)
+        error_summary = redact.redact(str(e))
         summary["status"] = "error"
         summary["error"] = error_summary
         return summary

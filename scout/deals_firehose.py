@@ -85,7 +85,8 @@ def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callabl
     try:
         roots = lookup_fn(0, domain=config.KEEPA_DOMAIN) or {}
     except Exception as e:
-        log.warning("category_lookup failed (non-fatal, using whatever was cached): %s", e)
+        log.warning("category_lookup failed (non-fatal, using whatever was cached): %s",
+                   keepa_client.redact_err(e))
         return cached
     by_name: Dict[str, int] = {}
     entries = roots.values() if isinstance(roots, dict) else (roots or [])
@@ -132,8 +133,9 @@ def fetch_deal_page(api, category: Optional[str] = None, category_id: Optional[i
     try:
         deals = api.deals(deal_parms, domain=config.KEEPA_DOMAIN, wait=wait) or {}
     except Exception as e:
-        log.warning("deals() page failed (non-fatal): %s", e)
-        return {"status": "error", "reason": str(e), "asins": [], "tokens_spent": 0,
+        reason = keepa_client.redact_err(e)
+        log.warning("deals() page failed (non-fatal): %s", reason)
+        return {"status": "error", "reason": reason, "asins": [], "tokens_spent": 0,
                 "category": category, "page": page}
     after = keepa_client._tokens_consumed(api)
     spent = keepa_client._delta(before, after)
@@ -164,7 +166,8 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
         try:
             id_map = (resolve_fn or resolve_category_ids)(api, categories)
         except Exception as e:
-            log.warning("category id resolution failed (non-fatal, unfiltered pull): %s", e)
+            log.warning("category id resolution failed (non-fatal, unfiltered pull): %s",
+                       keepa_client.redact_err(e))
 
     out: List[Dict[str, Any]] = []
     seen = set()

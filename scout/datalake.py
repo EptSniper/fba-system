@@ -207,8 +207,13 @@ def archive(source: str, entity_id: Optional[str], endpoint: str, payload: Any,
             run_id: Optional[Any] = None) -> bool:
     """Buffer one raw external response for the current run's batch flush. Returns True if newly
     buffered, False if it was a dedupe hit / an error occurred. NEVER raises — a lake failure is
-    counted (telemetry()['failures']) and swallowed, so it can't break a scout run."""
-    if pa is None or not enabled():
+    counted (telemetry()['failures']) and swallowed, so it can't break a scout run.
+
+    NOTE: does NOT gate on pyarrow being installed — buffering is a plain dict append; pyarrow is
+    only needed at the local-Parquet WRITE step (flush()'s own gate). The cloud-inbox flush path
+    (raw_inbox.py, JSON+zstd, no Parquet at all) needs pyarrow not to be installed at all, so
+    gating archive() on `pa is None` would silently buffer nothing in that environment."""
+    if not enabled():
         return False
     if run_id is None:
         run_id = _run_context.get("run_id")
@@ -240,6 +245,37 @@ def archive(source: str, entity_id: Optional[str], endpoint: str, payload: Any,
         return False
 
 
+def ingest_external_row(row: Dict[str, Any]) -> bool:
+    """Add an ALREADY-FORMED row from an external source (scout/drain_inbox.py, i.e. originally
+    captured by the cloud collector) to the local buffer — preserving its ORIGINAL fetched_at/
+    content_hash/tokens_consumed/pipeline_context verbatim, never re-stamping with 'now'. Losing
+    the true fetch time would corrupt any as-of-date feature reconstruction (backtest.py) that
+    ever reads from the lake. Runs the SAME dedupe-manifest check as archive(), keyed on the
+    row's OWN stored content_hash (not recomputed), so a row already drained on a prior run isn't
+    double-counted. Returns True if newly buffered, False on a dedupe hit or malformed row.
+    NEVER raises."""
+    if not enabled():
+        return False
+    try:
+        source = row["source"]
+        entity_id = row.get("entity_id") or ""
+        endpoint = row["endpoint"]
+        chash = row["content_hash"]
+    except KeyError as e:
+        with _lock:
+            _stats["failures"] += 1
+        print(f"[datalake] ingest_external_row: malformed row, missing {e}")
+        return False
+    if _is_duplicate_and_touch(source, entity_id, endpoint, chash):
+        with _lock:
+            _stats["deduped"] += 1
+        return False
+    with _lock:
+        _buffer.setdefault(source, []).append(row)
+        _stats["buffered"] += 1
+    return True
+
+
 def archive_clearance_html(url: str, body: str, extraction_confidence: float,
                            changed: Optional[bool] = None,
                            run_id: Optional[Any] = None) -> bool:
@@ -259,7 +295,24 @@ def archive_clearance_html(url: str, body: str, extraction_confidence: float,
 def flush(run_id: Optional[Any] = None) -> Dict[str, Any]:
     """Write all buffered rows — one Parquet file per source — into today's partition, then
     clear the buffer. Returns a stats dict for the digest. NEVER raises (a flush failure is
-    counted, the buffer is preserved for a retry, and the run continues)."""
+    counted, the buffer is preserved for a retry, and the run continues).
+
+    Cloud-inbox mode (DATALAKE_CLOUD_INBOX=1, set by .github/workflows/keepa-collect.yml):
+    a GitHub Actions runner has no persistent disk, so instead of writing local Parquet this
+    uploads each buffered row to the Supabase Storage raw-inbox/ bucket (scout/raw_inbox.py) for
+    scout/drain_inbox.py to later pull into the real lake. Every archive() call site elsewhere
+    is unchanged — only this flush destination moves."""
+    import raw_inbox
+    if raw_inbox.enabled():
+        with _lock:
+            sources = list(_buffer.items())
+            _buffer.clear()
+        result = raw_inbox.upload_buffered(dict(sources))
+        with _lock:
+            _stats["written"] += result.get("uploaded", 0)
+            _stats["bytes"] += result.get("bytes", 0)
+            _stats["failures"] += result.get("failures", 0)
+        return dict(_stats)
     if pa is None:
         return dict(_stats)
     root = lake_dir()

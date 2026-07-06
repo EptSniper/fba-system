@@ -125,9 +125,14 @@ def test_heartbeat_failure_hits_fail_endpoint():
 
 def test_main_pings_failure_heartbeat_on_exception():
     """The whole point of G2's heartbeat: an exception during the cycle must still ping /fail,
-    never silently skip the heartbeat because the cycle blew up."""
-    with patch.object(run_daily.pipeline, "run_once", side_effect=RuntimeError("No KEEPA_KEY set")), \
+    never silently skip the heartbeat because the cycle blew up. Session 54: scanning moved to
+    the hourly cloud collector, so the default (non-dry-run) path no longer calls
+    pipeline.run_once() at all — it now only calls db.start_run()/finish_run(). db.start_run()
+    is designed to degrade gracefully rather than raise, but this still needs to hold if
+    something unexpected in that path ever does raise."""
+    with patch.object(run_daily.db, "start_run", side_effect=RuntimeError("Supabase unreachable")), \
             patch.object(run_daily.db, "recent_runs", return_value=[]), \
+            patch.object(run_daily.db, "queue_pending_counts", return_value={"leads": 0, "deal_matches": 0}), \
             patch.object(run_daily, "check_brain_drift", return_value=None), \
             patch.object(run_daily.propose_updates, "write_report_with_count", return_value=("", 0)), \
             patch.object(run_daily, "discord_router") as mock_router, \
@@ -145,8 +150,13 @@ def test_main_pings_failure_heartbeat_on_exception():
 
 
 def test_main_pings_success_heartbeat_on_clean_run():
-    with patch.object(run_daily.pipeline, "run_once", return_value={"found": 3, "scored": 3, "picks": []}), \
+    """Session 54: the default (non-dry-run) path is now housekeeping-only — db.start_run() +
+    db.finish_run(status="skipped") replace pipeline.run_once(). queue_pending_counts is pinned
+    to zero — this test isolates the heartbeat/digest guarantee, not live Review Queue state."""
+    with patch.object(run_daily.db, "start_run", return_value=9), \
+            patch.object(run_daily.db, "finish_run"), \
             patch.object(run_daily.db, "recent_runs", return_value=[{"id": 5}]), \
+            patch.object(run_daily.db, "queue_pending_counts", return_value={"leads": 0, "deal_matches": 0}), \
             patch.object(run_daily, "check_brain_drift", return_value=None), \
             patch.object(run_daily.propose_updates, "write_report_with_count", return_value=("", 0)), \
             patch.object(run_daily, "discord_router") as mock_router, \
@@ -160,12 +170,12 @@ def test_main_pings_success_heartbeat_on_clean_run():
     mock_router.send.assert_not_called()  # nothing warrants a system_health alert on a clean run
 
 
-def test_main_prefers_threaded_run_id_over_recent_runs_query():
-    """Code Review 2026-07-02, Finding S8: pipeline.run_once() threads THIS cycle's real
-    run_id through summary["run_id"] — the digest must use that, never the racy
-    recent_runs(limit=1) fallback, when it's available."""
-    with patch.object(run_daily.pipeline, "run_once",
-                      return_value={"found": 1, "scored": 1, "picks": [], "run_id": 777}), \
+def test_main_uses_start_run_id_never_recent_runs_when_available():
+    """Session 54: the housekeeping-only default path sets summary["run_id"] DIRECTLY from
+    db.start_run()'s return value — recent_runs() must never even be consulted when it's
+    available (same guarantee the old pipeline.run_once()-threaded-id test enforced)."""
+    with patch.object(run_daily.db, "start_run", return_value=777), \
+            patch.object(run_daily.db, "finish_run"), \
             patch.object(run_daily.db, "recent_runs", return_value=[{"id": 999}]) as recent_runs, \
             patch.object(run_daily, "check_brain_drift", return_value=None), \
             patch.object(run_daily.propose_updates, "write_report_with_count", return_value=("", 0)), \
@@ -174,15 +184,17 @@ def test_main_prefers_threaded_run_id_over_recent_runs_query():
             patch.object(run_daily, "ping_heartbeat"):
         run_daily.main(dry_run=False)
 
-    recent_runs.assert_not_called()  # never even consulted — the threaded id was available
+    recent_runs.assert_not_called()  # never even consulted — the id was available directly
     digest = post_digest.call_args[0][0]
     assert "#777" in digest["embeds"][0]["footer"]["text"]
 
 
-def test_main_falls_back_to_recent_runs_when_run_id_not_threaded():
-    """Backward compatibility: an older pipeline build that doesn't set summary["run_id"]
-    still gets a best-effort id via the pre-existing (racy) fallback, rather than "unavailable"."""
-    with patch.object(run_daily.pipeline, "run_once", return_value={"found": 1, "scored": 1, "picks": []}), \
+def test_main_falls_back_to_recent_runs_when_start_run_unavailable():
+    """If db.start_run() itself returns None (Supabase disabled/unreachable), the digest still
+    gets a best-effort id via the pre-existing (racy) recent_runs(limit=1) fallback, rather than
+    "unavailable"."""
+    with patch.object(run_daily.db, "start_run", return_value=None), \
+            patch.object(run_daily.db, "finish_run"), \
             patch.object(run_daily.db, "recent_runs", return_value=[{"id": 42}]) as recent_runs, \
             patch.object(run_daily, "check_brain_drift", return_value=None), \
             patch.object(run_daily.propose_updates, "write_report_with_count", return_value=("", 0)), \
@@ -197,12 +209,12 @@ def test_main_falls_back_to_recent_runs_when_run_id_not_threaded():
 
 
 def test_main_threads_run_id_from_exception_attribute_on_failure():
-    """pipeline.run_once() attaches .run_id to the exception it raises (Finding S8) so the
-    failed cycle's digest still shows the correct run id instead of falling back to a
-    potentially-wrong recent_runs(limit=1) query."""
-    boom = RuntimeError("No KEEPA_KEY set")
+    """If something in the try block raises with a .run_id attribute attached (the same
+    convention pipeline.run_once() uses, Finding S8), the digest still shows the correct run id
+    instead of falling back to a potentially-wrong recent_runs(limit=1) query."""
+    boom = RuntimeError("Supabase unreachable")
     boom.run_id = 555
-    with patch.object(run_daily.pipeline, "run_once", side_effect=boom), \
+    with patch.object(run_daily.db, "start_run", side_effect=boom), \
             patch.object(run_daily.db, "recent_runs") as recent_runs, \
             patch.object(run_daily, "check_brain_drift", return_value=None), \
             patch.object(run_daily.propose_updates, "write_report_with_count", return_value=("", 0)), \

@@ -315,7 +315,7 @@ def _normalize(product: Dict[str, Any]) -> Dict[str, Any]:
 # ----------------------------------------------------------------------------
 def find_candidates(criteria: Optional[Dict[str, Any]] = None,
                     api=None, limit: Optional[int] = None,
-                    brand_seeds: Optional[List[str]] = None) -> List[str]:
+                    brand_seeds: Optional[List[str]] = None, wait: bool = True) -> List[str]:
     """
     Use Keepa Product Finder to return candidate ASINs matching the criteria.
 
@@ -326,6 +326,11 @@ def find_candidates(criteria: Optional[Dict[str, Any]] = None,
     watch's fresh hinted brands, for the hint-led FIRST discovery pass). None -> the normal
     friendly-brand rotation (brands.seed_brands). An explicit [] means "seed nothing" (search
     broadly), distinct from None.
+
+    wait: True (default) drip-paces against the token bucket (blocks until enough tokens
+    refill) — correct for the nightly run's "drip, not burst" rule. scout/collect_hourly.py's
+    burst collector passes wait=False (spend only what's currently banked, never block waiting
+    for a refill) — DATA_ENGINE_PLAN.md's hourly-burst model.
     """
     _require_keepa()
     api = api or get_client()
@@ -382,7 +387,7 @@ def find_candidates(criteria: Optional[Dict[str, Any]] = None,
     # blocking indefinitely.
     before = _tokens_consumed(api)
     try:
-        asins = _with_deadline(api.product_finder, params, domain=config.KEEPA_DOMAIN, wait=True)
+        asins = _with_deadline(api.product_finder, params, domain=config.KEEPA_DOMAIN, wait=wait)
     except Exception as e:
         # LIVE-CONFIRMED 2026-07-05 (Session 51): Keepa PRO-plan keys get REQUEST_REJECTED on the
         # Product Finder endpoint (it's an API-plan feature). The product-SEARCH endpoint IS
@@ -445,10 +450,14 @@ def redact_err(e: Exception) -> str:
         return type(e).__name__
 
 
-def enrich(asins: List[str], api=None) -> List[Dict[str, Any]]:
+def enrich(asins: List[str], api=None, wait: bool = True) -> List[Dict[str, Any]]:
     """
     Pull stats for ASINs via api.query and normalize the fields we score on:
     price, est_sales (from sales-rank drops), reviews, rating, weight, offers.
+
+    wait: see find_candidates()'s docstring — False for the hourly burst collector (never
+    block waiting on a token refill; a request beyond the current bank should fail/degrade
+    fast, not stall the run).
     """
     if not asins:
         return []
@@ -468,7 +477,9 @@ def enrich(asins: List[str], api=None) -> List[Dict[str, Any]]:
         rating=True,
         buybox=True,     # -> product['buyBoxStats']: who wins the Buy Box & how often
         history=False,   # we only need stats, not full time series -> cheaper
-        wait=True,        # drip-pace against the token bucket (System Blueprint Prompt G2)
+        wait=wait,        # drip-pace against the token bucket (System Blueprint Prompt G2) —
+                          # or not, for the hourly burst (DATA_ENGINE_PLAN.md's spend-only-
+                          # what's-banked rule).
     )
     after = _tokens_consumed(api)
     plist = products or []
@@ -492,16 +503,15 @@ def enrich(asins: List[str], api=None) -> List[Dict[str, Any]]:
     return out
 
 
-def query_history(asins: List[str], api=None, days: int = 365) -> List[Dict[str, Any]]:
+def query_history(asins: List[str], api=None, days: int = 365, wait: bool = True) -> List[Dict[str, Any]]:
     """Pull FULL price/rank/offer HISTORY (not just current stats) for a batch of ASINs — the
     backtest engine's on-policy data source (DATA_ENGINE_PLAN.md V2). Unlike enrich() (history=
     False, cheap), this returns Keepa's time-series `data`/`csv` so features can be reconstructed
     at PAST dates. Each raw product is archived (endpoint 'product_history', keyed by ASIN) so a
     re-pull dedupes. Returns the RAW keepa products (backtest.parse_keepa_history parses them).
 
-    UNVERIFIED against a live Keepa response in this repo (no paid key spent here) — the request
-    shape mirrors enrich()'s confirmed api.query signature with history=True/days=365; confirm the
-    exact token cost + csv layout on the first real pull."""
+    LIVE-VERIFIED 2026-07-05 (Session 51): 1 token/ASIN observed for this exact field mix.
+    wait: see find_candidates()'s docstring — False for the hourly burst collector."""
     if not asins:
         return []
     _require_keepa()
@@ -509,7 +519,7 @@ def query_history(asins: List[str], api=None, days: int = 365) -> List[Dict[str,
     before = _tokens_consumed(api)
     products = _with_deadline(
         api.query, list(asins), domain=config.KEEPA_DOMAIN,
-        stats=90, rating=False, history=True, days=days, wait=True,
+        stats=90, rating=False, history=True, days=days, wait=wait,
     )
     after = _tokens_consumed(api)
     plist = products or []

@@ -1,28 +1,34 @@
 """
 run_daily.py — the single daily entry point (System Blueprint Prompt G2).
 
-Orchestrates: brain-drift check -> pipeline.run_once() (which already does drip-scan discovery,
-hard gates, enrichment, scoring with explain-why, and idempotent Supabase upserts, plus its own
-`runs`-row wrapping from G1) -> ONE batched Discord digest embed to the "daily_digest" stream
-(distinct from discord_notify.post_picks(), which posts to "scout_picks" — the digest is a
-single summary message, respecting webhook rate limits) -> finally ping HEALTHCHECK_URL
-(healthchecks.io, free) on success or its /fail endpoint on failure, so a machine that never
-woke up is still detected (a webhook alone can't report a process that's asleep).
+REBALANCED (Session 54, DATA_ENGINE_PLAN.md hourly-collector era): Keepa candidate SCANNING no
+longer happens here — it moved to the hourly cloud burst collector (scout/collect_hourly.py,
+.github/workflows/keepa-collect.yml), which captures ~100% of the Keepa Pro trickle's token
+income instead of the ~50% a PC-only overnight run captured. This file is now the LOCAL
+HOUSEKEEPING run: brain-drift check -> drain the hourly collector's raw-inbox mailbox into the
+real local Parquet lake (scout/drain_inbox.py) -> deals collection -> reports/proposals/drift
+checks -> ONE batched Discord digest embed to the "daily_digest" stream (now including the
+hourly-collector's own totals for the day: bursts fired, tokens spent, ASINs scanned, backtest
+progress) -> finally ping HEALTHCHECK_URL (healthchecks.io, free) on success or its /fail
+endpoint on failure, so a machine that never woke up is still detected.
 
 Multi-channel Discord routing (Cowork Session 23's 7 provisioned webhooks) goes through
 discord_router.py: this file posts the digest ("daily_digest") and system-health alerts
-("system_health" — run failures, brain drift, low Keepa tokens); pipeline.py posts picks
-("scout_picks") via discord_notify.py; propose_updates.py posts a short notice
-("brain_proposals"); scout/deals/collect.py posts source stats ("retail_deals"). The digest
-keeps a one-line cross-channel summary so it remains the single place that proves the whole
-run happened.
+("system_health" — run failures, brain drift, low Keepa tokens); scout/collect_hourly.py's own
+runs post picks ("scout_picks") the same way pipeline.py always did; propose_updates.py posts a
+short notice ("brain_proposals"); scout/deals/collect.py posts source stats ("retail_deals").
+The digest keeps a one-line cross-channel summary so it remains the single place that proves the
+whole run happened.
 
 Usage:
-    python run_daily.py               # real run — needs KEEPA_KEY (see .env)
-    python run_daily.py --dry-run     # no external writes/posts; prints the summary
-    python run_daily.py --dry-run-live  # THIS_WEEK.md Prompt W2 — Keepa discovery honestly
-                                         # skipped (no key yet), everything else runs for real
-                                         # (deals collection, a real runs row, digest, heartbeat)
+    python run_daily.py               # real run — scanning is honestly skipped (moved to the
+                                       # hourly cloud collector); housekeeping runs for real
+    python run_daily.py --dry-run     # exercises pipeline.run_once() locally (no external
+                                       # writes/posts) — for validating scoring/gate changes
+    python run_daily.py --dry-run-live  # THIS_WEEK.md Prompt W2's original name — now BEHAVIOR-
+                                         # IDENTICAL to the plain invocation above (kept for
+                                         # anyone still typing it explicitly; only the digest's
+                                         # skip-reason string differs)
 
 Schedule it: see the "Scheduling" section in scout/README.md for the Windows Task Scheduler
 command (with "run when missed" enabled) and the equivalent cron line for a future small VPS.
@@ -189,6 +195,15 @@ def format_digest(summary: Dict[str, Any], drift_warning: Optional[str],
         description = ("Keepa discovery skipped honestly — no KEEPA_KEY configured yet "
                        "(dry-run-live mode). Deals collection, runs telemetry, and this digest "
                        "still ran for real.")
+    elif summary.get("local_housekeeping"):
+        # Session 54 (DATA_ENGINE_PLAN.md hourly-collector era) — the new default: scanning
+        # moved to the hourly cloud collector, so this local run is housekeeping only. Not
+        # "the scout looked and found nothing" — it never looked here; see the hourly-collector
+        # line below for today's actual scanning totals.
+        description = ("Keepa scanning now runs hourly in the cloud (collect_hourly.py, "
+                       "keepa-collect.yml) — this local run is housekeeping only (raw-inbox "
+                       "drain, deals, reports, digest). See the hourly-collector line below "
+                       "for today's totals.")
     else:
         description = f"No candidates cleared the bar this run ({found} scanned, {scored} scored)."
 
@@ -236,7 +251,45 @@ def format_digest(summary: Dict[str, Any], drift_warning: Optional[str],
         # V0 data lake (DATA_ENGINE_PLAN.md) — one honest line: rows/bytes archived this run,
         # running total on disk, dedupe rate. Absent when archiving is disabled.
         embed["fields"].append({"name": "🗄️ Data lake", "value": lake_digest, "inline": False})
+    drain = summary.get("drain_inbox")
+    if drain and drain.get("status") != "disabled":
+        embed["fields"].append({"name": "📥 Raw-inbox drain", "value": drain_inbox_digest_line(drain),
+                               "inline": False})
+    hourly = summary.get("hourly_collection")
+    if hourly:
+        embed["fields"].append({"name": "⏱️ Hourly collector (today)", "value": (
+            f"{hourly['runs_fired']} burst(s) fired, {hourly['tokens_spent']} tokens spent, "
+            f"{hourly['asins_scanned']} ASINs scanned, {hourly['backtest_rows']} backtest rows total"),
+            "inline": False})
     return {"username": "FBA Scout — Daily Digest", "embeds": [embed]}
+
+
+def drain_inbox_digest_line(stats: Dict[str, Any]) -> str:
+    """Delegates to drain_inbox.py's own line formatter (lazy import — keeps run_daily's own
+    import chain from picking up drain_inbox's Supabase Storage deps at module load)."""
+    import drain_inbox
+    return drain_inbox.digest_line(stats)
+
+
+def hourly_collection_summary() -> Optional[Dict[str, Any]]:
+    """Today's hourly-collector totals for the digest: bursts fired, tokens spent, ASINs
+    scanned, current backtest row count. None if unavailable or no bursts have fired yet today
+    (an honest absence, not a zero-filled fabrication)."""
+    try:
+        runs = db.hourly_runs_today()
+    except Exception as e:
+        log.warning("hourly_runs_today failed (non-fatal): %s", e)
+        return None
+    if not runs:
+        return None
+    tokens = sum(r.get("tokens_consumed") or 0 for r in runs)
+    asins = sum(r.get("asins_scanned") or 0 for r in runs)
+    try:
+        backtest_rows = db.count_backtest_rows()
+    except Exception:
+        backtest_rows = None
+    return {"runs_fired": len(runs), "tokens_spent": tokens, "asins_scanned": asins,
+           "backtest_rows": backtest_rows}
 
 
 def cross_channel_summary_line(summary: Dict[str, Any], proposals_pending: int,
@@ -365,23 +418,34 @@ def main(dry_run: bool = False, dry_run_live: bool = False) -> Dict[str, Any]:
     summary: Dict[str, Any] = {}
     ok = False
     try:
-        if dry_run_live:
-            # THIS_WEEK.md Prompt W2 — "dress rehearsal": run everything that CAN run without a
-            # Keepa key for REAL (deals collection, runs telemetry, digest, heartbeat — all
-            # gated on `not dry_run` below, which dry_run_live never sets True), while honestly
-            # SKIPPING the Keepa-dependent discovery step instead of letting it raise. A real
-            # runs row is still written (status="skipped", not "failed" — nothing broke; this
-            # was never expected to run yet) so Runs Health shows today's cycle happened.
-            run_id = db.start_run()
-            db.finish_run(run_id, status="skipped",
-                          error_summary="Keepa discovery skipped honestly (dry-run-live mode, "
-                                        "no KEEPA_KEY configured yet) - not a failure.")
-            summary = {"found": 0, "scored": 0, "new_picks": 0, "posted": 0,
-                      "run_id": run_id, "dry_run_live": True}
-            ok = True
-        else:
-            summary = pipeline.run_once(dry_run=dry_run, post=not dry_run)
+        if dry_run:
+            # --dry-run stays a real exercise of the scanning/scoring pipeline (no external
+            # writes/posts) — useful for validating scoring/gate changes locally even though
+            # production scanning itself has moved off this machine (see below).
+            summary = pipeline.run_once(dry_run=True, post=False)
             ok = "error" not in summary
+        else:
+            # REBALANCED (Session 54, DATA_ENGINE_PLAN.md hourly-collector era): Keepa candidate
+            # SCANNING moved to the hourly cloud collector (scout/collect_hourly.py,
+            # .github/workflows/keepa-collect.yml) — an hourly burst captures ~100% of the Pro
+            # trickle's token income instead of the ~50% a PC-only overnight run captured. This
+            # local run is now HOUSEKEEPING ONLY: drain the raw-inbox mailbox into the real lake,
+            # run deals collection, reports, proposals, drift checks, digest, heartbeat. A real
+            # runs row is still written honestly (status="skipped", never "failed" — nothing
+            # broke, scanning intentionally lives elsewhere now) so Runs Health still shows
+            # today's local cycle happened. --dry-run-live's own reason string is kept verbatim
+            # for anyone still invoking it explicitly (THIS_WEEK.md Prompt W2) — it is now
+            # otherwise IDENTICAL to the default path, not a separate code branch.
+            run_id = db.start_run()
+            reason = ("Keepa discovery skipped honestly (dry-run-live mode, no KEEPA_KEY "
+                     "configured yet) - not a failure." if dry_run_live else
+                     "Keepa discovery moved to the hourly cloud collector (collect_hourly.py, "
+                     "keepa-collect.yml) - this local run is housekeeping only (drain_inbox + "
+                     "reports + digest), not a failure.")
+            db.finish_run(run_id, status="skipped", error_summary=reason)
+            summary = {"found": 0, "scored": 0, "new_picks": 0, "posted": 0,
+                      "run_id": run_id, "dry_run_live": dry_run_live, "local_housekeeping": True}
+            ok = True
     except Exception as e:
         # Code Review 2026-07-02, Finding B5: pipeline.run_once() already redacts its OWN
         # summary["error"]/error_summary before re-raising, but `raise` re-raises the ORIGINAL
@@ -399,6 +463,24 @@ def main(dry_run: bool = False, dry_run_live: bool = False) -> Dict[str, Any]:
         if run_id is None:
             recent = db.recent_runs(limit=1)
             run_id = recent[0].get("id") if recent else None
+
+        if not dry_run:
+            # Session 54 housekeeping: pull the hourly cloud collector's raw-inbox mailbox
+            # (Supabase Storage) into the real local Parquet lake before anything else — this is
+            # now the FIRST thing the local run does, since scanning itself no longer happens
+            # here. Non-fatal: a bucket hiccup never blocks deals/reports/digest below.
+            try:
+                import drain_inbox
+                summary["drain_inbox"] = drain_inbox.drain()
+            except Exception as e:
+                log.warning("drain_inbox failed (non-fatal): %s", e)
+            # Session 54 — the hourly cloud collector's own telemetry, aggregated for today
+            # (runs fired, tokens spent, ASINs scanned, backtest progress). Absent (not zeroed)
+            # if nothing has fired yet today.
+            try:
+                summary["hourly_collection"] = hourly_collection_summary()
+            except Exception as e:
+                log.warning("hourly_collection_summary failed (non-fatal): %s", e)
 
         deals_summary = None
         if not dry_run:
@@ -527,11 +609,10 @@ if __name__ == "__main__":
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="no external writes/posts")
     mode.add_argument("--dry-run-live", action="store_true",
-                      help="THIS_WEEK.md Prompt W2 - honestly skip Keepa discovery (no key "
-                           "needed yet), but run everything else for real: deals collection, "
-                           "a real runs row, proposals/searches-due/weekly-ops checks, the "
-                           "digest, and the heartbeat. For running the daily cycle before "
-                           "KEEPA_KEY exists.")
+                      help="THIS_WEEK.md Prompt W2's original name. Session 54: scanning moved "
+                           "to the hourly cloud collector, so this is now BEHAVIOR-IDENTICAL to "
+                           "the plain invocation (only the digest's skip-reason string differs) "
+                           "- kept for anyone still typing it explicitly.")
     args = parser.parse_args()
     result = main(dry_run=args.dry_run, dry_run_live=args.dry_run_live)
     print(json.dumps({k: v for k, v in result.items() if k != "picks"}, indent=2, default=str))

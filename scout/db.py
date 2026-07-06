@@ -864,3 +864,26 @@ def count_backtest_rows() -> int:
     except Exception as e:
         print(f"[db] count_backtest_rows failed: {e}")
         return 0
+
+
+# ----------------------------------------------------------------------------
+# hourly-collector telemetry (scout/collect_hourly.py, keepa-collect.yml, Session 54). I/O
+# only; used by run_daily.py's local housekeeping run to report "hourly-collection totals" in
+# the daily digest, since scanning itself moved to the hourly cloud collector.
+# ----------------------------------------------------------------------------
+def hourly_runs_today() -> List[Dict[str, Any]]:
+    """Every collect_hourly.py run (host='github-actions-hourly', start_run()'s own host label)
+    since UTC midnight today. [] if unavailable — never raises."""
+    if not enabled():
+        return []
+    today = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT00:00:00")
+    try:
+        r = requests.get(
+            f"{SUPA}/rest/v1/runs?host=eq.github-actions-hourly&started_at=gte.{today}&select=*",
+            headers=_headers(), timeout=15,
+        )
+        r.raise_for_status()
+        return r.json() or []
+    except Exception as e:
+        print(f"[db] hourly_runs_today failed: {e}")
+        return []

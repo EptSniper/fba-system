@@ -1,6 +1,6 @@
 {
   "$comment": "SINGLE SOURCE OF TRUTH for the AI's brain. Both the item finder/rater (scout/) and the control center read this. When Mehmet feeds new info and Claude distills it, this file is updated -> the scout and the dashboard both update. See ai-system/ingestion-pipeline.md.",
-  "updated": "2026-07-05",
+  "updated": "2026-07-06",
   "model": "online arbitrage (OA)",
   "criteria": {
     "bsrMax": 200000,
@@ -271,7 +271,7 @@
       "dailyScanTokens": 600,
       "shadowRecheckTokens": 80,
       "backtestTokens": 700,
-      "source": "Pro-trickle split (Session 46 analysis; GL1 go-live Session 51, 2026-07-05). The Pro plan refills 1 token/min (~1440/day, 60-token bank); this splits the observed generation across the nightly scan, the weekly shadow rechecks (shadow_outcomes._recheck_token_cap reads shadowRecheckTokens), and the backtest drip. Live-confirmed 2026-07-05: Product Finder API is REQUEST_REJECTED on Pro (keepa_client falls back to the search API, 10 tokens/term); history pulls cost 1 token/ASIN; search 10 tokens/query."
+      "source": "SUPERSEDED as an enforced split by Session 54's hourly burst collector (scout/collect_hourly.py, keepa-collect.yml, hourly at :07) - it no longer allocates a FIXED daily amount per tier; instead every hour it reads the ACTUAL currently-banked tokensLeft and spends it waterfall-style in strict priority order (1. shadow-outcome rechecks due today, 2. hint-led candidate scan, 3. backtest history fetches with whatever's left), never waiting for a refill. These three numbers remain as DEFAULT fallbacks for standalone/manual invocations of shadow_outcomes.run_rechecks()/backtest.run_backtest() outside the hourly collector (e.g. a local debug run). Original Pro-trickle sizing analysis: Session 46 (fixed daily split) + GL1 go-live Session 51, 2026-07-05 (the Pro plan refills 1 token/min, ~1440/day, 60-token bank). Live-confirmed 2026-07-05: Product Finder API is REQUEST_REJECTED on Pro (keepa_client falls back to the search API, 10 tokens/term); history pulls cost 1 token/ASIN; search 10 tokens/query."
     },
     "source": "System Blueprint Prompt 3.1 — the label builder (scout/labels.py) refuses to assemble a training table below this many labeled rows (with both positive and negative outcomes represented). Below it, the scout runs on the transparent rule score alone; this is a floor for even ATTEMPTING calibration, not a promotion threshold — scout_pro's champion/challenger gate (PROMOTION_MIN_GAIN) is the separate, stricter bar for actually replacing the rule engine.",
     "harvesterSource": "DATA_ENGINE_PLAN.md V0 #4 — scout/harvest.py idle-token harvester. harvesterEnabled is FALSE on the Keepa Pro trickle (1 token/min, 60 bank: no idle surplus to bank; harvest.enabled() returns a blocked-on-upgrade status). Flip to true only after upgrading to the 20/min API tier. harvestTokenShare (0..1) is the fraction of the OBSERVED daily token generation the harvester may spend once enabled (harvest.observed_daily_generation reads the real refill rate; never an assumed tier).",

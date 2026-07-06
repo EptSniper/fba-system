@@ -15,6 +15,7 @@ import sys
 import tempfile
 import shutil
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -178,6 +179,71 @@ class DataLakeTest(unittest.TestCase):
         self.assertIn("lake:", line)
         self.assertIn("rows", line)
         self.assertIn("dedupe", line)
+
+    # --- ingest_external_row (Session 54, the raw-inbox drain path) --------
+    def test_ingest_external_row_preserves_original_metadata(self):
+        """The drain path must NEVER re-stamp fetched_at/content_hash with 'now' — losing the
+        TRUE original fetch time would corrupt any as-of-date feature reconstruction that ever
+        reads from the lake."""
+        original_row = {
+            "source": "keepa", "entity_id": "B10", "endpoint": "product",
+            "params_hash": "", "fetched_at": "2020-01-01T00:00:00+00:00",
+            "tokens_consumed": 1, "content_hash": datalake.content_hash('{"asin":"B10"}'),
+            "payload": '{"asin":"B10"}', "pipeline_context": '{"run_id": "cloud-run-1"}',
+        }
+        self.assertTrue(datalake.ingest_external_row(original_row))
+        datalake.flush("test-run")
+        found = []
+        for dp, _d, files in os.walk(self.tmp):
+            found += [os.path.join(dp, f) for f in files if f.endswith(".parquet")]
+        table = pq.read_table(found[0])
+        row = table.to_pylist()[0]
+        self.assertEqual(row["fetched_at"], "2020-01-01T00:00:00+00:00")  # untouched, not "now"
+        self.assertEqual(row["pipeline_context"], '{"run_id": "cloud-run-1"}')
+
+    def test_ingest_external_row_dedupes_on_its_own_stored_hash(self):
+        row = {"source": "keepa", "entity_id": "B11", "endpoint": "product",
+              "fetched_at": "2020-01-01T00:00:00+00:00", "content_hash": "samehash",
+              "payload": "x", "pipeline_context": "{}"}
+        self.assertTrue(datalake.ingest_external_row(row))
+        self.assertFalse(datalake.ingest_external_row(dict(row)))  # a re-drained duplicate
+        self.assertEqual(datalake.telemetry()["deduped"], 1)
+
+    def test_ingest_external_row_rejects_malformed_row(self):
+        self.assertFalse(datalake.ingest_external_row({"source": "keepa"}))  # missing fields
+
+    def test_ingest_external_row_disabled_is_noop(self):
+        os.environ["DATALAKE_ENABLED"] = "0"
+        row = {"source": "keepa", "entity_id": "B12", "endpoint": "product",
+              "fetched_at": "t", "content_hash": "h", "payload": "x", "pipeline_context": "{}"}
+        self.assertFalse(datalake.ingest_external_row(row))
+
+    # --- cloud-inbox flush mode (Session 54) --------------------------------
+    def test_flush_routes_to_raw_inbox_when_cloud_mode_enabled(self):
+        import raw_inbox
+        datalake.archive("keepa", "B13", "product", {"x": 1})
+        with mock.patch.object(raw_inbox, "enabled", return_value=True), \
+             mock.patch.object(raw_inbox, "upload_buffered",
+                               return_value={"uploaded": 1, "bytes": 42, "failures": 0}) as mup:
+            stats = datalake.flush("test-run")
+        mup.assert_called_once()
+        self.assertEqual(stats["written"], 1)
+        self.assertEqual(stats["bytes"], 42)
+        # buffer was cleared and handed to raw_inbox, NOT written as local Parquet
+        keepa_dir = os.path.join(self.tmp, "keepa")
+        parquet_files = []
+        if os.path.isdir(keepa_dir):
+            for dp, _d, files in os.walk(keepa_dir):
+                parquet_files += [f for f in files if f.endswith(".parquet")]
+        self.assertEqual(parquet_files, [])
+
+    def test_archive_buffers_without_pyarrow_when_cloud_mode(self):
+        """archive() must not gate on pyarrow being installed — the cloud-inbox flush path
+        (raw_inbox.py, JSON+zstd) never touches pyarrow/Parquet at all, so an environment
+        without pyarrow installed must still be able to buffer+upload."""
+        with mock.patch.object(datalake, "pa", None):
+            self.assertTrue(datalake.archive("keepa", "B14", "product", {"x": 1}))
+        self.assertEqual(datalake.telemetry()["buffered"], 1)
 
 
 if __name__ == "__main__":

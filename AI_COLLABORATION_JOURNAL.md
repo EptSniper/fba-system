@@ -182,11 +182,6 @@ EDIT: `.github/workflows/deal-watch.yml`, `.github/workflows/train-ranker.yml`.
 
 #### Limitations / honest notes
 
-- **Not yet live-verified end-to-end on the actual GitHub Actions runner** — that's still blocked on the
-  Session 52 account gate. Everything above was verified as thoroughly as possible from outside that
-  constraint (real git operations against the real repo, real YAML/bash syntax validation, real day-count
-  math against the real commit history) but the true test — an actual scheduled/dispatched run going
-  green on ubuntu-latest — waits on Mehmet clearing the gate.
 - Left `research-inbox/*`, `learning-hub/tracking/{memory-effectiveness-report,ops-report}.md`, and
   `learning-hub/data/top100-status.json` uncommitted — these are automated daily-pipeline output
   unrelated to this task; not reviewed or touched this session, so not bundled into this commit.
@@ -194,12 +189,34 @@ EDIT: `.github/workflows/deal-watch.yml`, `.github/workflows/train-ranker.yml`.
   per Session 51); this session's pattern (plain-git checkout, system python3, inline keepalive) is the
   template to reuse verbatim when it's built.
 
+#### UPDATE (same session) — live-verified: it worked, and it bypasses the gate entirely
+
+After pushing, dispatched `train-ranker.yml` for real (`gh workflow run` + `gh run view --json jobs`):
+**every step succeeded** — Set up job, Checkout (plain git), Install minimal deps (python3), Train +
+evaluate, Alert on failure (correctly skipped), Keepalive (inline) — all `success`. No "Repository access
+blocked" — the marketplace-action-free rewrite doesn't just defend against that gate, it walks straight
+past it, since there is nothing left to download. This is the first fully-green run of ANY workflow in this
+repo. Separately re-checked the workflows list (unauthenticated public API): **`deal-watch.yml` is now
+registered and `active`** (`total_count: 3` — train-ranker, deal-watch, Dependabot's auto-workflow), where
+it had been completely absent (404 even on direct dispatch) throughout Session 52 — strong evidence the
+account gate was also the reason it hadn't synced, and pushing again (this session's commit) let it finally
+register once the gate's effective grip loosened.
+
+**Not completed this session**: manually triggering `deal-watch.yml` itself and confirming its Discord post.
+Windows Git Credential Manager's `git credential fill` (the mechanism used to hand a token to `gh` without a
+second browser login) started hanging indefinitely partway through this verification — confirmed via
+multiple isolated timeout tests (8s/25s/40s, one with a more specific path= query) while plain `bash`/`curl`
+to public endpoints kept working fine, so this is a transient tool/environment issue, not a project problem.
+Given train-ranker's identical marketplace-action-free pattern just went fully green, deal-watch going green
+too is the expected outcome, but it is NOT yet independently confirmed.
+
 #### Exact next safe step
 
-Once Mehmet clears the GitHub account gate: re-trigger `train-ranker.yml` and `deal-watch.yml`
-(`gh workflow run <file> --repo EptSniper/fba-system`) to confirm both now go green using the plain-git
-path, then build `collect_hourly.py` + the raw-inbox mailbox + `keepa-collect.yml` using this same
-marketplace-action-free pattern from the start.
+Confirm `deal-watch.yml` goes green + posts to #retail-deals via ONE of: (a) Mehmet clicks "Run workflow" in
+the GitHub UI (fastest — the Actions tab now shows it), (b) let it fire naturally at the next 21:00
+America/New_York schedule slot, or (c) ask Claude Code to retry the `gh workflow run` trigger once the
+credential-manager hang has cleared. After that: build `collect_hourly.py` + the raw-inbox mailbox +
+`keepa-collect.yml` using this same marketplace-action-free pattern from the start.
 
 ### 2026-07-06 — Claude Code Session 52: pushed to GitHub (EptSniper/fba-system) + diagnosed live Actions failures — root cause is a GitHub account-level restriction, not a code bug
 

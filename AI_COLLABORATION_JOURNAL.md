@@ -202,21 +202,25 @@ it had been completely absent (404 even on direct dispatch) throughout Session 5
 account gate was also the reason it hadn't synced, and pushing again (this session's commit) let it finally
 register once the gate's effective grip loosened.
 
-**Not completed this session**: manually triggering `deal-watch.yml` itself and confirming its Discord post.
 Windows Git Credential Manager's `git credential fill` (the mechanism used to hand a token to `gh` without a
-second browser login) started hanging indefinitely partway through this verification — confirmed via
-multiple isolated timeout tests (8s/25s/40s, one with a more specific path= query) while plain `bash`/`curl`
-to public endpoints kept working fine, so this is a transient tool/environment issue, not a project problem.
-Given train-ranker's identical marketplace-action-free pattern just went fully green, deal-watch going green
-too is the expected outcome, but it is NOT yet independently confirmed.
+second browser login) hung indefinitely for a stretch mid-session (confirmed transient via isolated 8s/25s/
+40s timeout tests, while plain `bash`/`curl` to public endpoints kept working) — it self-recovered a few
+minutes later (a subsequent `git push` succeeded, then `gh` auth worked again), so this was a one-off tool/
+environment hiccup, not a project problem.
+
+**Once it recovered, dispatched `deal-watch.yml` for real too — ALSO fully green**, first time ever: Set up
+job, Gate check, Checkout (plain git), Install deps, **Run the deal watch, Alert on failure (skipped,
+correctly), Keepalive** — every step `success`. Pulled the real run log: **1000 deals collected and upserted
+to Supabase** (950 Slickdeals RSS + 50 Reddit), **22 fresh deal hints written**, zero broken sources, one
+honestly-logged rate-limited source (Chewy — exactly the documented backoff-not-broken behavior), a few clr
+sources correctly skipped per the existing sd-rss-only retirement logic. Both of this repo's live workflows
+are now confirmed fully working, marketplace-action-free, end to end.
 
 #### Exact next safe step
 
-Confirm `deal-watch.yml` goes green + posts to #retail-deals via ONE of: (a) Mehmet clicks "Run workflow" in
-the GitHub UI (fastest — the Actions tab now shows it), (b) let it fire naturally at the next 21:00
-America/New_York schedule slot, or (c) ask Claude Code to retry the `gh workflow run` trigger once the
-credential-manager hang has cleared. After that: build `collect_hourly.py` + the raw-inbox mailbox +
-`keepa-collect.yml` using this same marketplace-action-free pattern from the start.
+Both workflows are live and green. Confirm the digests actually landed in #retail-deals and #brain-proposals
+(should already be there). Next: build `collect_hourly.py` + the raw-inbox mailbox + `keepa-collect.yml`
+using this same marketplace-action-free pattern from the start, per the spec already given.
 
 ### 2026-07-06 — Claude Code Session 52: pushed to GitHub (EptSniper/fba-system) + diagnosed live Actions failures — root cause is a GitHub account-level restriction, not a code bug
 

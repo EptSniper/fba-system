@@ -115,6 +115,147 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-06 — Claude Code Session 54: hourly Keepa burst collector — raw-inbox mailbox, drain job, rebalanced local housekeeping — built, tested, live-dispatched twice, one real bug found+fixed live
+
+#### Request
+
+The gate cleared (Mehmet added a payment method to the GitHub account) — re-verify train-ranker/
+deal-watch, then build the hourly Keepa burst collector per the standing spec: collect_hourly.py
++ raw-inbox mailbox to Supabase Storage + keepa-collect.yml hourly at :07 + drain_inbox.py wired
+into the local run + rebalanced local housekeeping. Live-verify one dispatch end-to-end. Also:
+"Open local host."
+
+#### Opened localhost
+
+Started the control-center Next.js dev server (`npm run dev`), confirmed `http://localhost:3000`
+responds 200.
+
+#### Built
+
+- **`scout/collect_hourly.py`** — the burst collector. Reads the REAL currently-banked token
+  count (never waits for a refill) and spends it waterfall-style in strict priority order: (1)
+  `shadow_outcomes.run_rechecks()` — due-today shadow-label rechecks, the time-sensitive tier;
+  (2) `hint_led_scan()` — a lightweight hint-led discovery pass reusing `pipeline._evaluate()`
+  directly (the project's own established precedent for intentionally sharing "private"
+  internals as a single source of truth, e.g. `scripts/pre-commit.py` reusing `redact.py`'s
+  regex objects) so gates/scoring never fork into a second implementation; (3)
+  `backtest.run_backtest()` with whatever's left. Each tier's REAL observed spend (read off the
+  shared Keepa client, not a rough estimate) is subtracted before sizing the next tier's budget.
+  Writes a real `runs` row (`host="github-actions-hourly"`) so Runs Health shows every burst.
+- **`scout/keepa_client.py`** gained a `wait: bool = True` parameter on `find_candidates`/
+  `enrich`/`query_history` (default preserves ALL existing drip behavior everywhere else) so the
+  burst collector can pass `wait=False` and structurally never block on a refill — the previous
+  `wait=True` would have made a burst potentially stall for minutes if a single request exceeded
+  the current bank.
+- **`scout/raw_inbox.py`** — the cloud-side mailbox. A GitHub Actions runner has no persistent
+  disk, so raw Keepa responses can't reach the local Parquet lake; every buffered row instead
+  becomes one zstd-compressed JSON blob uploaded to the Supabase Storage bucket `raw-inbox/`
+  (auto-created on first use), preserving `datalake.py`'s exact row schema so the drain path
+  needs zero reshaping.
+- **`scout/datalake.py`**: `flush()` now branches to `raw_inbox.upload_buffered()` when
+  `DATALAKE_CLOUD_INBOX=1` is set (before ever touching pyarrow); new `ingest_external_row()`
+  adds an already-formed external row to the local buffer, preserving its ORIGINAL fetched_at/
+  content_hash/pipeline_context verbatim (never re-stamped with "now" — that would corrupt any
+  as-of-date feature reconstruction reading from the lake) and running the same dedupe-manifest
+  check keyed on the row's own stored hash. **Fixed a real bug found while building this**:
+  `archive()` gated on `pa is None` (pyarrow installed) before even buffering — but buffering is
+  a plain dict append that never needs pyarrow; only the local Parquet WRITE step does. Left
+  as-is, a pyarrow-less cloud environment would have silently buffered nothing at all. Moved the
+  gate to just `enabled()`.
+- **`scout/drain_inbox.py`** — the local half. Lists the bucket, downloads + zstd-decompresses +
+  re-hashes each object against its own stored `content_hash` (a checksum mismatch is left in
+  the bucket for manual review, NEVER ingested with possibly-corrupted data, never deleted
+  either), hands verified rows to `ingest_external_row()`, flushes into the real lake, deletes
+  drained objects. Reports bucket size honestly; a `system_health`-worthy warning line at
+  >=700MB (the free tier caps around 1GB).
+- **`.github/workflows/keepa-collect.yml`** — hourly at `:07` + `workflow_dispatch`,
+  **marketplace-action-free from the start** (Session 53's pattern: plain git fetch-by-sha via
+  `github.token`, preinstalled `python3`, inline 45-day-guarded keepalive commit) — this class of
+  workflow will never need the account-gate defense at all. `scout/requirements-collect.txt` is
+  scoped to what `collect_hourly.py`'s import chain actually needs (keepa, scikit-learn, joblib,
+  numpy, zstandard) — not the full stack, but not literally "requests+zstandard only" either,
+  since reusing the real scoring pipeline (a deliberate correctness choice) pulls those in.
+- **Rebalanced `scout/run_daily.py`**: the default (non-dry-run) invocation no longer calls
+  `pipeline.run_once()` at all — Keepa scanning moved entirely to the hourly cloud collector (an
+  hourly burst captures ~100% of the Pro trickle's token income vs ~50% a PC-only overnight run
+  captured). The local run is now housekeeping only: drains the raw-inbox mailbox first, then
+  deals collection, reports, proposals, drift checks, digest (now showing the day's
+  hourly-collector totals: bursts fired, tokens spent, ASINs scanned, backtest-row progress),
+  heartbeat. `--dry-run` still exercises the real pipeline locally for scoring/gate validation;
+  `--dry-run-live` is now behavior-identical to the plain invocation (kept for anyone still
+  typing it explicitly). Added `db.hourly_runs_today()` for the digest aggregation.
+- **Brain**: `learning.tokenBudget`'s three fixed numbers are now documented as SUPERSEDED
+  defaults (the hourly collector no longer enforces a fixed daily split — it spends whatever's
+  actually banked each hour) rather than removed outright, since standalone/manual invocations
+  of `shadow_outcomes.run_rechecks()`/`backtest.run_backtest()` still read them as fallbacks.
+
+#### Rewrote 5 obsolete tests + fixed a latent test-isolation gap
+
+`run_daily.py`'s scanning removal made 5 existing tests fail (they patched `pipeline.run_once`
+for the now-dead default-path branch) — rewrote each to exercise the SAME guarantee (heartbeat
+fires on success/failure, run_id threading, recent_runs fallback) via the new
+`db.start_run`/`finish_run` mechanics instead. Also found or the same rewrite surfaced a
+pre-existing test-isolation gap: `test_main_pings_success_heartbeat_on_clean_run` depended on
+the REAL production Review Queue being empty (it silently called live `db.queue_pending_counts()`
+and — because this session's own live-testing had left 20 real pending leads — started failing);
+pinned it to a mocked zero count in both affected tests.
+
+#### Live-verified — and found a real bug on the FIRST real dispatch
+
+Dispatched `keepa-collect.yml` for real (`gh workflow run` + `gh run watch`) — **fully green**:
+Set up job, Checkout (plain git), Install deps, Run the hourly burst collector, Keepalive, all
+`success`. The collector's own JSON output showed `tokens_available: 0, status: "ok", reason:
+"no tokens currently banked"` — investigated rather than assumed correct, and found a real bug:
+`api.tokens_left` reads a STALE 0 immediately after connecting, before any request. Confirmed
+live: calling `api.update_status()` (a free, no-token-cost probe) revealed the TRUE balance was
+**-68** — the account is in token DEBT from this session's own earlier heavy live-testing
+(Sessions 51/52), not merely empty. Without this fix the collector would have silently skipped
+real banked tokens on every run where the client hadn't already made a prior request (i.e. every
+single hourly invocation, since each is a fresh process). Fixed `_observed_tokens_left()` to call
+`update_status()` first, added tests, committed, pushed, **re-dispatched a second time** to
+confirm — still green, now honestly reading the true (still-negative-recovering) balance instead
+of a coincidentally-similar-looking stale one. Both runs confirmed as real rows in Supabase
+(`SELECT * FROM runs WHERE host='github-actions-hourly'`): ids 28 and 32, `status="success"`,
+`asins_scanned=0`, ~1 second each.
+
+#### Files changed
+
+NEW: `.github/workflows/keepa-collect.yml`, `scout/collect_hourly.py`, `scout/raw_inbox.py`,
+`scout/drain_inbox.py`, `scout/requirements-collect.txt`, `scout/tests/{test_collect_hourly,
+test_raw_inbox,test_drain_inbox}.py`.
+EDIT: `scout/{datalake,db,keepa_client,run_daily}.py`, `scout/tests/{test_datalake,
+test_run_daily}.py`, `learning-hub/data/ai-brain.json` (+ control-center snapshot).
+
+#### Checks / results
+
+542/542 scout tests passing (42 new: 13 collect_hourly incl. the token-debt/stale-read
+regression guards, 11 raw_inbox, 12 drain_inbox, 6 datalake). Two commits pushed
+(`dd78130` the feature, `d0ad72b` the live-found telemetry fix). Two real `workflow_dispatch`
+runs, both fully green, both confirmed as real Supabase rows.
+
+#### Limitations / honest notes
+
+- **The actual 3-tier spending waterfall has NOT been demonstrated with real tokens yet** — the
+  account is genuinely in token debt (-68 at first check) from this session's own earlier live
+  Keepa testing, not a flaw in the collector. At 1 token/min refill it needs roughly another hour
+  to climb back to positive; the hourly cron will pick this up automatically once it does — no
+  action needed, just time passing.
+- The raw-inbox bucket has not yet received a real object (nothing was archived since nothing was
+  spent) — `scout/drain_inbox.py` is unit-tested but not yet live-exercised against a real
+  uploaded object. Worth a manual check once the first real burst actually spends tokens.
+- `scout/requirements-collect.txt` is leaner than the full stack but not the literal
+  "requests+zstandard only" originally envisioned — a deliberate tradeoff for reusing the real
+  scoring pipeline instead of a parallel reimplementation (pulls in keepa/scikit-learn/numpy).
+
+#### Exact next safe step
+
+No action needed — once the token bank climbs back to positive (within about an hour of this
+entry), the next scheduled `:07` firing will show the first real spending burst (shadow rechecks/
+hint-led scan/backtest) and the first real raw-inbox object. Check the `runs` table (host=
+`github-actions-hourly`) or the next local daily digest's "Hourly collector (today)" line for the
+first non-zero numbers, and manually run `python scout/drain_inbox.py` once to confirm the
+end-to-end drain against real data.
+
 ### 2026-07-06 — Claude Code Session 53: made both live workflows marketplace-action-free (defense-in-depth against the account gate, not a workaround for it)
 
 #### Request

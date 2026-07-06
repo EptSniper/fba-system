@@ -25,6 +25,9 @@ class FakeApi:
         self.tokens_left = tokens_left
         self.tokens_consumed = 0
 
+    def update_status(self):
+        pass  # real keepa.Keepa refreshes tokens_left here (a free, no-token-cost probe)
+
 
 class DisabledStatesTest(unittest.TestCase):
     def test_no_keepa_key(self):
@@ -44,6 +47,31 @@ class DisabledStatesTest(unittest.TestCase):
             r = ch.run_hourly_collect(api=api)
         self.assertEqual(r["status"], "ok")
         self.assertIn("no tokens currently banked", r["reason"])
+
+    def test_negative_token_debt_reads_as_zero_not_a_crash(self):
+        """LIVE-CONFIRMED 2026-07-06: the account can be in token DEBT (a negative tokens_left)
+        after heavy usage — must degrade to 'nothing to spend', never crash or go negative in
+        the budget math."""
+        api = FakeApi(tokens_left=-68)
+        self.assertEqual(ch._observed_tokens_left(api), 0)
+
+
+class ObservedTokensProbeTest(unittest.TestCase):
+    def test_calls_update_status_before_reading(self):
+        """LIVE-CONFIRMED 2026-07-06: api.tokens_left reads a STALE 0 immediately after
+        connecting — only api.update_status() (a free, no-token-cost probe) refreshes it to the
+        TRUE current balance. Missing this call would make the collector wrongly skip real
+        banked tokens."""
+        api = FakeApi(tokens_left=0)
+        def _refresh():
+            api.tokens_left = 42
+        api.update_status = _refresh
+        self.assertEqual(ch._observed_tokens_left(api), 42)
+
+    def test_update_status_failure_degrades_to_existing_value(self):
+        api = FakeApi(tokens_left=15)
+        api.update_status = mock.Mock(side_effect=RuntimeError("network hiccup"))
+        self.assertEqual(ch._observed_tokens_left(api), 15)
 
 
 class BudgetWaterfallTest(unittest.TestCase):

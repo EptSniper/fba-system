@@ -58,8 +58,18 @@ TOKENS_PER_CANDIDATE_ESTIMATE = 3     # sizing only — real spend is always mea
 
 
 def _observed_tokens_left(api) -> int:
-    """The ACTUAL current bank, read from live Keepa telemetry — never an assumed tier. 0 (not
-    an error) when the attribute isn't populated yet (e.g. before the client's first request)."""
+    """The ACTUAL current bank, read from live Keepa telemetry — never an assumed tier.
+
+    LIVE-CONFIRMED 2026-07-06 (Session 54, first real dispatch): `api.tokens_left` reads a STALE
+    0 immediately after connecting — it is only populated after a request. `api.update_status()`
+    is a free, no-token-cost probe (confirmed: it revealed the true balance was -68, i.e. the
+    account was in token DEBT from earlier live-testing, not the stale 0 a naive read showed) —
+    call it first so a real positive balance is never missed. A negative balance (debt) or an
+    unreadable attribute both honestly return 0 (nothing to spend), never a crash or a guess."""
+    try:
+        api.update_status()
+    except Exception:
+        pass  # degrade to whatever tokens_left already holds rather than fail the whole run
     v = getattr(api, "tokens_left", None)
     return int(v) if isinstance(v, (int, float)) and v > 0 else 0
 

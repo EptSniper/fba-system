@@ -29,6 +29,7 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+import brands
 import config
 import db
 import scoring
@@ -63,6 +64,16 @@ def backtest_token_cap() -> int:
     except Exception:
         pass
     return DEFAULT_BACKTEST_TOKEN_CAP
+
+
+def sampling_config() -> Dict[str, Any]:
+    """learning.sampling (Session 55) — categories/priceBands/bsrStrata/tags. {} if unavailable."""
+    try:
+        with open(BRAIN_PATH, encoding="utf-8") as f:
+            brain = json.load(f) or {}
+        return (brain.get("learning") or {}).get("sampling") or {}
+    except Exception:
+        return {}
 
 
 # --- leakage-safe series reads (STRICTLY before the cutoff) -----------------
@@ -187,11 +198,22 @@ def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb:
 
 
 def build_rows_for_asin(asin: str, hist: History, static: Dict[str, Any],
+                        sample_source: str = "onpolicy",
                         step_days: int = STEP_DAYS, horizon: int = LABEL_HORIZON_DAYS,
                         min_history: int = MIN_HISTORY_DAYS) -> List[Dict[str, Any]]:
     """Every backtest row for one ASIN (one per simulation window). Each carries the leakage-safe
-    feature snapshot, the observed label, and split_key=asin so downstream splits stay BY ASIN."""
+    feature snapshot, the observed label, and split_key=asin so downstream splits stay BY ASIN.
+
+    sample_source (Session 55): which mechanism supplied this ASIN — 'onpolicy' (friendly+hint
+    brand-seeded, unchanged), 'explore' (brand-agnostic category-keyword search), or 'dealfeed'
+    (the Keepa /deal firehose). ip_risk is computed from the SAME brands.is_avoided() the buy
+    pipeline's hard-reject gate uses — an avoid-listed brand is still collected as training data
+    (brandFilter=NONE for explore/dealfeed) but flagged, never silently blended in unlabeled.
+    This function only ever writes to backtest_rows (via db.upsert_backtest_rows downstream) —
+    it has no path to db.log_lead/decisions/review-queue, so a flagged row can never surface as a
+    buy candidate regardless of its score (test-asserted: test_backtest_sampling.py)."""
     static = dict(static, asin=asin)
+    ip_risk = brands.is_avoided(static.get("brand"))
     rows = []
     for as_of in windows_for(hist, step_days, horizon, min_history):
         enriched = features_as_of(hist, as_of, static)
@@ -213,6 +235,9 @@ def build_rows_for_asin(asin: str, hist: History, static: Dict[str, Any],
             "est_profit": lbl["est_profit"],
             "would_have_profited": lbl["would_have_profited"],
             "label_quality": "backtest",
+            "sample_source": sample_source,
+            "category": enriched.get("category"),
+            "ip_risk": ip_risk,
         })
     return rows
 
@@ -382,15 +407,116 @@ def sample_asins_on_policy(api, budget_tokens: int, target: int = TARGET_ASINS,
     return asins[:target], spent
 
 
+def sample_asins_explore(api, budget_tokens: int, categories: Optional[List[str]] = None,
+                         find_fn: Optional[Callable] = None) -> Tuple[List[Dict[str, Any]], int]:
+    """The brand-AGNOSTIC 'explore' sample (Session 55, learning.sampling — brandFilter=NONE):
+    reuses the SAME Product-Finder-rejected-on-Pro search fallback sample_asins_on_policy already
+    depends on (keepa_client.find_candidates -> _search_asins), but seeds it with CATEGORY
+    keywords ("toys", "kitchen", ...) instead of brand names, so the token spend buys category
+    breadth instead of buy-discovery-biased brand coverage. No friendly/avoid brand list is ever
+    consulted. Returns ([{"asin","category"}], tokens_spent)."""
+    if find_fn is None:
+        import keepa_client
+        find_fn = keepa_client.find_candidates
+    cats = categories if categories is not None else (sampling_config().get("categories") or [])
+
+    out: List[Dict[str, Any]] = []
+    seen = set()
+    spent = 0
+    import keepa_client
+    for cat in cats:
+        if spent >= budget_tokens:
+            break
+        before = keepa_client._tokens_consumed(api)
+        try:
+            got = find_fn(api=api, brand_seeds=[cat], limit=50)
+        except Exception as e:
+            log.warning("explore sampling finder failed for %s (non-fatal): %s", cat, e)
+            got = []
+        after = keepa_client._tokens_consumed(api)
+        d = keepa_client._delta(before, after)
+        spent += d if isinstance(d, int) and d > 0 else 10
+        for a in got or []:
+            if a not in seen:
+                seen.add(a)
+                out.append({"asin": a, "category": cat})
+    return out, spent
+
+
+def sample_asins_stratified(api, budget_tokens: int, target: int = TARGET_ASINS,
+                            find_fn: Optional[Callable] = None,
+                            firehose_fn: Optional[Callable] = None
+                            ) -> Tuple[List[Dict[str, Any]], int, Dict[str, int]]:
+    """The brand-agnostic data-sampling plan (Session 55): three independent sources under ONE
+    budget, waterfalled in priority order — dealfeed FIRST (the cheapest ASIN diversity available
+    on this Pro plan, ~5 tokens/150-deal page), then explore (category-keyword search,
+    brand-agnostic, ~10 tokens/term), then the EXISTING onpolicy brand-seeded sample (unchanged
+    mechanism — kept as the ranker's onpolicy-vs-explore comparison baseline; buy-discovery's OWN
+    seeding in pipeline.py/discovery_hints.py is a completely separate path, untouched by this).
+    Each source's REAL observed spend is subtracted before sizing the next (same waterfall
+    philosophy as collect_hourly.py's tiers). Returns (asin_dicts, total_tokens_spent,
+    per_source_counts) where each asin_dict is {"asin", "category", "sample_source"}."""
+    share = max(0, budget_tokens) // 3
+    spent = 0
+    out: List[Dict[str, Any]] = []
+    seen = set()
+    counts = {"dealfeed": 0, "explore": 0, "onpolicy": 0}
+
+    # 1) dealfeed — cheapest, goes first. firehose_fn defaults to deals_firehose.harvest with the
+    #    library's normal wait=True drip-pacing; collect_hourly.py injects a wait=False closure
+    #    (matching its own _find_no_wait/_history_no_wait convention) for the "never block on a
+    #    refill" burst rule — the guard above already means this is rarely reached regardless.
+    try:
+        import deals_firehose
+        pages_affordable = share // max(1, deals_firehose.DEALS_PAGE_TOKENS)
+        result = (firehose_fn or deals_firehose.harvest)(api, pages=min(max(pages_affordable, 0), 4)) \
+            if pages_affordable > 0 else {"asins": [], "tokens_spent": 0}
+    except Exception as e:
+        log.warning("dealfeed harvest failed (non-fatal): %s", e)
+        result = {"asins": [], "tokens_spent": 0}
+    spent += result.get("tokens_spent") or 0
+    for d in result.get("asins") or []:
+        a = d.get("asin")
+        if a and a not in seen:
+            seen.add(a)
+            out.append({"asin": a, "category": d.get("category"), "sample_source": "dealfeed"})
+            counts["dealfeed"] += 1
+
+    # 2) explore — brand-agnostic, whatever's left of its share plus any dealfeed underspend.
+    explore_budget = max(0, budget_tokens - spent - share)  # reserve onpolicy's own share
+    explore_asins, explore_spent = sample_asins_explore(api, explore_budget, find_fn=find_fn)
+    spent += explore_spent
+    for d in explore_asins:
+        a = d.get("asin")
+        if a and a not in seen:
+            seen.add(a)
+            out.append({"asin": a, "category": d.get("category"), "sample_source": "explore"})
+            counts["explore"] += 1
+
+    # 3) onpolicy — the existing brand-seeded mechanism, unchanged, whatever budget remains.
+    onpolicy_budget = max(0, budget_tokens - spent)
+    onpolicy_asins, onpolicy_spent = sample_asins_on_policy(
+        api, budget_tokens=onpolicy_budget, target=max(0, target - len(out)), find_fn=find_fn)
+    spent += onpolicy_spent
+    for a in onpolicy_asins:
+        if a not in seen:
+            seen.add(a)
+            out.append({"asin": a, "category": None, "sample_source": "onpolicy"})
+            counts["onpolicy"] += 1
+
+    return out[:target], spent, counts
+
+
 def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET_ASINS,
                  history_fn: Optional[Callable] = None, find_fn: Optional[Callable] = None,
-                 persist: bool = True) -> Dict[str, Any]:
+                 firehose_fn: Optional[Callable] = None, persist: bool = True) -> Dict[str, Any]:
     """Orchestrate one backtest run under the token cap, RESUMABLE across days (a state file records
     processed ASINs + spend + rows written, so a re-run continues toward the ~50k-row corpus rather
     than restarting). NEVER raises — returns an honest status dict.
 
-    history_fn(asins, api) -> [raw keepa products]; find_fn is the Product Finder. Both injectable
-    for tests (no live Keepa spent in this repo)."""
+    history_fn(asins, api) -> [raw keepa products]; find_fn is the Product Finder; firehose_fn is
+    deals_firehose.harvest (Session 55). All three injectable for tests (no live Keepa spent in
+    this repo) and for collect_hourly.py's wait=False burst wrappers."""
     if not config.have_keepa():
         return {"status": "disabled", "reason": "no KEEPA_KEY (backtest needs live history pulls)",
                 "rows_written": 0}
@@ -409,11 +535,17 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
     processed = set(state.get("processed_asins", []))
     spent = int(state.get("spent_tokens", 0))
     rows_written = int(state.get("rows_written", 0))
+    row_composition = dict(state.get("row_composition") or {})
 
-    # 1) on-policy sample (Product Finder spend counts against the cap)
-    asins, sample_spent = sample_asins_on_policy(api, budget_tokens=max(0, cap - spent),
-                                                 target=target, find_fn=find_fn)
+    # 1) stratified sample — dealfeed + explore (brand-agnostic) + onpolicy (unchanged, brand-
+    #    seeded), budget-waterfalled (Session 55, learning.sampling). Product Finder/search/deal
+    #    spend all count against the same cap.
+    sample_rows, sample_spent, sample_composition = sample_asins_stratified(
+        api, budget_tokens=max(0, cap - spent), target=target, find_fn=find_fn,
+        firehose_fn=firehose_fn)
     spent += sample_spent
+    asin_source = {r["asin"]: r["sample_source"] for r in sample_rows}
+    asins = [r["asin"] for r in sample_rows]
     todo = [a for a in asins if a not in processed]
 
     # 2) pull history + build rows, batched, until the cap bites (resumable — capped ASINs remain
@@ -441,28 +573,37 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
             if not isinstance(product, dict) or not product.get("asin"):
                 continue
             hist, static = parse_keepa_history(product)
-            rows += build_rows_for_asin(product["asin"], hist, static)
+            src = asin_source.get(product["asin"], "onpolicy")
+            new_rows = build_rows_for_asin(product["asin"], hist, static, sample_source=src)
+            rows += new_rows
             batch_asins.append(product["asin"])
         if persist and rows:
             upserted = db.upsert_backtest_rows(rows)
             built += upserted
             if upserted == 0:
-                # Upsert failed (e.g. migration 010 not applied / network): do NOT mark these
+                # Upsert failed (e.g. migration 010/011 not applied / network): do NOT mark these
                 # ASINs processed — resume would then skip them forever with ZERO rows stored,
                 # a silent training-data hole (Review 2026-07-05). Their raw histories are in
                 # the lake, so the retry next run costs dedupe-cheap tokens only.
                 batch_asins = []
+            else:
+                for r in rows:
+                    row_composition[r["sample_source"]] = row_composition.get(r["sample_source"], 0) + 1
         else:
             built += len(rows)
+            for r in rows:
+                row_composition[r["sample_source"]] = row_composition.get(r["sample_source"], 0) + 1
         processed.update(batch_asins)
 
     rows_written += built
     datalake.flush("backtest")
     if persist:
         _save_state({"processed_asins": sorted(processed), "spent_tokens": spent,
-                     "rows_written": rows_written})
+                     "rows_written": rows_written, "row_composition": row_composition})
 
     return {"status": "ok", "asins_sampled": len(asins), "asins_processed": len(processed),
             "rows_written": built, "rows_total": rows_written, "tokens_spent": spent,
             "token_cap": cap, "deferred_asins": deferred,
-            "supabase_rows": db.count_backtest_rows() if persist else built}
+            "sample_composition": sample_composition, "row_composition": row_composition,
+            "supabase_rows": db.count_backtest_rows() if persist else built,
+            "supabase_rows_by_source": db.backtest_rows_by_source() if persist else row_composition}

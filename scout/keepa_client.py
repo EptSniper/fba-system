@@ -115,6 +115,9 @@ HISTORY_TOKENS_PER_ASIN = 1    # query_history(): stats=90, rating=False, histor
 SEARCH_TOKENS_PER_TERM = 10    # the flat-rate product-search fallback (Pro-plan PF substitute)
 SELLER_QUERY_TOKENS_ESTIMATE = 10  # seller_asins() — UNVERIFIED, conservative placeholder;
                                     # not on any active collector's path today, guarded anyway.
+DEALS_PAGE_TOKENS = 5          # deals_firehose.py's /deal page (<=150 deals) — Mehmet's spec,
+                                # UNVERIFIED live until the account's negative balance recovers
+                                # and a real dispatch confirms tokensConsumed (Session 55).
 
 _guard_lock = threading.Lock()
 _guard_stats = {"skips": 0, "caps": 0}
@@ -173,6 +176,25 @@ def _guard_batch(api, requested_n: int, tokens_per_unit: int, label: str) -> "tu
         print(f"[keepa] token guard: capping {label} from {requested_n} to {capped} "
              f"(bank={tokens_left}, ~{tokens_per_unit} tokens/unit)")
     return min(requested_n, capped), False
+
+
+def _guard_flat(api, cost: int, label: str) -> bool:
+    """Flat-cost sibling of _guard_batch, for endpoints whose price doesn't scale with a batch
+    size (deals_firehose.py's /deal pages, a one-time category lookup): a single call either
+    fits in the current bank or it doesn't — there's no smaller size to cap down to. Returns
+    True (ok to spend `cost` tokens now) or False (bank can't cover it — skip entirely). Same
+    single-choke-point philosophy as _guard_batch: an unreadable bank degrades to trusting the
+    caller rather than blocking it."""
+    tokens_left = current_tokens_left(api)
+    if tokens_left is None:
+        return True
+    if tokens_left < cost:
+        with _guard_lock:
+            _guard_stats["skips"] += 1
+        print(f"[keepa] token guard: bank ({tokens_left}) can't cover {label}'s {cost}-token "
+             f"flat cost — skipping (refills at 1 token/min)")
+        return False
+    return True
 
 
 def get_client(key: Optional[str] = None):

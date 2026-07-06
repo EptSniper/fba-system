@@ -610,6 +610,55 @@ def test_format_digest_omits_negative_balance_warning_when_zero():
     assert "empty/negative" not in fields["⏱️ Hourly collector (today)"]
 
 
+# ---------------------------------------------------------------------------
+# Sampling composition (Session 55 — the brand-agnostic sampling overhaul's digest line)
+# ---------------------------------------------------------------------------
+
+def test_sampling_composition_summary_none_when_unavailable():
+    with patch.object(run_daily.db, "backtest_rows_by_source", return_value={}):
+        assert run_daily.sampling_composition_summary() is None
+
+
+def test_sampling_composition_summary_returns_counts():
+    counts = {"dealfeed": 40, "explore": 35, "onpolicy": 25}
+    with patch.object(run_daily.db, "backtest_rows_by_source", return_value=counts):
+        assert run_daily.sampling_composition_summary() == counts
+
+
+def test_format_sampling_composition_line_percentages():
+    line = run_daily.format_sampling_composition_line({"dealfeed": 40, "explore": 35, "onpolicy": 25})
+    assert line.startswith("100 collected:")
+    assert "40% dealfeed" in line
+    assert "35% explore" in line
+    assert "25% onpolicy" in line
+
+
+def test_format_sampling_composition_line_omits_zero_sources():
+    line = run_daily.format_sampling_composition_line({"dealfeed": 10, "explore": 0, "onpolicy": 0})
+    assert "explore" not in line
+    assert "onpolicy" not in line
+    assert "100% dealfeed" in line
+
+
+def test_format_sampling_composition_line_honest_when_empty():
+    assert run_daily.format_sampling_composition_line({}) == "0 backtest rows collected yet"
+
+
+def test_format_digest_includes_sampling_composition_field():
+    digest = run_daily.format_digest(
+        {"found": 0, "scored": 0, "sampling_composition": {"dealfeed": 5, "explore": 3, "onpolicy": 2}},
+        drift_warning=None, run_id=1)
+    fields = {f["name"]: f["value"] for f in digest["embeds"][0]["fields"]}
+    assert "🎯 Sampling composition (corpus total)" in fields
+    assert "50% dealfeed" in fields["🎯 Sampling composition (corpus total)"]
+
+
+def test_format_digest_omits_sampling_field_when_absent():
+    digest = run_daily.format_digest({"found": 0, "scored": 0}, drift_warning=None, run_id=1)
+    fields = {f["name"]: f["value"] for f in digest["embeds"][0]["fields"]}
+    assert "🎯 Sampling composition (corpus total)" not in fields
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     passed = 0

@@ -1,6 +1,6 @@
 {
   "$comment": "SINGLE SOURCE OF TRUTH for the AI's brain. Both the item finder/rater (scout/) and the control center read this. When Mehmet feeds new info and Claude distills it, this file is updated -> the scout and the dashboard both update. See ai-system/ingestion-pipeline.md.",
-  "updated": "2026-07-06",
+  "updated": "2026-07-05",
   "model": "online arbitrage (OA)",
   "criteria": {
     "bsrMax": 200000,
@@ -275,7 +275,17 @@
     },
     "source": "System Blueprint Prompt 3.1 — the label builder (scout/labels.py) refuses to assemble a training table below this many labeled rows (with both positive and negative outcomes represented). Below it, the scout runs on the transparent rule score alone; this is a floor for even ATTEMPTING calibration, not a promotion threshold — scout_pro's champion/challenger gate (PROMOTION_MIN_GAIN) is the separate, stricter bar for actually replacing the rule engine.",
     "harvesterSource": "DATA_ENGINE_PLAN.md V0 #4 — scout/harvest.py idle-token harvester. harvesterEnabled is FALSE on the Keepa Pro trickle (1 token/min, 60 bank: no idle surplus to bank; harvest.enabled() returns a blocked-on-upgrade status). Flip to true only after upgrading to the 20/min API tier. harvestTokenShare (0..1) is the fraction of the OBSERVED daily token generation the harvester may spend once enabled (harvest.observed_daily_generation reads the real refill rate; never an assumed tier).",
-    "backtestSource": "DATA_ENGINE_PLAN.md V2 — scout/backtest.py hard per-run token ceiling (backtest.backtest_token_cap). The backtest samples ~3-5k on-policy ASINs (1 token each, history=365) and windows them into ~50k derived training rows; the cap keeps a run from draining the Pro-trickle bank, and the job is resumable across days toward the corpus target."
+    "backtestSource": "DATA_ENGINE_PLAN.md V2 — scout/backtest.py hard per-run token ceiling (backtest.backtest_token_cap). The backtest samples ~3-5k on-policy ASINs (1 token each, history=365) and windows them into ~50k derived training rows; the cap keeps a run from draining the Pro-trickle bank, and the job is resumable across days toward the corpus target.",
+    "sampling": {
+      "strategy": "category-stratified",
+      "categories": ["toys", "kitchen", "pet", "beauty", "tools", "grocery", "office", "sports", "baby", "electronics-accessories"],
+      "priceBands": [[8, 25], [25, 60], [60, 150]],
+      "bsrStrata": ["top1pct", "1-5pct", "5-20pct"],
+      "brandFilter": "NONE",
+      "avoidBrands": "collect as data, flag ip_risk, NEVER candidates",
+      "sampleSourceTags": ["onpolicy", "explore", "dealfeed"],
+      "source": "Session 55 (2026-07-05) — Mehmet's directive: DATA collection (the backtest/training corpus scout/backtest.py + scout/deals_firehose.py build) must be brand-AGNOSTIC and as broad as the token budget allows; brand lists (brands.py OA_FRIENDLY_BRANDS/AVOID_BRANDS) remain ONLY for buy-candidate discovery (pipeline.py, discovery_hints.py) and purchase gating (scoring.oa_hard_reject) — this block does not change either of those. brandFilter=NONE means the explore/dealfeed sampling paths apply NO friendly/avoid brand seeding at all (categories/price/BSR only); an avoid-listed brand's ASIN can still be COLLECTED as training data, tagged ip_risk=true on its backtest_rows row, but it can never become a lead/candidate/review-queue item (that hard gate is untouched, tested in scout/tests/test_backtest_sampling.py). sampleSourceTags label which mechanism produced an ASIN: onpolicy = the existing friendly+hint brand-seeded sample (scout/backtest.py sample_asins_on_policy, unchanged); explore = brand-agnostic category-keyword search via the same Product-Finder-rejected-on-Pro search fallback (scout/backtest.py sample_asins_explore); dealfeed = the Keepa /deal endpoint firehose (scout/deals_firehose.py, ~5 tokens per <=150-deal page — UNVERIFIED live cost/schema until the account's negative balance recovers and a real dispatch runs, see AI_COLLABORATION_JOURNAL.md Session 55). priceBands/bsrStrata are computed POST-HOC per training row (from each ASIN's own observed price/BSR at each simulation window, not a live Keepa pre-filter — Product Finder's range filters are unavailable on this Pro plan) and reported as a composition breakdown, not a hard pre-selection quota."
+    }
   },
   "dealSourcing": {
     "principle": "Source where the best SALE / cashback / coupon is TODAY (e.g. Target BOGO today, Walgreens BOGO tomorrow) — then stack cashback + discount gift cards + coupons (manufacturing margin) for a moat nobody else has.",

@@ -818,10 +818,17 @@ def all_shadow_outcomes(limit: int = 20000) -> List[Dict[str, Any]]:
 # 010 hasn't landed. Idempotent upsert on (asin, simulation_date) so a re-run overwrites a window
 # rather than duplicating it.
 # ----------------------------------------------------------------------------
+# Columns that only exist on `backtest_rows` after migration 011 lands (Session 55's sampling
+# overhaul) — stripped from a fallback insert/select so a pending migration degrades gracefully
+# (row collection keeps working exactly as before) instead of the whole batch/read failing.
+BACKTEST_ROWS_MIGRATION_ONLY_FIELDS = {"sample_source", "category", "ip_risk"}
+
+
 def upsert_backtest_rows(rows: List[Dict[str, Any]]) -> int:
     """Batch-upsert backtest rows (merge-duplicates on asin+simulation_date, return=minimal so the
     PK-only shape can't hit the data[0]['id'] 409 bug). Returns the count sent, or 0 on any
-    failure/disabled — never raises."""
+    failure/disabled. Retries once WITHOUT sample_source/category/ip_risk if migration 011 hasn't
+    landed yet (PostgREST rejects the whole batch on an unknown column) — never raises."""
     if not enabled() or not rows:
         return 0
     try:
@@ -833,25 +840,79 @@ def upsert_backtest_rows(rows: List[Dict[str, Any]]) -> int:
         r.raise_for_status()
         return len(rows)
     except Exception as e:
+        stale = BACKTEST_ROWS_MIGRATION_ONLY_FIELDS & set().union(*(row.keys() for row in rows))
+        if stale:
+            print(f"[db] upsert_backtest_rows failed ({len(rows)} rows): {e}; retrying without "
+                 f"pending-migration field(s) {sorted(stale)} (run scout/db/migrations/"
+                 "011_backtest_sampling_columns.sql to store them)")
+            stripped = [{k: v for k, v in row.items() if k not in BACKTEST_ROWS_MIGRATION_ONLY_FIELDS}
+                       for row in rows]
+            try:
+                r = requests.post(
+                    f"{SUPA}/rest/v1/backtest_rows?on_conflict=asin,simulation_date",
+                    headers=_headers({"Prefer": "resolution=merge-duplicates,return=minimal"}),
+                    json=stripped, timeout=30,
+                )
+                r.raise_for_status()
+                return len(rows)
+            except Exception as e2:
+                print(f"[db] upsert_backtest_rows failed even without pending-migration fields "
+                     f"({len(rows)} rows): {e2}")
+                return 0
         print(f"[db] upsert_backtest_rows failed ({len(rows)} rows): {e}")
         return 0
+
+
+_BACKTEST_ROWS_SELECT_NEW = ("asin,simulation_date,features_snapshot,would_have_profited,"
+                             "est_profit,label_quality,sample_source,category,ip_risk")
+_BACKTEST_ROWS_SELECT_OLD = ("asin,simulation_date,features_snapshot,would_have_profited,"
+                             "est_profit,label_quality")
 
 
 def all_backtest_rows(limit: int = 60000) -> List[Dict[str, Any]]:
     """Every backtest row, for labels.py's backtest tier / V3's ranker. Paginated past
     PostgREST's 1000-row response cap (a flat request would silently truncate the 50k-row
-    corpus). Column-restricted to what training actually reads. [] if unavailable or migration
-    010 hasn't landed — never raises."""
+    corpus). Column-restricted to what training actually reads. Retries once with the
+    pre-migration-011 column list if sample_source/category/ip_risk don't exist yet (an unknown
+    column fails the WHOLE select, not just those fields) — [] if unavailable entirely. Never
+    raises."""
     if not enabled():
         return []
     try:
-        return _get_paged(
-            "backtest_rows?select=asin,simulation_date,features_snapshot,would_have_profited,"
-            "est_profit,label_quality&order=id.asc",
-            limit=limit)
+        return _get_paged(f"backtest_rows?select={_BACKTEST_ROWS_SELECT_NEW}&order=id.asc",
+                          limit=limit)
     except Exception as e:
-        print(f"[db] all_backtest_rows failed: {e}")
-        return []
+        print(f"[db] all_backtest_rows: new-column select failed ({e}); retrying without "
+             "sample_source/category/ip_risk (run scout/db/migrations/"
+             "011_backtest_sampling_columns.sql to enable them)")
+        try:
+            return _get_paged(f"backtest_rows?select={_BACKTEST_ROWS_SELECT_OLD}&order=id.asc",
+                              limit=limit)
+        except Exception as e2:
+            print(f"[db] all_backtest_rows failed: {e2}")
+            return []
+
+
+def backtest_rows_by_source() -> Dict[str, int]:
+    """Row count per sample_source (dealfeed/explore/onpolicy) — feeds the digest's sampling-
+    composition line and the ranker report's onpolicy-vs-explore breakdown. Rows written before
+    migration 011 (or by a caller not yet passing sample_source) have it NULL, reported as
+    'unknown' rather than silently dropped. {} if unavailable or the migration hasn't landed —
+    never raises."""
+    if not enabled():
+        return {}
+    try:
+        out: Dict[str, int] = {}
+        for src in ("dealfeed", "explore", "onpolicy"):
+            out[src] = _count_exact(f"backtest_rows?select=id&sample_source=eq.{src}")
+        total = count_backtest_rows()
+        known = sum(out.values())
+        if total > known:
+            out["unknown"] = total - known
+        return out
+    except Exception as e:
+        print(f"[db] backtest_rows_by_source failed: {e}")
+        return {}
 
 
 def count_backtest_rows() -> int:

@@ -95,6 +95,73 @@ def test_assemble_accepts_when_both_conditions_met():
 
 
 # ---------------------------------------------------------------------------
+# Bronze (decision-only, no outcome) — Session 55's training-objective fix: bronze must NEVER
+# enter the relevance target (`rows`/`by_tier`), only the separate bronze_rows/bronze_tier for
+# train_ranker.py's auxiliary "agreement with operator" metric.
+# ---------------------------------------------------------------------------
+
+def _decision_only_lead(asin, decision, snapshot=True):
+    lead = {
+        "asin": asin, "found_via": "scout",
+        "decisions": [{"decision": decision, "created_at": "2026-07-01T00:00:00Z"}],
+        "outcomes": [],
+    }
+    if snapshot:
+        lead["features_snapshot"] = {"asin": asin, "price": 20.0, "offers": 5, "bsr": 10000}
+    return lead
+
+
+def test_bronze_rows_excluded_from_relevance_target():
+    leads = [_fake_lead(f"B0{i:08d}", 5.0) for i in range(3)] + \
+            [_fake_lead(f"B1{i:08d}", -5.0) for i in range(3)] + \
+            [_decision_only_lead("B0BRONZE1", "buy"), _decision_only_lead("B0BRONZE2", "pass")]
+    with patch.object(labels, "min_labeled_rows", return_value=3), \
+            patch.object(db, "leads_with_outcomes", return_value=leads), \
+            patch.object(labels, "_read_events", return_value=[]):
+        result = labels.assemble_training_rows()
+
+    # the relevance target (`rows`) must contain ONLY the 6 gold rows — never a bronze one
+    assert result["trainable_count"] == 6
+    assert all(r["label_quality"] != "bronze" for r in result["rows"])
+    assert "bronze" not in result["by_tier"]
+
+    # bronze is surfaced SEPARATELY, with both a buy and a pass decision correctly labeled
+    assert result["bronze_tier"]["total"] == 2
+    assert result["bronze_tier"]["positive"] == 1  # "buy"
+    assert result["bronze_tier"]["negative"] == 1  # "pass"
+    bronze_asins = {r["asin"]: r["label"] for r in result["bronze_rows"]}
+    assert bronze_asins == {"B0BRONZE1": True, "B0BRONZE2": False}
+
+
+def test_bronze_skips_ambiguous_decisions():
+    leads = [_decision_only_lead("B0TEST1", "test"), _decision_only_lead("B0WAIT1", "wait")]
+    with patch.object(db, "leads_with_outcomes", return_value=leads), \
+            patch.object(labels, "_read_events", return_value=[]):
+        result = labels.assemble_training_rows()
+    assert result["bronze_tier"]["total"] == 0
+
+
+def test_bronze_excludes_leads_with_a_real_outcome():
+    """A lead with BOTH a decision and a realized outcome is gold, not bronze — never double-count."""
+    lead = _fake_lead("B0GOLD1", 5.0)
+    lead["decisions"] = [{"decision": "buy", "created_at": "2026-07-01T00:00:00Z"}]
+    with patch.object(labels, "min_labeled_rows", return_value=1), \
+            patch.object(db, "leads_with_outcomes", return_value=[lead]), \
+            patch.object(labels, "_read_events", return_value=[]):
+        result = labels.assemble_training_rows()
+    assert result["bronze_tier"]["total"] == 0
+    assert result["by_tier"]["gold"]["total"] == 1
+
+
+def test_bronze_without_feature_snapshot_excluded_from_bronze_rows():
+    leads = [_decision_only_lead("B0NOSNAP", "buy", snapshot=False)]
+    with patch.object(db, "leads_with_outcomes", return_value=leads), \
+            patch.object(labels, "_read_events", return_value=[]):
+        result = labels.assemble_training_rows()
+    assert result["bronze_rows"] == []
+
+
+# ---------------------------------------------------------------------------
 # Linkage round-trip (local ledger, ASIN-matched lead -> outcome)
 # ---------------------------------------------------------------------------
 

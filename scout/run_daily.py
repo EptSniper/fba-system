@@ -265,6 +265,10 @@ def format_digest(summary: Dict[str, Any], drift_warning: Optional[str],
             line += (f" (⚠ {hourly['negative_balance_skips']} skipped — Keepa balance "
                     f"empty/negative, refills at 1 token/min)")
         embed["fields"].append({"name": "⏱️ Hourly collector (today)", "value": line, "inline": False})
+    sampling = summary.get("sampling_composition")
+    if sampling:
+        embed["fields"].append({"name": "🎯 Sampling composition (corpus total)",
+                               "value": format_sampling_composition_line(sampling), "inline": False})
     return {"username": "FBA Scout — Daily Digest", "embeds": [embed]}
 
 
@@ -300,6 +304,30 @@ def hourly_collection_summary() -> Optional[Dict[str, Any]]:
         backtest_rows = None
     return {"runs_fired": len(runs), "tokens_spent": tokens, "asins_scanned": asins,
            "backtest_rows": backtest_rows, "negative_balance_skips": negative_balance_skips}
+
+
+def sampling_composition_summary() -> Optional[Dict[str, int]]:
+    """Session 55 — the brand-agnostic sampling overhaul's corpus composition: how many
+    backtest_rows came from each sample_source (dealfeed/explore/onpolicy). None if unavailable
+    (no Supabase, or migration 011 hasn't landed yet — db.backtest_rows_by_source() degrades to
+    {} in that case) — an honest absence, never a zero-filled fabrication."""
+    try:
+        by_source = db.backtest_rows_by_source()
+    except Exception as e:
+        log.warning("backtest_rows_by_source failed (non-fatal): %s", e)
+        return None
+    return by_source or None
+
+
+def format_sampling_composition_line(by_source: Dict[str, int]) -> str:
+    """'N collected: X% dealfeed / Y% explore / Z% onpolicy' — rounds to whole percent, omits any
+    source with zero rows so far. 'unknown' covers rows written before this tagging existed."""
+    total = sum(by_source.values())
+    if not total:
+        return "0 backtest rows collected yet"
+    parts = [f"{100.0 * by_source[src] / total:.0f}% {src}"
+            for src in ("dealfeed", "explore", "onpolicy", "unknown") if by_source.get(src)]
+    return f"{total} collected: " + " / ".join(parts)
 
 
 def cross_channel_summary_line(summary: Dict[str, Any], proposals_pending: int,
@@ -491,6 +519,12 @@ def main(dry_run: bool = False, dry_run_live: bool = False) -> Dict[str, Any]:
                 summary["hourly_collection"] = hourly_collection_summary()
             except Exception as e:
                 log.warning("hourly_collection_summary failed (non-fatal): %s", e)
+            # Session 55 — the brand-agnostic sampling overhaul's corpus composition (dealfeed/
+            # explore/onpolicy split of the WHOLE backtest_rows corpus, not just today's rows).
+            try:
+                summary["sampling_composition"] = sampling_composition_summary()
+            except Exception as e:
+                log.warning("sampling_composition_summary failed (non-fatal): %s", e)
 
         deals_summary = None
         if not dry_run:

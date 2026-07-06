@@ -104,6 +104,84 @@ class TrainAndEvaluateTest(unittest.TestCase):
         train, val = backtest.split_by_asin(rows, val_fraction=0.3)
         self.assertFalse({r["asin"] for r in train} & {r["asin"] for r in val})
 
+    def test_bronze_rows_never_enter_relevance_target(self):
+        """Session 55: assembled['bronze_rows'] must have zero influence on train/val — feeding
+        the SAME rows in as bronze vs omitted must produce an IDENTICAL champion/challenger."""
+        rows = self._rows()
+        by_tier = {"backtest": {"total": len(rows), "positive": sum(1 for x in rows if x["label"]),
+                                "negative": sum(1 for x in rows if not x["label"])}}
+        bronze_rows = [{"asin": "BRONZE1", "label": True, "label_quality": "bronze",
+                       "features": rows[0]["features"]}]
+        base = {"refused": False, "rows": rows, "by_tier": by_tier, "silver_caveat": "x"}
+        r_without = tr.train_and_evaluate(dict(base))
+        r_with = tr.train_and_evaluate(dict(base, bronze_rows=bronze_rows))
+        self.assertEqual(r_without["challenger"]["auc"], r_with["challenger"]["auc"])
+        self.assertEqual(r_without["train_rows"], r_with["train_rows"])
+        self.assertEqual(r_without["val_rows"], r_with["val_rows"])
+        self.assertIsNone(r_without["bronze_agreement"])  # no bronze_rows supplied -> None
+        self.assertIsNotNone(r_with["bronze_agreement"])
+        self.assertEqual(r_with["bronze_agreement"]["n"], 1)
+
+
+class BronzeAgreementTest(unittest.TestCase):
+    def test_none_when_no_bronze_rows(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.preprocessing import StandardScaler
+        import numpy as np
+        X = np.array([[1.0], [2.0]])
+        clf = LogisticRegression().fit(X, [0, 1])
+        scaler = StandardScaler().fit(X)
+        self.assertIsNone(tr.bronze_agreement(clf, scaler, []))
+
+    def _row(self, price, profitable):
+        return {"label": profitable, "features": {
+            "price": price, "weight_lb": 1.0, "sales_rank": 1000, "est_sales": 50, "offers": 5,
+            "avg_price_90": price, "avg_offers_90": 5, "avg_sales_rank_90": 1000, "oos_90": 0,
+            "amazon_bb_share": 0}}
+
+    def test_agreement_rate_reflects_matches(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.preprocessing import StandardScaler
+        # a trivially separable classifier over the real NUMERIC_FEATURES shape: cheap -> profitable
+        train_rows = [self._row(15.0, True), self._row(20.0, True),
+                     self._row(80.0, False), self._row(90.0, False)]
+        Xtr, ytr = tr.build_matrix(train_rows)
+        scaler = StandardScaler().fit(Xtr)
+        clf = LogisticRegression().fit(scaler.transform(Xtr), ytr)
+        bronze_rows = [
+            dict(self._row(15.0, True), asin="B1", label_quality="bronze"),
+            dict(self._row(85.0, False), asin="B2", label_quality="bronze"),  # operator passed, model agrees
+        ]
+        result = tr.bronze_agreement(clf, scaler, bronze_rows)
+        self.assertEqual(result["n"], 2)
+        self.assertEqual(result["agreement_rate"], 1.0)
+
+
+class SourceBreakdownTest(unittest.TestCase):
+    def test_groups_by_sample_source(self):
+        val = [
+            {"label": True, "sample_source": "onpolicy"},
+            {"label": False, "sample_source": "onpolicy"},
+            {"label": True, "sample_source": "dealfeed"},
+            {"label": False, "sample_source": "dealfeed"},
+        ]
+        proba = [0.9, 0.1, 0.8, 0.2]
+        out = tr.source_breakdown(val, proba)
+        self.assertEqual(set(out.keys()), {"onpolicy", "dealfeed"})
+        self.assertEqual(out["onpolicy"]["n"], 2)
+        self.assertEqual(out["onpolicy"]["auc"], 1.0)
+
+    def test_missing_sample_source_grouped_as_na(self):
+        val = [{"label": True}, {"label": False}]
+        out = tr.source_breakdown(val, [0.7, 0.3])
+        self.assertEqual(set(out.keys()), {"n/a"})
+
+    def test_single_class_slice_reports_count_only_no_fabricated_auc(self):
+        val = [{"label": True, "sample_source": "explore"}, {"label": True, "sample_source": "explore"}]
+        out = tr.source_breakdown(val, [0.6, 0.7])
+        self.assertEqual(out["explore"]["n"], 2)
+        self.assertIsNone(out["explore"]["auc"])
+
 
 class TrainingSetFingerprintTest(unittest.TestCase):
     """Session 55: the skip-if-unchanged cadence guard. The fingerprint must be stable across

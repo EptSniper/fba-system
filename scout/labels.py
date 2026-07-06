@@ -110,6 +110,40 @@ def _from_shadow() -> List[Dict[str, Any]]:
     return rows
 
 
+def _from_bronze_decisions() -> List[Dict[str, Any]]:
+    """BRONZE — a human's OWN buy/pass decision on a lead, recorded BEFORE any outcome is known
+    (DATA_ENGINE_PLAN.md: "each verdict = a bronze label... bronze bootstraps"). This is
+    OPERATOR JUDGMENT, not a market-realized result.
+
+    Mehmet's directive (Session 55): bronze labels must NEVER enter the ranker's relevance
+    target. Training on "did the operator say buy" instead of "did it actually profit" would
+    just teach the model to imitate the human's own pre-existing verdict — a circular,
+    self-confirming signal, not a lesson about what makes money. assemble_training_rows() below
+    keeps these rows in a SEPARATE list (never merged into `rows`/`all_labeled`); train_ranker.py
+    scores them through the fitted model only as an auxiliary "agreement with operator" metric,
+    reported alongside results at zero training weight."""
+    rows = []
+    for lead in db.leads_with_outcomes():
+        if lead.get("outcomes"):
+            continue  # a REAL outcome exists — that's gold (_from_supabase), not bronze
+        decisions = lead.get("decisions") or []
+        if not decisions:
+            continue
+        latest = sorted(decisions, key=lambda d: d.get("created_at") or "", reverse=True)[0]
+        decision = latest.get("decision")
+        if decision not in ("buy", "pass"):
+            continue  # test/wait carry no clear binary signal — skip, never fabricate
+        snapshot = lead.get("features_snapshot") or {}
+        features = {k: snapshot.get(k) for k in db.PRE_DECISION_FEATURES} if snapshot else None
+        rows.append({
+            "asin": lead.get("asin"), "source": "supabase_decision",
+            "features": features if snapshot else None,
+            "label": decision == "buy",
+            "label_quality": "bronze",
+        })
+    return rows
+
+
 def _from_backtest() -> List[Dict[str, Any]]:
     """BACKTEST labels — the 4th and WEAKEST tier (DATA_ENGINE_PLAN.md V2): hindsight simulations
     on historical Keepa data with a simulated buy cost, no execution, no sell-through. Included in
@@ -204,14 +238,21 @@ def assemble_training_rows(include_silver: bool = True, include_backtest: bool =
     gold = _from_supabase() + _from_local_ledger()
     silver = _from_shadow() if include_silver else []
     backtest = _from_backtest() if include_backtest else []
+    # BRONZE (decision-only, no outcome yet) is ALWAYS computed but deliberately EXCLUDED from
+    # all_labeled/trainable — Mehmet's directive (Session 55): it must never enter the ranker's
+    # relevance target. Kept as its own list for train_ranker.py's auxiliary "agreement with
+    # operator" metric only, at zero training weight.
+    bronze = _from_bronze_decisions()
     all_labeled = gold + silver + backtest
     trainable = [r for r in all_labeled if r.get("features")]
+    bronze_rows = [r for r in bronze if r.get("features")]
 
     n_pos = sum(1 for r in trainable if r["label"] is True)
     n_neg = sum(1 for r in trainable if r["label"] is False)
     min_rows = min_labeled_rows()
     by_tier = _tier_counts(trainable)
     silver_n = by_tier.get("silver", {}).get("total", 0)
+    bronze_tier = _tier_counts(bronze_rows).get("bronze", {"total": 0, "positive": 0, "negative": 0})
     # backtest rows exist even when not mixed in — surface the count so a report can show the tier
     # line honestly ("backtest available, held separate") without blending them into the diagnostic.
     backtest_available = db.count_backtest_rows() if not include_backtest else by_tier.get("backtest", {}).get("total", 0)
@@ -226,7 +267,7 @@ def assemble_training_rows(include_silver: bool = True, include_backtest: bool =
         reason = f"{len(trainable)} trainable rows ({n_pos} positive / {n_neg} negative) — ready for calibration"
 
     return {
-        "rows": trainable,
+        "rows": trainable,   # gold + silver + (opt) backtest ONLY — the ranker's relevance target
         "trainable_count": len(trainable),
         "labeled_count": len(all_labeled),  # includes local-ledger outcomes with no feature snapshot
         "positive": n_pos,
@@ -240,6 +281,15 @@ def assemble_training_rows(include_silver: bool = True, include_backtest: bool =
         "silver_caveat": ("Silver (shadow) labels ignore execution and sell-through — we never "
                           "actually bought or sold. Report their tier separately; never treat a "
                           "silver-trained metric as if validated by realized outcomes."),
+        # BRONZE — decision-only rows, deliberately EXCLUDED from `rows`/relevance target above
+        # (Mehmet's directive, Session 55). bronze_rows carries pre-decision features so
+        # train_ranker.py can score them through the FITTED model as an auxiliary "agreement with
+        # operator" comparison only — never used to fit/validate anything.
+        "bronze_rows": bronze_rows,
+        "bronze_tier": bronze_tier,
+        "bronze_caveat": ("Bronze (operator decision, no outcome yet) is OPERATOR JUDGMENT, not a "
+                         "market result — weight ZERO in training. Never blended into `rows`; "
+                         "reported only as a separate agreement-with-operator auxiliary metric."),
     }
 
 

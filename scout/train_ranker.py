@@ -172,6 +172,44 @@ def verdict_line(champ: Dict[str, Any], chall: Dict[str, Any], margin: float = 0
     return "VERDICT: CHALLENGER LOSES — stays shadow."
 
 
+def bronze_agreement(clf, scaler, bronze_rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """AUXILIARY metric only (Mehmet's directive, Session 55): how often the trained model's
+    verdict matches the human's OWN buy/pass decision on bronze (decision-only, no realized
+    outcome yet) rows. This is NOT a training signal and never influences the relevance target —
+    bronze rows never entered Xtr/ytr/Xva/yva. A HIGH agreement rate could just mean the model
+    learned the operator's own bias, not the market, so it is reported with that caveat every
+    time, never treated as validation. None when there are no bronze rows to score."""
+    if not bronze_rows:
+        return None
+    Xb, yb = build_matrix(bronze_rows)
+    if len(Xb) == 0:
+        return None
+    preds = clf.predict(scaler.transform(Xb))
+    agree = float((preds == yb).mean())
+    return {"n": len(bronze_rows), "agreement_rate": round(agree, 3)}
+
+
+def source_breakdown(val_rows: List[Dict[str, Any]], proba: List[float]) -> Dict[str, Any]:
+    """Per sample_source rank_metrics on the SAME held-out slice/predictions (Session 55,
+    learning.sampling): lets the report compare onpolicy vs explore vs dealfeed performance
+    separately, never blended. Rows without a sample_source (gold/silver rows, which predate this
+    tagging) are grouped under 'n/a'. A group with only one class present is reported as a count
+    only — AUC stays None rather than fabricated."""
+    by_source: Dict[str, List[int]] = {}
+    for i, r in enumerate(val_rows):
+        src = r.get("sample_source") or "n/a"
+        by_source.setdefault(src, []).append(i)
+    out: Dict[str, Any] = {}
+    for src, idxs in by_source.items():
+        y_sub = [1 if val_rows[i]["label"] else 0 for i in idxs]
+        p_sub = [float(proba[i]) for i in idxs]
+        if len(set(y_sub)) < 2:
+            out[src] = {"n": len(idxs), "auc": None}
+        else:
+            out[src] = {"n": len(idxs), **rank_metrics(p_sub, y_sub, top_n=min(10, len(idxs)))}
+    return out
+
+
 def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
     """The full training cycle on already-pulled rows. Pure of I/O to Supabase/Discord — callable
     from tests with synthetic rows."""
@@ -208,6 +246,9 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         "champion": champ, "challenger": chall,
         "verdict": verdict_line(champ, chall),
         "silver_caveat": assembled.get("silver_caveat", ""),
+        "bronze_agreement": bronze_agreement(clf, scaler, assembled.get("bronze_rows") or []),
+        "bronze_caveat": assembled.get("bronze_caveat", ""),
+        "by_source": source_breakdown(val, [float(p) for p in proba]),
     }
 
 
@@ -240,6 +281,20 @@ def render_report(result: Dict[str, Any]) -> str:
         "Promotion is HUMAN-ONLY via the brain key scoring.rankingChampion — this job never "
         "touches ai-brain.json.", "",
     ]
+    by_source = result.get("by_source") or {}
+    if len(by_source) > 1 or (by_source and "n/a" not in by_source):
+        lines.append("- Sampling-source breakdown (held-out slice, same model — never blended):")
+        for src, m in sorted(by_source.items()):
+            auc_str = m["auc"] if m.get("auc") is not None else "n/a (single class in slice)"
+            lines.append(f"  - **{src}**: n={m['n']}, AUC {auc_str}")
+        lines.append("")
+    bronze = result.get("bronze_agreement")
+    if bronze:
+        lines.append(
+            f"- Bronze agreement (auxiliary, NOT a training signal): the model agrees with the "
+            f"operator's own buy/pass decision on {bronze['agreement_rate']*100:.0f}% of "
+            f"{bronze['n']} decision-only row(s). {result.get('bronze_caveat') or ''}")
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -261,7 +316,8 @@ def save_artifacts(result: Dict[str, Any], out_dir: str) -> List[str]:
     os.makedirs(out_dir, exist_ok=True)
     paths = []
     meta = {k: result[k] for k in ("train_rows", "val_rows", "train_asins", "val_asins",
-                                   "by_tier", "champion", "challenger", "verdict", "features")}
+                                   "by_tier", "champion", "challenger", "verdict", "features",
+                                   "by_source", "bronze_agreement")}
     meta["trained_at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
     meta["model_kind"] = "logreg-balanced (interim classical model; V3 LightGBM later)"
     mpath = os.path.join(out_dir, "model.joblib")

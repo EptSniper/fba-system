@@ -83,6 +83,11 @@ def _find_no_wait(api=None, brand_seeds=None, limit=None):
     return keepa_client.find_candidates(api=api, brand_seeds=brand_seeds, limit=limit, wait=False)
 
 
+def _firehose_no_wait(api, pages=None):
+    import deals_firehose
+    return deals_firehose.harvest(api, pages=pages, wait=False)
+
+
 def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[str, Any]:
     """Tier 2: a lightweight hint-led discovery pass through the SAME gates/scoring/lead-upsert
     path pipeline.run_once() uses. Skips the SP-API eligibility and LLM analyst passes (both
@@ -212,10 +217,14 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         summary["scan"] = scan_result
         budget = max(0, budget - int(scan_result.get("tokens_spent") or 0))
 
-        # Tier 3: backtest ASIN history fetches, whatever's left.
+        # Tier 3: backtest ASIN history fetches, whatever's left. Session 55: dealfeed/explore
+        # (brand-agnostic) sampling now runs INSIDE run_backtest, prioritized ahead of onpolicy —
+        # firehose_fn=_firehose_no_wait keeps the "never block on a refill" rule for the new
+        # /deal calls too, matching find_fn/history_fn's own no-wait wrappers above.
         if budget > 0:
             bt_result = backtest.run_backtest(api=api, token_cap=budget,
-                                              find_fn=_find_no_wait, history_fn=_history_no_wait)
+                                              find_fn=_find_no_wait, history_fn=_history_no_wait,
+                                              firehose_fn=_firehose_no_wait)
         else:
             bt_result = {"status": "skipped", "reason": "no budget remaining", "tokens_spent": 0}
         summary["backtest"] = bt_result

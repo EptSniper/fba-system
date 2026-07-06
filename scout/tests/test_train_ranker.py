@@ -157,6 +157,29 @@ class BronzeAgreementTest(unittest.TestCase):
         self.assertEqual(result["agreement_rate"], 1.0)
 
 
+class NewSignalImportanceTest(unittest.TestCase):
+    def test_reports_only_new_signal_features(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.preprocessing import StandardScaler
+        rows = [
+            {"label": True, "features": {"price": 15.0, "days_to_prime_day": 5, "is_bts_window": True}},
+            {"label": True, "features": {"price": 18.0, "days_to_prime_day": 3, "is_bts_window": True}},
+            {"label": False, "features": {"price": 85.0, "days_to_prime_day": 100, "is_bts_window": False}},
+            {"label": False, "features": {"price": 90.0, "days_to_prime_day": 120, "is_bts_window": False}},
+        ]
+        Xtr, ytr = tr.build_matrix(rows)
+        scaler = StandardScaler().fit(Xtr)
+        clf = LogisticRegression().fit(scaler.transform(Xtr), ytr)
+        importance = tr.new_signal_importance(clf)
+        self.assertEqual(set(importance.keys()), set(tr.NEW_SIGNAL_FEATURES))
+        self.assertNotIn("price", importance)  # an ORIGINAL feature, not a new signal
+
+    def test_empty_for_model_without_coef(self):
+        class NoCoefModel:
+            pass
+        self.assertEqual(tr.new_signal_importance(NoCoefModel()), {})
+
+
 class SourceBreakdownTest(unittest.TestCase):
     def test_groups_by_sample_source(self):
         val = [

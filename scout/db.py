@@ -62,9 +62,26 @@ KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 # Pre-decision features ONLY — the leakage-prevention non-negotiable. Never add rule_score,
 # blended_score, model_proba, verdict, or reason here: those are the scout's OWN judgment and
 # must never become part of what a model is trained to predict from (self-confirmation).
+#
+# Session 55 additions (free signal-type features — scout/signals/): every new field is
+# NULLABLE and carries its own stale/status companion where the source can go stale (Trends,
+# eBay) — a missing/degraded signal must never silently look like a real zero. calendar.*
+# fields are pure functions of the row's own as-of date (never stale — see
+# scout/signals/calendar.py); upc is Keepa-sourced, feeding scout/signals/ebay.py.
 PRE_DECISION_FEATURES = (
     "asin", "price", "weight_lb", "sales_rank", "est_sales", "offers", "brand", "category",
     "avg_price_90", "avg_offers_90", "avg_sales_rank_90", "oos_90", "buybox_seller", "amazon_bb_share",
+    "upc",
+    # calendar (scout/signals/calendar.py) — pure functions of the row's as-of date
+    "days_to_prime_day", "weeks_to_q4_arrival_deadline", "days_to_nearest_major_holiday",
+    "nearest_major_holiday_name", "is_bts_window", "day_of_week",
+    # brand/category Trends (scout/signals/trends.py) — nullable, stale-flagged
+    "brand_trend_ratio", "brand_trend_slope", "brand_trend_seasonal_z", "brand_trend_spike",
+    "brand_trend_stale",
+    "category_trend_ratio", "category_trend_slope", "category_trend_seasonal_z",
+    "category_trend_spike", "category_trend_stale",
+    # eBay sold comps (scout/signals/ebay.py) — key-gated, LIVE-ONLY (not backfillable), nullable
+    "ebay_sold_count_30d", "median_sold_price_vs_amazon_ratio", "ebay_stale",
 )
 
 
@@ -893,6 +910,21 @@ def all_backtest_rows(limit: int = 60000) -> List[Dict[str, Any]]:
             return []
 
 
+def all_backtest_rows_for_backfill(limit: int = 60000) -> List[Dict[str, Any]]:
+    """EVERY column of every backtest row (unlike all_backtest_rows()'s training-only column
+    subset) — scout/signals/trends_backfill.py needs the FULL row so it can patch
+    features_snapshot with newly-computed signal features and re-upsert the whole row back via
+    upsert_backtest_rows() on the SAME (asin, simulation_date) natural key, never touching
+    would_have_profited/est_profit/etc. [] if unavailable — never raises."""
+    if not enabled():
+        return []
+    try:
+        return _get_paged("backtest_rows?select=*&order=id.asc", limit=limit)
+    except Exception as e:
+        print(f"[db] all_backtest_rows_for_backfill failed: {e}")
+        return []
+
+
 def backtest_rows_by_source() -> Dict[str, int]:
     """Row count per sample_source (dealfeed/explore/onpolicy) — feeds the digest's sampling-
     composition line and the ranker report's onpolicy-vs-explore breakdown. Rows written before
@@ -947,4 +979,74 @@ def hourly_runs_today() -> List[Dict[str, Any]]:
         return r.json() or []
     except Exception as e:
         print(f"[db] hourly_runs_today failed: {e}")
+        return []
+
+
+# ----------------------------------------------------------------------------
+# trends_series (migration 012, Session 55 free signal-type features) — weekly Google Trends
+# interest points per brand/category term. I/O only; scout/signals/trends.py owns fetching +
+# feature computation (interest_now_vs_90d_avg, slope_4wk, seasonal_z, spike_flag).
+# ----------------------------------------------------------------------------
+def recent_brand_vocabulary(limit: int = 200) -> List[str]:
+    """Distinct brands seen recently in leads + deal_hints — trends.py's rolling brand
+    vocabulary (Session 55: 'every brand seen in deals/leads'). Most-recently-seen first
+    (per source, then merged — not a perfect global time interleave across both tables, which
+    is fine for a capped discovery vocabulary), deduped case-insensitively, capped at `limit`.
+    [] if unavailable — never raises."""
+    if not enabled():
+        return []
+    try:
+        out: List[str] = []
+        seen = set()
+        for path in (
+            f"leads?select=brand,id&brand=not.is.null&order=id.desc&limit={limit * 2}",
+            f"deal_hints?select=brand,id&brand=not.is.null&order=id.desc&limit={limit * 2}",
+        ):
+            r = requests.get(f"{SUPA}/rest/v1/{path}", headers=_headers(), timeout=15)
+            r.raise_for_status()
+            for row in r.json() or []:
+                b = (row.get("brand") or "").strip()
+                key = b.lower()
+                if b and key not in seen:
+                    seen.add(key)
+                    out.append(b)
+        return out[:limit]
+    except Exception as e:
+        print(f"[db] recent_brand_vocabulary failed: {e}")
+        return []
+
+
+def upsert_trends_series(rows: List[Dict[str, Any]]) -> int:
+    """Batch-upsert weekly trend points (merge-duplicates on term+week_start). Returns the count
+    sent, or 0 on any failure/disabled/migration-not-landed — never raises."""
+    if not enabled() or not rows:
+        return 0
+    try:
+        r = requests.post(
+            f"{SUPA}/rest/v1/trends_series?on_conflict=term,week_start",
+            headers=_headers({"Prefer": "resolution=merge-duplicates,return=minimal"}),
+            json=rows, timeout=30,
+        )
+        r.raise_for_status()
+        return len(rows)
+    except Exception as e:
+        print(f"[db] upsert_trends_series failed ({len(rows)} rows): {e}")
+        return 0
+
+
+def trends_series_for(term: str, before: Optional[str] = None, limit: int = 400) -> List[Dict[str, Any]]:
+    """A term's weekly series, oldest first. `before` (an ISO date) restricts to week_start <
+    before — the leakage-safe read backfill uses so a historical row only ever sees Trends data
+    strictly before its own as-of date. [] if unavailable or migration 012 hasn't landed."""
+    if not enabled():
+        return []
+    try:
+        q = f"trends_series?term=eq.{_quote(term)}&select=week_start,interest&order=week_start.asc&limit={limit}"
+        if before:
+            q += f"&week_start=lt.{before}"
+        r = requests.get(f"{SUPA}/rest/v1/{q}", headers=_headers(), timeout=15)
+        r.raise_for_status()
+        return r.json() or []
+    except Exception as e:
+        print(f"[db] trends_series_for failed ({term}): {e}")
         return []

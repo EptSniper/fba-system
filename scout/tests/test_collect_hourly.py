@@ -115,6 +115,50 @@ class BudgetWaterfallTest(unittest.TestCase):
         self._run(FakeApi(tokens_left=60), shadow_spent=10, scan_spent=50, expect_bt_cap=None)
 
 
+class AttachSignalFeaturesTest(unittest.TestCase):
+    """Session 55 — free signal-type features attached onto already-enriched products before
+    scoring/logging, so they flow into feature_snapshot like every other pre-decision field."""
+
+    def test_attaches_calendar_and_trend_fields(self):
+        products = [{"asin": "A1", "brand": "Lego", "category": "toys", "price": 20.0}]
+        with mock.patch("signals.calendar.calendar_features",
+                       return_value={"day_of_week": 2, "is_bts_window": False}), \
+             mock.patch("signals.trends.trends_features",
+                       return_value={"interest_now_vs_90d_avg": 1.5, "slope_4wk": 0.2,
+                                    "seasonal_z": 0.1, "spike_flag": False, "stale": False}):
+            out = ch._attach_signal_features(products)
+        self.assertEqual(out[0]["day_of_week"], 2)
+        self.assertEqual(out[0]["brand_trend_ratio"], 1.5)
+        self.assertEqual(out[0]["category_trend_ratio"], 1.5)
+        self.assertFalse(out[0]["brand_trend_stale"])
+
+    def test_reuses_cached_trend_lookup_for_shared_terms(self):
+        """Two products sharing the SAME brand must trigger only ONE trends_features call for
+        that brand — a per-run cache, not an N+1 Supabase read per product."""
+        products = [{"asin": "A1", "brand": "Lego", "category": "toys"},
+                   {"asin": "A2", "brand": "Lego", "category": "kitchen"}]
+        with mock.patch("signals.calendar.calendar_features", return_value={}), \
+             mock.patch("signals.trends.trends_features", return_value={}) as mtrend:
+            ch._attach_signal_features(products)
+        brand_calls = [c for c in mtrend.call_args_list if c.args[0] == "Lego"]
+        self.assertEqual(len(brand_calls), 1)
+
+    def test_never_raises_when_signals_modules_unavailable(self):
+        products = [{"asin": "A1", "brand": "Lego", "category": "toys"}]
+        with mock.patch.dict(sys.modules, {"signals.calendar": None, "signals.trends": None,
+                                          "signals.ebay": None}):
+            out = ch._attach_signal_features(products)
+        self.assertEqual(out[0]["asin"], "A1")  # degraded gracefully, original data intact
+
+    def test_ebay_skipped_when_not_enabled(self):
+        products = [{"asin": "A1", "upc": "012345678905", "price": 20.0}]
+        with mock.patch("signals.calendar.calendar_features", return_value={}), \
+             mock.patch("signals.trends.trends_features", return_value={}), \
+             mock.patch("signals.ebay.enabled", return_value=False):
+            out = ch._attach_signal_features(products)
+        self.assertNotIn("ebay_sold_count_30d", out[0])
+
+
 class HintLedScanTest(unittest.TestCase):
     def setUp(self):
         self._keepa_patch = mock.patch.object(keepa_client, "_KEEPA", True)

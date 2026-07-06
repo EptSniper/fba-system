@@ -40,9 +40,25 @@ BUCKET = "models"
 FINGERPRINT_NAME = "fingerprint.json"
 
 # Numeric subset of db.PRE_DECISION_FEATURES — the ONLY model inputs (leakage contract).
-NUMERIC_FEATURES = ("price", "weight_lb", "sales_rank", "est_sales", "offers",
-                    "avg_price_90", "avg_offers_90", "avg_sales_rank_90", "oos_90",
-                    "amazon_bb_share")
+ORIGINAL_NUMERIC_FEATURES = ("price", "weight_lb", "sales_rank", "est_sales", "offers",
+                             "avg_price_90", "avg_offers_90", "avg_sales_rank_90", "oos_90",
+                             "amazon_bb_share")
+
+# Session 55's free signal-type features (scout/signals/) — kept as a SEPARATE tuple (rather
+# than folded silently into ORIGINAL_NUMERIC_FEATURES) so render_report()'s "new signals"
+# section can report exactly this set's fitted coefficients: each earns its seat via evidence
+# after the first retrain, or gets flagged for removal — the same kill-rule as everything else
+# in this project, never assumed useful just because it was added. Boolean fields (is_bts_window,
+# *_trend_spike) convert via build_matrix()'s existing `float(v or 0.0)` -> 1.0/0.0, no special
+# handling needed. Stale flags/nearest_major_holiday_name/upc are metadata, not model inputs.
+NEW_SIGNAL_FEATURES = (
+    "days_to_prime_day", "weeks_to_q4_arrival_deadline", "days_to_nearest_major_holiday",
+    "is_bts_window", "day_of_week",
+    "brand_trend_ratio", "brand_trend_slope", "brand_trend_seasonal_z", "brand_trend_spike",
+    "category_trend_ratio", "category_trend_slope", "category_trend_seasonal_z", "category_trend_spike",
+    "ebay_sold_count_30d", "median_sold_price_vs_amazon_ratio",
+)
+NUMERIC_FEATURES = ORIGINAL_NUMERIC_FEATURES + NEW_SIGNAL_FEATURES
 
 
 # --- dataset -----------------------------------------------------------------
@@ -210,6 +226,19 @@ def source_breakdown(val_rows: List[Dict[str, Any]], proba: List[float]) -> Dict
     return out
 
 
+def new_signal_importance(clf) -> Dict[str, float]:
+    """Each Session 55 signal feature's fitted coefficient (StandardScaler-normalized inputs, so
+    magnitudes are roughly comparable) — the evidence render_report()'s 'new signals' section
+    shows so a human can decide keep-or-cut. {} for a model without a linear .coef_ (only
+    meaningful for today's LogisticRegression challenger)."""
+    coefs = getattr(clf, "coef_", None)
+    if coefs is None:
+        return {}
+    row = coefs[0] if hasattr(coefs, "__len__") and len(coefs) else coefs
+    return {name: round(float(row[i]), 4) for i, name in enumerate(NUMERIC_FEATURES)
+           if name in NEW_SIGNAL_FEATURES}
+
+
 def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
     """The full training cycle on already-pulled rows. Pure of I/O to Supabase/Discord — callable
     from tests with synthetic rows."""
@@ -249,6 +278,7 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         "bronze_agreement": bronze_agreement(clf, scaler, assembled.get("bronze_rows") or []),
         "bronze_caveat": assembled.get("bronze_caveat", ""),
         "by_source": source_breakdown(val, [float(p) for p in proba]),
+        "new_signal_importance": new_signal_importance(clf),
     }
 
 
@@ -295,6 +325,15 @@ def render_report(result: Dict[str, Any]) -> str:
             f"operator's own buy/pass decision on {bronze['agreement_rate']*100:.0f}% of "
             f"{bronze['n']} decision-only row(s). {result.get('bronze_caveat') or ''}")
         lines.append("")
+    importance = result.get("new_signal_importance") or {}
+    if importance:
+        lines.append("- New signals (Trends/calendar/eBay, Session 55) — fitted coefficient "
+                     "(StandardScaler-normalized inputs; |coef| < 0.05 flagged as a removal "
+                     "candidate, human decides — same kill-rule as everything else):")
+        for name, coef in sorted(importance.items(), key=lambda kv: -abs(kv[1])):
+            flag = "" if abs(coef) >= 0.05 else " ⚠ near-zero"
+            lines.append(f"  - {name}: {coef}{flag}")
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -317,7 +356,7 @@ def save_artifacts(result: Dict[str, Any], out_dir: str) -> List[str]:
     paths = []
     meta = {k: result[k] for k in ("train_rows", "val_rows", "train_asins", "val_asins",
                                    "by_tier", "champion", "challenger", "verdict", "features",
-                                   "by_source", "bronze_agreement")}
+                                   "by_source", "bronze_agreement", "new_signal_importance")}
     meta["trained_at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
     meta["model_kind"] = "logreg-balanced (interim classical model; V3 LightGBM later)"
     mpath = os.path.join(out_dir, "model.joblib")

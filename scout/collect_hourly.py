@@ -88,6 +88,71 @@ def _firehose_no_wait(api, pages=None):
     return deals_firehose.harvest(api, pages=pages, wait=False)
 
 
+def _attach_signal_features(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Session 55 — attach the CURRENT (as-of-today) calendar/Trends/eBay signal features onto
+    each already-enriched product dict in place, so they flow into feature_snapshot the same way
+    every other pre-decision field does (db.feature_snapshot reads PRE_DECISION_FEATURES off
+    whatever keys are present on `p`). Best-effort and per-product isolated — one product's
+    signal lookup failing never drops the batch; a per-run cache avoids re-fetching the same
+    brand/category Trends series once per product when several share one."""
+    today = _dt.date.today()
+    try:
+        from signals import calendar as signals_calendar
+        cal_feats = signals_calendar.calendar_features(today)
+    except Exception as e:
+        log.warning("calendar_features failed (non-fatal): %s", e)
+        cal_feats = {}
+
+    signals_trends = None
+    try:
+        from signals import trends as signals_trends  # noqa: F401
+    except Exception as e:
+        log.warning("signals.trends unavailable (non-fatal): %s", e)
+
+    signals_ebay = None
+    try:
+        from signals import ebay as signals_ebay  # noqa: F401
+    except Exception as e:
+        log.warning("signals.ebay unavailable (non-fatal): %s", e)
+
+    trend_cache: Dict[str, Dict[str, Any]] = {}
+
+    def _cached_trend(term: str) -> Dict[str, Any]:
+        if term not in trend_cache:
+            try:
+                trend_cache[term] = signals_trends.trends_features(term, today)
+            except Exception as e:
+                log.warning("trends_features failed for %r (non-fatal): %s", term, e)
+                trend_cache[term] = {}
+        return trend_cache[term]
+
+    for p in products:
+        p.update(cal_feats)
+        if signals_trends:
+            brand_t = _cached_trend(p["brand"]) if p.get("brand") else {}
+            cat_t = _cached_trend(p["category"]) if p.get("category") else {}
+            p["brand_trend_ratio"] = brand_t.get("interest_now_vs_90d_avg")
+            p["brand_trend_slope"] = brand_t.get("slope_4wk")
+            p["brand_trend_seasonal_z"] = brand_t.get("seasonal_z")
+            p["brand_trend_spike"] = brand_t.get("spike_flag")
+            p["brand_trend_stale"] = brand_t.get("stale", True)
+            p["category_trend_ratio"] = cat_t.get("interest_now_vs_90d_avg")
+            p["category_trend_slope"] = cat_t.get("slope_4wk")
+            p["category_trend_seasonal_z"] = cat_t.get("seasonal_z")
+            p["category_trend_spike"] = cat_t.get("spike_flag")
+            p["category_trend_stale"] = cat_t.get("stale", True)
+        if signals_ebay and signals_ebay.enabled() and p.get("upc"):
+            try:
+                eb = signals_ebay.ebay_features(p["upc"], p.get("price"))
+            except Exception as e:
+                log.warning("ebay_features failed for %s (non-fatal): %s", p.get("asin"), e)
+                eb = {}
+            p["ebay_sold_count_30d"] = eb.get("ebay_sold_count_30d")
+            p["median_sold_price_vs_amazon_ratio"] = eb.get("median_sold_price_vs_amazon_ratio")
+            p["ebay_stale"] = eb.get("ebay_stale", True)
+    return products
+
+
 def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[str, Any]:
     """Tier 2: a lightweight hint-led discovery pass through the SAME gates/scoring/lead-upsert
     path pipeline.run_once() uses. Skips the SP-API eligibility and LLM analyst passes (both
@@ -128,6 +193,11 @@ def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[
         return {"status": "error", "reason": str(e),
                 "tokens_spent": keepa_client._delta(before, after) or 0,
                 "candidates": len(asins), "leads_logged": 0, "survivors": 0}
+
+    try:
+        enriched = _attach_signal_features(enriched)
+    except Exception as e:
+        log.warning("attach_signal_features failed (non-fatal, continuing without them): %s", e)
 
     clf = model_mod.load_model()
     # Intentional reuse of pipeline's own scoring internals — see module docstring. Keeps the

@@ -197,6 +197,58 @@ def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb:
     }
 
 
+def _fetch_trend_series(brand: Optional[str], category: Optional[str]):
+    """Each term's FULL stored Trends series, fetched ONCE per ASIN (not once per simulation
+    window) — trends_features() then filters to strictly-before-as_of per window from this same
+    in-memory list, avoiding an expensive per-window Supabase round trip. Never raises; []/[] on
+    any failure (trends_features degrades to stale=True nulls from an empty series, same as a
+    genuinely-untracked term)."""
+    def _series(term):
+        if not term:
+            return []
+        try:
+            raw = db.trends_series_for(term)
+            return [(_dt.date.fromisoformat(r["week_start"]), float(r["interest"])) for r in raw]
+        except Exception as e:
+            log.warning("trends series fetch failed for %r (non-fatal): %s", term, e)
+            return []
+    return _series(brand), _series(category)
+
+
+def _signal_features_for(as_of_date: _dt.date, brand: Optional[str], category: Optional[str],
+                         brand_series=None, category_series=None) -> Dict[str, Any]:
+    """Session 55's free signal-type features (scout/signals/), date-correct for `as_of_date` —
+    leakage-safe (trends.trends_features only reads points strictly before as_of; calendar
+    functions are pure functions of as_of). Any one source failing degrades to nulls for just
+    that source, never loses the whole row."""
+    try:
+        from signals import calendar as signals_calendar
+        cal_feats = signals_calendar.calendar_features(as_of_date)
+    except Exception as e:
+        log.warning("calendar_features failed (non-fatal): %s", e)
+        cal_feats = {}
+    try:
+        from signals import trends as signals_trends
+        brand_t = signals_trends.trends_features(brand, as_of_date, series=brand_series or []) if brand else {}
+        cat_t = signals_trends.trends_features(category, as_of_date, series=category_series or []) if category else {}
+    except Exception as e:
+        log.warning("trends_features failed (non-fatal): %s", e)
+        brand_t, cat_t = {}, {}
+    return {
+        **cal_feats,
+        "brand_trend_ratio": brand_t.get("interest_now_vs_90d_avg"),
+        "brand_trend_slope": brand_t.get("slope_4wk"),
+        "brand_trend_seasonal_z": brand_t.get("seasonal_z"),
+        "brand_trend_spike": brand_t.get("spike_flag"),
+        "brand_trend_stale": brand_t.get("stale", True),
+        "category_trend_ratio": cat_t.get("interest_now_vs_90d_avg"),
+        "category_trend_slope": cat_t.get("slope_4wk"),
+        "category_trend_seasonal_z": cat_t.get("seasonal_z"),
+        "category_trend_spike": cat_t.get("spike_flag"),
+        "category_trend_stale": cat_t.get("stale", True),
+    }
+
+
 def build_rows_for_asin(asin: str, hist: History, static: Dict[str, Any],
                         sample_source: str = "onpolicy",
                         step_days: int = STEP_DAYS, horizon: int = LABEL_HORIZON_DAYS,
@@ -214,9 +266,13 @@ def build_rows_for_asin(asin: str, hist: History, static: Dict[str, Any],
     buy candidate regardless of its score (test-asserted: test_backtest_sampling.py)."""
     static = dict(static, asin=asin)
     ip_risk = brands.is_avoided(static.get("brand"))
+    brand_series, category_series = _fetch_trend_series(static.get("brand"), static.get("category"))
     rows = []
     for as_of in windows_for(hist, step_days, horizon, min_history):
         enriched = features_as_of(hist, as_of, static)
+        as_of_date = _dt.date.fromordinal(as_of)
+        enriched.update(_signal_features_for(as_of_date, static.get("brand"), static.get("category"),
+                                             brand_series=brand_series, category_series=category_series))
         price_then = enriched.get("price")
         landed_cost = scoring.assumed_landed_cost(price_then)
         lbl = label_at(hist, as_of, landed_cost, static.get("weight_lb"), static.get("category"), horizon)

@@ -395,6 +395,11 @@
         "role": "sourcing window, not a selling event, for OA"
       },
       "backToSchoolBuyWindow": "late June - mid August",
+      "backToSchoolWindow": {
+        "startMonthDay": "06-20",
+        "endMonthDay": "08-15",
+        "source": "Structured (month-day) form of the backToSchoolBuyWindow text above, for scout/signals/calendar.py's is_bts_window() — 'late June' read as 06-20, 'mid August' as 08-15. Recurs on the same month/day every year (no separate per-year config); update both fields together if the practitioner guidance narrows/shifts this window."
+      },
       "q4ArrivalDeadline": "2026-10-30",
       "q4StopSpeculativeBuysAfterWeek": 46,
       "toysBuyWindows": [
@@ -403,8 +408,23 @@
       ],
       "januaryReturnsWave": true,
       "biasQ4TowardLowReturnCategories": true,
-      "source": "Scout Agent Build Plan sec 3.5 — 2026-specific dates (Prime Day moved to June 23-26) distilled from practitioner research; overlaps with and extends the existing top-level `seasonality` block's brand/month windows (Q4 brands, back-to-school brands) rather than replacing it — `seasonality` = WHICH brands, `operations.seasonal2026` = WHEN to act on the calendar."
+      "source": "Scout Agent Build Plan sec 3.5 — 2026-specific dates (Prime Day moved to June 23-26) distilled from practitioner research; overlaps with and extends the existing top-level `seasonality` block's brand/month windows (Q4 brands, back-to-school brands) rather than replacing it — `seasonality` = WHICH brands, `operations.seasonal2026` = WHEN to act on the calendar. primeDayWindow/q4ArrivalDeadline are read by scout/signals/calendar.py (Session 55) as RECURRING month-day anchors for days_to_prime_day()/weeks_to_q4_arrival_deadline() in years after 2026 — an approximation (real Prime Day dates shift yearly; this is the best available proxy without a live lookup), documented in that module."
     },
+    "majorHolidays": [
+      {"name": "New Year's Day", "rule": "fixed", "month": 1, "day": 1},
+      {"name": "Valentine's Day", "rule": "fixed", "month": 2, "day": 14},
+      {"name": "Mother's Day", "rule": "nth_weekday", "month": 5, "weekday": 6, "n": 2},
+      {"name": "Memorial Day", "rule": "last_weekday", "month": 5, "weekday": 0},
+      {"name": "Father's Day", "rule": "nth_weekday", "month": 6, "weekday": 6, "n": 3},
+      {"name": "Independence Day", "rule": "fixed", "month": 7, "day": 4},
+      {"name": "Labor Day", "rule": "nth_weekday", "month": 9, "weekday": 0, "n": 1},
+      {"name": "Halloween", "rule": "fixed", "month": 10, "day": 31},
+      {"name": "Thanksgiving", "rule": "nth_weekday", "month": 11, "weekday": 3, "n": 4},
+      {"name": "Black Friday", "rule": "day_after", "of": "Thanksgiving"},
+      {"name": "Christmas", "rule": "fixed", "month": 12, "day": 25},
+      {"name": "New Year's Eve", "rule": "fixed", "month": 12, "day": 31}
+    ],
+    "majorHolidaysSource": "Session 55 (2026-07-06) — the standard US retail-relevant holiday calendar, for scout/signals/calendar.py's days_to_nearest_major_holiday(). 'weekday' uses Python's date.weekday() convention (Monday=0..Sunday=6); 'nth_weekday'/'last_weekday' rules compute the ACTUAL date per year in code (Thanksgiving/Mother's/Father's/Memorial/Labor Day are not fixed calendar dates and must never be hardcoded as one). Edit this list (not calendar.py) to add/remove a tracked holiday.",
     "bankroll": {
       "cashReservePct": 0.2,
       "cutLossDays": 60,

@@ -232,6 +232,19 @@ def _weight_lb(product: Dict[str, Any]) -> Optional[float]:
     return None
 
 
+def _upc(product: Dict[str, Any]) -> Optional[str]:
+    """First UPC/EAN Keepa has on file for this ASIN (Session 55 — scout/signals/ebay.py's
+    sold-comps key on). Read defensively across both list fields since exact availability
+    varies by product/version; None (not fabricated) when neither is present."""
+    for key in ("upcList", "eanList"):
+        vals = product.get(key)
+        if isinstance(vals, list) and vals:
+            v = vals[0]
+            if v:
+                return str(v)
+    return None
+
+
 def _est_monthly_sales(stats: Dict[str, Any]) -> Optional[int]:
     """
     Estimate monthly units from Keepa 'Sales Rank Drops'. Each drop ~ a sale.
@@ -388,6 +401,7 @@ def _normalize(product: Dict[str, Any]) -> Dict[str, Any]:
         "brand": product.get("brand"),
         "category": category,
         "category_source": category_source,
+        "upc": _upc(product),
         "price": price,
         "rating": rating,
         "reviews": int(reviews) if isinstance(reviews, (int, float)) else None,

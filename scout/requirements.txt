@@ -13,6 +13,13 @@ numpy>=1.24
 # an ANTHROPIC_API_KEY even if installed.
 anthropic>=0.39
 
+# Optional: free signal-type features (Session 55, scout/signals/). pytrends is an UNOFFICIAL
+# Google Trends scraper — scout/signals/trends.py guards the import and degrades to an honest
+# no-op (collect_weekly/backfill_term return status="disabled") if it's absent; live feature
+# READS (trends_features()) don't need it at all, only the collector/backfill do. pandas is
+# already a transitive dependency via scikit-learn.
+pytrends>=4.9
+
 # Data lake (DATA_ENGINE_PLAN.md V0) — append-only zstd Parquet raw-response archive.
 # scout/datalake.py no-ops cleanly if pyarrow is absent (archiving is best-effort), so these are
 # optional, but required for the lake to actually record. Pinned to the last Python-3.9-compatible

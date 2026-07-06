@@ -35,8 +35,11 @@ _QUERY_PARAM_PATTERN = re.compile(
     # `api_key=os.environ[...]` env lookups. Found live 2026-07-05 (Session 52): the original
     # pattern flagged 34 files on one ordinary commit, none a real secret — every hit was one of
     # these four code shapes. The character class also excludes brace/paren/bracket as a second
-    # line of defense against the same shapes.
-    r"(?!\{)(?!\()(?!lambda\b)(?!len\b)(?!os\.environ\b)"
+    # line of defense against the same shapes. `\1` (Session 55, 2026-07-06) excludes a
+    # same-name kwarg pass-through (`token=token`, `key=key`, ... — scout/signals/ebay.py's
+    # `sold_comps(upc, token=token)`): a real secret VALUE never happens to equal its own
+    # parameter name's literal text, so this can't hide an actual leak.
+    r"(?!\{)(?!\()(?!lambda\b)(?!len\b)(?!os\.environ\b)(?!\1\b)"
     r"([^&\s\"'<>{}()\[\]]+)"
 )
 

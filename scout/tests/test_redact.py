@@ -49,6 +49,19 @@ def test_redact_ignores_code_shapes_not_secrets():
         assert redact.redact(text) == text, f"should be unchanged: {text!r}"
 
 
+def test_redact_ignores_same_name_kwarg_passthrough():
+    """Regression guard (Session 55): scout/signals/ebay.py's `sold_comps(upc, token=token)` —
+    a plain Python kwarg pass-through, not a secret. A real secret VALUE never happens to equal
+    its own parameter name's literal text, so excluding this shape can't hide an actual leak."""
+    for text in (
+        "comps = sold_comps(upc, token=token)",
+        "return fetch(url, key=key)",
+        "call(secret=secret)",
+        "build(api_key=api_key)",
+    ):
+        assert redact.redact(text) == text, f"should be unchanged: {text!r}"
+
+
 def test_redact_masks_discord_webhook_urls():
     text = "post failed: https://discord.com/api/webhooks/1234567890123/AbCdEf-123_XyZ end"
     out = redact.redact(text)

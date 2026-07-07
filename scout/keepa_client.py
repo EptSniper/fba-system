@@ -171,7 +171,12 @@ def _delta(before: Optional[int], after: Optional[int]) -> Optional[int]:
 # a future one — can repeat this by forgetting to check its own budget first.
 #
 # Per-unit costs are the OBSERVED values from live telemetry (Sessions 51/54/55), not estimates:
-ENRICH_TOKENS_PER_ASIN = 3     # enrich(): stats=90, rating=True, buybox=True, history=False
+ENRICH_TOKENS_PER_ASIN = 4     # enrich(): stats=90, rating=True, buybox=True, history=False.
+                                # Corrected from 3 (2026-07-07, live incident): two independent
+                                # real bursts each measured EXACTLY 64 tokens for a 16-ASIN batch
+                                # (64/16 = 4.0) now that _tokens_consumed() actually reports real
+                                # spend -- the old estimate of 3 let the guard under-cap the
+                                # batch, causing a consistent ~14-token overdraft every run.
 HISTORY_TOKENS_PER_ASIN = 1    # query_history(): stats=90, rating=False, history=True
 SEARCH_TOKENS_PER_TERM = 10    # the flat-rate product-search fallback (Pro-plan PF substitute)
 SELLER_QUERY_TOKENS_ESTIMATE = 10  # seller_asins() — UNVERIFIED, conservative placeholder;

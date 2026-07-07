@@ -75,8 +75,14 @@ class ObservedTokensProbeTest(unittest.TestCase):
 
 
 class BudgetWaterfallTest(unittest.TestCase):
-    """The core contract: each tier gets exactly (available - sum of prior tiers' real spend),
-    never a pre-allocated fixed share (that fixed-share model is what Session 54 retired)."""
+    """The core contract (revised 2026-07-07, live incident): tier 1 gets the full available
+    budget as its cap; tier 2 (hint-led scan) is now capped to (post-tier-1 budget minus
+    TIER3_RESERVE_FRACTION of it), NOT the full remainder — two live bursts showed tier 2 alone
+    consistently spending the ENTIRE bank (Product Finder's Pro-plan rejection + an undercounted
+    per-ASIN enrich estimate), leaving tier 3 (backtest collection, the tier that actually grows
+    the training corpus) with ZERO budget on every single run. Tier 3 itself still gets
+    'whatever tier 2 actually measured-spent, no further constraint' — only tier 2's OWN input
+    budget is now reserve-adjusted, a deliberate discovery-vs-training-data tradeoff."""
 
     def _run(self, api, shadow_spent, scan_spent, expect_bt_cap):
         with mock.patch.object(ch.config, "have_keepa", return_value=True), \
@@ -96,8 +102,10 @@ class BudgetWaterfallTest(unittest.TestCase):
             r = ch.run_hourly_collect(api=api)
         # tier 1 got the FULL available budget as its cap
         self.assertEqual(mrecheck.call_args.kwargs["token_cap"], api.tokens_left)
-        # tier 2 (hint_led_scan) got (available - shadow_spent)
-        self.assertEqual(mscan.call_args[0][1], api.tokens_left - shadow_spent)
+        # tier 2 (hint_led_scan) got (available - shadow_spent) MINUS the tier-3 reserve
+        post_tier1 = api.tokens_left - shadow_spent
+        expected_tier2_budget = post_tier1 - int(post_tier1 * ch.TIER3_RESERVE_FRACTION)
+        self.assertEqual(mscan.call_args[0][1], expected_tier2_budget)
         if expect_bt_cap is None:
             mbacktest.assert_not_called()
         else:
@@ -105,6 +113,8 @@ class BudgetWaterfallTest(unittest.TestCase):
         return r
 
     def test_full_waterfall_with_remainder_for_backtest(self):
+        # post_tier1=50, reserve=int(50*0.35)=17, tier2_budget=33 -- but tier 3's OWN cap is
+        # still based on scan's REAL measured spend (20), not the tier2_budget it was given.
         r = self._run(FakeApi(tokens_left=60), shadow_spent=10, scan_spent=20, expect_bt_cap=30)
         self.assertEqual(r["tokens_spent_total"], 10 + 20 + 0)
 
@@ -113,6 +123,16 @@ class BudgetWaterfallTest(unittest.TestCase):
 
     def test_scan_consumes_remainder_backtest_skipped(self):
         self._run(FakeApi(tokens_left=60), shadow_spent=10, scan_spent=50, expect_bt_cap=None)
+
+    def test_reserve_actually_protects_tier3_when_scan_would_have_taken_everything(self):
+        """The scenario that motivated this fix: tier 2's REAL measured spend equals its full
+        given budget (it would gladly take the whole remainder if allowed to) -- proves the
+        reserve is what leaves tier 3 a non-zero cap, not luck."""
+        post_tier1 = 60  # no shadow spend
+        tier2_budget = post_tier1 - int(post_tier1 * ch.TIER3_RESERVE_FRACTION)  # 60-21=39
+        r = self._run(FakeApi(tokens_left=60), shadow_spent=0, scan_spent=tier2_budget,
+                     expect_bt_cap=post_tier1 - tier2_budget)  # 21 left for tier 3
+        self.assertGreater(post_tier1 - tier2_budget, 0)
 
 
 class AttachSignalFeaturesTest(unittest.TestCase):

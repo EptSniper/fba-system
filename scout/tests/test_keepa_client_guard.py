@@ -108,8 +108,8 @@ class EnrichGuardIntegrationTest(unittest.TestCase):
         api = FakeApi(tokens_left=20)
         asins = [f"B{i:09d}" for i in range(100)]
         out = keepa_client.enrich(asins, api=api)
-        self.assertEqual(len(api.last_query_asins), 6)  # 20 // 3, never the full 100
-        self.assertEqual(len(out), 6)
+        self.assertEqual(len(api.last_query_asins), 5)  # 20 // 4 (corrected 2026-07-07), never the full 100
+        self.assertEqual(len(out), 5)
 
     def test_enrich_returns_empty_when_bank_empty(self):
         api = FakeApi(tokens_left=0)

@@ -55,7 +55,22 @@ log = logging.getLogger("scout.collect_hourly")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_HINT_SCAN_LIMIT = 60          # candidate-ASIN cap per burst tier 2, independent of token math
-TOKENS_PER_CANDIDATE_ESTIMATE = 3     # sizing only — real spend is always measured after the fact
+TOKENS_PER_CANDIDATE_ESTIMATE = 4     # sizing only — real spend is always measured after the fact.
+                                      # Corrected from 3 to match keepa_client.ENRICH_TOKENS_PER_ASIN's
+                                      # 2026-07-07 fix (two live bursts each measured exactly 4/ASIN).
+TIER3_RESERVE_FRACTION = 0.35         # Reserve this share of the POST-TIER-1 bank for tier 3
+                                      # (backtest collection) before tier 2 (discovery) spends
+                                      # anything. Review fix (2026-07-07, live incident): tier 2
+                                      # alone was consistently spending the ENTIRE bank (Product
+                                      # Finder's Pro-plan rejection forces a 10-token/term search
+                                      # fallback, plus the enrich guard's old undercounted per-ASIN
+                                      # estimate let it overdraw ~14 tokens past the cap every
+                                      # single run) -- leaving tier 3 with ZERO budget on every
+                                      # burst since the hang was fixed, so backtest_rows never grew
+                                      # even once. This is a deliberate discovery-vs-training-data
+                                      # tradeoff (Mehmet's call, 2026-07-07): tier 2 scans somewhat
+                                      # fewer candidates when the bank is full, so tier 3 actually
+                                      # gets a chance to grow the corpus that training depends on.
 
 # Review fix (2026-07-06): a defense-in-depth wall-clock budget, independent of the Trends N+1
 # fix above. keepa-collect.yml's own job timeout is 10 minutes; a run that's still going at this
@@ -313,11 +328,16 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         budget = max(0, budget - int(shadow_result.get("tokens_spent") or 0))
 
         # Tier 2: hint-led candidate scan through the normal gates/scoring/lead-upsert path.
+        # Capped to leave TIER3_RESERVE_FRACTION of the post-tier-1 bank for tier 3 — see that
+        # constant's own comment for why (tier 2 alone was starving tier 3 out completely).
+        tier3_reserve = int(budget * TIER3_RESERVE_FRACTION)
+        tier2_budget = max(0, budget - tier3_reserve)
+        summary["tier3_reserve"] = tier3_reserve
         if _deadline_exceeded(t0):
             scan_result = {"status": "skipped", "reason": "wall-clock safety deadline reached",
                           "tokens_spent": 0}
         else:
-            scan_result = hint_led_scan(api, budget, run_id=run_id)
+            scan_result = hint_led_scan(api, tier2_budget, run_id=run_id)
         summary["scan"] = scan_result
         budget = max(0, budget - int(scan_result.get("tokens_spent") or 0))
 

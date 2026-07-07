@@ -1,7 +1,9 @@
 """
-scout/train_ranker.py — daily training + champion/challenger evaluation (cloud or local).
+scout/train_ranker.py — hourly training + champion/challenger evaluation (cloud or local).
 
-Runs in GitHub Actions (.github/workflows/train-ranker.yml, every 6h) and locally. One cycle:
+Runs in GitHub Actions (.github/workflows/train-ranker.yml, hourly at :41 — tightened from every
+6h on 2026-07-07 to match keepa-collect.yml's own hourly cadence, so a fresh backtest row never
+waits more than ~1h before the next skip-if-unchanged check considers it) and locally. One cycle:
 pull training rows from Supabase (all tiers, labels.py) -> train the CHALLENGER (LightGBM,
 class-balanced, small-data-adaptive hyperparameters, NaN-native missing-value handling — Session
 55 review fix; was scikit-learn LogisticRegression before that) -> compare it against the

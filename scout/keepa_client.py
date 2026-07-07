@@ -47,18 +47,55 @@ except Exception:  # pragma: no cover - package optional at import time
 # short-lived scheduled script, not for a long-running server.
 KEEPA_CALL_DEADLINE_SECONDS = int(os.getenv("KEEPA_CALL_DEADLINE_SECONDS", "600"))  # 10 min
 
+# Review fix (2026-07-07, live incident): the hourly cloud collector was silently hanging every
+# single run past keepa-collect.yml's own timeout-minutes: 10 and getting force-killed with the
+# Supabase `runs` row stuck at status='running' forever. Root cause: EVERY enrich()/
+# query_history()/find_candidates() call — wait=True (nightly, legitimately may need to wait for
+# a token refill) OR wait=False (the hourly burst, which must NEVER block) — was wrapped in the
+# SAME _with_deadline() using the SAME 600s ceiling as the external job timeout. That guarantees
+# the external kill always wins the race (it fires ~20-30s sooner, after accounting for the
+# job's own checkout+install time) — our own honest TimeoutError never gets a chance to raise,
+# unwind to run_hourly_collect()'s finally block, and call db.finish_run() with a real status.
+# Worse, shadow_outcomes.run_rechecks() catches a per-batch enrich failure and keeps going, so
+# MULTIPLE tiers/batches could each independently eat up to the full deadline in one run,
+# compounding past the external budget regardless of what a single shared deadline was set to.
+#
+# Fix: wait=False calls (the hourly burst — should return almost instantly; nothing legitimate
+# ever needs it to wait) get a MUCH shorter deadline than wait=True calls (nightly drip-pacing,
+# which genuinely may want to wait several minutes for tokens to trickle in — unchanged).
+KEEPA_NO_WAIT_DEADLINE_SECONDS = int(os.getenv("KEEPA_NO_WAIT_DEADLINE_SECONDS", "60"))
+
 
 def _with_deadline(fn, *args, **kwargs):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        future = pool.submit(fn, *args, **kwargs)
-        try:
-            return future.result(timeout=KEEPA_CALL_DEADLINE_SECONDS)
-        except concurrent.futures.TimeoutError:
-            raise TimeoutError(
-                f"Keepa call exceeded the {KEEPA_CALL_DEADLINE_SECONDS}s deadline "
-                f"(KEEPA_CALL_DEADLINE_SECONDS in .env) — likely a drained token bucket. "
-                f"Aborting this cycle rather than blocking past the next scheduled run."
-            )
+    # Read (never pop) an existing wait= kwarg so it still flows through to fn exactly as the
+    # caller passed it — this function doesn't own that parameter, it only inspects it to pick
+    # a deadline. Absent entirely (e.g. a caller with no wait concept at all), default True/the
+    # long deadline, matching the pre-fix behavior for every such caller.
+    wait = kwargs.get("wait", True)
+    deadline = KEEPA_CALL_DEADLINE_SECONDS if wait else KEEPA_NO_WAIT_DEADLINE_SECONDS
+    # Review fix (2026-07-07, live incident): NOT a `with ... as pool:` context manager. Its
+    # __exit__ calls shutdown(wait=True), which BLOCKS until the abandoned background thread
+    # actually finishes — silently re-absorbing the full underlying hang duration on the way
+    # out, regardless of what `deadline` is set to. That was quietly defeating the ENTIRE
+    # deadline mechanism from the day it was written: every run's real wall-clock time was
+    # dominated by however long the underlying call took to resolve on its own (observed: ~600s
+    # every time), never by the configured deadline. shutdown(wait=False) lets this function
+    # actually return/raise AT the deadline — the orphaned thread keeps running until it
+    # finishes or the process exits (Python cannot force-cancel a thread; same documented
+    # limitation as before), but this call no longer waits on it.
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    future = pool.submit(fn, *args, **kwargs)
+    try:
+        return future.result(timeout=deadline)
+    except concurrent.futures.TimeoutError:
+        raise TimeoutError(
+            f"Keepa call exceeded its {deadline}s deadline (wait={wait}; "
+            f"{'KEEPA_CALL_DEADLINE_SECONDS' if wait else 'KEEPA_NO_WAIT_DEADLINE_SECONDS'} "
+            f"in .env) — likely a drained token bucket or an unresponsive Keepa API. "
+            f"Aborting this cycle rather than blocking past the next scheduled run."
+        )
+    finally:
+        pool.shutdown(wait=False)
 
 # Keepa CSV "type" indices used to read stats['current'].
 # (These follow Keepa's documented CSV ordering; confirm against your keepa

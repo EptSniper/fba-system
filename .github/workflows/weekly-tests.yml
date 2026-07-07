@@ -1,0 +1,104 @@
+# Weekly full-suite CI run (Session 55 review fix, 2026-07-06 — "a seam-test suite so this never
+# recurs").
+#
+# Runs scout/run_all_tests.py (scout/ + scout_pro/ + knowledge-rag/ + scripts/, including the new
+# scout/tests/test_integration_seams.py) on a weekly cron, so a regression that breaks a
+# producer<->consumer seam gets caught even on a week nobody happens to run the suite by hand
+# locally. Every test in this repo mocks its own network/IO boundary (no live Keepa/Supabase/
+# Discord calls) — this workflow needs no secrets at all.
+#
+# MARKETPLACE-ACTION-FREE (same pattern as the other three scheduled workflows, Session 53):
+# plain git (authenticated via the run's own built-in github.token) instead of actions/checkout,
+# the runner's preinstalled python3 instead of actions/setup-python, an inline 45-day-guarded
+# git-commit keepalive instead of a marketplace action.
+#
+# Secret (repo Settings -> Actions): DISCORD_WEBHOOK_SYSTEM_HEALTH already exists, used only for
+# the failure alert.
+name: weekly-tests
+
+on:
+  schedule:
+    - cron: "19 5 * * 0"   # weekly, Sunday 05:19 UTC (an off-hour minute, same dodge-congestion
+                           # convention as the other scheduled workflows' own offsets)
+  workflow_dispatch: {}     # manual "Run workflow" button
+
+concurrency:
+  group: weekly-tests
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # the inline keepalive step below needs to push
+
+jobs:
+  weekly-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Checkout via plain git — no actions/checkout. Fetches the EXACT commit this run is for
+      # (github.sha), not just "whatever the branch tip is now". github.token is the run's own
+      # built-in GITHUB_TOKEN (auto-masked in logs by the runner) — not a stored secret.
+      - name: Checkout (plain git — no marketplace action)
+        run: |
+          git init -q .
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          git fetch --depth 1 origin "${{ github.sha }}"
+          git checkout --quiet FETCH_HEAD
+
+      # ubuntu-latest ships python3 preinstalled — no actions/setup-python needed. Installs the
+      # FULL requirements for all three tested projects (this is a once-a-week job with generous
+      # minutes — see AI_COLLABORATION_JOURNAL.md's confirmation this repo is public, so
+      # standard-runner Actions minutes are unlimited/free regardless), plus pytest itself (not
+      # listed in any requirements.txt — it's only ever been a pre-installed local dev tool until
+      # now).
+      - name: Install deps (system python3 — no marketplace action)
+        env:
+          PIP_CACHE_DIR: ${{ github.workspace }}/.pip-cache
+        run: |
+          python3 --version
+          python3 -m pip install --user --disable-pip-version-check pytest
+          python3 -m pip install --user --disable-pip-version-check -r scout/requirements.txt
+          python3 -m pip install --user --disable-pip-version-check -r scout_pro/requirements.txt
+          python3 -m pip install --user --disable-pip-version-check -r knowledge-rag/requirements.txt
+
+      - name: Run the full test suite (scout + scout_pro + knowledge-rag + scripts)
+        run: python3 scout/run_all_tests.py
+
+      # Same failure-alert convention as the other three scheduled workflows: a silent weekly
+      # test regression gets noticed instead of sitting undiscovered until the next session.
+      - name: Alert on failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_SYSTEM_HEALTH: ${{ secrets.DISCORD_WEBHOOK_SYSTEM_HEALTH }}
+        run: |
+          python3 - <<'PY'
+          import os, json, urllib.request
+          url = os.getenv("DISCORD_WEBHOOK_SYSTEM_HEALTH")
+          if url:
+              body = {"embeds": [{"title": "⚠ Weekly test suite failed",
+                                  "description": "scout/run_all_tests.py returned a non-zero exit code in GitHub Actions — at least one suite has a real regression. Check the run log.",
+                                  "color": 0xE24C4C}]}
+              req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                          headers={"Content-Type": "application/json"})
+              try:
+                  urllib.request.urlopen(req, timeout=10)
+              except Exception as e:
+                  print("failure alert post failed:", type(e).__name__)
+          PY
+
+      # Defeat GitHub's 60-day-inactivity auto-disable of scheduled workflows — inline, no
+      # marketplace action (same pattern as the other scheduled workflows).
+      - name: Keepalive (inline — no marketplace action)
+        run: |
+          DAYS_SINCE=$(( ($(date +%s) - $(git log -1 --format=%ct)) / 86400 ))
+          echo "days since last commit: $DAYS_SINCE"
+          if [ "$DAYS_SINCE" -ge 45 ]; then
+            mkdir -p .github
+            echo "keepalive: $(date -u +%Y-%m-%dT%H:%M:%SZ) (repo was ${DAYS_SINCE}d inactive)" > .github/keepalive.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .github/keepalive.txt
+            git commit -q -m "chore: keepalive (repo inactive ${DAYS_SINCE}d — defeat 60-day Actions auto-disable)"
+            git push origin "HEAD:${{ github.ref_name }}"
+          else
+            echo "keepalive: not needed yet (${DAYS_SINCE}d < 45d threshold)"
+          fi

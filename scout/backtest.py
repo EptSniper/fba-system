@@ -525,22 +525,29 @@ def sample_asins_stratified(api, budget_tokens: int, target: int = TARGET_ASINS,
     brand-agnostic, ~10 tokens/term), then the EXISTING onpolicy brand-seeded sample (unchanged
     mechanism — kept as the ranker's onpolicy-vs-explore comparison baseline; buy-discovery's OWN
     seeding in pipeline.py/discovery_hints.py is a completely separate path, untouched by this).
-    Each source's REAL observed spend is subtracted before sizing the next (same waterfall
-    philosophy as collect_hourly.py's tiers). Returns (asin_dicts, total_tokens_spent,
-    per_source_counts) where each asin_dict is {"asin", "category", "sample_source"}."""
-    share = max(0, budget_tokens) // 3
+    Each source's REAL observed spend is subtracted before sizing the next — a TRUE waterfall,
+    dealfeed gets the FULL budget_tokens as its ceiling, not a pre-divided share (review fix,
+    2026-07-07, live incident): the original code pre-split budget_tokens // 3 and capped
+    dealfeed to ONLY that third, contradicting this very docstring's "dealfeed FIRST" claim — on
+    a small tier-3 reserve (the exact scenario the 2026-07-07 reserve fix introduced) a 1/3 share
+    routinely fell below DEALS_PAGE_TOKENS (5), silently zeroing out the cheapest and most
+    reliable source (no dependency on Product Finder's Pro-plan rejection) every single run.
+    Returns (asin_dicts, total_tokens_spent, per_source_counts) where each asin_dict is
+    {"asin", "category", "sample_source"}."""
     spent = 0
     out: List[Dict[str, Any]] = []
     seen = set()
     counts = {"dealfeed": 0, "explore": 0, "onpolicy": 0}
 
-    # 1) dealfeed — cheapest, goes first. firehose_fn defaults to deals_firehose.harvest with the
-    #    library's normal wait=True drip-pacing; collect_hourly.py injects a wait=False closure
-    #    (matching its own _find_no_wait/_history_no_wait convention) for the "never block on a
-    #    refill" burst rule — the guard above already means this is rarely reached regardless.
+    # 1) dealfeed — cheapest, goes first, gets the FULL budget as its ceiling (capped at 4 pages
+    #    regardless, so a large budget still leaves plenty for explore/onpolicy below).
+    #    firehose_fn defaults to deals_firehose.harvest with the library's normal wait=True
+    #    drip-pacing; collect_hourly.py injects a wait=False closure (matching its own
+    #    _find_no_wait/_history_no_wait convention) for the "never block on a refill" burst rule
+    #    — the guard above already means this is rarely reached regardless.
     try:
         import deals_firehose
-        pages_affordable = share // max(1, deals_firehose.DEALS_PAGE_TOKENS)
+        pages_affordable = budget_tokens // max(1, deals_firehose.DEALS_PAGE_TOKENS)
         result = (firehose_fn or deals_firehose.harvest)(api, pages=min(max(pages_affordable, 0), 4)) \
             if pages_affordable > 0 else {"asins": [], "tokens_spent": 0}
     except Exception as e:
@@ -554,8 +561,9 @@ def sample_asins_stratified(api, budget_tokens: int, target: int = TARGET_ASINS,
             out.append({"asin": a, "category": d.get("category"), "sample_source": "dealfeed"})
             counts["dealfeed"] += 1
 
-    # 2) explore — brand-agnostic, whatever's left of its share plus any dealfeed underspend.
-    explore_budget = max(0, budget_tokens - spent - share)  # reserve onpolicy's own share
+    # 2) explore — brand-agnostic, gets whatever's left after dealfeed's REAL spend (a true
+    #    waterfall — no longer reserves a separate onpolicy share up front).
+    explore_budget = max(0, budget_tokens - spent)
     explore_asins, explore_spent = sample_asins_explore(api, explore_budget, find_fn=find_fn)
     spent += explore_spent
     for d in explore_asins:

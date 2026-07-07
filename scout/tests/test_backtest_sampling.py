@@ -102,6 +102,26 @@ class SampleAsinsStratifiedTest(unittest.TestCase):
         self.assertEqual(counts["dealfeed"], 1)
         self.assertEqual(counts["explore"], 0)
 
+    def test_small_reserve_still_lets_dealfeed_afford_a_page(self):
+        """Review fix (2026-07-07, live incident): a live burst with a 13-token tier-3 reserve
+        (the new TIER3_RESERVE_FRACTION guard) came back with sample_composition all zeros --
+        the OLD code pre-split 13//3=4 tokens to dealfeed's own share, below
+        DEALS_PAGE_TOKENS(5), so pages_affordable was 0 and dealfeed never even tried. dealfeed
+        must now get the FULL budget_tokens as its ceiling (13//5=2 pages affordable)."""
+        seen_pages = {}
+
+        def fake_firehose(api, pages=None):
+            seen_pages["pages"] = pages
+            return {"asins": [{"asin": "DEAL1", "category": "toys"}], "tokens_spent": 10}
+
+        with mock.patch("brands.seed_brands", return_value=[]), \
+             mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]):
+            out, spent, counts = bt.sample_asins_stratified(
+                object(), budget_tokens=13, target=100,
+                find_fn=lambda **kw: [], firehose_fn=fake_firehose)
+        self.assertEqual(seen_pages["pages"], 2)  # 13 // 5, not 4 // 5 == 0
+        self.assertEqual(counts["dealfeed"], 1)
+
     def test_zero_budget_yields_nothing_from_any_source(self):
         with mock.patch("brands.seed_brands", return_value=["Lego"]), \
              mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]):

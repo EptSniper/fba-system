@@ -144,7 +144,12 @@ def fetch_deal_page(api, category: Optional[str] = None, category_id: Optional[i
         deal_parms["includeCategories"] = [category_id]
     before = keepa_client._tokens_consumed(api)
     try:
-        deals = api.deals(deal_parms, domain=config.KEEPA_DOMAIN, wait=wait) or {}
+        # Review fix (2026-07-07): wrapped in _with_deadline for defense-in-depth (matching
+        # every other live Keepa call in keepa_client.py) — the guard above makes a hang here
+        # unlikely in practice, but resolve_category_ids() right above this function looked
+        # exactly as safe until it wasn't, and this is the same endpoint class.
+        deals = keepa_client._with_deadline(api.deals, deal_parms, domain=config.KEEPA_DOMAIN,
+                                           wait=wait) or {}
     except Exception as e:
         reason = keepa_client.redact_err(e)
         log.warning("deals() page failed (non-fatal): %s", reason)

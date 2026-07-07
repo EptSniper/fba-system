@@ -103,6 +103,24 @@ def test_find_candidates_calls_product_finder_through_the_deadline_wrapper():
     assert result == ["B0FAKE01"]
 
 
+def test_seller_asins_calls_seller_query_through_the_deadline_wrapper():
+    """Review fix (2026-07-07): seller_asins() used to call api.seller_query() directly, with
+    no wait= override and no deadline wrapper — the same unguarded shape that hung
+    deals_firehose.resolve_category_ids() live. Not on any active collector's path today, but
+    fixed anyway; this proves it now routes through _with_deadline and can be bounded fast."""
+    with patch.object(keepa_client, "_KEEPA", True), \
+         patch.object(keepa_client, "KEEPA_NO_WAIT_DEADLINE_SECONDS", 0.2):
+        mock_api = type("FakeApi", (), {"tokens_left": 60})()
+        mock_api.seller_query = lambda seller_id, domain=None, wait=True: time.sleep(2)
+        start = time.time()
+        try:
+            keepa_client.seller_asins("A1FAKESELLER", api=mock_api, wait=False)
+            assert False, "expected TimeoutError"
+        except TimeoutError:
+            elapsed = time.time() - start
+            assert elapsed < 2, f"should have failed fast on the deadline, took {elapsed}s"
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     passed = 0

@@ -758,24 +758,27 @@ def _json_safe(obj):
 
 
 def token_telemetry(api) -> Dict[str, Optional[int]]:
-    """Read tokensLeft/tokensConsumed off a keepa.Keepa client instance for the runs table
-    (System Blueprint Prompt G2 — "a drained key silently looks like no results, alert on
-    tokensLeft"). Read defensively via getattr: the python keepa lib exposes these as plain
-    instance attributes updated after each request, but never assume the exact attribute
-    names are stable across versions — degrade to None rather than raise."""
-    # Explicit None checks, not an `or` chain: a legitimate 0 on tokens_consumed_total (fresh
-    # client, pre-first-request) is falsy and would silently fall through to a DIFFERENT-semantics
-    # attribute, corrupting the before/after deltas budgets are computed from (Review 2026-07-05).
-    consumed = getattr(api, "tokens_consumed_total", None)
-    if consumed is None:
-        consumed = getattr(api, "tokens_consumed", None)
+    """Read tokensLeft off a keepa.Keepa client instance for the runs table (System Blueprint
+    Prompt G2 — "a drained key silently looks like no results, alert on tokensLeft"). Read
+    defensively via getattr — degrade to None rather than raise.
+
+    Review fix (2026-07-07, live incident): "tokens_consumed"/"tokens_consumed_total" used to
+    be read off the api object here — attributes the `keepa` package has NEVER actually
+    exposed, in any version (confirmed against 1.3.15 and the live-deployed 1.5.0; the client
+    only ever tracks tokens_left, a balance). That always returned None, and every caller of
+    _tokens_consumed()/_delta() (the real budget-tracking path) silently inherited the bug —
+    see _tokens_consumed()'s own docstring for the fix there. This function's "tokens_consumed"
+    key is kept for any existing caller checking for its presence, but is now honestly None
+    always (a real per-call spend needs a before/after tokens_left DIFFERENCE, which this
+    single-snapshot function can't produce — that's exactly what _tokens_consumed()/_delta()
+    are for)."""
     return {
         "tokens_left": getattr(api, "tokens_left", None),
-        "tokens_consumed": consumed,
+        "tokens_consumed": None,
     }
 
 
-def seller_asins(seller_id: str, api=None) -> List[str]:
+def seller_asins(seller_id: str, api=None, wait: bool = True) -> List[str]:
     """Return the ASINs in a seller's catalog via Keepa's seller data."""
     _require_keepa()
     api = api or get_client()
@@ -786,7 +789,12 @@ def seller_asins(seller_id: str, api=None) -> List[str]:
     if skip:
         return []
     before = _tokens_consumed(api)
-    res = api.seller_query(seller_id, domain=config.KEEPA_DOMAIN)
+    # Review fix (2026-07-07): this call had no wait= override (silently defaulted to the keepa
+    # package's own wait=True) and no deadline wrapper — the exact unguarded shape that hung
+    # deals_firehose.resolve_category_ids() live. Not on any active collector's path today, but
+    # fixed anyway so it can't become the next version of that incident if this ever gets wired
+    # into a scheduled job without someone remembering the guard.
+    res = _with_deadline(api.seller_query, seller_id, domain=config.KEEPA_DOMAIN, wait=wait)
     after = _tokens_consumed(api)
     datalake.archive("keepa", seller_id, "seller", res, tokens_consumed=_delta(before, after))
     info = (res or {}).get(seller_id, {}) if isinstance(res, dict) else {}

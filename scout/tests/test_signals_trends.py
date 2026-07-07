@@ -231,5 +231,27 @@ class TrendsFeaturesMathTest(unittest.TestCase):
         self.assertGreater(feats["seasonal_z"], 0)  # 90 is well above the ~21 historical mean
 
 
+class MainEntryPointTest(unittest.TestCase):
+    """Review fix (2026-07-06): collect_weekly() had NO scheduled caller anywhere in the
+    codebase — .github/workflows/trends-collect.yml now invokes this weekly via
+    `python3 -m signals.trends`."""
+
+    def test_main_calls_collect_weekly_and_exits_zero(self):
+        with mock.patch.object(trends, "collect_weekly",
+                               return_value={"status": "ok", "fetched": ["Lego"], "failed": [],
+                                            "rows_stored": 5}) as mock_collect:
+            rc = trends.main()
+        mock_collect.assert_called_once()
+        self.assertEqual(rc, 0)
+
+    def test_main_exits_zero_even_when_disabled(self):
+        """'disabled' (pytrends/env unavailable) is an honest no-op, not a CI failure — same
+        convention as collect_hourly.main()'s 'no KEEPA_KEY' case."""
+        with mock.patch.object(trends, "collect_weekly",
+                               return_value={"status": "disabled", "reason": "no pytrends"}):
+            rc = trends.main()
+        self.assertEqual(rc, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

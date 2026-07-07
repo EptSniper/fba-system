@@ -1,0 +1,8 @@
+# Minimal deps for the weekly Trends collector (.github/workflows/trends-collect.yml).
+# Deliberately NOT scout/requirements.txt: this job needs no keepa/anthropic/pyarrow/scikit-learn/
+# lightgbm — smaller install = faster + cheaper Actions minutes (same reasoning as
+# requirements-train.txt/requirements-collect.txt). pytrends pulls in pandas itself (its own
+# declared dependency) — no need to list it separately.
+requests>=2.31
+python-dotenv>=1.0
+pytrends>=4.9

@@ -1,0 +1,114 @@
+# Weekly Google Trends collector (Session 55 review fix, 2026-07-06).
+#
+# Runs scout/signals/trends.py's collect_weekly() weekly (Google Trends' own data updates on a
+# weekly bucket granularity, so more often than this buys nothing new). Before this workflow
+# existed, NOTHING in the codebase ever called collect_weekly() — trends_series stayed
+# permanently empty, so all 8 Trends-derived model features (brand_trend_*/category_trend_*)
+# were constant-zero at every retrain, and the ranker report's kill-rule would have flagged them
+# "near-zero — removal candidate" despite never having been fed a single real data point.
+#
+# Zero Keepa tokens involved — this is entirely independent of the Keepa token budget the other
+# two workflows (keepa-collect.yml, train-ranker.yml) share. pytrends is an UNOFFICIAL Google
+# Trends scraper (no official API exists); scout/signals/trends.py's own backoff+jitter+per-term
+# isolation handles rate-limit/failure per term, so one failing term never blocks the rest of
+# the vocabulary (~10 categories + up to 200 recently-seen brands).
+#
+# MARKETPLACE-ACTION-FREE (same pattern as keepa-collect.yml/train-ranker.yml, Session 53):
+# plain git (authenticated via the run's own built-in github.token) instead of actions/checkout,
+# the runner's preinstalled python3 instead of actions/setup-python, an inline 45-day-guarded
+# git-commit keepalive instead of a marketplace action.
+#
+# Secrets (repo Settings -> Actions): SUPABASE_URL, SUPABASE_SERVICE_KEY already exist from prior
+# sessions. DISCORD_WEBHOOK_SYSTEM_HEALTH for the failure alert.
+name: trends-collect
+
+on:
+  schedule:
+    - cron: "37 4 * * 1"   # weekly, Monday 04:37 UTC (an off-hour minute, same dodge-congestion
+                           # convention as the other scheduled workflows' own offsets)
+  workflow_dispatch: {}     # manual "Run workflow" button
+
+# Never let two collections overlap.
+concurrency:
+  group: trends-collect
+  cancel-in-progress: false
+
+permissions:
+  contents: write   # the inline keepalive step below needs to push
+
+jobs:
+  trends-collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Checkout via plain git — no actions/checkout. Fetches the EXACT commit this run is for
+      # (github.sha), not just "whatever the branch tip is now". github.token is the run's own
+      # built-in GITHUB_TOKEN (auto-masked in logs by the runner) — not a stored secret.
+      - name: Checkout (plain git — no marketplace action)
+        run: |
+          git init -q .
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          git fetch --depth 1 origin "${{ github.sha }}"
+          git checkout --quiet FETCH_HEAD
+
+      # ubuntu-latest ships python3 preinstalled — no actions/setup-python needed. --user
+      # installs to the runner's user site-packages (importable regardless of PATH, since this
+      # runs via `python3 -m module`, never a bare console script).
+      - name: Install deps (system python3 — no marketplace action)
+        env:
+          PIP_CACHE_DIR: ${{ github.workspace }}/.pip-cache
+        run: |
+          python3 --version
+          python3 -m pip install --user --disable-pip-version-check -r scout/requirements-trends.txt
+
+      # Run as a MODULE (`-m signals.trends`, not `python3 signals/trends.py`) so its `import
+      # db`/`from signals import ...` sibling imports resolve against scout/ as the search root,
+      # not scout/signals/ (the script's own directory) — the same reason every other Python
+      # entry point in this repo is invoked from working-directory: scout.
+      - name: Run the weekly Trends collector
+        working-directory: scout
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python3 -m signals.trends
+
+      # Same failure-alert convention as keepa-collect.yml/train-ranker.yml: a silent weekly
+      # failure gets noticed. Never echoes an env value; redact.py + Actions' own secret masking
+      # both apply.
+      - name: Alert on failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_SYSTEM_HEALTH: ${{ secrets.DISCORD_WEBHOOK_SYSTEM_HEALTH }}
+        run: |
+          python3 - <<'PY'
+          import os, json, urllib.request
+          url = os.getenv("DISCORD_WEBHOOK_SYSTEM_HEALTH")
+          if url:
+              body = {"embeds": [{"title": "⚠ Weekly Trends collector failed",
+                                  "description": "scout/signals/trends.py exited non-zero in GitHub Actions. Check the run log (secrets are masked).",
+                                  "color": 0xE24C4C}]}
+              req = urllib.request.Request(url, data=json.dumps(body).encode(),
+                                          headers={"Content-Type": "application/json"})
+              try:
+                  urllib.request.urlopen(req, timeout=10)
+              except Exception as e:
+                  print("failure alert post failed:", type(e).__name__)
+          PY
+
+      # Defeat GitHub's 60-day-inactivity auto-disable of scheduled workflows — inline, no
+      # marketplace action (same pattern as the other scheduled workflows).
+      - name: Keepalive (inline — no marketplace action)
+        run: |
+          DAYS_SINCE=$(( ($(date +%s) - $(git log -1 --format=%ct)) / 86400 ))
+          echo "days since last commit: $DAYS_SINCE"
+          if [ "$DAYS_SINCE" -ge 45 ]; then
+            mkdir -p .github
+            echo "keepalive: $(date -u +%Y-%m-%dT%H:%M:%SZ) (repo was ${DAYS_SINCE}d inactive)" > .github/keepalive.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add .github/keepalive.txt
+            git commit -q -m "chore: keepalive (repo inactive ${DAYS_SINCE}d — defeat 60-day Actions auto-disable)"
+            git push origin "HEAD:${{ github.ref_name }}"
+          else
+            echo "keepalive: not needed yet (${DAYS_SINCE}d < 45d threshold)"
+          fi

@@ -12,11 +12,13 @@ Vocabulary (ai-brain.json learning.sampling + db.recent_brand_vocabulary): every
 recently in leads/deal_hints (rolling, capped ~200 — the oldest brands age out as newer ones push
 the cap) + the ~10 learning.sampling categories.
 
-LEAKAGE SAFETY: trends_features(term, as_of, ...) only ever reads weekly points STRICTLY BEFORE
-as_of (`d < as_of`, never `<=`) — the exact same boundary scout/backtest.py's feature builder
-enforces for Keepa history. This is what makes the 5-year backfill (trends_backfill.py) safe to
-run against historical rows: the SAME function computes a live feature today and a historical
-feature for a 2024 backtest window, and can never see either's future.
+LEAKAGE SAFETY: trends_features(term, as_of, ...) only ever reads weekly points whose ENTIRE
+aggregation window has closed strictly before as_of (`d + WEEK_LENGTH_DAYS <= as_of` — a weekly
+point aggregates a whole week, not a single day; see trends_features' own docstring for the
+2026-07-06 review fix that tightened this from a same-day `d < as_of` check). This is what makes
+the 5-year backfill (trends_backfill.py) safe to run against historical rows: the SAME function
+computes a live feature today and a historical feature for a 2024 backtest window, and can never
+see either's future.
 """
 from __future__ import annotations
 
@@ -240,3 +242,29 @@ def trends_features(term: str, as_of: _dt.date,
 
     return {"interest_now_vs_90d_avg": ratio, "slope_4wk": slope, "seasonal_z": seasonal_z,
            "spike_flag": spike, "stale": stale}
+
+
+# --- CLI entry point (review fix, 2026-07-06) -----------------------------------------------
+# Before this, collect_weekly() had NO scheduled caller anywhere — trends_series stayed
+# permanently empty, so all 8 Trends model features were constant-zero at every retrain and the
+# ranker report's kill-rule would have flagged them "near-zero — removal candidate" despite
+# never having been fed any data. .github/workflows/trends-collect.yml runs this weekly (matching
+# Google Trends' own weekly bucket granularity) via `python3 -m signals.trends` from scout/.
+def main() -> int:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(HERE, ".env"))
+    except Exception:
+        pass
+    result = collect_weekly()
+    print(json.dumps(result, indent=2, default=str))
+    # "disabled" (pytrends/env not available) is an HONEST no-op, not a CI failure — same
+    # convention as collect_hourly.main()'s "no KEEPA_KEY" case. Per-term failures are tracked
+    # in result["failed"] without failing the whole run (per-term isolation is the point).
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

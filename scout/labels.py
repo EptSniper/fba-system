@@ -148,7 +148,13 @@ def _from_backtest() -> List[Dict[str, Any]]:
     """BACKTEST labels — the 4th and WEAKEST tier (DATA_ENGINE_PLAN.md V2): hindsight simulations
     on historical Keepa data with a simulated buy cost, no execution, no sell-through. Included in
     training only when a caller explicitly opts in (V3's ranker); the calibration diagnostic keeps
-    them OUT and reports their count as a separate tier line, never blended into gold/silver."""
+    them OUT and reports their count as a separate tier line, never blended into gold/silver.
+
+    sample_source/ip_risk are carried through from db.all_backtest_rows() (review fix,
+    2026-07-06 — a seam test caught these being silently dropped here even though the write side,
+    scout/backtest.py's build_rows_for_asin, always sets them): without this,
+    train_ranker.source_breakdown() would group every backtest row under 'n/a' and the Session
+    55 sampling overhaul's onpolicy-vs-explore-vs-dealfeed report section could never render."""
     rows = []
     for b in db.all_backtest_rows():
         label = b.get("would_have_profited")
@@ -162,6 +168,9 @@ def _from_backtest() -> List[Dict[str, Any]]:
             "label": bool(label),
             "label_quality": "backtest",
             "simulation_date": b.get("simulation_date"),
+            "sample_source": b.get("sample_source"),
+            "category": b.get("category"),
+            "ip_risk": b.get("ip_risk"),
         })
     return rows
 

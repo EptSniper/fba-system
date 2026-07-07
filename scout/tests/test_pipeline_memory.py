@@ -92,6 +92,79 @@ def test_maybe_post_picks_never_gated_by_legacy_have_discord():
     mock_post.assert_called_once()
 
 
+# ---------------------------------------------------------------------------
+# _rank_winners / _evaluate's challenger wiring (review fix, 2026-07-06) — the cloud-trained
+# ranker (train_ranker.py) had NO reader anywhere in the codebase. Shadow mode (the default,
+# ai-brain.json scoring.rankingChampion="rule") must leave ordering byte-identical; a human
+# promotion ("challenger") must actually change the winners' order, but NEVER the threshold gate.
+# ---------------------------------------------------------------------------
+
+def test_rank_winners_defaults_to_triage_score_in_shadow_mode():
+    winners = [
+        _candidate(asin="A", triage_score=10, challenger_proba=0.99),
+        _candidate(asin="B", triage_score=90, challenger_proba=0.01),
+    ]
+    with patch.object(pipeline.train_ranker, "ranking_champion", return_value="rule"):
+        ranked, model = pipeline._rank_winners(winners)
+    assert model == "rule"
+    assert [w["asin"] for w in ranked] == ["B", "A"]  # triage_score order, challenger ignored
+
+
+def test_rank_winners_uses_challenger_when_promoted_and_available():
+    winners = [
+        _candidate(asin="A", triage_score=10, challenger_proba=0.99),
+        _candidate(asin="B", triage_score=90, challenger_proba=0.01),
+    ]
+    with patch.object(pipeline.train_ranker, "ranking_champion", return_value="challenger"):
+        ranked, model = pipeline._rank_winners(winners)
+    assert model == "challenger"
+    assert [w["asin"] for w in ranked] == ["A", "B"]  # challenger_proba order now
+
+
+def test_rank_winners_falls_back_to_rule_when_promoted_but_no_candidate_scored():
+    """Promoted, but every candidate's challenger_proba is None (e.g. the artifact failed to
+    load this run) — must fall back to the rule ordering entirely, not sort by a missing field."""
+    winners = [_candidate(asin="A", triage_score=10), _candidate(asin="B", triage_score=90)]
+    with patch.object(pipeline.train_ranker, "ranking_champion", return_value="challenger"):
+        ranked, model = pipeline._rank_winners(winners)
+    assert model == "rule"
+    assert [w["asin"] for w in ranked] == ["B", "A"]
+
+
+def test_rank_winners_per_candidate_fallback_when_challenger_partially_missing():
+    """Promoted, and only SOME candidates have a challenger score — a candidate missing one
+    falls back to its OWN triage_score rather than being dropped or crashing the sort (the
+    cross-metric comparison this produces isn't a meaningful guarantee — the SAME tradeoff the
+    pre-existing triage_score/blended_score fallback already makes — so this only asserts the
+    sort completes and both winners survive, not a specific cross-metric order)."""
+    winners = [
+        _candidate(asin="A", triage_score=5, challenger_proba=None),
+        _candidate(asin="B", triage_score=1, challenger_proba=0.9),
+    ]
+    with patch.object(pipeline.train_ranker, "ranking_champion", return_value="challenger"):
+        ranked, model = pipeline._rank_winners(winners)
+    assert model == "challenger"
+    assert {w["asin"] for w in ranked} == {"A", "B"}
+
+
+def test_evaluate_attaches_challenger_proba_none_in_shadow_mode():
+    """Default (no promotion): _evaluate must not even attempt to load a challenger — every
+    candidate's challenger_proba is None, byte-identical to pre-fix behavior."""
+    with patch.object(pipeline.train_ranker, "load_challenger", return_value=None) as mock_load:
+        scored = pipeline._evaluate([_candidate(price=20.0, category="toys")])
+    mock_load.assert_called_once()
+    assert scored[0]["challenger_proba"] is None
+
+
+def test_evaluate_attaches_challenger_proba_when_promoted():
+    fake_champion = {"model": object(), "scaler": object(), "features": []}
+    with patch.object(pipeline.train_ranker, "load_challenger", return_value=fake_champion), \
+         patch.object(pipeline.train_ranker, "challenger_score", return_value=0.73) as mock_score:
+        scored = pipeline._evaluate([_candidate(price=20.0, category="toys")])
+    assert scored[0]["challenger_proba"] == 0.73
+    mock_score.assert_called_once()
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     passed = 0

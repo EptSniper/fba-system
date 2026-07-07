@@ -33,6 +33,7 @@ import predictions
 import redact
 import reflect
 import scoring
+import train_ranker
 import spapi
 import storage
 
@@ -227,9 +228,18 @@ def maybe_retrain() -> Dict[str, Any]:
 
 def _evaluate(enriched: List[Dict[str, Any]],
               clf=None) -> List[Dict[str, Any]]:
-    """Attach rule score, margin, model proba, blended score, and reason."""
+    """Attach rule score, margin, model proba, blended score, and reason.
+
+    Review fix (2026-07-06): also attaches challenger_proba — the cloud-trained ranker's
+    (train_ranker.py) probability for this candidate, computed from the SAME pre-decision
+    feature snapshot db.log_lead() would store. This NEVER affects the hard score/threshold gate
+    above (or any compliance/safety check) — it's gated entirely on the human-only brain key
+    scoring.rankingChampion, defaulting to None (no effect at all) unless a human has explicitly
+    promoted the challenger via fba-brain-updater; run_once()'s winners-sort is the only thing
+    that ever reads it."""
     results = []
     oa = (config.MODE == "OA")
+    champion = train_ranker.load_challenger()
     for p in enriched:
         p = dict(p)
         if oa:
@@ -254,11 +264,13 @@ def _evaluate(enriched: List[Dict[str, Any]],
         feats = model_mod.features_from(p, rule_score, margin)
         proba = model_mod.predict_proba(feats, model=clf)
         blended = model_mod.blended_score(rule_score, proba)
+        challenger_proba = train_ranker.challenger_score(champion, db.feature_snapshot(p))
         p.update({
             "margin_est": margin,
             "rule_score": rule_score,
             "model_proba": proba,
             "blended_score": blended,
+            "challenger_proba": challenger_proba,
             "reason": reason,
             "raw": {k: p.get(k) for k in
                     ("sales_rank", "drops30", "drops90", "brand", "oos_90")},
@@ -266,6 +278,31 @@ def _evaluate(enriched: List[Dict[str, Any]],
         p["risks"] = scoring.risk_flags_oa(p) if oa else scoring.risk_flags(p)
         results.append(p)
     return results
+
+
+def _rank_winners(winners: List[Dict[str, Any]]) -> "tuple[List[Dict[str, Any]], str]":
+    """Order the winners list (the score THRESHOLD/gate is decided before this is ever called —
+    this only ever affects ORDER). Default: by triage_score (Scout Agent Build Plan sec 3.2:
+    expected payback speed at a stressed price), falling back to blended_score for candidates
+    triage_score couldn't rank (missing price/sales data).
+
+    Review fix (2026-07-06): when a human has explicitly promoted the cloud-trained ranker
+    (ai-brain.json scoring.rankingChampion="challenger"), the CHALLENGER's probability orders
+    the queue instead. Falls back to triage_score/blended_score per-candidate when the
+    challenger has no opinion (e.g. missing features), and to the rule ordering entirely when
+    nothing is promoted or no candidate in this batch got a challenger score at all. Returns
+    (sorted_winners, ranking_model) so callers can log/report which model actually ordered the
+    queue this cycle."""
+    using_challenger = (train_ranker.ranking_champion() == "challenger"
+                       and any(p.get("challenger_proba") is not None for p in winners))
+    if using_challenger:
+        winners.sort(key=lambda x: (x.get("challenger_proba") if x.get("challenger_proba") is not None
+                                    else (x.get("triage_score") if x.get("triage_score") is not None
+                                          else x.get("blended_score", 0))), reverse=True)
+    else:
+        winners.sort(key=lambda x: (x.get("triage_score") if x.get("triage_score") is not None
+                                    else x.get("blended_score", 0)), reverse=True)
+    return winners, ("challenger" if using_challenger else "rule")
 
 
 def run_once(criteria: Optional[Dict[str, Any]] = None,
@@ -391,13 +428,11 @@ def run_once(criteria: Optional[Dict[str, Any]] = None,
         )
 
         # 6) filter -> sort -> top N. The score THRESHOLD (the pass/fail bar) is unchanged;
-        # only the ORDER within the winners changes — by triage_score (Scout Agent Build Plan
-        # sec 3.2: expected payback speed at a stressed price) when available, falling back to
-        # blended_score for candidates triage_score couldn't rank (missing price/sales data).
+        # only the ORDER within the winners changes (see _rank_winners).
         winners = [p for p in scored if (p.get("blended_score") or 0) >= threshold]
         summary["above_threshold"] = len(winners)
-        winners.sort(key=lambda x: (x.get("triage_score") if x.get("triage_score") is not None
-                                    else x.get("blended_score", 0)), reverse=True)
+        winners, ranking_model = _rank_winners(winners)
+        summary["ranking_model"] = ranking_model
 
         # 6) dedupe against prior picks (by ASIN)
         fresh = [p for p in winners if p.get("asin") and not storage.already_picked(p["asin"])]

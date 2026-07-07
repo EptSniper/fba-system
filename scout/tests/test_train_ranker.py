@@ -5,6 +5,7 @@ Guards the non-negotiables: NO automatic promotion (the script must never write 
 honest refusal below the data floor, correct rank metrics, and the champion/challenger verdict
 wording the report/Discord post rely on.
 """
+import json
 import os
 import sys
 import unittest
@@ -155,6 +156,158 @@ class BronzeAgreementTest(unittest.TestCase):
         result = tr.bronze_agreement(clf, scaler, bronze_rows)
         self.assertEqual(result["n"], 2)
         self.assertEqual(result["agreement_rate"], 1.0)
+
+
+class RankingChampionTest(unittest.TestCase):
+    """Review fix (2026-07-06): scoring.rankingChampion is the human-only promotion switch —
+    every report has always SAID promotion works this way, but nothing ever read it. Must
+    default to 'rule' (shadow-only) whenever the brain is missing, unreadable, or holds an
+    unrecognized value — never an accidental promotion."""
+
+    def _brain_at(self, content):
+        import tempfile
+        f = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(content, f)
+        f.close()
+        return f.name
+
+    def test_defaults_to_rule_when_brain_missing(self):
+        with mock.patch.object(tr, "BRAIN_PATH", "/nonexistent/path/ai-brain.json"):
+            self.assertEqual(tr.ranking_champion(), "rule")
+
+    def test_reads_challenger_when_explicitly_set(self):
+        path = self._brain_at({"scoring": {"rankingChampion": "challenger"}})
+        try:
+            with mock.patch.object(tr, "BRAIN_PATH", path):
+                self.assertEqual(tr.ranking_champion(), "challenger")
+        finally:
+            os.remove(path)
+
+    def test_unrecognized_value_defaults_to_rule(self):
+        path = self._brain_at({"scoring": {"rankingChampion": "some_typo"}})
+        try:
+            with mock.patch.object(tr, "BRAIN_PATH", path):
+                self.assertEqual(tr.ranking_champion(), "rule")
+        finally:
+            os.remove(path)
+
+    def test_explicit_rule_reads_as_rule(self):
+        path = self._brain_at({"scoring": {"rankingChampion": "rule"}})
+        try:
+            with mock.patch.object(tr, "BRAIN_PATH", path):
+                self.assertEqual(tr.ranking_champion(), "rule")
+        finally:
+            os.remove(path)
+
+
+class LoadChallengerTest(unittest.TestCase):
+    """The LIVE consumer of the cloud-trained ranker artifact — the review's core finding was
+    that nothing in the codebase ever read this. Every failure mode must degrade to None
+    (shadow/rule fallback), never raise."""
+
+    def setUp(self):
+        tr.reset_challenger_cache()
+
+    def tearDown(self):
+        tr.reset_challenger_cache()
+
+    def test_none_when_not_promoted(self):
+        with mock.patch.object(tr, "ranking_champion", return_value="rule"):
+            self.assertIsNone(tr.load_challenger())
+
+    def test_loads_local_artifact_when_promoted(self):
+        import tempfile, shutil, joblib
+        tmpdir = tempfile.mkdtemp()
+        try:
+            model_dir = os.path.join(tmpdir, "current")
+            os.makedirs(model_dir)
+            joblib.dump({"model": "fake_model", "scaler": "fake_scaler", "features": []},
+                       os.path.join(model_dir, "model.joblib"))
+            with mock.patch.object(tr, "ranking_champion", return_value="challenger"), \
+                 mock.patch.object(tr, "MODELS_DIR", tmpdir):
+                loaded = tr.load_challenger()
+            self.assertEqual(loaded["model"], "fake_model")
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_falls_back_to_fetch_when_local_missing(self):
+        import tempfile, shutil
+        tmpdir = tempfile.mkdtemp()
+        try:
+            with mock.patch.object(tr, "ranking_champion", return_value="challenger"), \
+                 mock.patch.object(tr, "MODELS_DIR", tmpdir), \
+                 mock.patch.object(tr, "fetch_current_model", return_value=None) as mock_fetch:
+                loaded = tr.load_challenger()
+            self.assertIsNone(loaded)
+            mock_fetch.assert_called_once()  # attempted a live download when nothing local
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_unexpected_shape_degrades_to_none(self):
+        import tempfile, shutil, joblib
+        tmpdir = tempfile.mkdtemp()
+        try:
+            model_dir = os.path.join(tmpdir, "current")
+            os.makedirs(model_dir)
+            joblib.dump("not_a_dict_at_all", os.path.join(model_dir, "model.joblib"))
+            with mock.patch.object(tr, "ranking_champion", return_value="challenger"), \
+                 mock.patch.object(tr, "MODELS_DIR", tmpdir):
+                loaded = tr.load_challenger()
+            self.assertIsNone(loaded)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+    def test_cached_after_first_call(self):
+        with mock.patch.object(tr, "ranking_champion", return_value="rule") as mock_rc:
+            tr.load_challenger()
+            tr.load_challenger()
+        self.assertEqual(mock_rc.call_count, 1)
+
+    def test_force_bypasses_cache(self):
+        with mock.patch.object(tr, "ranking_champion", return_value="rule") as mock_rc:
+            tr.load_challenger()
+            tr.load_challenger(force=True)
+        self.assertEqual(mock_rc.call_count, 2)
+
+
+class ChallengerScoreTest(unittest.TestCase):
+    def test_none_champion_returns_none(self):
+        self.assertIsNone(tr.challenger_score(None, {"price": 20.0}))
+
+    def test_computes_a_probability_from_a_real_fitted_model(self):
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.preprocessing import StandardScaler
+        train_rows = [
+            {"label": True, "features": {"price": 15.0}},
+            {"label": True, "features": {"price": 18.0}},
+            {"label": False, "features": {"price": 85.0}},
+            {"label": False, "features": {"price": 90.0}},
+        ]
+        Xtr, ytr = tr.build_matrix(train_rows)
+        scaler = StandardScaler().fit(Xtr)
+        clf = LogisticRegression().fit(scaler.transform(Xtr), ytr)
+        champion = {"model": clf, "scaler": scaler, "features": list(tr.NUMERIC_FEATURES)}
+        proba = tr.challenger_score(champion, {"price": 16.0})
+        self.assertIsInstance(proba, float)
+        self.assertGreater(proba, 0.5)  # cheap, matches the "profitable" training cluster
+
+    def test_scoring_failure_degrades_to_none(self):
+        champion = {"model": None, "scaler": None, "features": []}  # will raise on .transform
+        self.assertIsNone(tr.challenger_score(champion, {"price": 20.0}))
+
+
+class VectorizeOneConsistencyTest(unittest.TestCase):
+    def test_matches_build_matrix_row_for_row(self):
+        """vectorize_one is the SAME construction build_matrix uses per row — verified directly
+        so the two can never silently drift (the whole point of factoring it out)."""
+        rows = [{"features": {"price": 20.0, "days_to_prime_day": 5}, "label": True}]
+        X, _ = tr.build_matrix(rows)
+        vec = tr.vectorize_one(rows[0]["features"])
+        self.assertTrue((X[0] == vec).all())
+
+    def test_missing_features_impute_to_zero(self):
+        vec = tr.vectorize_one(None)
+        self.assertEqual(list(vec), [0.0] * len(tr.NUMERIC_FEATURES))
 
 
 class NewSignalImportanceTest(unittest.TestCase):

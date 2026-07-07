@@ -36,6 +36,7 @@ sys.path.insert(0, HERE)
 
 REPORT_PATH = os.path.join(HERE, "..", "learning-hub", "tracking", "ranker-report.md")
 MODELS_DIR = os.path.join(HERE, "..", "learning-hub", "models", "ranker")
+BRAIN_PATH = os.path.join(HERE, "..", "learning-hub", "data", "ai-brain.json")
 BUCKET = "models"
 FINGERPRINT_NAME = "fingerprint.json"
 
@@ -177,12 +178,20 @@ def upload_fingerprint(fp: Dict[str, Any]) -> bool:
         return False
 
 
+def vectorize_one(features: Optional[Dict[str, Any]]):
+    """The SAME per-row feature-vector construction build_matrix() uses (over NUMERIC_FEATURES,
+    None -> 0.0), for a SINGLE row. Shared by both training-time (build_matrix) and live-scoring-
+    time (challenger_score) vectorization so the two paths can never silently drift apart — a
+    fix to imputation/feature handling only ever needs to change this one function."""
+    import numpy as np
+    return np.array([float((features or {}).get(k) or 0.0) for k in NUMERIC_FEATURES])
+
+
 def build_matrix(rows: List[Dict[str, Any]]) -> Tuple[Any, Any]:
     """Rows -> (X, y) over NUMERIC_FEATURES only. None -> 0.0 (explicit, same as the
     calibration diagnostic)."""
     import numpy as np
-    X = np.array([[float((r.get("features") or {}).get(k) or 0.0) for k in NUMERIC_FEATURES]
-                  for r in rows])
+    X = np.array([vectorize_one(r.get("features")) for r in rows])
     y = np.array([1 if r["label"] else 0 for r in rows])
     return X, y
 
@@ -474,6 +483,103 @@ def fetch_current_model(dest_dir: Optional[str] = None) -> Optional[str]:
         return got
     except Exception as e:
         print(f"[train_ranker] fetch_current_model failed (non-fatal): {type(e).__name__}")
+        return None
+
+
+# --- LIVE CONSUMER (review fix, 2026-07-06) -------------------------------------
+# Until this fix, nothing in the codebase ever read the cloud-trained ranker artifact this whole
+# module exists to produce: training ran, evaluated, and uploaded a champion/challenger
+# comparison every cadence, but no live scoring path could ever act on it. This section is that
+# reader — gated entirely on the human-only brain key scoring.rankingChampion, so shadow mode
+# (the "rule" default) stays byte-identical to today's behavior; the challenger only touches
+# anything once a human has explicitly promoted it via fba-brain-updater.
+_challenger_cache: Dict[str, Any] = {"loaded": False, "model": None}
+
+
+def reset_challenger_cache() -> None:
+    """Test/process hygiene — the cache is per-process and loaded at most once per run
+    otherwise, so a burst scoring many candidates doesn't re-read the artifact per candidate."""
+    _challenger_cache["loaded"] = False
+    _challenger_cache["model"] = None
+
+
+def ranking_champion() -> str:
+    """ai-brain.json scoring.rankingChampion — 'rule' (default, shadow-only) or 'challenger'
+    (a human has explicitly promoted the trained ranker). ANY missing/unrecognized value
+    defaults to 'rule' — shadow mode is always the safe fallback, never an accidental promotion
+    from an absent key or a brain typo."""
+    try:
+        with open(BRAIN_PATH, encoding="utf-8") as f:
+            value = ((json.load(f) or {}).get("scoring") or {}).get("rankingChampion")
+        if value in ("rule", "challenger"):
+            return value
+    except Exception:
+        pass
+    return "rule"
+
+
+def load_challenger(force: bool = False) -> Optional[Dict[str, Any]]:
+    """The cloud-trained ranker artifact (model.joblib: {model, scaler, features, meta}), for
+    LIVE scoring — NOT the training/evaluation path above. Returns None (never raises) whenever
+    rankingChampion isn't 'challenger', or the artifact can't be found/loaded/doesn't have the
+    expected shape — every failure mode degrades to "score with the rule/triage formula exactly
+    as if nothing were ever promoted," never a crash and never a silent wrong-shaped prediction.
+    Cached per-process (see reset_challenger_cache) so repeated calls within one run/burst don't
+    re-read the artifact per candidate."""
+    if _challenger_cache["loaded"] and not force:
+        return _challenger_cache["model"]
+    _challenger_cache["loaded"] = True
+    _challenger_cache["model"] = None
+    if ranking_champion() != "challenger":
+        return None
+    try:
+        import joblib
+    except Exception:
+        print("[train_ranker] joblib unavailable — can't load the promoted challenger, "
+             "falling back to the rule score")
+        return None
+    local_path = os.path.join(MODELS_DIR, "current", "model.joblib")
+    if not os.path.exists(local_path):
+        # Not present locally (a fresh cloud runner, or run_daily hasn't fetched this cycle yet)
+        # — best-effort live download, the SAME mechanism run_daily.py already uses at cycle
+        # start, so this is a fallback rather than the common path.
+        fetched = fetch_current_model()
+        if fetched:
+            local_path = fetched
+    if not os.path.exists(local_path):
+        print("[train_ranker] scoring.rankingChampion=challenger but no model artifact is "
+             "available locally or in storage — falling back to the rule score")
+        return None
+    try:
+        loaded = joblib.load(local_path)
+        if not isinstance(loaded, dict) or "model" not in loaded or "scaler" not in loaded:
+            print(f"[train_ranker] challenger artifact at {local_path} has an unexpected shape "
+                 "— falling back to the rule score")
+            return None
+        _challenger_cache["model"] = loaded
+        return loaded
+    except Exception as e:
+        print(f"[train_ranker] load_challenger failed (non-fatal, falls back to the rule "
+             f"score): {type(e).__name__}")
+        return None
+
+
+def challenger_score(champion: Optional[Dict[str, Any]],
+                     features: Optional[Dict[str, Any]]) -> Optional[float]:
+    """The promoted challenger's probability for one candidate's pre-decision features. None
+    (never raises) when no champion is loaded or scoring fails for any reason — callers fall
+    back to the rule/triage score exactly as if nothing were promoted. NEVER affects any hard
+    gate (score>=threshold, compliance/safety checks) — those stay rule-based always; this only
+    ever feeds an ORDERING decision, and only when explicitly promoted."""
+    if not champion:
+        return None
+    try:
+        X = vectorize_one(features).reshape(1, -1)
+        Xs = champion["scaler"].transform(X)
+        proba = champion["model"].predict_proba(Xs)[:, 1]
+        return float(proba[0])
+    except Exception as e:
+        print(f"[train_ranker] challenger_score failed (non-fatal): {type(e).__name__}")
         return None
 
 

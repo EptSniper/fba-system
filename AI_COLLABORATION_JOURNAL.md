@@ -115,6 +115,86 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-07 — Claude Code Session 56 (continued): pushed the 13 pending commits, fixed the live hourly-collector hang, cleaned up stuck runs rows, audited brain-proposal approvals
+
+Direct continuation of the Session 56 entry below (same day, same body of work — logged as its
+own dated entry since it picked up after a context handoff). Four things happened, in order:
+
+**1. Diagnosed and fixed a live production incident.** Mehmet posted a Discord digest screenshot
+showing the hourly collector at "0 tokens spent, 0 ASINs scanned." Querying Supabase's `runs`
+table directly (host=`github-actions-hourly`) showed the real picture: every run since the Keepa
+bank recovered from its overdraw (7 in a row, from 07:18 through 00:14) was stuck at
+`status=running`/`finished_at=null` — the job was hanging past `keepa-collect.yml`'s 10-minute
+timeout and getting force-killed before ever reaching `finish_run()`, not idling on an empty
+bank. Root-caused to an unbatched N+1: `collect_hourly.py`'s `_attach_signal_features()` and
+`backtest.py`'s `build_rows_for_asin()` (via `_fetch_trend_series`) each called
+`trends_features()` once per distinct brand/category term with no batching — up to
+~120-300+ sequential live Supabase HTTP round trips per burst once there were real candidates to
+score. Fixed (commit `7f46224`): `db.trends_series_bulk()` (one PostgREST `term=in.(...)` request
+for many terms, chunked), `signals/trends.py`'s `prefetch_series()` (converts the bulk result to
+the tuple shape `trends_features()`'s existing `series` param already expects), and both callers
+now bulk-prefetch once per batch instead of once per term/ASIN (`build_rows_for_asin` gained an
+optional `trend_cache` param, falling back to the old per-term live fetch on a cache miss — no
+existing caller broke). Also added a defense-in-depth wall-clock deadline
+(`SAFE_DEADLINE_SECONDS=420`, i.e. 7 min) in `run_hourly_collect()`: a run past that mark skips
+its remaining tiers so `finish_run()` still records a real status instead of the job getting
+hard-killed mid-flight — a safety net in case a different slow path appears later, not a
+substitute for the fix above. Live-verified the new bulk query's PostgREST `in.()` syntax against
+the real Supabase instance (via the `runs` table, since `trends_series` itself still 404s —
+migration 012 isn't applied live yet, a pre-existing known gap). New/updated tests in
+`test_signals_trends.py` (`TrendsSeriesBulkTest`, `PrefetchSeriesTest`), `test_collect_hourly.py`
+(`SafetyDeadlineTest`, 2 new `AttachSignalFeaturesTest` cases), `test_backtest.py`
+(`TrendPrefetchBatchTest`). Full suite: 821 passed, 0 failed.
+
+**2. Cleaned up the 7 stuck Supabase `runs` rows** (ids 79, 80, 81, 82, 83, 84, 91) — retroactively
+marked `status="timeout"` with an explanatory `error_summary` (Mehmet's explicit go-ahead, after
+the permission classifier twice declined to treat "fix it"/"do them" as specific-enough
+authorization for a direct production-data write). Verified by reading the rows back.
+
+**3. Pushed all 13 pending commits to `origin/master`.** `git push` had hung (60-180s timeouts,
+no output) roughly 6 times across this session and the prior one. A `git fetch` mid-session
+revealed the earlier "hangs" had actually already landed on the remote — the push mechanism
+itself works (credential helper: `manager`/Git Credential Manager, configured locally, currently
+working), it just responds slowly enough to exceed short tool timeouts, with no output returned
+until it finishes. The final commit (`7f46224`) landed on a subsequent attempt; confirmed via
+`git log origin/master -1` matching HEAD exactly. Checked `gh auth status` per Mehmet's request to
+make pushes permanently non-interactive via `gh auth setup-git` — **`gh` has no cached credential
+at all** (not merely expired), so that command has nothing to hand off to git yet.
+**Mehmet needs to run `gh auth login` himself** (an interactive browser/device-code flow) before
+`gh auth setup-git` can be wired in; until then, GCM (already working, just slow) remains the
+credential path — future sessions should give `git push` a 90-120s timeout rather than the
+default, since it is NOT stuck, only slow.
+
+**4. Audited the control-center's approved brain proposals.** Mehmet had approved all pending
+`/proposals` entries in the control-center UI and asked whether they'd actually been applied.
+Checked `learning-hub/tracking/brain-proposal-decisions.jsonl`: all 8 recorded approvals show
+`action: "approved_no_draft"` — a real, intentional state (`control-center/lib/anthropic-draft.ts:68`)
+for proposals `propose_updates.py` didn't tag with a specific `ai-brain.json` key, so the
+approve-then-draft flow correctly recorded the decision but wrote nothing. Two distinct
+proposal types were behind every one of the 8: "no run telemetry yet" (stale — the `runs` table
+clearly has data now) and a knowledge-driven prompt literally instructing a human to run
+`python knowledge-rag/ask.py "current BSR ROI profit threshold"` and compare by eye. Ran that
+check: the RAG's top hit (`learning-hub/playbooks/sourcing-playbook.md`) states Min profit
+$3/unit, Min ROI 30% (25% for non-returnable grocery) — this **already matches**
+`ai-brain.json`'s `minProfitPerUnit: 3.0`, `minRoi: 0.3`, `exceptions.groceryMinRoi: 0.25`
+exactly. No brain edit needed on those three fields. The RAG hit's BSR guidance (SellerAmp's "top
+2% of category," a percentile) differs in KIND from the brain's `bsrMax: 200000` (an absolute
+rank) — a pre-existing architectural choice (the scout doesn't have per-category total-listing
+counts to compute a percentile), not a discrepancy this check surfaces as wrong; converting would
+be a design question for a future session, not a one-field fix.
+
+Also started the control-center dev server locally (`npm run dev`, confirmed HTTP 200 at
+`localhost:3000`) at Mehmet's request, for visual/manual checking.
+
+#### Exact next safe step
+
+Mehmet: run `gh auth login` once (interactive), then a future Claude Code session can run
+`gh auth setup-git` to make pushes fully non-interactive going forward. Separately: once the
+Keepa bank has real tokens again, watch the next `keepa-collect.yml` run complete with a real
+`status=success`/non-null `tokens_consumed` — that's the fix from item 1 confirming itself live,
+and also closes out the still-open "item 2 live burst" verification from the main Session 56
+entry below.
+
 ### 2026-07-06 — Claude Code Session 56: whole-system xhigh code review (10 finder agents + verify + gap sweep) + top-5 fixes + seam-test suite — built + tested, push blocked
 
 #### Request and constraints

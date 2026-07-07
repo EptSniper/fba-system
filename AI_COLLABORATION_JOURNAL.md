@@ -115,6 +115,63 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-07 — Claude Code Session 56 (continued further): the Trends-batching fix did NOT resolve the live hang — found and fixed the real cause
+
+Mehmet asked "did the scout train" after the Trends-batching fix (commit `7f46224`, previous
+entry below) had been live for hours. Checked Supabase directly: the newest hourly run (id 126,
+started 04:58 UTC) was STILL stuck `status=running`/`finished_at=null`. Cross-checked GitHub's
+own Actions API (`api.github.com/repos/EptSniper/fba-system/actions/workflows/keepa-collect.yml/
+runs`, public and unauthenticated) — every run, including this one, shows `conclusion:
+"cancelled"` after running the full ~9m49s-10m18s, right up against `keepa-collect.yml`'s
+`timeout-minutes: 10`. Step-level timing (the run's `/jobs` endpoint) confirmed checkout (1s) and
+dependency install (22s) were fine — the entire budget was consumed by "Run the hourly burst
+collector" itself. **The Trends-batching fix from the previous entry did not touch this at all —
+it fixed a real but different inefficiency, not the actual hang.**
+
+Root cause, found in `keepa_client.py`: every `enrich()`/`query_history()`/`find_candidates()`
+call — whether `wait=True` (nightly, legitimately may wait for a token refill) or `wait=False`
+(the hourly burst, which must NEVER block) — was wrapped in the SAME `_with_deadline()` using
+the SAME `KEEPA_CALL_DEADLINE_SECONDS=600` ceiling as the external job's own 600s timeout,
+guaranteeing GitHub's kill always won the race by a small margin. Worse, once found, testing the
+"fix" (a shorter deadline just for `wait=False`) surfaced a SECOND, deeper bug: `_with_deadline`
+used `with ThreadPoolExecutor(...) as pool:`, whose `__exit__` calls `shutdown(wait=True)` —
+blocking until the abandoned background thread actually finishes, REGARDLESS of the timeout
+having already fired. This silently defeated the entire deadline mechanism from the day it was
+written (Code Review 2026-07-02, Finding S2) — no deadline value could have fixed the hang
+without also fixing this, since the caller's true wall-clock wait was always
+`max(deadline, however long the real call takes)`, not `deadline` alone. This is almost
+certainly why every run before AND after today's other fixes consistently ran ~9-10 minutes:
+that's how long the underlying Keepa call actually took to resolve/fail on its own, and neither
+the original 600s deadline nor a shorter one changed that at all while the blocking shutdown was
+in place.
+
+**Fixed both** (commit `9f0a58c`): added `KEEPA_NO_WAIT_DEADLINE_SECONDS=60` (env-overridable),
+used only for `wait=False` calls — `wait=True`'s `KEEPA_CALL_DEADLINE_SECONDS=600` is unchanged,
+preserving the nightly drip-pacing path's legitimate patience. Changed `_with_deadline` to
+`pool.shutdown(wait=False)` in a `finally`, so it actually returns/raises AT the deadline instead
+of waiting on the orphaned thread (Python still can't force-cancel it — it keeps running
+until it finishes or the process exits, same documented limitation as before, just no longer
+something THIS call blocks on). Added 3 regression tests that measure actual elapsed time (not
+just the exception message) to prove the fast-fail really happens — one of the new tests failed
+on the first attempt (still took the full 2s of the simulated hang) BEFORE the shutdown(wait=False)
+fix, which is exactly what caught bug #2. Full suite: 744 passed, 0 failed. Pushed.
+
+**Honest answer to "did the scout train": no, not yet.** Every hourly collection since
+2026-07-06 07:18 UTC has failed to complete (stuck or force-cancelled, 0 tokens spent, 0 ASINs
+scanned) up through the run that was active when this was diagnosed. This fix is now live;
+the next hourly fire is the first real test of whether it actually resolves the hang for good —
+watch for a `status=success` row with non-null `tokens_consumed` in Supabase's `runs` table
+(host=`github-actions-hourly`). Training itself (`train-ranker.yml`) has had nothing new to
+train on this whole time as a direct consequence.
+
+#### Exact next safe step
+
+Watch the next 2-3 hourly runs for real completion (non-null `tokens_consumed`, `status=
+success`) before considering this closed — a single clean run is promising but not yet proof
+against a rarer/different hang mode. If it recurs, the GitHub Actions API cross-check used
+here (works without any `gh` auth, public repo) is the fastest way to see real job timing
+without waiting on the Supabase side to tell the full story.
+
 ### 2026-07-07 — Claude Code Session 56 (continued): pushed the 13 pending commits, fixed the live hourly-collector hang, cleaned up stuck runs rows, audited brain-proposal approvals
 
 Direct continuation of the Session 56 entry below (same day, same body of work — logged as its

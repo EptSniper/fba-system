@@ -115,6 +115,124 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-07 — Claude Code Session 56 (continued once more): the deadline fix STILL didn't stop it — root-caused to a telemetry function that has never worked, plus a second, completely unguarded live call
+
+Direct continuation of the entry below ("the Trends-batching fix did NOT resolve the live hang").
+That entry's fix (`9f0a58c` — `KEEPA_NO_WAIT_DEADLINE_SECONDS` + the `shutdown(wait=False)` fix)
+was live for hours. Mehmet manually dispatched `keepa-collect` and pasted its GitHub Actions log
+in real time as it ran — this live, second-by-second debugging session is what actually found the
+real cause; a diff/static-analysis pass alone would not have surfaced it.
+
+#### What the live log showed
+
+The run reached tier 2 (`hint_led_scan`), found the account had 50 tokens banked, and the
+overdraw guard capped an enrich batch from 20→16 ASINs assuming ~3 tokens/ASIN. The REAL cost
+turned out to be ~4/ASIN — the batch billed 64 tokens, taking the balance to **-14** (a real
+overdraw, allowed by Keepa's own billing model). Nine seconds later, the log printed
+`WARNING Waiting 880 seconds for additional tokens` and then went completely silent until
+`Error: The operation was canceled` — GitHub's own 10-minute job timeout firing. The
+`9f0a58c` deadline fix, live for this exact run, did NOT interrupt it.
+
+#### Root cause #1 — a telemetry function that has never actually worked
+
+Downloaded and diffed the ACTUALLY-DEPLOYED `keepa==1.5.0` wheel (pip installed it into a scratch
+dir) against this repo's pinned dev version (`1.3.15`) to check for a version-specific
+regression. There wasn't one — **neither version has ever defined a `tokens_consumed`
+or `tokens_consumed_total` attribute anywhere.** `keepa_client.py`'s `token_telemetry()`/
+`_tokens_consumed()` had been reading exactly those two nonexistent names via `getattr(...,
+None)` since the day they were written — always silently returning `None`. Every "measured
+spend" computation in the whole project that depends on `_delta(before, after)` (`run_hourly_
+collect()`'s cross-tier budget math, `backtest.py`'s batch spend tracking, every Keepa-archiving
+`tokens_consumed=` kwarg) has therefore always fallen back to `0` or a length-based estimate,
+silently, forever.
+
+Concretely, this is what let the incident happen at all: `run_hourly_collect()`'s
+`budget = max(0, budget - int(scan_result.get("tokens_spent") or 0))` never actually decreased
+after tier 2's real 64-token spend, because `tokens_spent` always read back as `0`. So tier 3
+(`backtest.run_backtest` → `deals_firehose.harvest` → `resolve_category_ids`) ran anyway,
+against a bank that was ALREADY negative.
+
+#### Root cause #2 — a second Keepa call with no guard, no wait override, and no deadline at all
+
+`deals_firehose.resolve_category_ids()` calls `api.category_lookup(0, domain=...)` to resolve
+category names to Keepa's numeric browse-node ids, normally cached to disk so it only runs once
+— except GitHub Actions runners are ephemeral (no persistent disk between runs), so this cache
+is ALWAYS empty in production and the call ALWAYS goes live. It had no `wait=` override at all
+(silently defaulting to the `keepa` package's own `wait=True`) and was not wrapped in
+`_with_deadline` — a gap the earlier `_with_deadline` audit (Code Review 2026-07-02, Finding S2)
+never caught because this call was added later (Session 55) without anyone re-checking it
+against that pattern. Once the account was already negative (root cause #1), this call hit a
+429 and the `keepa` library's OWN internal retry-wait (`_request()`'s `if status_code == "429"
+and wait: time.sleep(tdelay)`) slept for the real refill time — 880 seconds, observed live —
+completely unbounded on our side, matching the log exactly.
+
+#### Fixes (`33705a2`)
+
+- `keepa_client._tokens_consumed()` now reads the real `tokens_left` BALANCE (no extra network
+  round trip — every request already updates it in place) instead of the nonexistent counter.
+  `_delta()` now computes `before - after` (a balance decrease = tokens spent), replacing the
+  impossible `after >= before` cumulative-counter check. `token_telemetry()`'s `tokens_consumed`
+  key is kept for backward compat but is now honestly `None` (a single snapshot can't measure a
+  spend; that's what `_tokens_consumed()`/`_delta()`'s before/after pair are for).
+- `resolve_category_ids()` gained an explicit `wait` parameter, threaded through from
+  `harvest()` (which was already receiving `wait=False` from `collect_hourly.py`'s hourly burst
+  but never forwarding it), and the live call is now wrapped in `keepa_client._with_deadline`.
+- Pinned `keepa==1.5.0` (was `>=1.3`) in both `requirements.txt` and `requirements-collect.txt` —
+  the version drift between this dev environment (1.3.15) and the live CI run (1.5.0, installed
+  fresh every run) is exactly what made this investigation take so long; an unpinned dependency
+  can silently change behavior again without anyone noticing.
+- 10 new regression tests (`test_keepa_client_telemetry.py`: balance-delta semantics, negative-
+  balance readability, the exact 50→-14/64-tokens-spent scenario; `test_deals_firehose.py`: wait
+  threading reaches the live call, a hanging lookup is now bounded by the deadline — measuring
+  real elapsed time, not just the exception message).
+
+#### Follow-up audit + fix (`7eed798`)
+
+Given how narrowly root cause #2 escaped the original `_with_deadline` sweep, grepped every
+direct `api.*(` call across `keepa_client.py`/`deals_firehose.py` to find any sibling gaps
+before considering this closed:
+- `deals_firehose.fetch_deal_page()`'s `api.deals()` call had `wait=` threaded correctly but no
+  deadline wrap — wrapped anyway (defense-in-depth; the pre-check guard makes a hang unlikely,
+  but `resolve_category_ids` looked exactly as safe until it wasn't).
+- `keepa_client.seller_asins()`'s `api.seller_query()` call had NEITHER — not on any active
+  collector's path today (only `competitors.py` calls it, and nothing imports `competitors.py`),
+  but fixed so it can't become the next version of this incident if it's ever wired into a
+  scheduled job without someone remembering the guard.
+
+2 more regression tests. Full suite after both commits: 755 passed, 0 failed. Both pushed
+(`33705a2`, then `7eed798`).
+
+#### Where things stand
+
+- Run **137** (08:27 UTC, while the `9f0a58c` fix was live but before today's two fixes)
+  actually **completed successfully** — 40 tokens consumed, 13 ASINs scanned, ended cleanly at
+  0 tokens. Proof the wall-clock safety net CAN work.
+- Runs **147, 148, 149** (11:56 AM, 2:50 PM, 5:22 PM UTC) all hung again — all three predate
+  today's real fix.
+- `backtest_rows` is still stuck at **228** — unchanged since 2026-07-05, meaning no new
+  training data has landed yet through any of this. `train_ranker.py`'s cadence has actually
+  been firing correctly every ~6h per its schedule (confirmed via GitHub's own Actions API: 7
+  successful runs in the last ~36h) — but every one of them correctly detected "no new data
+  since last run" via the training-set fingerprint and skipped (by design — see the fingerprint
+  fix, `039b1ae`, two entries below), which is WHY `ranker-report.md` still only has the one
+  entry from 2026-07-05. Training's schedule was never the problem; the collector never
+  actually feeding it new data was.
+- Mehmet also asked, separately, whether the approved brain-proposal 8 items and the
+  `gh auth`/non-interactive-push request had been handled — both already covered in the entry
+  two below this one (2026-07-07, "continued"). Restarted the control-center dev server
+  (`npm run dev`, confirmed HTTP 200 at `localhost:3000`) again this session, since context
+  handoffs don't keep background processes alive.
+
+#### Exact next safe step
+
+Watch for the next hourly run to complete with today's fixes actually live (everything since
+`137` predates them) — a `status=success` row with real non-null `tokens_consumed` AND
+`backtest_rows` actually increasing past 228 is the real proof this is done, not just another
+clean-looking run that happened to avoid the negative-balance path by luck. Once that happens,
+the next `train-ranker.yml` cycle (within ~6h) should detect the changed fingerprint and
+actually retrain for the first time since 2026-07-05 — that's the moment "did the scout train"
+gets a genuinely new answer.
+
 ### 2026-07-07 — Claude Code Session 56 (continued further): the Trends-batching fix did NOT resolve the live hang — found and fixed the real cause
 
 Mehmet asked "did the scout train" after the Trends-batching fix (commit `7f46224`, previous

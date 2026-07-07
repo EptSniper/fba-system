@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-07 (Claude Code: pulled + ingested 5 of 8 queued YouTube transcripts -- rdltezXxIrk, jeqFx9ZiOhg, hxk1JS4EsU4, D3FhvdMVLl8, ljlERpMrcBk now transcript-processed; insights appended to research-insights.md, 5 entries appended to corpus-staging.jsonl. 3 still fetch-failed/queued: TBFh9vFBq7k (stuck, LOGIN_REQUIRED), X6JjPUZd4xw, 9QGs4hfKrhY (couldn't parse transcript text this run, raw JSON saved, left queued for a retry). Also found: 9QGs4hfKrhY's raw transcript was recoverable but is an EXACT duplicate of hxk1JS4EsU4's content under a different videoId/title -- marked 'duplicate', not re-ingested. X6JjPUZd4xw genuinely has no caption track (empty tracks[] in the raw response) -- left queued.",
+  "updated": "2026-07-07 (Claude Code, 2nd pass): pulled + ingested the 2 freshly-queued videos (1kgp13McYLc, wwNw5vNAyeM) plus a successful re-fetch of X6JjPUZd4xw (previously empty tracks[], now has real captions -- ingested). TBFh9vFBq7k still LOGIN_REQUIRED, unchanged.",
   "purpose": "Index + dedup list for the daily research pipeline. The scheduled task appends to items[] and must skip any url/videoId already present here or any transcript already in learning-hub/transcripts/.",
   "dailyCap": 10,
   "topics": {
@@ -541,8 +541,7 @@
       "title": "Sourcing Overlooked Listings Using Keepa Product Finder",
       "url_or_videoId": "X6JjPUZd4xw",
       "topic": "fba_oa_mastery",
-      "status": "fetch-failed",
-      "note": "youtube-transcript.io returned an empty tracks[] -- no caption track exists for this video. Left queued for a periodic re-check in case captions get added later."
+      "status": "transcript-processed"
     },
     {
       "date": "2026-07-06",
@@ -602,6 +601,47 @@
       "topic": "build_the_system",
       "status": "fetch-failed",
       "note": "PDF fetch returned no machine-readable text and the /abs/ page was blocked by the sandbox fetch-provenance rule. Relevant to the self-learning-RAG thread (FLAIR 2508.13390) - re-fetch in Claude Code."
+    },
+    {
+      "date": "2026-07-07",
+      "type": "youtube",
+      "title": "Amazon Online Arbitrage Product Sourcing MASTERCLASS For 2026",
+      "url_or_videoId": "1kgp13McYLc",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-07",
+      "type": "youtube",
+      "title": "Keepa Charts: The Ultimate Amazon FBA Tutorial for 2026",
+      "url_or_videoId": "wwNw5vNAyeM",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-07",
+      "type": "text",
+      "title": "Hybrid Search for RAG: Vector + Keyword + Reranking Guide 2026 (BuildMVPFast)",
+      "url_or_videoId": "https://www.buildmvpfast.com/blog/hybrid-search-rag-vector-keyword-reranking-2026",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-07",
+      "type": "text",
+      "title": "5 Keepa Power Moves + 60-SOP tactic taxonomy (OA Challenge)",
+      "url_or_videoId": "https://www.oachallenge.com/5-keepa-power-moves/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-07",
+      "type": "text",
+      "title": "ROZA Graphs: Self-Improving Near-Deterministic RAG through Evidence-Centric Feedback (arXiv 2604.07595)",
+      "url_or_videoId": "https://arxiv.org/abs/2604.07595",
+      "topic": "build_the_system",
+      "status": "fetch-failed",
+      "note": "arXiv abstract/PDF blocked by the sandbox fetch-provenance rule (same failure mode as 2602.05152 on 07-06). Search snippet frames it as an evidence-centric feedback loop for self-improving, near-deterministic RAG -- on-thread with FLAIR 2508.13390. Re-fetch + distill from Claude Code before staging insights."
     }
   ]
 }

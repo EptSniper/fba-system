@@ -5,7 +5,7 @@
 sources, and **queues YouTube videos that it cannot transcribe itself** (the Cowork app can't call the
 transcript API — you can). This file is rewritten by that task each run with what's pending and what it found.
 
-Last updated by the scheduled task: 2026-07-06
+Last updated by the scheduled task: 2026-07-07
 
 ---
 
@@ -34,72 +34,70 @@ Last updated by the scheduled task: 2026-07-06
 
 ## PENDING NOW
 
-**Updated 2026-07-07 by Claude Code — the 8-item queue below has been worked through:**
+**Updated 2026-07-07 (2nd pass) by Claude Code:** all 4 items from the last check are resolved —
+`1kgp13McYLc` and `wwNw5vNAyeM` (freshly queued) ingested; `X6JjPUZd4xw` unexpectedly pulled clean this
+time (captions must have been added since the last empty-`tracks[]` check) and is now ingested too.
 
 | videoId | Title | Result |
 |---|---|---|
-| rdltezXxIrk | Keepa product finder tutorial 2026 \| Amazon FBA | ✅ ingested |
-| jeqFx9ZiOhg | How to Use Amazon FBA Profit Calculator \| Every Fee Every Cost Explained | ✅ ingested |
-| hxk1JS4EsU4 | Beginners Guide To Amazon FBA Online Arbitrage in 2026 (Free Course) | ✅ ingested |
-| D3FhvdMVLl8 | Storefront Stalking is NOT a Profitable Sourcing Method | ✅ ingested |
-| ljlERpMrcBk | Live Online Arbitrage Sourcing: Storefront Stalking Tutorial | ✅ ingested |
-| 9QGs4hfKrhY | (queued as "SellerAmp Setup Tutorial" but fetched content was byte-identical to hxk1JS4EsU4) | duplicate — saved, not re-ingested |
-| X6JjPUZd4xw | Sourcing Overlooked Listings Using Keepa Product Finder | genuinely no caption track (empty `tracks[]`) — left queued, re-check periodically |
-| TBFh9vFBq7k | Online Arbitrage Sourcing Using Keepa (ADVANCED TACTICS) — STUCK: LOGIN_REQUIRED at the API, needs manual re-check | still stuck, unchanged |
+| 1kgp13McYLc | Amazon Online Arbitrage Product Sourcing MASTERCLASS For 2026 | ✅ ingested |
+| wwNw5vNAyeM | Keepa Charts: The Ultimate Amazon FBA Tutorial for 2026 | ✅ ingested |
+| X6JjPUZd4xw | Sourcing Overlooked Listings Using Keepa Product Finder | ✅ ingested (previously empty captions, now fixed) |
+| TBFh9vFBq7k | Online Arbitrage Sourcing Using Keepa (ADVANCED TACTICS) | still **STUCK: LOGIN_REQUIRED**, unchanged |
 
 Pull command: `python knowledge-rag/fetch_transcripts.py`
 
-**Unprocessed files in `research-inbox/transcripts/`:** 0 (only the stuck `TBFh9vFBq7k__RAW.json`,
-the empty-captions `X6JjPUZd4xw__RAW.json`, and `README.md` remain at the root; everything actually
-ingested — plus the duplicate `9QGs4hfKrhY` — is in `processed/`).
+**Unprocessed files in `research-inbox/transcripts/` (root):** 0 ingestable. Two `*__RAW.json` remain —
+`9QGs4hfKrhY__RAW.json` (duplicate of hxk1JS4EsU4, resolved) and `TBFh9vFBq7k__RAW.json` (still
+login-required). Everything genuinely ingested is in `processed/`.
 
-**Re-fetch in a real browser (fetch-failed from the sandbox):**
-- https://sellercentral.amazon.com/gp/help/external/G200141500 — Product packaging requirements. Third
-  Seller Central JS-shell failure (after G200140860, G201100890). This is the authoritative [policy] doc
-  for the 2026 prep changes AND the unverified FNSKU-mandate claim below — highest-value re-fetch.
+**Re-fetch in a real browser (fetch-failed from the sandbox — carried forward + new):**
+- **NEW:** https://arxiv.org/abs/2604.07595 — *ROZA Graphs: Self-Improving Near-Deterministic RAG through
+  Evidence-Centric Feedback*. On-thread with the self-learning-RAG line (FLAIR 2508.13390). Snippet only.
 - https://arxiv.org/abs/2602.05152 — RAG without Forgetting (continual key memory); pairs with FLAIR.
-- Still open from earlier runs: G201100890 (FBA inventory requirements), G200140860 (FBA product
-  restrictions), n8nlab.io n8n product-research guide.
+- https://sellercentral.amazon.com/gp/help/external/G200141500 — Product packaging requirements
+  (authoritative [policy] doc behind the unverified FNSKU-mandate claim below — highest-value re-fetch).
+- Still open Seller Central JS-shell fails: G201100890 (FBA inventory requirements), G200140860 (FBA
+  product restrictions); plus n8nlab.io n8n product-research guide.
+- Optional new fact to chase if fetching bookkeeping: A2X/finaloop claim **2026 FBA reimbursements are now
+  valued at sourcing cost, not sale price** — keep sourcing invoices/landed-cost on file. Verify before
+  treating as [policy].
 
 ## WHAT'S BEEN FOUND
 
-### Today (2026-07-06) — 8 new items
-- **Snapl: 2026 FBA prep requirements** [practitioner] — Amazon ended US prep/labeling services Jan 1,
-  2026; FCs no longer fix errors at check-in, so prep quality is now part of the buy decision. Failure
-  modes: competing barcodes, missing suffocation warnings, bundles not physically one unit, carton labels
-  on seams. **⚠ VERIFY:** search snippets claim a Mar 31, 2026 FNSKU mandate for non-Brand-Registry
-  resellers (manufacturer barcodes no longer accepted, defect fees $0.32–$5.72/unit) — NOT confirmed in a
-  fetched source; check G200141500 before treating as [policy] or touching ai-brain.json.
-  (text-sources/2026-07-06/snapl-fba-prep-requirements-2026.md)
-- **QuickBooks: Amazon seller tax 2026** [practitioner] — 1099-K threshold back to $20k AND 200
-  transactions for the 2026 tax year; FBA placement creates physical nexus in ~44 states; some states want
-  zero-dollar returns even when Amazon remits; resale certificates avoid sales tax on OA inventory buys
-  (direct COGS cut). (text-sources/2026-07-06/quickbooks-amazon-seller-tax-2026.md)
-- **SellerApp: IP-complaint playbook** [practitioner] — suppress-first mechanics; check Account Health
-  daily and treat silently-inactive ASINs as possible IP flags; zero-tolerance brands (Nike, Apple,
-  Disney, LEGO, OtterBox, Funko, Beats, Hasbro); valid → remove/retraction/POA/keep docs 180d,
-  invalid → notice-dispute@amazon.com; DMCA counter-notice is copyright-only with a 10–14-day legal
-  clock. (text-sources/2026-07-06/sellerapp-amazon-ip-complaints.md)
-- **arXiv 2602.23716 ProductResearch (Alibaba)** [practitioner] — e-commerce deep research needs web +
-  structured-catalog fusion (independent confirmation of the scout_pro thesis); a Supervisor state machine
-  verifies every plan/tool-call/report step; RACE 31.78→45.40, product coverage >3×. Liftable now:
-  step-level verification for scout reports/Ask, rubric-per-query eval.
-  (text-sources/2026-07-06/arxiv-2602-23716-productresearch-ecommerce-agents.md)
-- **2 videos queued** — X6JjPUZd4xw (overlooked-listings KPF sourcing), 9QGs4hfKrhY (SAS
-  profiles/settings/panels configuration — feeds fba-selleramp-analyst).
+### Today (2026-07-07) — 5 new items (discovery-only run; nothing ingested by the scheduled task itself)
+- **BuildMVPFast: Hybrid Search for RAG** [practitioner] — vector + BM25 merged with **RRF (k≈60)**, then
+  **cross-encoder rerank top 20-50 → top 5-10**. Postgres-native and fits our Supabase stack:
+  **pgvector (dense) + ParadeDB `pg_search` (BM25)**. Benchmarks (Weaviate/BEIR): hybrid+rerank
+  Success@1 0.43→0.52, Recall@5 0.70→0.81, nDCG@10 0.61→0.70. Gotchas: normalize scores before weighted
+  blending, enrich uniform chunks with section titles (BM25 length-norm), adjust weights by query intent,
+  rerank 20-50 not 5/200. **Concrete `knowledge-rag` retrieval upgrade path — staged, not implemented.**
+  (text-sources/2026-07-07/hybrid-search-rag-vector-keyword-reranking.md)
+- **OA Challenge: 5 Keepa Power Moves** [practitioner] — named KPF tactic taxonomy (batch storefront
+  stalking, FBM inventory, stable-price filter, brand-new <1mo products, reverse-source by brand) + advanced
+  moves (lead synthesizer, A2A flips, KPF negative keywords, buy-the-pinch, no-sales-rank filtering).
+  Procedures are behind Scribehow/paid playbook — a **map, not a manual**; useful for scout discovery-hint
+  ideation. (text-sources/2026-07-07/oachallenge-5-keepa-power-moves.md)
+- **2 YouTube queued** (see PENDING): 1kgp13McYLc OA sourcing masterclass; wwNw5vNAyeM Keepa **chart-reading**
+  tutorial (complements the Product-Finder-heavy Keepa videos already in the corpus).
+- **1 fetch-failed:** arXiv 2604.07595 ROZA Graphs (see re-fetch list).
 
 ### Rolling summary — most useful recent takeaways
-- **Self-learning-RAG recipe:** FLAIR (arXiv 2508.13390, Microsoft, deployed in Copilot) — two-track
-  ranking blending vector similarity with feedback-learned indicators; synthetic questions bootstrap it
-  before real thumbs exist. Pair with RAGVA (2502.14930): 8 production-RAG challenges → continuous
-  validation over spec-based testing. ProductResearch (07-06) adds the supervisor-verification pattern.
-- **Buy discipline:** EntreResource (07-05) — strict order: scan → eligibility → red flags →
-  fees/history → quantity LAST; always subtract a return allowance ("sellable margin, not spreadsheet
-  margin"). Aura (07-05) — 3-month inventory rule, ≤20% capital per ASIN, margin stacking 40%→68% ROI.
-- **Keepa/SAS reading:** SAS Charts panel = licensed Keepa data inside every lookup — rank history
-  sanity-checks the sales estimate, price history separates normal price from spike (07-05). BSR is a
-  filter, not a decision.
-- **Fees/policy watch:** 2026 referral/FBA fee update + Apr 17 3.5% fuel surcharge (06-30/07-03); prep now
-  fully seller-owned (07-06); the FNSKU-mandate claim is the biggest open [policy] question.
+- **Self-learning-RAG recipe:** FLAIR (arXiv 2508.13390, Microsoft, deployed in Copilot) — two-track ranking
+  blending vector similarity with feedback-learned indicators; synthetic questions bootstrap before real
+  thumbs exist. Pair with RAGVA (2502.14930): continuous validation over spec-based testing; ProductResearch
+  (2602.23716) adds step-level supervisor verification. **BuildMVPFast (today) supplies the concrete
+  retrieval mechanics (hybrid + RRF + rerank on pgvector) to build under all of it.** ROZA (2604.07595,
+  pending re-fetch) is the next self-improving-RAG paper to read.
+- **Buy discipline:** strict order scan → eligibility → red flags → fees/history → quantity LAST; always
+  subtract a return allowance ("sellable margin, not spreadsheet margin"); 3-month inventory rule, ≤20%
+  capital per ASIN; personal 30% min ROI recurs across sources and matches `ai-brain.json` `minRoi:0.3`.
+- **Keepa/SAS reading:** SAS Charts panel = licensed Keepa data — rank history sanity-checks the sales
+  estimate, price history separates normal price from spike; size buy cost off the **lowest price in the
+  last 3 months**, not an Amazon-OOS spike; a sudden seller-count flatline drop can signal an IP complaint
+  vs. a gradual staircase = normal sell-through. BSR is a filter, not a decision.
+- **Fees/policy watch:** 2026 referral/FBA fee update + Apr 17 3.5% fuel surcharge; prep now fully
+  seller-owned; the FNSKU-mandate claim (G200141500) and the sourcing-cost reimbursement basis are the
+  biggest open [policy] questions.
 - Full detail: `research-inbox/research-insights.md` (per-topic, dated) and `research-inbox/digests/`
   (per-day).

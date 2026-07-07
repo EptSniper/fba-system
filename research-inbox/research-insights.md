@@ -377,6 +377,21 @@ per the project's source-of-truth order. Cite the source URL.
   ljlERpMrcBk is a live click-path session) so the corpus doesn't hold only pro-stalking sources —
   takeaways land once transcripts are pulled.
 
+### 2026-07-07 (daily run)
+
+- **[practitioner]** *5 Keepa "Power Moves" + a 60-SOP tactic taxonomy* (OA Challenge, Nate McCallister).
+  The five headline Keepa Product Finder plays: (1) **stalk multiple storefronts at once** (batch several
+  seller IDs into one KPF search instead of one-at-a-time); (2) **find profitable FBM inventory** (heavier/
+  oversized items most FBA sellers skip); (3) **filter for stable-priced ASINs** (low price variance = less
+  race-to-the-bottom); (4) **find brand-new products (<1 month old)** to get in before offers saturate;
+  (5) **reverse-source by brand** to expand from one proven brand to its whole catalog. The more durable
+  signal is the *named taxonomy of advanced KPF tactics* worth knowing for later scout discovery-hint work:
+  "lead synthesizer" (turn one good lead into many), A2A (Amazon-to-Amazon) flips for pricing-mistake/holiday
+  sourcing, KPF **negative keywords**, "buy the pinch" (OOS-driven) sourcing, filtering ASINs **with no
+  current sales rank** via BSR history + review-count growth, and estimating monthly sales from review count.
+  The step-by-step lives behind Scribehow embeds / a paid playbook — this is a map of what's possible, not
+  the procedures. (oachallenge.com/5-keepa-power-moves)
+
 ## Finances & account management
 
 ### 2026-06-30
@@ -655,3 +670,67 @@ per the project's source-of-truth order. Cite the source URL.
   **wide** (many SKUs, few units each), not deep, and reorder roughly 3-4 weeks of stock based on the
   observed sell-through rate once tested. States a personal **30% minimum ROI** threshold — matches
   `ai-brain.json`'s existing `minRoi: 0.3` exactly, a useful independent corroboration.
+
+### 2026-07-07 (daily run)
+
+- **[practitioner]** *Hybrid Search for RAG: Vector + BM25 + Reranking* (BuildMVPFast, Mar 2026) — the most
+  directly applicable build source in a while for `knowledge-rag`. Pure vector search fails on exact-match
+  queries (error codes, SKUs, acronyms like "GAN", quoted names) — one team saw ~35% of queries hit this;
+  the fix is **hybrid**: run vector + BM25 in parallel and merge with **Reciprocal Rank Fusion**
+  (`RRF(d)=Σ 1/(k+rank)`, k≈60), which sidesteps the score-scale mismatch that breaks weighted blending.
+  Then **rerank**: pull a broad candidate set (top ~20-50), run a cross-encoder reranker, keep top 5-10 for
+  the LLM. Weaviate/BEIR benchmarks cited: hybrid+rerank lifts Success@1 0.43→0.52, Recall@5 0.70→0.81,
+  nDCG@10 0.61→0.70. **Postgres-native path that fits our Supabase stack: pgvector (dense) + the ParadeDB
+  `pg_search` BM25 extension, merged with RRF** — no second datastore. Four production gotchas: (a) if doing
+  weighted (not RRF) blending, normalize BM25 (0→∞) vs cosine (-1→1) first; (b) uniform ~500-token chunks
+  neuter BM25 length normalization — enrich chunks with section/parent titles; (c) static weights ignore
+  query intent — lean keyword for identifiers/code, vector for natural-language questions; (d) rerank 20-50,
+  not 5 (miss best hits) or 200 (latency/cost). Added latency ~200-400ms; cost negligible vs the LLM call.
+  Not implemented — staged as the concrete upgrade path if `knowledge-rag` retrieval quality needs a lift.
+  (buildmvpfast.com/blog/hybrid-search-rag-vector-keyword-reranking-2026)
+
+### 2026-07-07 (Claude Code — 3 more queued YouTube transcripts pulled + ingested)
+
+- **[practitioner]** *Keepa Charts: The Ultimate Amazon FBA Tutorial for 2026* (wwNw5vNAyeM) — the most
+  technically precise Keepa walkthrough ingested to date; several corrections to common misreadings worth
+  encoding into how we talk about Keepa data. (1) The "monthly sold" gold line is a **customer-count range**
+  reported directly by Amazon (50+, 100+, 200+...), not literal units — if avg units/customer is 1.5, "50+"
+  could mean anywhere from 50-100+ actual units; it's also a trailing 30-day figure updated daily, and only
+  ~3.5M of 1B+ tracked ASINs even get it. When the line disappears, it does NOT mean the item stopped
+  selling — it may have just dipped under the next-lowest reporting bucket. (2) Sales-rank "drops/month" is
+  directionally useful but has **no fixed correlation to units sold** — one drop can represent one sale or
+  several. (3) The Buy Box price is **regionally directional, not exact** — Amazon's flywheel distribution
+  model means the price Keepa captured may differ from what a buyer in a different region actually sees;
+  useful for trend-reading, not as an exact quote. (4) A **suppressed buy box slows sales, it does not stop
+  them** — nuances the common "avoid recently-suppressed listings" heuristic into a matter of degree, not an
+  absolute pass signal. (5) Seasonal-product timing rule: **be first in or last out** — entering mid-ramp
+  means competing at peak competition for shrinking margin; either front-run the season before competition
+  floods in, or hold for the tail when only a few sellers remain. (6) A genuinely useful buy-decision
+  framework: read sales-rank movement, buy-box trend, Amazon's own listing history, the **FBA-vs-FBM price
+  gap** (FBA price sitting close to buy box while FBM sits below = FBA sellers are winning the sales — an
+  "FBA bump" signal), offer-count trend, and rating-count trend as a secondary check when sales-rank data is
+  thin — then frame the buy as an **asymmetric bet**: if even the worst historical low price still roughly
+  breaks even and the typical/current price profits well, the trade is favorable even if not every unit
+  sells at the best price.
+- **[practitioner]** *Sourcing Overlooked Listings Using Keepa Product Finder* (X6JjPUZd4xw) — grocery-
+  category bundle/multi-pack and no-UPC listings are systematically missed by barcode-scanning RA sellers
+  and UPC-matching tools (e.g. Tactical Arbitrage), because a multi-pack's UPC doesn't match the single-unit
+  product data those tools expect, or the listing has no UPC logged for that specific pack size at all.
+  Concrete Product Finder recipe: category=Grocery, size="pack" (select all pack-size options), 30-day
+  sales-rank cutoff, a buy-box price band, Amazon-out-of-stock toggle — narrows millions of candidates to a
+  few hundred. Separate technique: pull a broad category list, then filter to rows where the **UPC column is
+  blank** — these are listings a barcode scan could never surface. Always cross-check that the listing's
+  stated brand actually matches who's currently selling on it (a mismatch is either a data error or a sign
+  the rights-holder isn't policing the listing — read both ways, don't assume either).
+- **[practitioner]** *Amazon Online Arbitrage Product Sourcing MASTERCLASS For 2026* (1kgp13McYLc) — a
+  full beginner course; most content already covered by earlier ingested videos, but two new concrete
+  items: (1) **Boxom's "bulk ungate checker"** — paste many ASINs/brands at once and it checks auto-ungate
+  eligibility for up to 5 brands/second, replacing the old one-by-one manual Seller Central check; a
+  genuinely useful tool to be aware of if we ever build ungating-aware scout logic. (2) When there's a price
+  gap between the FBM buy box and the lowest FBA offer, price an FBA listing **5-10% above** the FBM buy
+  box — Amazon's own delivery-speed preference means FBA still wins share at a premium over FBM-only
+  competition. Restates "you don't find items good, you make items good" via stacked discounts (coupon +
+  tax-exempt + cashback + subscribe-and-save + discounted gift cards, this time naming **CardBear** as
+  another discount-gift-card marketplace alongside CardCookie/Raise from earlier videos) and a vivid
+  COVID-era seasonal-pool-price example ($147 normal -> $325 in 2020 -> $475 in 2021) used to make the
+  point that arbitrage is mostly about reliably profitable *boring* products, not chasing spikes.

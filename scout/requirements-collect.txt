@@ -6,7 +6,7 @@
 # pyarrow) — none of those are reachable from collect_hourly.py's import chain, and the
 # cloud-inbox flush path (raw_inbox.py) zstd-compresses JSON directly, never touching pyarrow/
 # Parquet (that only happens locally, in scout/drain_inbox.py, via scout/requirements.txt).
-keepa>=1.3
+keepa==1.5.0  # pinned exact — see scout/requirements.txt's comment (review fix, 2026-07-07)
 requests>=2.31
 python-dotenv>=1.0
 numpy>=1.24

@@ -120,19 +120,43 @@ def _require_keepa():
 
 
 def _tokens_consumed(api) -> Optional[int]:
-    """Best-effort read of the client's running tokens-consumed counter (for the lake's
-    tokens_consumed column). Guarded — never raises."""
+    """A balance snapshot for computing a before/after SPEND delta via _delta() below — despite
+    the name (kept for every existing call site), this reads the client's CURRENT tokens_left
+    balance, not a cumulative counter.
+
+    Review fix (2026-07-07, live incident): this used to read `tokens_consumed_total`/
+    `tokens_consumed` off the api object — attributes the `keepa` PyPI package has NEVER
+    actually exposed, in ANY version (confirmed by inspecting both 1.3.15, this repo's pinned
+    dev version, and 1.5.0, the live-deployed version — neither defines either attribute
+    anywhere; the client only ever tracks `tokens_left`, a balance). getattr(..., None) on a
+    nonexistent attribute always returned None, so `_delta()` always returned None too, and
+    every "measured spend" computation across this whole project (run_hourly_collect()'s
+    cross-tier budget accounting, backtest.py's batch spend tracking, datalake token archiving)
+    silently fell back to 0 or a length-based estimate instead of a real number — forever, since
+    the day this was written. Concretely: tier 2 of the hourly burst could genuinely overdraw
+    the account by ~90+ tokens, `tokens_spent` would still read back as 0, so tier 3 (backtest.
+    run_backtest -> deals_firehose.harvest -> resolve_category_ids) would run anyway against an
+    already-negative bank, reach a completely unguarded live Keepa call (see
+    deals_firehose.resolve_category_ids' own fix), and hang.
+
+    Reads the object's own last-known tokens_left (no extra network round trip — every real
+    request already updates this attribute in place), matching the original function's
+    free/no-extra-cost intent, just off the attribute that actually exists."""
     try:
-        return token_telemetry(api).get("tokens_consumed")
+        v = getattr(api, "tokens_left", None)
+        return int(v) if isinstance(v, (int, float)) else None
     except Exception:
         return None
 
 
 def _delta(before: Optional[int], after: Optional[int]) -> Optional[int]:
-    """Tokens spent on the call between two counter reads; None if the counter isn't available
-    or reset (so we record 'unknown' honestly rather than a bogus number)."""
-    if isinstance(before, int) and isinstance(after, int) and after >= before:
-        return after - before
+    """Tokens spent between two BALANCE reads (before - after — tokens_left DECREASES as tokens
+    are spent, and Keepa allows it to go negative on overdraw). None if either read failed. A
+    small negative result (balance went UP slightly) is possible if a refill tick landed
+    mid-operation — reported honestly rather than clamped; callers already treat a falsy/None
+    delta as 'unknown, degrade to a safer estimate'."""
+    if isinstance(before, int) and isinstance(after, int):
+        return before - after
     return None
 
 

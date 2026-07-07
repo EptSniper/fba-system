@@ -73,17 +73,30 @@ def _save_category_id_cache(mapping: Dict[str, int]) -> None:
         log.warning("category id cache save failed (non-fatal): %s", e)
 
 
-def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callable] = None) -> Dict[str, int]:
+def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callable] = None,
+                         wait: bool = True) -> Dict[str, int]:
     """category key -> Keepa root catId, resolved live ONCE then cached to disk (root ids are
     stable Amazon browse nodes, so repeat runs never re-spend on this). Returns whatever subset
-    resolves; an unmapped category is left OUT of the rotation, never guessed at. Never raises."""
+    resolves; an unmapped category is left OUT of the rotation, never guessed at. Never raises.
+
+    Review fix (2026-07-07, live incident): this call used to have NO wait= override (silently
+    defaulting to the keepa package's own wait=True) and NO deadline wrapper at all — on a
+    GitHub Actions runner (ephemeral, no persistent disk between runs) the on-disk cache never
+    survives, so every hourly-burst run hits this LIVE, unguarded and unwrapped. Once the
+    account was already overdrawn (a separate real bug — see keepa_client._tokens_consumed's
+    fix — that let tier 3 run at all despite tier 2 having already spent the bank), this call
+    hit a 429 and the keepa library's own internal retry-wait slept for however long a refill
+    actually takes (880s observed live), with nothing on our side bounding it. Now explicitly
+    threads wait (collect_hourly.py's hourly burst passes wait=False, same as every other Keepa
+    call it makes) and wraps the call in keepa_client._with_deadline for defense-in-depth even
+    if wait=False's effect on this specific endpoint ever changes upstream."""
     cached = _load_category_id_cache()
     if cached and all(c in cached for c in categories):
         return cached
     if lookup_fn is None:
         lookup_fn = api.category_lookup
     try:
-        roots = lookup_fn(0, domain=config.KEEPA_DOMAIN) or {}
+        roots = keepa_client._with_deadline(lookup_fn, 0, domain=config.KEEPA_DOMAIN, wait=wait) or {}
     except Exception as e:
         log.warning("category_lookup failed (non-fatal, using whatever was cached): %s",
                    keepa_client.redact_err(e))
@@ -164,7 +177,10 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     id_map: Dict[str, int] = {}
     if categories:
         try:
-            id_map = (resolve_fn or resolve_category_ids)(api, categories)
+            # Review fix (2026-07-07, live incident): wait= was never threaded through to the
+            # resolver before — it silently defaulted to wait=True regardless of what THIS
+            # function's own caller (e.g. collect_hourly.py's wait=False hourly burst) asked for.
+            id_map = (resolve_fn or resolve_category_ids)(api, categories, wait=wait)
         except Exception as e:
             log.warning("category id resolution failed (non-fatal, unfiltered pull): %s",
                        keepa_client.redact_err(e))

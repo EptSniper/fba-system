@@ -37,7 +37,7 @@ class FakeApi:
         asins = self._pages.get(key, [])
         return {"dr": [{"asin": a} for a in asins]}
 
-    def category_lookup(self, cat_id, domain=None):
+    def category_lookup(self, cat_id, domain=None, wait=True):
         return self._roots
 
 
@@ -120,6 +120,43 @@ class ResolveCategoryIdsTest(unittest.TestCase):
         resolved = df.resolve_category_ids(api, ["toys"])
         self.assertEqual(resolved, {})
 
+    def test_wait_false_actually_reaches_the_live_call(self):
+        """Review fix (2026-07-07, live incident): wait= used to be silently dropped, always
+        defaulting to the keepa package's own wait=True regardless of what the caller asked
+        for. Proves wait=False is threaded all the way to the underlying lookup_fn call."""
+        roots = {"1": {"catId": 165793011, "name": "Toys & Games"}}
+        seen_wait = {}
+
+        def _lookup(cat_id, domain=None, wait=True):
+            seen_wait["wait"] = wait
+            return roots
+
+        api = FakeApi(roots=roots)
+        df.resolve_category_ids(api, ["toys"], lookup_fn=_lookup, wait=False)
+        self.assertEqual(seen_wait["wait"], False)
+
+    def test_a_hanging_lookup_is_bounded_by_the_deadline_not_left_to_hang(self):
+        """Review fix (2026-07-07, live incident): this call used to have NO deadline wrapper
+        at all — a rate-limited response made the keepa package's own internal wait sleep for
+        however long a refill actually takes (880s observed live), with nothing bounding it.
+        Proves the call now goes through keepa_client._with_deadline (measuring real elapsed
+        time, not just checking the exception message)."""
+        import time
+        from unittest.mock import patch
+        import keepa_client as kc
+
+        def _hangs(cat_id, domain=None, wait=True):
+            time.sleep(2)
+            return {}
+
+        api = FakeApi()
+        with patch.object(kc, "KEEPA_NO_WAIT_DEADLINE_SECONDS", 0.2):
+            start = time.time()
+            resolved = df.resolve_category_ids(api, ["toys"], lookup_fn=_hangs, wait=False)
+            elapsed = time.time() - start
+        self.assertLess(elapsed, 2, f"should have failed fast on the deadline, took {elapsed}s")
+        self.assertEqual(resolved, {})  # degrades to cached (empty here), never raises
+
 
 class HarvestTest(unittest.TestCase):
     def setUp(self):
@@ -131,7 +168,7 @@ class HarvestTest(unittest.TestCase):
             ((22,), 0): ["B002", "B003"],  # B002 overlaps -> dedupe
         })
         result = df.harvest(api, pages=2, categories=["toys", "kitchen"],
-                            resolve_fn=lambda api, cats: {"toys": 11, "kitchen": 22})
+                            resolve_fn=lambda api, cats, wait=True: {"toys": 11, "kitchen": 22})
         self.assertEqual(result["pages_pulled"], 2)
         asins = sorted(a["asin"] for a in result["asins"])
         self.assertEqual(asins, ["B001", "B002", "B003"])
@@ -141,13 +178,13 @@ class HarvestTest(unittest.TestCase):
     def test_stops_early_when_bank_runs_dry(self):
         api = FakeApi(tokens_left=keepa_client.DEALS_PAGE_TOKENS)  # only 1 page affordable
         result = df.harvest(api, pages=4, categories=["toys"],
-                            resolve_fn=lambda api, cats: {"toys": 11})
+                            resolve_fn=lambda api, cats, wait=True: {"toys": 11})
         self.assertEqual(result["pages_pulled"], 2)  # 1 successful + 1 that trips the skip
 
     def test_unfiltered_when_categories_unresolvable(self):
         api = FakeApi(tokens_left=60, pages={(None, 0): ["B009"]})
         result = df.harvest(api, pages=1, categories=["toys"],
-                            resolve_fn=lambda api, cats: {})
+                            resolve_fn=lambda api, cats, wait=True: {})
         self.assertEqual([a["asin"] for a in result["asins"]], ["B009"])
         self.assertEqual(result["categories_resolved"], [])
 

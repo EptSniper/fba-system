@@ -197,15 +197,24 @@ def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb:
     }
 
 
-def _fetch_trend_series(brand: Optional[str], category: Optional[str]):
+def _fetch_trend_series(brand: Optional[str], category: Optional[str],
+                        cache: Optional[Dict[str, List[Tuple[Any, float]]]] = None):
     """Each term's FULL stored Trends series, fetched ONCE per ASIN (not once per simulation
     window) — trends_features() then filters to strictly-before-as_of per window from this same
     in-memory list, avoiding an expensive per-window Supabase round trip. Never raises; []/[] on
     any failure (trends_features degrades to stale=True nulls from an empty series, same as a
-    genuinely-untracked term)."""
+    genuinely-untracked term).
+
+    `cache` (review fix, 2026-07-06): an optional pre-fetched {term: series} map — run_backtest()
+    bulk-prefetches every distinct brand/category term ONCE per batch (signals.trends.
+    prefetch_series) and passes it here so a batch of N ASINs costs one Supabase round trip
+    instead of up to 2*N. A cache MISS still falls through to the old per-term live fetch below
+    (never a hard requirement — single-ASIN callers, e.g. tests, keep working unchanged)."""
     def _series(term):
         if not term:
             return []
+        if cache is not None and term in cache:
+            return cache[term]
         try:
             raw = db.trends_series_for(term)
             return [(_dt.date.fromisoformat(r["week_start"]), float(r["interest"])) for r in raw]
@@ -252,7 +261,9 @@ def _signal_features_for(as_of_date: _dt.date, brand: Optional[str], category: O
 def build_rows_for_asin(asin: str, hist: History, static: Dict[str, Any],
                         sample_source: str = "onpolicy",
                         step_days: int = STEP_DAYS, horizon: int = LABEL_HORIZON_DAYS,
-                        min_history: int = MIN_HISTORY_DAYS) -> List[Dict[str, Any]]:
+                        min_history: int = MIN_HISTORY_DAYS,
+                        trend_cache: Optional[Dict[str, List[Tuple[Any, float]]]] = None
+                        ) -> List[Dict[str, Any]]:
     """Every backtest row for one ASIN (one per simulation window). Each carries the leakage-safe
     feature snapshot, the observed label, and split_key=asin so downstream splits stay BY ASIN.
 
@@ -263,10 +274,15 @@ def build_rows_for_asin(asin: str, hist: History, static: Dict[str, Any],
     (brandFilter=NONE for explore/dealfeed) but flagged, never silently blended in unlabeled.
     This function only ever writes to backtest_rows (via db.upsert_backtest_rows downstream) —
     it has no path to db.log_lead/decisions/review-queue, so a flagged row can never surface as a
-    buy candidate regardless of its score (test-asserted: test_backtest_sampling.py)."""
+    buy candidate regardless of its score (test-asserted: test_backtest_sampling.py).
+
+    trend_cache (review fix, 2026-07-06): an optional pre-fetched {term: series} map, passed
+    straight through to _fetch_trend_series — see run_backtest()'s batch loop, which bulk-
+    prefetches once per batch instead of once per ASIN."""
     static = dict(static, asin=asin)
     ip_risk = brands.is_avoided(static.get("brand"))
-    brand_series, category_series = _fetch_trend_series(static.get("brand"), static.get("category"))
+    brand_series, category_series = _fetch_trend_series(static.get("brand"), static.get("category"),
+                                                         cache=trend_cache)
     rows = []
     for as_of in windows_for(hist, step_days, horizon, min_history):
         enriched = features_as_of(hist, as_of, static)
@@ -648,16 +664,37 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
         # Falls back to the requested batch size (an honest worst-case, never an undercount)
         # only when the counter itself can't be read.
         spent += delta if isinstance(delta, int) and delta >= 0 else len(batch)
-        rows: List[Dict[str, Any]] = []
-        batch_asins: List[str] = []
+        parsed = []
         for product in products:
             if not isinstance(product, dict) or not product.get("asin"):
                 continue
             hist, static = parse_keepa_history(product)
-            src = asin_source.get(product["asin"], "onpolicy")
-            new_rows = build_rows_for_asin(product["asin"], hist, static, sample_source=src)
+            parsed.append((product["asin"], hist, static))
+
+        # Review fix (2026-07-06): ONE bulk Trends prefetch per BATCH (up to _ENRICH_BATCH
+        # ASINs) instead of build_rows_for_asin's old per-ASIN live fetch (up to 2 sequential
+        # Supabase calls per ASIN, no cross-ASIN caching) — that N+1 was the root cause of the
+        # hourly collector's tier-3 backtest step hanging past keepa-collect.yml's 10-minute job
+        # timeout once there were real ASINs to process. A prefetch failure degrades to an empty
+        # cache (each ASIN falls through to its own live fetch, the old behavior), never blocks.
+        trend_cache: Dict[str, Any] = {}
+        try:
+            from signals import trends as signals_trends
+            terms = sorted({static.get(k) for _, _, static in parsed
+                           for k in ("brand", "category") if static.get(k)})
+            if terms:
+                trend_cache = signals_trends.prefetch_series(terms)
+        except Exception as e:
+            log.warning("trends bulk prefetch failed for batch (non-fatal): %s", e)
+
+        rows: List[Dict[str, Any]] = []
+        batch_asins: List[str] = []
+        for asin, hist, static in parsed:
+            src = asin_source.get(asin, "onpolicy")
+            new_rows = build_rows_for_asin(asin, hist, static, sample_source=src,
+                                          trend_cache=trend_cache)
             rows += new_rows
-            batch_asins.append(product["asin"])
+            batch_asins.append(asin)
         if persist and rows:
             upserted = db.upsert_backtest_rows(rows)
             built += upserted

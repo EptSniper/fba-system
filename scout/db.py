@@ -1053,3 +1053,45 @@ def trends_series_for(term: str, before: Optional[str] = None, limit: int = 400)
     except Exception as e:
         print(f"[db] trends_series_for failed ({term}): {e}")
         return []
+
+
+_TRENDS_BULK_CHUNK = 150  # PostgREST's in.() filter in one request; well above any real per-run
+                         # distinct-term count (collect_hourly's DEFAULT_HINT_SCAN_LIMIT=60,
+                         # backtest's _ENRICH_BATCH=100) so one run almost never needs a 2nd chunk
+
+
+def trends_series_bulk(terms: List[str], limit_per_term: int = 400) -> Dict[str, List[Dict[str, Any]]]:
+    """Every listed term's weekly series, grouped by term, in ONE request per _TRENDS_BULK_CHUNK
+    terms (PostgREST `term=in.(...)`) instead of one request PER term.
+
+    Review fix (2026-07-06): collect_hourly.py's _attach_signal_features() and backtest.py's
+    _fetch_trend_series() each called trends_series_for() once per distinct brand/category term
+    seen in a batch — up to ~70-200+ sequential live HTTP round trips per hourly burst once
+    there were real candidates to score. That N+1 pattern was the root cause of the hourly
+    collector silently hanging past keepa-collect.yml's 10-minute job timeout (every run since
+    the Keepa bank recovered from its overdraw got force-killed mid-flight, never reaching
+    finish_run() — the Supabase `runs` row stuck at status='running' forever). This bulk read
+    is what both callers now use to pre-fetch a whole batch's terms in one round trip.
+
+    {} (every term maps to []) if unavailable, migration 012 hasn't landed, or the request
+    fails — never raises; callers already treat an empty series as stale=True, same as a
+    genuinely untracked term."""
+    out: Dict[str, List[Dict[str, Any]]] = {t: [] for t in terms if t}
+    if not enabled() or not out:
+        return out
+    uniq = sorted(out.keys())
+    try:
+        for start in range(0, len(uniq), _TRENDS_BULK_CHUNK):
+            chunk = uniq[start:start + _TRENDS_BULK_CHUNK]
+            in_list = ",".join(_quote(t) for t in chunk)
+            q = (f"trends_series?term=in.({in_list})&select=term,week_start,interest"
+                f"&order=term.asc,week_start.asc")
+            rows = _get_paged(q, limit=limit_per_term * len(chunk))
+            for r in rows:
+                term = r.get("term")
+                if term in out:
+                    out[term].append(r)
+        return out
+    except Exception as e:
+        print(f"[db] trends_series_bulk failed ({len(terms)} terms): {e}")
+        return {t: [] for t in terms if t}

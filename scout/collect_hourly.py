@@ -57,6 +57,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_HINT_SCAN_LIMIT = 60          # candidate-ASIN cap per burst tier 2, independent of token math
 TOKENS_PER_CANDIDATE_ESTIMATE = 3     # sizing only — real spend is always measured after the fact
 
+# Review fix (2026-07-06): a defense-in-depth wall-clock budget, independent of the Trends N+1
+# fix above. keepa-collect.yml's own job timeout is 10 minutes; a run that's still going at this
+# mark skips its remaining tiers so the function returns normally and finish_run() still records
+# an honest status, instead of getting force-killed mid-flight with the Supabase `runs` row stuck
+# at status='running' forever (exactly what happened to every run since the Keepa bank recovered
+# from its overdraw, before the N+1 was found and fixed). Not a substitute for fixing a slow
+# path — a safety net in case a different one appears later.
+SAFE_DEADLINE_SECONDS = 420  # 7 min, leaving a 3 min buffer before the 10 min job timeout
+
+
+def _deadline_exceeded(t0: _dt.datetime) -> bool:
+    return (_dt.datetime.now(_dt.timezone.utc) - t0).total_seconds() > SAFE_DEADLINE_SECONDS
+
 
 def _observed_tokens_left(api) -> int:
     """The ACTUAL current bank, floored at 0 for THIS function's purpose (deciding whether
@@ -116,16 +129,30 @@ def _attach_signal_features(products: List[Dict[str, Any]]) -> List[Dict[str, An
     except Exception as e:
         log.warning("signals.ebay unavailable (non-fatal): %s", e)
 
+    # Review fix (2026-07-06): ONE bulk Supabase call for every distinct brand/category term in
+    # this whole batch, instead of one live trends_features() call per term (each falling
+    # through to its own individual db.trends_series_for() read). That per-term N+1 — up to
+    # ~120 sequential live HTTP round trips for a full 60-candidate scan — was the root cause of
+    # the hourly collector hanging past keepa-collect.yml's 10-minute job timeout once the Keepa
+    # bank actually had real work to do: every run since the overdraw guard let the bank recover
+    # got force-killed mid-flight, never reaching finish_run() (see run_hourly_collect()).
     trend_cache: Dict[str, Dict[str, Any]] = {}
-
-    def _cached_trend(term: str) -> Dict[str, Any]:
-        if term not in trend_cache:
+    if signals_trends:
+        terms = sorted({p[k] for p in products for k in ("brand", "category") if p.get(k)})
+        try:
+            series_by_term = signals_trends.prefetch_series(terms) if terms else {}
+        except Exception as e:
+            log.warning("trends bulk prefetch failed (non-fatal): %s", e)
+            series_by_term = {}
+        for term in terms:
             try:
-                trend_cache[term] = signals_trends.trends_features(term, today)
+                trend_cache[term] = signals_trends.trends_features(term, today, series=series_by_term.get(term, []))
             except Exception as e:
                 log.warning("trends_features failed for %r (non-fatal): %s", term, e)
                 trend_cache[term] = {}
-        return trend_cache[term]
+
+    def _cached_trend(term: str) -> Dict[str, Any]:
+        return trend_cache.get(term, {})
 
     for p in products:
         p.update(cal_feats)
@@ -286,7 +313,11 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         budget = max(0, budget - int(shadow_result.get("tokens_spent") or 0))
 
         # Tier 2: hint-led candidate scan through the normal gates/scoring/lead-upsert path.
-        scan_result = hint_led_scan(api, budget, run_id=run_id)
+        if _deadline_exceeded(t0):
+            scan_result = {"status": "skipped", "reason": "wall-clock safety deadline reached",
+                          "tokens_spent": 0}
+        else:
+            scan_result = hint_led_scan(api, budget, run_id=run_id)
         summary["scan"] = scan_result
         budget = max(0, budget - int(scan_result.get("tokens_spent") or 0))
 
@@ -294,7 +325,10 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         # (brand-agnostic) sampling now runs INSIDE run_backtest, prioritized ahead of onpolicy —
         # firehose_fn=_firehose_no_wait keeps the "never block on a refill" rule for the new
         # /deal calls too, matching find_fn/history_fn's own no-wait wrappers above.
-        if budget > 0:
+        if _deadline_exceeded(t0):
+            bt_result = {"status": "skipped", "reason": "wall-clock safety deadline reached",
+                        "tokens_spent": 0}
+        elif budget > 0:
             bt_result = backtest.run_backtest(api=api, token_cap=budget,
                                               find_fn=_find_no_wait, history_fn=_history_no_wait,
                                               firehose_fn=_firehose_no_wait)

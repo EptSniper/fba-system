@@ -158,6 +158,91 @@ class AttachSignalFeaturesTest(unittest.TestCase):
             out = ch._attach_signal_features(products)
         self.assertNotIn("ebay_active_listing_count", out[0])
 
+    def test_bulk_prefetches_all_distinct_terms_in_one_call(self):
+        """Review fix (2026-07-06): the root-cause fix for the hourly collector hanging past its
+        10-minute job timeout — one signals.trends.prefetch_series() call up front for every
+        distinct brand/category term in the whole batch, instead of each trends_features() call
+        falling through to its own live db.trends_series_for() read."""
+        products = [{"asin": "A1", "brand": "Lego", "category": "toys"},
+                   {"asin": "A2", "brand": "Yeti", "category": "kitchen"},
+                   {"asin": "A3", "brand": "Lego", "category": "toys"}]  # repeats both terms
+        with mock.patch("signals.calendar.calendar_features", return_value={}), \
+             mock.patch("signals.trends.prefetch_series", return_value={}) as mprefetch, \
+             mock.patch("signals.trends.trends_features", return_value={}) as mtrend:
+            ch._attach_signal_features(products)
+        mprefetch.assert_called_once()
+        (called_terms,), _ = mprefetch.call_args
+        self.assertEqual(sorted(called_terms), ["Lego", "Yeti", "kitchen", "toys"])
+        # still only ONE trends_features call per distinct term (feature computation, not I/O)
+        self.assertEqual(mtrend.call_count, 4)
+
+    def test_bulk_prefetch_failure_degrades_to_empty_cache_never_raises(self):
+        products = [{"asin": "A1", "brand": "Lego", "category": "toys"}]
+        with mock.patch("signals.calendar.calendar_features", return_value={}), \
+             mock.patch("signals.trends.prefetch_series", side_effect=RuntimeError("supabase down")), \
+             mock.patch("signals.trends.trends_features", return_value={}):
+            out = ch._attach_signal_features(products)
+        self.assertEqual(out[0]["asin"], "A1")  # degraded gracefully, no crash
+
+
+class SafetyDeadlineTest(unittest.TestCase):
+    """Review fix (2026-07-06): a defense-in-depth wall-clock budget. Root cause of the hourly
+    collector hanging past keepa-collect.yml's 10-minute job timeout was the Trends N+1 (fixed
+    above) -- this is the safety net in case a different slow path appears later: a run past the
+    deadline skips its remaining tiers so the function returns normally and finish_run() still
+    records a real status, instead of getting force-killed with the Supabase row stuck at
+    status='running' forever."""
+
+    def _run(self, deadline_exceeded):
+        api = FakeApi(tokens_left=60)
+        with mock.patch.object(ch.config, "have_keepa", return_value=True), \
+             mock.patch.object(db, "start_run", return_value=1), \
+             mock.patch.object(db, "finish_run") as mfinish, \
+             mock.patch.object(ch.datalake, "set_run_context"), \
+             mock.patch.object(ch.datalake, "reset_stats"), \
+             mock.patch.object(ch.datalake, "flush", return_value={}), \
+             mock.patch.object(ch.datalake, "digest_line", return_value=""), \
+             mock.patch.object(ch.shadow_outcomes, "run_rechecks",
+                               return_value={"status": "ok", "tokens_spent": 0}), \
+             mock.patch.object(ch, "hint_led_scan") as mscan, \
+             mock.patch.object(ch.backtest, "run_backtest") as mbacktest, \
+             mock.patch.object(ch, "_deadline_exceeded", return_value=deadline_exceeded):
+            r = ch.run_hourly_collect(api=api)
+        return r, mscan, mbacktest, mfinish
+
+    def test_tiers_2_and_3_skipped_once_the_deadline_is_reached(self):
+        r, mscan, mbacktest, mfinish = self._run(deadline_exceeded=True)
+        mscan.assert_not_called()
+        mbacktest.assert_not_called()
+        self.assertEqual(r["scan"]["reason"], "wall-clock safety deadline reached")
+        self.assertEqual(r["backtest"]["reason"], "wall-clock safety deadline reached")
+        # the function still returned normally -- finish_run() recorded a real status, the run
+        # never gets stuck at status='running' forever
+        mfinish.assert_called_once()
+        self.assertEqual(mfinish.call_args[0][1], "success")
+
+    def test_tiers_run_normally_when_within_the_deadline(self):
+        mscan_return = {"status": "ok", "tokens_spent": 0, "candidates": 0, "leads_logged": 0,
+                        "survivors": 0}
+        api = FakeApi(tokens_left=60)
+        with mock.patch.object(ch.config, "have_keepa", return_value=True), \
+             mock.patch.object(db, "start_run", return_value=1), \
+             mock.patch.object(db, "finish_run") as mfinish, \
+             mock.patch.object(ch.datalake, "set_run_context"), \
+             mock.patch.object(ch.datalake, "reset_stats"), \
+             mock.patch.object(ch.datalake, "flush", return_value={}), \
+             mock.patch.object(ch.datalake, "digest_line", return_value=""), \
+             mock.patch.object(ch.shadow_outcomes, "run_rechecks",
+                               return_value={"status": "ok", "tokens_spent": 0}), \
+             mock.patch.object(ch, "hint_led_scan", return_value=mscan_return) as mscan, \
+             mock.patch.object(ch.backtest, "run_backtest",
+                               return_value={"status": "ok", "tokens_spent": 0}) as mbacktest, \
+             mock.patch.object(ch, "_deadline_exceeded", return_value=False):
+            ch.run_hourly_collect(api=api)
+        mscan.assert_called_once()
+        mbacktest.assert_called_once()
+        mfinish.assert_called_once()
+
 
 class HintLedScanTest(unittest.TestCase):
     def setUp(self):

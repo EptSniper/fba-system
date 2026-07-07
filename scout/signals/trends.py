@@ -187,6 +187,24 @@ def backfill_term(term: str, term_kind: str, client=None,
     return {"term": term, "status": "ok", "rows_stored": stored, "weeks": len(rows)}
 
 
+def prefetch_series(terms: List[str]) -> Dict[str, List[Tuple[_dt.date, float]]]:
+    """Bulk-fetch every listed term's stored series in ONE Supabase round trip (db.trends_series_
+    bulk), converted to the (date, value) tuple shape trends_features()'s `series` param expects.
+
+    Review fix (2026-07-06): callers that need MANY terms in one run (collect_hourly.py's
+    _attach_signal_features across up to ~60 candidates, backtest.py's per-batch history-fetch
+    loop across up to ~100 ASINs) used to call trends_features() once per term with no `series`
+    injected, each falling through to its own live db.trends_series_for() read — an unbatched
+    N+1 that was hanging the hourly collector past its 10-minute job timeout. Call this ONCE per
+    batch instead, then pass series=result.get(term, []) into trends_features() per term.
+
+    {} per term on any failure — trends_features() already treats an empty series as
+    stale=True/nulls, same as a genuinely untracked term; never raises."""
+    raw = db.trends_series_bulk(terms)
+    return {term: [(_dt.date.fromisoformat(r["week_start"]), float(r["interest"])) for r in rows]
+           for term, rows in raw.items()}
+
+
 # --- features (leakage-safe: only ever reads points strictly before as_of) ------------------
 def trends_features(term: str, as_of: _dt.date,
                     series: Optional[List[Tuple[_dt.date, float]]] = None) -> Dict[str, Any]:

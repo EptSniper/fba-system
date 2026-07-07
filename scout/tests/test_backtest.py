@@ -201,6 +201,58 @@ class RunBacktestBudgetTest(unittest.TestCase):
         self.assertNotIn("A1", pulled)  # already processed -> skipped on resume
 
 
+class TrendPrefetchBatchTest(RunBacktestBudgetTest):
+    """Review fix (2026-07-06): build_rows_for_asin()'s _fetch_trend_series() call used to have
+    no cross-ASIN caching within a run — up to 2 sequential live db.trends_series_for() calls
+    PER ASIN. run_backtest()'s batch loop now bulk-prefetches every distinct brand/category term
+    ONCE per batch (signals.trends.prefetch_series) regardless of how many ASINs share a term."""
+
+    def test_bulk_prefetches_once_per_batch_not_per_asin(self):
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            return {"Lego": ["A1", "A2", "A3"]}.get((brand_seeds or [None])[0], [])
+
+        def fake_history(asins, api=None):
+            return [{"asin": a, "data": None} for a in asins]
+
+        fake_static = {"A1": {"asin": "A1", "brand": "Lego", "category": "toys", "weight_lb": 1.0},
+                      "A2": {"asin": "A2", "brand": "Lego", "category": "toys", "weight_lb": 1.0},
+                      "A3": {"asin": "A3", "brand": "Yeti", "category": "kitchen", "weight_lb": 1.0}}
+
+        def fake_parse(product):
+            return {}, fake_static[product["asin"]]
+
+        with mock.patch.object(bt.config, "have_keepa", return_value=True), \
+             mock.patch.object(bt, "backtest_token_cap", return_value=200), \
+             mock.patch.object(bt, "parse_keepa_history", side_effect=fake_parse), \
+             mock.patch("brands.seed_brands", return_value=["Lego"]), \
+             mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]), \
+             mock.patch("signals.trends.prefetch_series", return_value={}) as mprefetch:
+            bt.run_backtest(api=object(), find_fn=fake_find, history_fn=fake_history, persist=False)
+
+        mprefetch.assert_called_once()  # ONE bulk call for the whole batch, not one per ASIN
+        (called_terms,), _ = mprefetch.call_args
+        self.assertEqual(sorted(called_terms), ["Lego", "Yeti", "kitchen", "toys"])
+
+    def test_prefetch_failure_falls_back_to_per_asin_live_fetch_never_raises(self):
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            return {"Lego": ["A1"]}.get((brand_seeds or [None])[0], [])
+
+        def fake_history(asins, api=None):
+            return [{"asin": a, "data": None} for a in asins]
+
+        def fake_parse(product):
+            return {}, {"asin": product["asin"], "brand": "Lego", "category": "toys", "weight_lb": 1.0}
+
+        with mock.patch.object(bt.config, "have_keepa", return_value=True), \
+             mock.patch.object(bt, "backtest_token_cap", return_value=200), \
+             mock.patch.object(bt, "parse_keepa_history", side_effect=fake_parse), \
+             mock.patch("brands.seed_brands", return_value=["Lego"]), \
+             mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]), \
+             mock.patch("signals.trends.prefetch_series", side_effect=RuntimeError("supabase down")):
+            r = bt.run_backtest(api=object(), find_fn=fake_find, history_fn=fake_history, persist=False)
+        self.assertEqual(r["status"], "ok")  # degraded gracefully, never propagated the failure
+
+
 class HistoryLoopBatchSizingTest(RunBacktestBudgetTest):
     """Session 55 review fix: _ENRICH_BATCH (100) is a request-size CEILING, not a promise that
     100 tokens are banked. The Keepa Pro plan's bank caps at 60, so the OLD `if spent +

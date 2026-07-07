@@ -231,6 +231,83 @@ class TrendsFeaturesMathTest(unittest.TestCase):
         self.assertGreater(feats["seasonal_z"], 0)  # 90 is well above the ~21 historical mean
 
 
+class TrendsSeriesBulkTest(unittest.TestCase):
+    """db.trends_series_bulk() itself — one PostgREST `term=in.(...)` request grouped by term,
+    replacing N sequential trends_series_for() calls (review fix, 2026-07-06)."""
+
+    def test_groups_rows_by_term_from_one_request(self):
+        rows = [
+            {"term": "Lego", "week_start": "2026-01-05", "interest": 40.0},
+            {"term": "Lego", "week_start": "2026-01-12", "interest": 50.0},
+            {"term": "toys", "week_start": "2026-01-05", "interest": 10.0},
+        ]
+        with mock.patch.object(db, "enabled", return_value=True), \
+             mock.patch.object(db, "_get_paged", return_value=rows) as mock_get:
+            result = db.trends_series_bulk(["Lego", "toys", "Yeti"])
+        self.assertEqual(len(result["Lego"]), 2)
+        self.assertEqual(len(result["toys"]), 1)
+        self.assertEqual(result["Yeti"], [])  # a term with no stored rows still comes back as []
+        # ONE request for the whole batch, not one per term
+        self.assertEqual(mock_get.call_count, 1)
+        query = mock_get.call_args[0][0]
+        self.assertIn("term=in.(", query)
+
+    def test_disabled_returns_empty_lists_without_a_request(self):
+        with mock.patch.object(db, "enabled", return_value=False), \
+             mock.patch.object(db, "_get_paged") as mock_get:
+            result = db.trends_series_bulk(["Lego"])
+        self.assertEqual(result, {"Lego": []})
+        mock_get.assert_not_called()
+
+    def test_request_failure_degrades_to_empty_lists_never_raises(self):
+        with mock.patch.object(db, "enabled", return_value=True), \
+             mock.patch.object(db, "_get_paged", side_effect=RuntimeError("network down")):
+            result = db.trends_series_bulk(["Lego", "toys"])
+        self.assertEqual(result, {"Lego": [], "toys": []})
+
+    def test_chunks_past_the_bulk_chunk_size(self):
+        many_terms = [f"Brand{i}" for i in range(db._TRENDS_BULK_CHUNK + 10)]
+        with mock.patch.object(db, "enabled", return_value=True), \
+             mock.patch.object(db, "_get_paged", return_value=[]) as mock_get:
+            db.trends_series_bulk(many_terms)
+        self.assertEqual(mock_get.call_count, 2)  # 2 chunks for slightly-over-one-chunk terms
+
+
+class PrefetchSeriesTest(unittest.TestCase):
+    """Review fix (2026-07-06): collect_hourly.py's _attach_signal_features() and backtest.py's
+    run_backtest() batch loop used to call trends_features() once per distinct brand/category
+    term, each falling through to its own live db.trends_series_for() read — an unbatched N+1
+    (up to ~120 sequential round trips per hourly burst) that was hanging the hourly collector
+    past its 10-minute job timeout. prefetch_series() replaces that with ONE db.trends_series_bulk
+    call, converted to the (date, value) tuple shape trends_features()'s `series` param expects."""
+
+    def test_converts_bulk_rows_to_tuple_series_per_term(self):
+        with mock.patch.object(db, "trends_series_bulk", return_value={
+            "Lego": [{"week_start": "2026-01-05", "interest": 40.0},
+                    {"week_start": "2026-01-12", "interest": 50.0}],
+            "toys": [],
+        }) as mock_bulk:
+            result = trends.prefetch_series(["Lego", "toys"])
+        mock_bulk.assert_called_once_with(["Lego", "toys"])
+        self.assertEqual(result["Lego"], [(dt.date(2026, 1, 5), 40.0), (dt.date(2026, 1, 12), 50.0)])
+        self.assertEqual(result["toys"], [])
+
+    def test_one_prefetch_feeds_trends_features_for_every_term(self):
+        """The whole point: trends_features() computed from the injected series must match what
+        it would have computed from a live per-term fetch — the bulk path is a pure optimization,
+        never a different answer."""
+        as_of = dt.date(2026, 3, 1)
+        rows = [{"week_start": "2026-02-01", "interest": 10.0},
+               {"week_start": "2026-02-08", "interest": 20.0}]
+        with mock.patch.object(db, "trends_series_bulk", return_value={"Lego": rows}):
+            series_by_term = trends.prefetch_series(["Lego"])
+        via_bulk = trends.trends_features("Lego", as_of, series=series_by_term["Lego"])
+        via_live = trends.trends_features("Lego", as_of,
+                                          series=[(dt.date.fromisoformat(r["week_start"]), r["interest"])
+                                                 for r in rows])
+        self.assertEqual(via_bulk, via_live)
+
+
 class MainEntryPointTest(unittest.TestCase):
     """Review fix (2026-07-06): collect_weekly() had NO scheduled caller anywhere in the
     codebase — .github/workflows/trends-collect.yml now invokes this weekly via

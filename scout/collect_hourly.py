@@ -148,8 +148,8 @@ def _attach_signal_features(products: List[Dict[str, Any]]) -> List[Dict[str, An
             except Exception as e:
                 log.warning("ebay_features failed for %s (non-fatal): %s", p.get("asin"), e)
                 eb = {}
-            p["ebay_sold_count_30d"] = eb.get("ebay_sold_count_30d")
-            p["median_sold_price_vs_amazon_ratio"] = eb.get("median_sold_price_vs_amazon_ratio")
+            p["ebay_active_listing_count"] = eb.get("ebay_active_listing_count")
+            p["median_active_price_vs_amazon_ratio"] = eb.get("median_active_price_vs_amazon_ratio")
             p["ebay_stale"] = eb.get("ebay_stale", True)
     return products
 

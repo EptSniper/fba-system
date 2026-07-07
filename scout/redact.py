@@ -37,7 +37,7 @@ _QUERY_PARAM_PATTERN = re.compile(
     # these four code shapes. The character class also excludes brace/paren/bracket as a second
     # line of defense against the same shapes. The `(?!\1(?![\w-]))` lookahead (fixed
     # 2026-07-06 after review) excludes a same-name kwarg pass-through (`token=token`, `key=key`
-    # — scout/signals/ebay.py's `sold_comps(upc, token=token)`) ONLY when the value is EXACTLY the
+    # — scout/signals/ebay.py's `active_listing_comps(upc, token=token)`) ONLY when the value is EXACTLY the
     # parameter name (nothing word/hyphen follows). The earlier `\1\b` form was too broad: `\b`
     # matches before a hyphen, so a real secret whose value merely STARTS with its param name
     # (e.g. a Mailgun-style vendor key, or a "-live-" prefixed token — both real vendor

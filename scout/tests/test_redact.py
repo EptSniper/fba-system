@@ -50,11 +50,12 @@ def test_redact_ignores_code_shapes_not_secrets():
 
 
 def test_redact_ignores_same_name_kwarg_passthrough():
-    """Regression guard (Session 55): scout/signals/ebay.py's `sold_comps(upc, token=token)` —
-    a plain Python kwarg pass-through, not a secret. Only the EXACT bare identifier is exempted
-    (see test_redact_masks_prefix_named_secrets below for why "exact" matters)."""
+    """Regression guard (Session 55): scout/signals/ebay.py's
+    `active_listing_comps(upc, token=token)` — a plain Python kwarg pass-through, not a secret.
+    Only the EXACT bare identifier is exempted (see test_redact_masks_prefix_named_secrets below
+    for why "exact" matters)."""
     for text in (
-        "comps = sold_comps(upc, token=token)",
+        "comps = active_listing_comps(upc, token=token)",
         "return fetch(url, key=key)",
         "call(secret=secret)",
         "build(api_key=api_key)",

@@ -25,7 +25,7 @@ class NewSignalFieldsPresentTest(unittest.TestCase):
         "brand_trend_stale",
         "category_trend_ratio", "category_trend_slope", "category_trend_seasonal_z",
         "category_trend_spike", "category_trend_stale",
-        "ebay_sold_count_30d", "median_sold_price_vs_amazon_ratio", "ebay_stale",
+        "ebay_active_listing_count", "median_active_price_vs_amazon_ratio", "ebay_stale",
     )
 
     def test_all_new_fields_are_in_pre_decision_features(self):
@@ -57,7 +57,7 @@ class FeatureSnapshotRoundTripTest(unittest.TestCase):
             "brand_trend_spike": False, "brand_trend_stale": False,
             "category_trend_ratio": 0.9, "category_trend_slope": -0.1, "category_trend_seasonal_z": -0.2,
             "category_trend_spike": False, "category_trend_stale": True,
-            "ebay_sold_count_30d": 12, "median_sold_price_vs_amazon_ratio": 0.85, "ebay_stale": False,
+            "ebay_active_listing_count": 12, "median_active_price_vs_amazon_ratio": 0.85, "ebay_stale": False,
         })
         return p
 

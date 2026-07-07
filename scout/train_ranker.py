@@ -71,7 +71,7 @@ NEW_SIGNAL_FEATURES = (
     "brand_trend_stale",
     "category_trend_ratio", "category_trend_slope", "category_trend_seasonal_z", "category_trend_spike",
     "category_trend_stale",
-    "ebay_sold_count_30d", "median_sold_price_vs_amazon_ratio", "ebay_stale",
+    "ebay_active_listing_count", "median_active_price_vs_amazon_ratio", "ebay_stale",
 )
 NUMERIC_FEATURES = ORIGINAL_NUMERIC_FEATURES + NEW_SIGNAL_FEATURES
 
@@ -200,7 +200,7 @@ def vectorize_one(features: Optional[Dict[str, Any]]):
     Review fix (2026-07-06): a genuinely missing value is now NaN, not 0.0. The old
     `float(v or 0.0)` collided a real "we don't know" with a real, meaningful zero —
     days_to_prime_day=0 means "the window opens today"; day_of_week=0 means Monday;
-    ebay_sold_count_30d=0 means "confirmed zero demand", not "no data". LightGBM (the current
+    ebay_active_listing_count=0 means "confirmed zero active listings", not "no data". LightGBM (the current
     challenger classifier, train_and_evaluate) handles NaN NATIVELY — it learns which split
     direction missing values should default to from the data itself, rather than the model
     being handed a fabricated number it can't tell apart from a real one. Booleans

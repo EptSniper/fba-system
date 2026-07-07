@@ -42,23 +42,32 @@ self-generated Keepa chart gallery for the chart-reading eval.
 
 ---
 
-## 2b. eBay Browse API keys (~10 min, free developer account) — optional, unlocks sold-comps
+## 2b. eBay Browse API keys (~10 min, free developer account) — optional, unlocks active-listing comps
 
-Session 55's free signal-type features include `scout/signals/ebay.py`: eBay sold-listing comps
-(sold count + median price vs. Amazon price) for a candidate's UPC. Fully optional — until these
-exist, `ebay.py` degrades to an honest skip (never an error, never fabricates a comp).
+Session 55's free signal-type features include `scout/signals/ebay.py`: eBay active-listing
+comps (active listing count + median asking price vs. Amazon price) for a candidate's UPC. Fully
+optional — until these exist, `ebay.py` degrades to an honest skip (never an error, never
+fabricates a comp).
+
+**Naming note (review fix, 2026-07-06):** this was originally called "sold-comps," but the free
+Browse API `item_summary/search` endpoint this module calls has no sold/completed-item filter —
+it only returns currently ACTIVE listings. True sold-comps require eBay's separate Marketplace
+Insights API, which needs its own invitation-gated application approval beyond the free
+developer account below — a real future upgrade, not something this key unlocks.
 
 1. Go to `developer.ebay.com` → sign up for a free developer account (no cost, no card needed
    for the sandbox/production Browse API tier used here).
 2. Create an application ("keyset") under **Application Keys** → note the **App ID (Client ID)**
    and **Cert ID (Client Secret)** for the PRODUCTION environment (not sandbox — sandbox has no
-   real sold-listing data).
+   real listing data).
 3. Paste them as `EBAY_APP_ID=` and `EBAY_CERT_ID=` in **both** `API_KEYS.env` and `scout/.env`.
 4. **Verify the current rate limits at signup** (eBay's free-tier Browse API call quota has
    changed over time — check developer.ebay.com's current published limits for your account
    tier before assuming a number from any documentation written before today).
+5. If real sold-comps (not just active listings) matter enough to pursue, apply separately for
+   Marketplace Insights API access (eBay reviews these applications — no fixed timeline).
 
-**Unlocks:** `ebay_sold_count_30d` / `median_sold_price_vs_amazon_ratio` features
+**Unlocks:** `ebay_active_listing_count` / `median_active_price_vs_amazon_ratio` features
 (`scout/signals/ebay.py`, wired into the same pre-decision feature snapshot as Keepa/Trends/
 calendar signals) — currently code-complete but untested against a real key.
 

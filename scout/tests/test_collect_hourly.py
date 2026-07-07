@@ -156,7 +156,7 @@ class AttachSignalFeaturesTest(unittest.TestCase):
              mock.patch("signals.trends.trends_features", return_value={}), \
              mock.patch("signals.ebay.enabled", return_value=False):
             out = ch._attach_signal_features(products)
-        self.assertNotIn("ebay_sold_count_30d", out[0])
+        self.assertNotIn("ebay_active_listing_count", out[0])
 
 
 class HintLedScanTest(unittest.TestCase):

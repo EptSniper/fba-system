@@ -80,8 +80,11 @@ PRE_DECISION_FEATURES = (
     "brand_trend_stale",
     "category_trend_ratio", "category_trend_slope", "category_trend_seasonal_z",
     "category_trend_spike", "category_trend_stale",
-    # eBay sold comps (scout/signals/ebay.py) — key-gated, LIVE-ONLY (not backfillable), nullable
-    "ebay_sold_count_30d", "median_sold_price_vs_amazon_ratio", "ebay_stale",
+    # eBay active-listing comps (scout/signals/ebay.py) — key-gated, LIVE-ONLY (not
+    # backfillable), nullable. Named "active", not "sold": the Browse API this module calls has
+    # no sold/completed-item filter — true sold-comps need eBay's separate, invitation-gated
+    # Marketplace Insights API (review fix, 2026-07-06 — was misleadingly named ebay_sold_count_30d).
+    "ebay_active_listing_count", "median_active_price_vs_amazon_ratio", "ebay_stale",
 )
 
 

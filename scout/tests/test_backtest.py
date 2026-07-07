@@ -201,5 +201,79 @@ class RunBacktestBudgetTest(unittest.TestCase):
         self.assertNotIn("A1", pulled)  # already processed -> skipped on resume
 
 
+class HistoryLoopBatchSizingTest(RunBacktestBudgetTest):
+    """Session 55 review fix: _ENRICH_BATCH (100) is a request-size CEILING, not a promise that
+    100 tokens are banked. The Keepa Pro plan's bank caps at 60, so the OLD `if spent +
+    _ENRICH_BATCH > cap: break` check made the hourly cloud collector's tier-3 backtest defer
+    its ENTIRE todo list on the very first loop iteration of every run (spent=0, cap<=60,
+    0+100>60 always true) and never pull a single history batch. The fix sizes each batch to
+    what's actually affordable (live bank AND remaining cap), so a low-token run still gets rows."""
+
+    class _FakeApi:
+        def __init__(self, tokens_left):
+            self.tokens_left = tokens_left
+            self.tokens_consumed_total = 0
+
+        def update_status(self):
+            pass
+
+    def test_small_cap_still_pulls_a_partial_history_batch(self):
+        pulled_batches = []
+
+        def fake_history(asins, api=None):
+            pulled_batches.append(list(asins))
+            api.tokens_left -= len(asins)  # simulate the real 1-token/ASIN spend
+            api.tokens_consumed_total += len(asins)
+            return [{"asin": a, "data": None} for a in asins]
+
+        preset_sample = [{"asin": f"A{i:03d}", "category": None, "sample_source": "onpolicy"}
+                        for i in range(30)]
+
+        with mock.patch.object(bt.config, "have_keepa", return_value=True), \
+             mock.patch.object(bt, "sample_asins_stratified",
+                               return_value=(preset_sample, 0, {"onpolicy": 30})):
+            r = bt.run_backtest(api=self._FakeApi(tokens_left=40), token_cap=40,
+                               history_fn=fake_history, persist=False)
+
+        self.assertTrue(pulled_batches, "history_fn was never called — everything deferred, "
+                                       "reproducing the exact bug this test guards against")
+        self.assertLessEqual(len(pulled_batches[0]), 40)  # sized to the bank, not a fixed 100
+        self.assertEqual(r["deferred_asins"], 0)
+        self.assertEqual(r["asins_processed"], 30)
+
+    def test_zero_bank_defers_without_crashing(self):
+        preset_sample = [{"asin": "A001", "category": None, "sample_source": "onpolicy"}]
+        with mock.patch.object(bt.config, "have_keepa", return_value=True), \
+             mock.patch.object(bt, "sample_asins_stratified",
+                               return_value=(preset_sample, 0, {"onpolicy": 1})):
+            r = bt.run_backtest(api=self._FakeApi(tokens_left=0), token_cap=40,
+                               history_fn=lambda asins, api=None: [], persist=False)
+        self.assertEqual(r["deferred_asins"], 1)
+        self.assertEqual(r["asins_processed"], 0)
+
+    def test_spend_reflects_measured_delta_not_phantom_full_batch(self):
+        """The old code charged spent += len(batch) even when the guard inside history_fn
+        truncated or skipped the request — phantom spend that inflated the persisted state and
+        starved future runs. The new accounting must reflect ACTUAL measured token movement."""
+        def fake_history_truncates(asins, api=None):
+            # simulates keepa_client's own internal guard silently returning fewer products
+            # than requested, while genuinely spending only for what it returned
+            actually_processed = asins[:2]
+            api.tokens_left -= len(actually_processed)
+            api.tokens_consumed_total += len(actually_processed)
+            return [{"asin": a, "data": None} for a in actually_processed]
+
+        preset_sample = [{"asin": f"A{i:03d}", "category": None, "sample_source": "onpolicy"}
+                        for i in range(10)]
+        with mock.patch.object(bt.config, "have_keepa", return_value=True), \
+             mock.patch.object(bt, "sample_asins_stratified",
+                               return_value=(preset_sample, 0, {"onpolicy": 10})):
+            r = bt.run_backtest(api=self._FakeApi(tokens_left=10), token_cap=10000,
+                               history_fn=fake_history_truncates, persist=False)
+        # only 2 tokens were ever actually spent (measured via the tokens_left delta), never the
+        # full 10-ASIN batch size the old `spent += len(batch)` would have charged
+        self.assertEqual(r["tokens_spent"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()

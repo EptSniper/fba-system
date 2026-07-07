@@ -573,18 +573,17 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
     history_fn(asins, api) -> [raw keepa products]; find_fn is the Product Finder; firehose_fn is
     deals_firehose.harvest (Session 55). All three injectable for tests (no live Keepa spent in
     this repo) and for collect_hourly.py's wait=False burst wrappers."""
+    import keepa_client
     if not config.have_keepa():
         return {"status": "disabled", "reason": "no KEEPA_KEY (backtest needs live history pulls)",
                 "rows_written": 0}
     cap = token_cap if token_cap is not None else backtest_token_cap()
     if api is None:
         try:
-            import keepa_client
             api = keepa_client.get_client()
         except Exception as e:
-            return {"status": "error", "reason": str(e), "rows_written": 0}
+            return {"status": "error", "reason": keepa_client.redact_err(e), "rows_written": 0}
     if history_fn is None:
-        import keepa_client
         history_fn = keepa_client.query_history
 
     state = _load_state()
@@ -612,17 +611,43 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
     deferred = 0
     i = 0
     while i < len(todo):
-        if spent + _ENRICH_BATCH > cap:
+        # Session 55 review fix: _ENRICH_BATCH (100) is a REQUEST-SIZE ceiling, not a promise
+        # that 100 tokens are actually available — the Keepa Pro plan's bank caps at 60, so the
+        # old `if spent + _ENRICH_BATCH > cap: break` check made the hourly cloud collector's
+        # tier-3 backtest defer its ENTIRE todo list on the very first iteration of every run
+        # (spent=0, cap<=60, 0+100>60 always true) and NEVER pull a single history batch. Size
+        # the batch to what's ACTUALLY affordable right now — the live bank AND the remaining
+        # run budget — so a low-token hourly burst still gets some rows instead of zero.
+        available = keepa_client.current_tokens_left(api)
+        headroom = max(0, cap - spent)
+        if available is None:
+            # Can't read the bank — degrade to trusting the run's own cap headroom (same
+            # fallback philosophy as keepa_client._guard_batch's "can't read, trust the caller").
+            batch_size = min(_ENRICH_BATCH, headroom)
+        else:
+            batch_size = min(_ENRICH_BATCH,
+                            max(available, 0) // max(1, keepa_client.HISTORY_TOKENS_PER_ASIN),
+                            headroom)
+        if batch_size <= 0:
             deferred = len(todo) - i
             break
-        batch = todo[i:i + _ENRICH_BATCH]
-        i += _ENRICH_BATCH
+        batch = todo[i:i + batch_size]
+        i += batch_size
+        before = keepa_client._tokens_consumed(api)
         try:
             products = history_fn(batch, api=api) or []
         except Exception as e:
-            log.warning("backtest history pull failed (non-fatal): %s", e)
+            log.warning("backtest history pull failed (non-fatal): %s", keepa_client.redact_err(e))
             products = []
-        spent += len(batch)  # ~1 token/ASIN (confirmed cost recorded by keepa_client on live pull)
+        after = keepa_client._tokens_consumed(api)
+        delta = keepa_client._delta(before, after)
+        # ACTUAL measured spend when the counter is readable (matches sample_asins_on_policy's
+        # own delta-based accounting) — NOT len(batch), which charged for ASINs even when the
+        # guard inside history_fn truncated or skipped the request entirely (phantom spend that
+        # was inflating the persisted state and starving future runs' budgets for no reason).
+        # Falls back to the requested batch size (an honest worst-case, never an undercount)
+        # only when the counter itself can't be read.
+        spent += delta if isinstance(delta, int) and delta >= 0 else len(batch)
         rows: List[Dict[str, Any]] = []
         batch_asins: List[str] = []
         for product in products:

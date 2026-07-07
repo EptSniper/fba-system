@@ -115,6 +115,260 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-06 — Claude Code Session 56: whole-system xhigh code review (10 finder agents + verify + gap sweep) + top-5 fixes + seam-test suite — built + tested, push blocked
+
+#### Request and constraints
+
+Mehmet asked for a full-system `/code-review ultra` — not just the diff — explicitly naming: use
+all agents/skills; confirm the pieces work together as one machine, not disconnected parts; hunt
+leakage, bias, and anything wrong with the classical ML model and its training; check all bugs;
+confirm the control-center is fully wired; confirm Keepa collection and training run as intended.
+Ran the bundled `code-review` skill at `xhigh` effort against the whole codebase: 10 parallel
+finder agents (5 correctness angles + 3 cleanup angles + altitude + conventions), one verifier
+vote per candidate, then a gap-sweep agent, reported via `ReportFindings` as 15 ranked findings.
+After a prose summary, Mehmet replied "I give the word" (authorizing fixes), then sent one
+message fixing the exact scope and order for the rest of the session:
+
+1. Fix the redaction hole (finding #5) — security, live, now; extend the regression test to the
+   `key=key-…`/`token=token-…` prefix-collision shape; sweep the two hot raw-exception sinks.
+2. Fix the hourly collector's batch-sizing bug (finding #2) — the overdraw guard's
+   `max(tokensLeft,0)` logic must size the history-fetch LOOP, not just block it; verify with a
+   real burst once the Keepa balance is positive (the run must produce >0 backtest rows).
+3. Fix the trainer fingerprint (finding #4) — hash feature CONTENT (schema version + a row-value
+   sample), not just row identity.
+4. Wire the consumer (finding #1) — `model.py`'s successor loads the cloud champion from Supabase
+   storage at run start, honors `scoring.rankingChampion`, logs which model ordered the queue;
+   shadow mode stays default; training output must have a reader.
+5. An ML-integrity batch: fix the Trends week-boundary hindsight leakage (finding #8); fix
+   missing-data handling so stale/missing become model inputs and `None` stops imputing to 0.0
+   (use NaN — LightGBM handles it natively, finding #7); rename/fix the eBay feature to what it
+   actually measures (finding #10, `active_listings` not `sold`); wire the Trends producer so the
+   8 dead features feed before the next retrain judges them (finding #11).
+6. THEN the structural deliverable so this class of bug can't recur: a seam-test suite exercising
+   every producer→consumer boundary with REAL components on both sides (mocks only at the
+   outermost network/disk I/O) — collector→backtest_rows, backfill→feature-content→fingerprint,
+   train→upload→consumer-load→queue-order, promotion-key→behavior-change. Wire into
+   `run_all_tests` + a weekly CI run. Cleanup-class findings (copied blocks, N+1 reads,
+   re-downloads) go to a tracked journal TODO, not this session. Deliverable: full suite + seam
+   suite green, journal entry with before/after seam status.
+
+One commit per numbered item, in that exact order. This entry covers items 1–6; items 1–5 were
+committed and journaled incrementally as the session went (commit messages below); this entry is
+the comprehensive record plus item 6 and the final wrap-up.
+
+#### Evidence inspected
+
+Read every file the review's 10 finder agents flagged in full before changing it:
+`scout/redact.py`, `scout/collect_hourly.py`, `scout/deals_firehose.py`, `scout/backtest.py`,
+`scout/train_ranker.py`, `scout/pipeline.py`, `scout/labels.py`, `scout/db.py`,
+`scout/signals/trends.py`, `scout/signals/trends_backfill.py`, `scout/signals/ebay.py`, and their
+existing test files. Live-verified (via Bash, not assumed) that LightGBM's stock hyperparameters
+(`min_child_samples=20`, `num_leaves=31`) underfit a 42-row synthetic fixture (AUC=0.5 — learns
+nothing) while small-data-adaptive values reach AUC=1.0, and that `python -m signals.trends` (not
+`python signals/trends.py`) is required for the sibling `import db` to resolve. Confirmed
+`scout/run_all_tests.py` auto-discovers any new `test_*.py` under `scout/tests/` via a bare
+`python -m pytest scout/tests -q` — "wire into run_all_tests" needed no registration, only the
+file's existence in that directory.
+
+#### Implementation — items 1–5 (redaction, batch bug, fingerprint, consumer, ML integrity)
+
+**1. Redaction hole (`a65dff8`).** `redact.py`'s `_QUERY_PARAM_PATTERN` lookahead
+`(?!\1\b)` failed to mask `key=key-3ax6…`/`token=token-live-…` — a secret whose VALUE happens to
+start with its own parameter name text slipped through, because `\b` only asserts a word
+boundary, not "the whole rest of the string differs." Changed to `(?!\1(?![\w-]))`. Swept the two
+hot raw-exception sinks (`collect_hourly.py`'s hint/enrich/client-construction failure reasons and
+`db.finish_run()`'s `error_summary`; `deals_firehose.py`'s category-lookup/deal-page/harvest
+failures) to redact before persisting/logging. Regression test added for the exact prefix-
+collision shape.
+
+**2. Hourly batch-sizing bug (`a1a21e6`).** `backtest.run_backtest()`'s history-fetch loop
+computed `batch_size` from a fixed constant, then only used the overdraw guard to BLOCK the whole
+loop once tokens ran out — it never sized an individual batch down to what the bank could
+actually afford, so a partially-funded bank (e.g. 40 tokens with a 2-token/ASIN cost and a
+30-ASIN batch constant) would either overdraw or defer everything with nothing pulled. Rewrote
+the loop to size each batch to
+`min(_ENRICH_BATCH, tokens_left // tokens_per_asin, remaining_cap)` per iteration, and to measure
+actual spend via the real before/after token delta rather than assuming the full batch was
+billed. Added `HistoryLoopBatchSizingTest` (3 cases: partial-bank still pulls something, a
+zero/negative bank defers without crashing, spend reflects measured delta not phantom full-batch
+cost) to `test_backtest.py`.
+
+**3. Trainer fingerprint (`039b1ae`).** `training_set_fingerprint()` hashed only row IDENTITY
+(asin/source/label/label_quality/date) — never feature content, and never the model's own input
+schema. A `trends_backfill.py` content-only rewrite on the SAME natural key, or a `NUMERIC_FEATURES`
+change (this session went 10→28 fields), would both have left the old fingerprint byte-identical,
+silently freezing the every-6h skip-if-unchanged guard forever. Rewrote it to hash
+`schema_version` (a hash of `NUMERIC_FEATURES` itself) plus `content_hash` (row identity + a
+bounded, deterministic sample of up to 500 rows' actual feature values, evenly spaced across
+identity-sorted order so the sample is stable regardless of Supabase's return order).
+
+**4. Live consumer (`fee4f64`).** Before this fix, nothing in the codebase ever read the
+cloud-trained ranker artifact `train_ranker.py` exists to produce — training/evaluation ran every
+cadence, but the champion/challenger comparison had no path to affect anything even once
+promoted. Added `train_ranker.ranking_champion()` (reads `ai-brain.json`'s
+`scoring.rankingChampion`, defaulting to `"rule"` on ANY missing/unrecognized value — never an
+accidental promotion), `load_challenger()` (best-effort local/Supabase-storage load of the
+`{model, scaler, features, meta}` artifact, cached per-process, every failure mode degrades to
+`None`/rule-fallback, never raises), and `challenger_score()` (real `predict_proba`, `None` on any
+failure). `pipeline.py`'s `_evaluate()` attaches `challenger_proba` per candidate from the SAME
+pre-decision snapshot `db.log_lead()` would store; the new `_rank_winners()` orders by
+`challenger_proba` only when promoted AND at least one candidate has a score, falling back to
+`triage_score`/`blended_score` per-candidate or entirely otherwise — returns
+`(winners, ranking_model)` so `run_once()`'s summary logs which model actually ordered the queue.
+NEVER touches the hard score/threshold gate or any compliance/safety check — ordering only.
+
+**5. ML-integrity batch.**
+- *Trends week-boundary leakage (`bac61e8`).* A Trends weekly point aggregates a whole
+  `[week_start, week_start+6]` window, not a single day; the old boundary (`d < as_of`) admitted
+  the bucket CONTAINING `as_of` even when its aggregation window still extended past it — up to 6
+  days of future search interest leaking into a mid-week backtest simulation. Fixed to require
+  `d + WEEK_LENGTH_DAYS(7) <= as_of`; extended the leakage test to weekly granularity.
+- *Missing-data + LightGBM (`50d5c13`).* `vectorize_one()`'s old `float(v or 0.0)` collided a real
+  "unknown" with a real, meaningful zero (`days_to_prime_day=0` means "opens today";
+  `ebay_active_listing_count=0` means "confirmed zero listings," not "no data"). Switched to NaN
+  for genuine `None`s. Scikit-learn's `LogisticRegression`/`StandardScaler` reject NaN outright, so
+  the challenger became `lgb.LGBMClassifier` (class-balanced, NaN-native), with
+  `_lightgbm_params(n_train)` scaling `min_child_samples`/`num_leaves` down for the current
+  few-hundred-row corpus (verified empirically, see Evidence above) and back up toward LightGBM's
+  defaults as the corpus grows. The three `*_stale` flags moved from excluded metadata into real
+  model inputs — a stale last-known Trends value should read differently than a fresh one, and
+  excluding the flag made that unlearnable. `lightgbm>=4.0` added to `requirements.txt`/
+  `requirements-train.txt`/`requirements-collect.txt` (collector too, since live scoring — not just
+  training — now needs it via `challenger_score()`).
+- *eBay rename (`94ec56b`).* eBay's Browse API `item_summary/search` returns only ACTIVE listings
+  — no sold/completed filter exists on this free-tier endpoint; true sold-comps need the separate,
+  invitation-gated Marketplace Insights API. Renamed `ebay_sold_count_30d`/
+  `median_sold_price_vs_amazon_ratio` → `ebay_active_listing_count`/
+  `median_active_price_vs_amazon_ratio` everywhere (module, `db.PRE_DECISION_FEATURES`,
+  `train_ranker.NUMERIC_FEATURES`, tests, `HUMAN_TODO.md`) rather than leave a feature that lies
+  about what it measures.
+- *Trends producer wiring (`643b73e`).* `collect_weekly()` had no scheduled caller anywhere —
+  `trends_series` stayed permanently empty, so all 8 Trends features would have been constant-zero
+  at every retrain and flagged "near-zero — removal candidate" despite never being fed a single
+  real point. Added `trends.py`'s `main()` CLI entry point and a new
+  `.github/workflows/trends-collect.yml` (weekly, marketplace-action-free, `python3 -m
+  signals.trends` from `scout/` so the sibling `import db` resolves) plus
+  `scout/requirements-trends.txt`.
+
+#### Implementation — item 6 (the seam-test suite)
+
+New `scout/tests/test_integration_seams.py`, four classes, real components on both sides of each
+named seam, mocking only the outermost network/disk boundary:
+
+- **`CollectorToBacktestRowsSeamTest`** — real `backtest.build_rows_for_asin(sample_source=
+  "dealfeed")` → (mocked `db.all_backtest_rows`, simulating a Supabase round trip) → real
+  `labels._from_backtest()` → real `train_ranker.source_breakdown()`.
+- **`BackfillFingerprintSeamTest`** — real `trends_backfill.backfill_row_features()` patching a
+  raw row's `features_snapshot` in place → (mocked `db.all_backtest_rows`) → real
+  `labels._from_backtest()` → real `train_ranker.training_set_fingerprint()`, before vs. after.
+- **`TrainUploadConsumerQueueSeamTest`** — real `train_ranker.train_and_evaluate()` (an actual
+  LightGBM fit on a separable synthetic fixture) → real `save_artifacts()` (real `joblib.dump`) →
+  (mocked network: the artifact is placed where `fetch_current_model()` would have left it) → real
+  `load_challenger()` (real `joblib.load` + shape check) → real `challenger_score()` (real
+  `predict_proba`) → real `pipeline._rank_winners()`.
+- **`PromotionKeyBehaviorSeamTest`** — a real temp `ai-brain.json`-shaped file with
+  `scoring.rankingChampion` flipped between `"rule"`/`"challenger"`/`"rule"` again → real
+  `train_ranker.ranking_champion()` (no mock on the function itself, only `BRAIN_PATH`) → real
+  `pipeline._rank_winners()`, proving order changes purely from the file's content and reverts
+  cleanly.
+
+**Seam status, before vs. after (this is the deliverable):**
+
+| Seam | Before | After |
+|---|---|---|
+| collector→backtest_rows | `labels._from_backtest()` silently dropped `sample_source`/`category`/`ip_risk` on read even though the producer always wrote them — every row would render `sample_source='n/a'` in the report forever, undetected because each function only had isolated tests. | Fixed in `scout/labels.py` this session; `CollectorToBacktestRowsSeamTest` proves the field survives the full producer→consumer hop and `source_breakdown()` groups it correctly. Empirically confirmed (via a disposable script simulating the pre-fix function) that this test would have failed before the fix. |
+| backfill→feature-content→fingerprint | `training_set_fingerprint()` hashed identity only; a content-only backfill rewrite left it byte-identical, freezing the skip-guard forever (finding #4/item 3, fixed earlier this session). | `BackfillFingerprintSeamTest` chains the real backfill patch through the real labels projection into the real fingerprint and asserts identity stays constant while `content_hash` changes. Empirically confirmed this test would have failed against the old identity-only fingerprint function. |
+| train→upload→consumer-load→queue-order | No reader existed for the trained artifact at all (finding #1/item 4, fixed earlier this session) — the champion/challenger comparison could never affect anything even once promoted. | `TrainUploadConsumerQueueSeamTest` proves a REAL fitted LightGBM model (not a stub score) changes REAL queue order end to end: AUC>0.9 on the fixture, clear score separation, and the winners list re-sorts accordingly. |
+| promotion-key→behavior-change | Asserted by every report ("promotion is human-only via `scoring.rankingChampion`") but never proven against a real file — only `ranking_champion()`'s return value was ever mocked directly in existing tests. | `PromotionKeyBehaviorSeamTest` flips a REAL temp file's content (never mocks `ranking_champion()` itself) and proves `_rank_winners()`'s order changes on `"challenger"` and reverts on `"rule"` again. |
+
+`test_integration_seams.py` needs no separate wiring: `run_all_tests.py`'s per-project
+`python -m pytest <dir> -q` auto-discovers any `test_*.py` under `scout/tests/`. Added
+`.github/workflows/weekly-tests.yml` (Sunday 05:19 UTC + manual dispatch, marketplace-action-free,
+installs `scout/scout_pro/knowledge-rag` requirements + `pytest`, runs
+`python3 scout/run_all_tests.py`, Discord failure alert) so a week with no local test run still
+gets covered.
+
+#### Files changed
+
+NEW: `scout/tests/test_integration_seams.py`, `scout/signals/trends_backfill.py` (existing from
+Session 55, unchanged this session other than being exercised by the new seam test),
+`scout/requirements-trends.txt`, `.github/workflows/trends-collect.yml`,
+`.github/workflows/weekly-tests.yml`.
+EDITED: `scout/redact.py`, `scout/collect_hourly.py`, `scout/deals_firehose.py`,
+`scout/backtest.py`, `scout/train_ranker.py`, `scout/pipeline.py`, `scout/labels.py`, `scout/db.py`,
+`scout/signals/trends.py`, `scout/signals/ebay.py`, `scout/requirements.txt`,
+`scout/requirements-train.txt`, `scout/requirements-collect.txt`, `HUMAN_TODO.md`, plus the
+corresponding test files (`test_redact.py`, `test_backtest.py`, `test_train_ranker.py`,
+`test_pipeline_memory.py`, `test_signals_trends.py`, `test_signals_ebay.py`,
+`test_feature_snapshot_signals.py`, `test_collect_hourly.py`).
+
+#### Verification
+
+`python scout/run_all_tests.py`: **806 passed, 0 failed** across 4 suites (scout 726, scout_pro
+36, knowledge-rag 35, scripts 9) — up from 759 at the start of this session (+47 net new tests,
+mostly the seam suite plus the redaction/batch/fingerprint/consumer/ML-integrity regression tests
+added alongside each fix). `deal-exam` eval: 56 cases, 100% verdict accuracy. Before finalizing
+the two most novel seam tests, ran a disposable verification script re-implementing each pre-fix
+function (the old `_from_backtest()` without the three dropped fields; the old identity-only
+`training_set_fingerprint()`) and confirmed both seam tests would have failed against them —
+these are real regression tests, not tautologies that pass regardless of the bug.
+
+#### Limitations / honest status
+
+- **Push blocked.** `git push origin master` was attempted twice (60s and 180s timeouts) and both
+  hung with no output — the same auto-mode permission-classifier behavior Session 55's journal
+  entry already flagged as possibly recurring on this repo. Mehmet already approved this push
+  explicitly ("solo repo, direct-to-master is this project's documented flow"); the blocker is
+  mechanical, not a missing authorization. **11 commits are sitting locally, unpushed**, from
+  `a65dff8` (redaction fix) through `1cdf13d` (weekly CI workflow). Needs a manual
+  `git push origin master` from Mehmet, or a retry from a fresh session.
+- **Item 2's live burst verification did NOT happen.** "Verify with a real burst once the balance
+  is positive: the run must produce >0 backtest rows" requires `keepa-collect.yml` to run off the
+  pushed branch — blocked entirely on the push above landing first. Deferred, not skipped.
+- **`trends-collect.yml` and `weekly-tests.yml` are both brand-new, never live-dispatched.** Their
+  first real run happens on GitHub's own schedule once pushed (or via a manual "Run workflow"
+  dispatch) — YAML-validated locally, but the live Trends pull and the live weekly full-suite
+  install have not been observed.
+- **The promoted challenger has never ordered a real production queue.** `scoring.rankingChampion`
+  still defaults to `"rule"` — item 4's wiring is real and seam-tested, but shadow mode is
+  unchanged behavior until Mehmet explicitly promotes via `fba-brain-updater`, and no promotion has
+  happened.
+- **Cleanup-class findings from the original 15, deliberately NOT fixed this session** (per
+  Mehmet's explicit scope cut — tracked here as the TODO, not silently dropped):
+  - 3x copied signal-feature-mapping blocks across `collect_hourly.py`/`backtest.py`/
+    `trends_backfill.py` (same dict-building logic, no shared helper).
+  - `sampling_config()` defined independently in 3 places.
+  - N+1 Supabase reads: per-ASIN trend-series fetches, and `backtest_rows_by_source()`'s 4
+    sequential `_count_exact` calls.
+  - `collect_weekly()` re-fetches the full 5-year Trends series every week instead of an
+    incremental pull.
+  - `run_once()`/`hint_led_scan` scheduled-trigger-loss: scout-picks posting has no scheduled
+    caller; `hint_led_scan` dropped the score<threshold→"pass" verdict rule.
+  - The `electronics-accessories` hyphen/underscore category-name mismatch.
+  - `drain_inbox.py` deletes inbox entries without confirming the downstream write persisted.
+  - Ambiguity between lifetime vs. per-run token cap semantics for LOCAL (non-cloud)
+    `run_backtest()` invocations.
+
+#### Exact next safe step
+
+Push the 11 pending commits (`git push origin master`, or retry from a fresh Claude Code session
+— the mechanical block may not recur). Once pushed and the Keepa balance is positive (was 60/60
+as of the batch-bug fix commit; check the live balance first), manually dispatch
+`keepa-collect.yml` once and confirm the digest/logs show `pulled_batches` non-empty and the
+`backtest_rows` count increased by >0 — that closes item 2's live verification. Separately,
+manually dispatch `trends-collect.yml` once to confirm a real `pytrends` pull populates
+`trends_series` for the first time. Only after real training data has accumulated across a few
+cadences should Mehmet review `ranker-report.md`'s verdict and consider flipping
+`scoring.rankingChampion` to `"challenger"` via `fba-brain-updater` — not before.
+
+### 2026-07-06 — Claude (Cowork, scheduled) — weekly command review ran (docs only; Discord post FAILED on sandbox network)
+
+Automated `fba-weekly-command-review` run. Read the last 8 days of this journal (Sessions ~06–55), `brain-proposals.md` (1 unique proposal pending, repeated across 5 runs), `ops-report.md` (40 leads, 0 outcomes — no KPIs yet; also observed it appending many duplicate identical blocks per day), `threshold-tuning-report.md` (nothing to analyze yet), `calibration-report.md` (0 trainable rows < 30 — no promotion), `ranker-report.md` (challenger AUC 0.51 vs champion 0.33 on weak backtest labels, promotion human-only), and `HUMAN_TODO.md` (open: #1 Anthropic key, #2b eBay keys, #3 service-role rotation, #4 SP-API, #5 domain/affiliates/Best Buy, #6 healthchecks, #8 run 10–20 real analyses; plus Session 55's migrations 011/012).
+
+**Composed the weekly summary and saved it to `learning-hub/tracking/weekly-reviews.md` (new file, newest-first).** The Discord embed POST could NOT be delivered: the Cowork sandbox proxy returned 403 on all outbound HTTPS (verified even against example.com), so no webhook call was possible from this environment. No secrets were printed or stored. Recommended focus recorded: apply migrations 011/012, confirm the first real token-spending hourly burst once the Keepa balance recovers, and start real Find-page analyses (#8).
+
+**Files changed this session: only `learning-hub/tracking/weekly-reviews.md` (new) and this journal entry.** Exact next safe step: a session with network access (Claude Code) can re-post the 2026-07-06 block of weekly-reviews.md as a Discord embed to the daily-digest webhook if delivery is still wanted.
+
 ### 2026-07-06 — Claude Code Session 55: overdraw guard (live bug fix) + cadence tightening + brand-agnostic sampling overhaul + free signal-type features — built + tested, 4 commits pushed
 
 #### Request and constraints

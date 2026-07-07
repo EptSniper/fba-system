@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-04 (daily run: 9 new items - 2 YouTube queued to queue/2026-07-04.json, 7 text sources fetched/distilled/staged; no new transcripts to ingest; TBFh9vFBq7k still stuck LOGIN_REQUIRED)",
+  "updated": "2026-07-07 (Claude Code: pulled + ingested 5 of 8 queued YouTube transcripts -- rdltezXxIrk, jeqFx9ZiOhg, hxk1JS4EsU4, D3FhvdMVLl8, ljlERpMrcBk now transcript-processed; insights appended to research-insights.md, 5 entries appended to corpus-staging.jsonl. 3 still fetch-failed/queued: TBFh9vFBq7k (stuck, LOGIN_REQUIRED), X6JjPUZd4xw, 9QGs4hfKrhY (couldn't parse transcript text this run, raw JSON saved, left queued for a retry). Also found: 9QGs4hfKrhY's raw transcript was recoverable but is an EXACT duplicate of hxk1JS4EsU4's content under a different videoId/title -- marked 'duplicate', not re-ingested. X6JjPUZd4xw genuinely has no caption track (empty tracks[] in the raw response) -- left queued.",
   "purpose": "Index + dedup list for the daily research pipeline. The scheduled task appends to items[] and must skip any url/videoId already present here or any transcript already in learning-hub/transcripts/.",
   "dailyCap": 10,
   "topics": {
@@ -245,7 +245,7 @@
       "url_or_videoId": "https://sellercentral.amazon.com/gp/help/external/G200140860",
       "topic": "amazon_help_docs",
       "status": "fetch-failed",
-      "note": "Official policy page is JS-rendered; WebFetch returned only the page shell (no article content). Worth re-trying from an environment with a real browser (Claude Code / Chrome) — it is the authoritative doc behind the meltable/restrictions practitioner posts."
+      "note": "Official policy page is JS-rendered; WebFetch returned only the page shell (no article content). Worth re-trying from an environment with a real browser (Claude Code / Chrome) \u2014 it is the authoritative doc behind the meltable/restrictions practitioner posts."
     },
     {
       "date": "2026-07-02",
@@ -387,7 +387,7 @@
       "title": "Keepa product finder tutorial 2026 | Amazon FBA",
       "url_or_videoId": "rdltezXxIrk",
       "topic": "fba_oa_mastery",
-      "status": "queued"
+      "status": "transcript-processed"
     },
     {
       "date": "2026-07-04",
@@ -395,7 +395,7 @@
       "title": "How to Use Amazon FBA Profit Calculator | Every Fee Every Cost Explained 2026 | AMZ Prep",
       "url_or_videoId": "jeqFx9ZiOhg",
       "topic": "fba_oa_mastery",
-      "status": "queued"
+      "status": "transcript-processed"
     },
     {
       "date": "2026-07-04",
@@ -452,6 +452,156 @@
       "url_or_videoId": "https://arxiv.org/abs/2605.01664",
       "topic": "build_the_system",
       "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "youtube",
+      "title": "Beginners Guide To Amazon FBA Online Arbitrage in 2026 (Free Course)",
+      "url_or_videoId": "hxk1JS4EsU4",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "youtube",
+      "title": "Storefront Stalking is NOT a Profitable Sourcing Method | Amazon FBA Sourcing Tutorial",
+      "url_or_videoId": "D3FhvdMVLl8",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "youtube",
+      "title": "Live Online Arbitrage Sourcing: Storefront Stalking Tutorial | Amazon FBA Sourcing",
+      "url_or_videoId": "ljlERpMrcBk",
+      "topic": "fba_oa_mastery",
+      "status": "transcript-processed"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "text",
+      "title": "How to Read the SellerAmp SAS Charts Panel (Keepa Data)",
+      "url_or_videoId": "https://selleramp.com/selleramp-charts-panel-tutorial/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "text",
+      "title": "Arbitrage on Amazon: The 2026 Playbook for Finding & Selling (EntreResource)",
+      "url_or_videoId": "https://entreresource.com/arbitrage-on-amazon/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "text",
+      "title": "Online Arbitrage: Getting Started for New Amazon Sellers in 2026 (Aura)",
+      "url_or_videoId": "https://goaura.com/blog/online-arbitrage-guide",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "text",
+      "title": "RAGVA: Engineering RAG-based Virtual Assistants in Practice (arXiv 2502.14930)",
+      "url_or_videoId": "https://arxiv.org/abs/2502.14930",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "text",
+      "title": "FLAIR: Feedback Learning for Adaptive Information Retrieval (arXiv 2508.13390)",
+      "url_or_videoId": "https://arxiv.org/abs/2508.13390",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-05",
+      "type": "text",
+      "title": "FBA inventory requirements (Amazon Seller Central help, G201100890)",
+      "url_or_videoId": "https://sellercentral.amazon.com/gp/help/external/G201100890",
+      "topic": "amazon_help_docs",
+      "status": "fetch-failed",
+      "note": "Same JS-shell failure as G200140860 on 2026-07-02: WebFetch returns the Seller Central page shell only ('You need to enable JavaScript'). Authoritative FBA-eligibility doc - re-fetch from Claude Code/Chrome with a real browser."
+    },
+    {
+      "date": "2026-07-05",
+      "type": "text",
+      "title": "Automate Amazon Product Research with n8n: 2026 Guide (n8nlab.io)",
+      "url_or_videoId": "https://n8nlab.io/blog/automate-amazon-product-research-n8n",
+      "topic": "build_the_system",
+      "status": "fetch-failed",
+      "note": "WebFetch returned an empty body (JS-rendered). Search snippets: ASIN/keyword monitoring workflows, LangChain/OpenAI sentiment nodes, batching+rate limiting, Postgres over Sheets at 10k+ volume. Worth a browser-equipped re-fetch."
+    },
+    {
+      "date": "2026-07-06",
+      "type": "youtube",
+      "title": "Sourcing Overlooked Listings Using Keepa Product Finder",
+      "url_or_videoId": "X6JjPUZd4xw",
+      "topic": "fba_oa_mastery",
+      "status": "fetch-failed",
+      "note": "youtube-transcript.io returned an empty tracks[] -- no caption track exists for this video. Left queued for a periodic re-check in case captions get added later."
+    },
+    {
+      "date": "2026-07-06",
+      "type": "youtube",
+      "title": "SellerAmp Setup Tutorial (2025 Update) | How to Configure Profiles, Settings & SAS Panels",
+      "url_or_videoId": "9QGs4hfKrhY",
+      "topic": "fba_oa_mastery",
+      "status": "duplicate",
+      "note": "Duplicate of hxk1JS4EsU4's transcript content (identical text, different videoId/title metadata) -- already ingested under that id, not re-ingested. Raw transcript saved to transcripts/processed/ for the audit trail."
+    },
+    {
+      "date": "2026-07-06",
+      "type": "text",
+      "title": "How to Prepare Inventory for Amazon FBA in 2026 (Snapl)",
+      "url_or_videoId": "https://snapl.com/news/amazon-fba-prep-requirements-in-2026-labeling-packaging-and-common-mistakes",
+      "topic": "amazon_help_docs",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-06",
+      "type": "text",
+      "title": "Amazon seller tax: A guide for 2026 (QuickBooks)",
+      "url_or_videoId": "https://quickbooks.intuit.com/r/running-a-business/amazon-seller-tax/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-06",
+      "type": "text",
+      "title": "IP Complaint Amazon: How to Prevent Listing Takedowns (SellerApp)",
+      "url_or_videoId": "https://www.sellerapp.com/blog/amazon-ip-complaint/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-06",
+      "type": "text",
+      "title": "ProductResearch: Training E-Commerce Deep Research Agents (arXiv 2602.23716)",
+      "url_or_videoId": "https://arxiv.org/abs/2602.23716",
+      "topic": "build_the_system",
+      "status": "ingested-staged"
+    },
+    {
+      "date": "2026-07-06",
+      "type": "text",
+      "title": "Product packaging requirements (Amazon Seller Central help, G200141500)",
+      "url_or_videoId": "https://sellercentral.amazon.com/gp/help/external/G200141500",
+      "topic": "amazon_help_docs",
+      "status": "fetch-failed",
+      "note": "JS shell only, same failure mode as G200140860 (07-02) and G201100890 (07-05). Authoritative [policy] doc for the 2026 prep/labeling changes incl. the unverified FNSKU-mandate claim - re-fetch in a real browser / Claude Code."
+    },
+    {
+      "date": "2026-07-06",
+      "type": "text",
+      "title": "RAG without Forgetting: Continual Query-Infused Key Memory (arXiv 2602.05152)",
+      "url_or_videoId": "https://arxiv.org/abs/2602.05152",
+      "topic": "build_the_system",
+      "status": "fetch-failed",
+      "note": "PDF fetch returned no machine-readable text and the /abs/ page was blocked by the sandbox fetch-provenance rule. Relevant to the self-learning-RAG thread (FLAIR 2508.13390) - re-fetch in Claude Code."
     }
   ]
 }

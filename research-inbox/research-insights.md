@@ -213,6 +213,56 @@ per the project's source-of-truth order. Cite the source URL.
   fba-brain-updater, don't auto-import.
   (thesellingguys.com/current-list-of-amazon-gated-and-restricted-brands)
 
+### 2026-07-05 (daily run)
+
+- **[practitioner]** **Decide quantity LAST.** EntreResource's 2026 playbook fixes a strict buy order — scan →
+  eligibility → listing red-flags → fees/price-history/seller-count → quantity — because beginners reverse
+  it under discount-tag urgency and trap capital. Mirrors the gate order already in ai-brain.json; quantity
+  is a separate final decision, not part of "is it a deal". (entreresource.com/arbitrage-on-amazon)
+- **[practitioner]** **Always subtract a return allowance** — the most commonly skipped line in unit economics;
+  it "makes weak buys look profitable." Worked example: $12 buy / $34.99 sale nets ≈ $11.50 after referral
+  $5.25 + FBA $5.92 + storage $0.32 — before returns. Candidate check: does fba-deal-calculator expose a
+  return-allowance input? (entreresource.com/arbitrage-on-amazon)
+- **[practitioner]** "Sellable margin, not spreadsheet margin." Three predictable loss patterns: buy first /
+  check gating later; receipts that won't survive a complaint; chasing headline ROI without price-stability +
+  seller-count checks. (entreresource.com/arbitrage-on-amazon)
+- **[practitioner]** Aura's 2026 OA guide converges on the same floors already in the brain — $3+ profit /
+  30% ROI / BSR <100k (pros: $4 / 35%), realized profits typically 10–15%/item — and adds inventory-turn
+  rules: the **3-month rule** (only buy ~90 days of sales; OA often can't restock anyway), removal cadence
+  30/60/90 days, never >20% of capital in one ASIN, 20% cash reserve for restriction surprises, IPI > 450.
+  Margin stacking (card → portal → discounted gift cards → coupons → loyalty) turned a 40% ROI example into
+  68% on the same product. (goaura.com/blog/online-arbitrage-guide)
+
+### 2026-07-06 (daily run)
+
+- **[practitioner]** **Prep is 100% on the seller in 2026.** Amazon eliminated its own FBA prep/labeling
+  services in the US (Jan 1, 2026) and fulfillment centers no longer fix labeling/packaging errors at
+  check-in — mistakes now mean receiving delays, rejected inventory, unplanned fees, or stranded units.
+  For OA that means prep cost/quality is part of the buy decision, not an afterthought.
+  (snapl.com/news/amazon-fba-prep-requirements-in-2026...)
+- **[practitioner]** Top prep failure modes to design out: multiple competing barcodes on one unit (#1
+  cause of mis-scans — cover retailer barcodes), missing suffocation warnings on polybags, bundles not
+  physically contained as ONE unit with ONE barcode, carton labels on seams/under stretch wrap. Process
+  fix: scan-test samples, visual QC on first runs, standardized packaging spec per SKU. (snapl.com)
+- **[practitioner→VERIFY]** Search snippets (PrepVia/StarterX, not fetched) claim a Mar 31, 2026 mandate:
+  non-Brand-Registry resellers must FNSKU-label every unit (manufacturer barcodes no longer accepted), with
+  inbound defect fees $0.32–$5.72/unit. NOT confirmed in a fetched source; Seller Central G200141500 is a
+  JS shell from this sandbox. If true this adds a per-unit labeling cost to every OA deal — verify in a
+  real browser before touching ai-brain.json.
+- **[practitioner]** **IP complaints suppress first, ask questions never.** Amazon doesn't investigate —
+  ASIN is suppressed the moment a rights owner files. Flags live in Account Health → Policy Compliance →
+  Intellectual Property Complaints; check daily, and treat any listing that quietly goes "inactive" or
+  loses all traffic as a possible silent IP flag (cross-check Performance Notifications). Complainants
+  aren't always the brand: agencies, ex-distributors, rogue competitors, trademark aggregators.
+  (sellerapp.com/blog/amazon-ip-complaint)
+- **[practitioner]** IP response playbook: valid → remove ASIN immediately, email complainant for
+  retraction, POA (what/fixed/prevent), keep docs ≥180 days. Invalid → evidence to complainant, then
+  escalate the chain to notice-dispute@amazon.com; DMCA counter-notice is copyright-only and starts a
+  10–14-day sue-or-relist clock. Zero-tolerance brands confirmed again: Nike, Apple, Disney, LEGO,
+  OtterBox, Funko, Beats, Hasbro — authentic inventory + invoices does not protect you. Overlaps our
+  avoid-brands list; the article's "keep your own IP-complaint tracker" is exactly what leads.json/
+  ai-brain brand lists already do — keep feeding outcomes back. (sellerapp.com/blog/amazon-ip-complaint)
+
 ## Sourcing & finding products (incl. Keepa, SellerAmp, storefront stalking)
 
 ### 2026-06-30
@@ -311,6 +361,22 @@ per the project's source-of-truth order. Cite the source URL.
   storefront-selection heuristics — usable as a storefront-scoring filter in scout_pro.
   (stealthseller.co/blog/everything-on-storefront-stalking-as-a-arbitrage-seller)
 
+### 2026-07-05 (daily run)
+
+- **[practitioner]** SellerAmp's official Charts-panel doc (updated Jun 2026): the SAS Charts panel is
+  **licensed Keepa data inside every lookup** — historic BSR, Amazon/Buy Box/lowest-FBA/lowest-FBM prices,
+  offer + review counts, over 30/90/180d or full history. Read it as a pair: **rank history sanity-checks
+  the monthly-sales estimate; price history tells you whether today's price is normal or a spike**. Frequent
+  BSR drops = regular sales; stable price = less race-to-the-bottom risk. A profitable-looking deal must
+  also be a *reliable* one. (selleramp.com/selleramp-charts-panel-tutorial)
+- **[practitioner]** Keepa read discipline from EntreResource: BSR is **a filter, not a decision**; what fails
+  is treating the current Buy Box as a reliable future selling price. Want: stable price history, regular
+  sales signs, livable seller count, no pattern of Amazon jumping onto the listing.
+  (entreresource.com/arbitrage-on-amazon)
+- Queued two counterweight videos on storefront stalking (D3FhvdMVLl8 argues it's NOT profitable;
+  ljlERpMrcBk is a live click-path session) so the corpus doesn't hold only pro-stalking sources —
+  takeaways land once transcripts are pulled.
+
 ## Finances & account management
 
 ### 2026-06-30
@@ -376,6 +442,21 @@ per the project's source-of-truth order. Cite the source URL.
   Wrong books = wrong strategy. → When the operation needs real books, this is the setup recipe; the
   `outcomes` realized-profit split should mirror the same per-fee-type granularity.
   (eightx.co/blog/xero-bookkeeping-amazon-fba) [practitioner — CFO firm]
+
+### 2026-07-06 (daily run)
+
+- **[practitioner]** QuickBooks' 2026 guide (updated Jun 2026): **1099-K threshold is back to the
+  historical $20,000 AND 200 transactions** for the 2026 tax year — but all income is reportable
+  regardless. Forms live in Seller Central → Reports → Tax Document Library. Sole prop/single-member LLC
+  files Schedule C; Keepa/SellerAmp subscriptions, shipping, and home office are deductible business
+  expenses. (quickbooks.intuit.com/r/running-a-business/amazon-seller-tax)
+- **[practitioner]** Sales tax is mostly-but-not-fully Amazon's job: marketplace-facilitator laws mean
+  Amazon collects/remits in nearly every state, BUT (1) FBA inventory placement can create physical nexus
+  in the ~44 states with Amazon warehouses and economic nexus triggers around $100k sales → registration
+  duties; (2) some states still want zero-dollar/informational returns; (3) wrong product tax codes cause
+  over-collection. Reseller-relevant: **resale certificates avoid paying sales tax on OA inventory buys**
+  — direct COGS reduction. Distinguish the Marketplace Tax Collection Report (Amazon paid) from the Sales
+  Tax Calculation Report (you owe). (quickbooks.intuit.com)
 
 ## Building the system (AI, RAG, dashboard, control-center)
 
@@ -487,4 +568,90 @@ per the project's source-of-truth order. Cite the source URL.
   guardrails demand for `Ask`, and the conservative rubric prevents overstating groundedness.
   (arxiv.org/abs/2605.01664)
 
+### 2026-07-05 (daily run)
+
+- **[practitioner]** RAGVA (arXiv 2502.14930, Transurban + Monash experience report): eight engineering
+  challenges from a real production RAG assistant, mapping ~1:1 onto this project's risk register —
+  (1) data/scope engineering, (2) security guardrails, (3) LLM-churn maintenance, (4) relevancy-vs-
+  conciseness tuning, (5) automated testing (test oracle for RAG is an open problem), (6) systematic
+  eval metrics (faithfulness, contextual precision/recall), (7) closing the human-feedback loop at scale,
+  (8) Responsible AI. Core stance: RAG apps are nondeterministic, so **continuous validation replaces the
+  traditional spec-based test plan** — supports the fba-qa-tester emphasis on retrieval regression tests.
+  (arxiv.org/abs/2502.14930)
+- **[practitioner]** FLAIR (arXiv 2508.13390, Microsoft, deployed in Copilot DECO): a concrete, lightweight
+  recipe for the project's "self-learning RAG" goal. Offline: harvest indicators from user feedback +
+  **questions synthesized from the docs themselves** (cheap bootstrap before real usage exists). Online:
+  **two-track ranking** blends raw similarity with feedback indicators — augments rather than replaces
+  vector search, so raw similarity stays inspectable (fits the honesty/hard-gate rules). Reported gains on
+  seen AND unseen queries at production scale. → Candidate upgrade path for match_chunks once Ask has
+  thumbs-up/down data; the synthetic-questions trick is usable today. (arxiv.org/abs/2508.13390)
+
 <!-- The scheduled task appends cited takeaways under the right heading. -->
+
+### 2026-07-06 (daily run)
+
+- **[practitioner]** **ProductResearch (Alibaba, arXiv 2602.23716):** deep-research agents tuned on web
+  search don't transfer to e-commerce — complex product research needs open-web evidence FUSED with
+  structured catalog queries and claims grounded in verified product attributes. Their fix: a User Agent
+  (persona + query + per-query rubric from real behavior), a Research Agent (Plan→Toolcall→Report ReAct
+  over web + catalog tools), and a **Supervisor Agent — a 3-state machine verifying every plan/tool-call/
+  report step** and sending targeted corrective feedback; approved trajectories are distilled into
+  single-role SFT data. Qwen3-30B-A3B jumps RACE 31.78→45.40, product coverage 3.58→12.45 (>3×).
+- **[practitioner]** Two liftable patterns for us without any fine-tuning: (1) step-level supervisor
+  verification (check the plan, check each tool call, check the report — not one end-of-pipeline check)
+  for scout lead reports and Ask answers; (2) rubric-per-query evaluation (weights over comprehensiveness/
+  depth/instruction-following/readability) — pairs with the RAG-evaluation survey (2504.14891) already
+  staged. Also independent confirmation of the scout_pro thesis: web + Keepa/SP-API structured data beats
+  web alone. (arxiv.org/abs/2602.23716)
+
+### 2026-07-07 (Claude Code — 5 queued YouTube transcripts pulled + ingested)
+
+- **[practitioner]** *Keepa Product Finder live filter walkthrough* (rdltezXxIrk): the filter waterfall
+  (SellerAmp's own sales-rank table for a top-1-2%-BSR-per-category cutoff → offer count 3-15, since
+  <3 offers is almost always private label and >15 is oversaturated → buy-box not Amazon → rating ≥4 →
+  package weight cap) turns millions of Product Finder candidates into a workable few hundred. Two Keepa
+  chart signals worth adding to how we read IP risk: a **sudden flatline drop in seller/offer count**
+  (e.g. 20→4 sellers in one day) is a real IP-complaint signal, while a **gradual staircase decline** is
+  normal sell-through — don't treat every offer-count drop the same. Also: price during an
+  Amazon-out-of-stock spike is not sustainable — size buy cost off the LOWEST price in the last 3 months,
+  not the current (possibly inflated) one. Storefront-stalk sellers with ~50-1,000 reviews (5,000+ is
+  usually wholesale, a different budget/business model). Cash back explicitly NOT counted as reliable
+  margin — providers sometimes don't register it, so don't factor it into a buy-cost decision.
+- **[practitioner]** *AMZ Prep FBA Profit Calculator* (jeqFx9ZiOhg) — vendor tool demo, verify claims
+  against Amazon's own fee pages before trusting. Claims Amazon introduced **2026 price tiers (<$10 /
+  $10-50 / >$50) each with a different FBA fulfillment rate**, and bills on **dimensional weight when
+  higher than actual weight** — both worth a manual check against current Amazon fee docs since
+  ai-brain.json/scoring.py's fee assumptions should reflect whichever is actually true. Worked example:
+  Health category referral fee 15%; aged-inventory fee $0 when turnover is ~2 months. The tool's own
+  "healthy" bar is 20%+ **margin** — a different metric from our 30% **ROI** gate, not directly comparable.
+- **[practitioner]** *Storefront Stalking is NOT a Profitable Sourcing Method* (D3FhvdMVLl8) — short
+  rebuttal video, one genuinely useful tip: Keepa Product Finder beats SellerAmp for storefront stalking
+  because you can **sort a seller's storefront directly by units-sold-in-the-past-month**, prioritizing
+  the fastest movers instead of manually paging through SellerAmp's slower per-page interface. Also
+  promotes a paid third-party SaaS ("Arbitrage Stalker") for automated storefront-change alerts — market
+  awareness only, not something to adopt.
+- **[practitioner]** *Live Online Arbitrage Sourcing: Storefront Stalking Tutorial* (ljlERpMrcBk) —
+  a live demo proving storefront-stalking quality is **entirely seed-dependent**: starting from a weak,
+  generic seed brand (Great Value) wasted the whole session on dead-end storefronts (low-volume,
+  drop-shipping-looking, or wholesale sellers). Starting from an established, high-turnover brand (Adidas
+  Originals), filtered in Keepa on "Amazon out of stock ≥95% of the time" + "listed ≥1 year" (a proxy for
+  a stable, proven listing), found a genuinely profitable variation within minutes. → Relevant to
+  `scout/discovery_hints.py`'s brand-seed selection: seed quality (established, proven-demand brands)
+  matters more than the sourcing technique itself.
+- **[practitioner]** *Beginners Guide To Amazon FBA Online Arbitrage in 2026* (hxk1JS4EsU4) — a full OA
+  fundamentals course. Core Keepa signal, repeated heavily: **offer count falling → price rises** (source
+  here); **offer count rising → price falls** (avoid, or expect the price you're anticipating to not
+  hold). Buy-Box suppression within the last 6-8 months = reduce order size as a hedge, not an automatic
+  pass; the risk resets the longer it's been since the last suppression event. One seller holding a
+  disproportionate buy-box % at a shared price point across several same-priced FBA competitors suggests
+  an inventory-advantage imbalance — mainly a wholesale-competition risk, less relevant to typical
+  arbitrage listings which tend to rotate more evenly. **Ungating claim (unverified against Amazon's own
+  docs — treat as a practitioner claim, not policy):** invoices reportedly matter far less now than
+  account health score + total sales count, with **~200 sales** cited as a threshold where many
+  previously-restricted brands start auto-approving — a new-seller bootstrapping tactic, not something to
+  encode into `ai-brain.json` without independent confirmation. Financial hygiene notes: never fold cash
+  back into buy-cost math (it's a rebate, and unreliable to register — matches rdltezXxIrk above); stack
+  gift-card discount sites (CardCookie, Raise) with retail coupons for real savings. Portfolio rule: buy
+  **wide** (many SKUs, few units each), not deep, and reorder roughly 3-4 weeks of stock based on the
+  observed sell-through rate once tested. States a personal **30% minimum ROI** threshold — matches
+  `ai-brain.json`'s existing `minRoi: 0.3` exactly, a useful independent corroboration.

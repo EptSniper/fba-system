@@ -141,19 +141,18 @@ class BronzeAgreementTest(unittest.TestCase):
             "amazon_bb_share": 0}}
 
     def test_agreement_rate_reflects_matches(self):
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.preprocessing import StandardScaler
+        import lightgbm as lgb
         # a trivially separable classifier over the real NUMERIC_FEATURES shape: cheap -> profitable
         train_rows = [self._row(15.0, True), self._row(20.0, True),
                      self._row(80.0, False), self._row(90.0, False)]
         Xtr, ytr = tr.build_matrix(train_rows)
-        scaler = StandardScaler().fit(Xtr)
-        clf = LogisticRegression().fit(scaler.transform(Xtr), ytr)
+        clf = lgb.LGBMClassifier(random_state=42, verbosity=-1, min_child_samples=1,
+                                 num_leaves=3).fit(Xtr, ytr)
         bronze_rows = [
             dict(self._row(15.0, True), asin="B1", label_quality="bronze"),
-            dict(self._row(85.0, False), asin="B2", label_quality="bronze"),  # operator passed, model agrees
+            dict(self._row(95.0, False), asin="B2", label_quality="bronze"),  # operator passed, model agrees
         ]
-        result = tr.bronze_agreement(clf, scaler, bronze_rows)
+        result = tr.bronze_agreement(clf, None, bronze_rows)
         self.assertEqual(result["n"], 2)
         self.assertEqual(result["agreement_rate"], 1.0)
 
@@ -275,8 +274,7 @@ class ChallengerScoreTest(unittest.TestCase):
         self.assertIsNone(tr.challenger_score(None, {"price": 20.0}))
 
     def test_computes_a_probability_from_a_real_fitted_model(self):
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.preprocessing import StandardScaler
+        import lightgbm as lgb
         train_rows = [
             {"label": True, "features": {"price": 15.0}},
             {"label": True, "features": {"price": 18.0}},
@@ -284,9 +282,9 @@ class ChallengerScoreTest(unittest.TestCase):
             {"label": False, "features": {"price": 90.0}},
         ]
         Xtr, ytr = tr.build_matrix(train_rows)
-        scaler = StandardScaler().fit(Xtr)
-        clf = LogisticRegression().fit(scaler.transform(Xtr), ytr)
-        champion = {"model": clf, "scaler": scaler, "features": list(tr.NUMERIC_FEATURES)}
+        clf = lgb.LGBMClassifier(random_state=42, verbosity=-1, min_child_samples=1,
+                                 num_leaves=3).fit(Xtr, ytr)
+        champion = {"model": clf, "scaler": None, "features": list(tr.NUMERIC_FEATURES)}
         proba = tr.challenger_score(champion, {"price": 16.0})
         self.assertIsInstance(proba, float)
         self.assertGreater(proba, 0.5)  # cheap, matches the "profitable" training cluster
@@ -299,21 +297,39 @@ class ChallengerScoreTest(unittest.TestCase):
 class VectorizeOneConsistencyTest(unittest.TestCase):
     def test_matches_build_matrix_row_for_row(self):
         """vectorize_one is the SAME construction build_matrix uses per row — verified directly
-        so the two can never silently drift (the whole point of factoring it out)."""
+        so the two can never silently drift (the whole point of factoring it out). NaN != NaN
+        under ==, so this compares element-wise treating NaN positions as equal to each other."""
+        import numpy as np
         rows = [{"features": {"price": 20.0, "days_to_prime_day": 5}, "label": True}]
         X, _ = tr.build_matrix(rows)
         vec = tr.vectorize_one(rows[0]["features"])
-        self.assertTrue((X[0] == vec).all())
+        self.assertTrue(np.array_equal(X[0], vec, equal_nan=True))
 
-    def test_missing_features_impute_to_zero(self):
+    def test_missing_features_impute_to_nan_not_zero(self):
+        """Review fix (2026-07-06): a genuinely missing value must be NaN, not a fabricated
+        0.0 that collides with a real, meaningful zero (see vectorize_one's docstring)."""
+        import math
         vec = tr.vectorize_one(None)
-        self.assertEqual(list(vec), [0.0] * len(tr.NUMERIC_FEATURES))
+        self.assertTrue(all(math.isnan(v) for v in vec))
+
+    def test_present_value_is_not_nan(self):
+        vec = tr.vectorize_one({"price": 20.0})
+        price_idx = tr.NUMERIC_FEATURES.index("price")
+        self.assertEqual(vec[price_idx], 20.0)
+
+    def test_boolean_false_is_zero_not_nan(self):
+        """False is a real, present value (e.g. is_bts_window=False means 'confirmed NOT in the
+        back-to-school window') — it must convert to 0.0, never be treated as missing."""
+        import math
+        vec = tr.vectorize_one({"is_bts_window": False})
+        idx = tr.NUMERIC_FEATURES.index("is_bts_window")
+        self.assertEqual(vec[idx], 0.0)
+        self.assertFalse(math.isnan(vec[idx]))
 
 
 class NewSignalImportanceTest(unittest.TestCase):
     def test_reports_only_new_signal_features(self):
-        from sklearn.linear_model import LogisticRegression
-        from sklearn.preprocessing import StandardScaler
+        import lightgbm as lgb
         rows = [
             {"label": True, "features": {"price": 15.0, "days_to_prime_day": 5, "is_bts_window": True}},
             {"label": True, "features": {"price": 18.0, "days_to_prime_day": 3, "is_bts_window": True}},
@@ -321,11 +337,37 @@ class NewSignalImportanceTest(unittest.TestCase):
             {"label": False, "features": {"price": 90.0, "days_to_prime_day": 120, "is_bts_window": False}},
         ]
         Xtr, ytr = tr.build_matrix(rows)
-        scaler = StandardScaler().fit(Xtr)
-        clf = LogisticRegression().fit(scaler.transform(Xtr), ytr)
+        clf = lgb.LGBMClassifier(random_state=42, verbosity=-1, min_child_samples=1,
+                                 num_leaves=3).fit(Xtr, ytr)
         importance = tr.new_signal_importance(clf)
         self.assertEqual(set(importance.keys()), set(tr.NEW_SIGNAL_FEATURES))
         self.assertNotIn("price", importance)  # an ORIGINAL feature, not a new signal
+
+    def test_prefers_feature_importances_over_coef(self):
+        """LightGBM exposes feature_importances_, not coef_ — new_signal_importance must use it
+        when present rather than falling through to the (absent) linear-model path."""
+        class FakeLgbModel:
+            feature_importances_ = [1.0] * len(tr.NUMERIC_FEATURES)
+        importance = tr.new_signal_importance(FakeLgbModel())
+        self.assertEqual(set(importance.keys()), set(tr.NEW_SIGNAL_FEATURES))
+        # normalized to a share of the total — uniform importances all read equal
+        self.assertTrue(all(v == importance[list(importance)[0]] for v in importance.values()))
+
+    def test_falls_back_to_coef_for_a_linear_model(self):
+        """Backward compatibility: an OLDER saved artifact might still be a linear model with
+        only .coef_ — must not silently return {} just because feature_importances_ is absent."""
+        from sklearn.linear_model import LogisticRegression
+        rows = [
+            {"label": True, "features": {"price": 15.0}}, {"label": True, "features": {"price": 18.0}},
+            {"label": False, "features": {"price": 85.0}}, {"label": False, "features": {"price": 90.0}},
+        ]
+        # a linear model can't take NaN — use only the one populated feature for this fixture
+        import numpy as np
+        Xtr = np.nan_to_num(tr.build_matrix(rows)[0])
+        ytr = tr.build_matrix(rows)[1]
+        clf = LogisticRegression().fit(Xtr, ytr)
+        importance = tr.new_signal_importance(clf)
+        self.assertEqual(set(importance.keys()), set(tr.NEW_SIGNAL_FEATURES))
 
     def test_empty_for_model_without_coef(self):
         class NoCoefModel:

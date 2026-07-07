@@ -13,3 +13,8 @@ numpy>=1.24
 scikit-learn>=1.3
 joblib>=1.3
 zstandard>=0.22
+# scout/pipeline.py's _evaluate() (via train_ranker.challenger_score) unpickles + scores
+# whatever ranker model a human has promoted via scoring.rankingChampion — degrades to an
+# honest rule-score fallback if this is missing (never a crash), but the promoted challenger
+# only actually scores with it installed (Session 55 review fix).
+lightgbm>=4.0

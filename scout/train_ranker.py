@@ -1,13 +1,14 @@
 """
 scout/train_ranker.py — daily training + champion/challenger evaluation (cloud or local).
 
-Runs in GitHub Actions (.github/workflows/train-ranker.yml, 08:17 UTC daily) and locally. One
-cycle: pull training rows from Supabase (all tiers, labels.py) -> train the CHALLENGER (the
-classical model: class-balanced logistic regression until V3's LightGBM ranker lands) -> compare
-it against the CHAMPION (the deterministic triage formula, scoring.triage_score) on a held-out
-BY-ASIN split -> append learning-hub/tracking/ranker-report.md -> upload the model artifact +
-report to the Supabase storage bucket `models/` (ranker/<date>/ + a stable ranker/current/) ->
-post a summary to the brain-proposals Discord stream.
+Runs in GitHub Actions (.github/workflows/train-ranker.yml, every 6h) and locally. One cycle:
+pull training rows from Supabase (all tiers, labels.py) -> train the CHALLENGER (LightGBM,
+class-balanced, small-data-adaptive hyperparameters, NaN-native missing-value handling — Session
+55 review fix; was scikit-learn LogisticRegression before that) -> compare it against the
+CHAMPION (the deterministic triage formula, scoring.triage_score) on a held-out BY-ASIN split ->
+append learning-hub/tracking/ranker-report.md -> upload the model artifact + report to the
+Supabase storage bucket `models/` (ranker/<date>/ + a stable ranker/current/) -> post a summary
+to the brain-proposals Discord stream.
 
 NON-NEGOTIABLES (test-enforced by tests/test_train_ranker.py):
   * NO AUTOMATIC PROMOTION, regardless of where training ran: this script NEVER writes
@@ -17,6 +18,11 @@ NON-NEGOTIABLES (test-enforced by tests/test_train_ranker.py):
     — a refusal exits 0 with a "not enough data" report, never a fabricated metric.
   * Tier honesty: metrics are reported per label_quality tier; backtest rows are the weakest
     tier and the report says so every time.
+
+Live consumer (Session 55 review fix): once promoted, scout/pipeline.py's _evaluate()/
+_rank_winners() actually score and order candidates with this model — see load_challenger()/
+challenger_score() below. Before this fix nothing in the codebase ever read the trained
+artifact; the champion/challenger comparison had no way to affect anything even when promoted.
 
 Local side: run_daily calls fetch_current_model() at cycle start (best-effort) so the local
 pipeline always has the latest cloud-trained champion candidate on disk for shadow use.
@@ -47,17 +53,25 @@ ORIGINAL_NUMERIC_FEATURES = ("price", "weight_lb", "sales_rank", "est_sales", "o
 
 # Session 55's free signal-type features (scout/signals/) — kept as a SEPARATE tuple (rather
 # than folded silently into ORIGINAL_NUMERIC_FEATURES) so render_report()'s "new signals"
-# section can report exactly this set's fitted coefficients: each earns its seat via evidence
+# section can report exactly this set's fitted importance: each earns its seat via evidence
 # after the first retrain, or gets flagged for removal — the same kill-rule as everything else
 # in this project, never assumed useful just because it was added. Boolean fields (is_bts_window,
-# *_trend_spike) convert via build_matrix()'s existing `float(v or 0.0)` -> 1.0/0.0, no special
-# handling needed. Stale flags/nearest_major_holiday_name/upc are metadata, not model inputs.
+# *_trend_spike, *_stale) convert via vectorize_one()'s float(True)=1.0/float(False)=0.0, no
+# special handling needed.
+#
+# Review fix (2026-07-06): the three *_stale flags (brand_trend_stale, category_trend_stale,
+# ebay_stale) are now REAL model inputs, not excluded metadata — a stale last-known Trends value
+# (the source went dark for weeks) should read differently to the model than a fresh one, and
+# excluding the flag entirely made that impossible to learn. nearest_major_holiday_name/upc stay
+# excluded (strings, not usable by a numeric feature vector).
 NEW_SIGNAL_FEATURES = (
     "days_to_prime_day", "weeks_to_q4_arrival_deadline", "days_to_nearest_major_holiday",
     "is_bts_window", "day_of_week",
     "brand_trend_ratio", "brand_trend_slope", "brand_trend_seasonal_z", "brand_trend_spike",
+    "brand_trend_stale",
     "category_trend_ratio", "category_trend_slope", "category_trend_seasonal_z", "category_trend_spike",
-    "ebay_sold_count_30d", "median_sold_price_vs_amazon_ratio",
+    "category_trend_stale",
+    "ebay_sold_count_30d", "median_sold_price_vs_amazon_ratio", "ebay_stale",
 )
 NUMERIC_FEATURES = ORIGINAL_NUMERIC_FEATURES + NEW_SIGNAL_FEATURES
 
@@ -179,17 +193,29 @@ def upload_fingerprint(fp: Dict[str, Any]) -> bool:
 
 
 def vectorize_one(features: Optional[Dict[str, Any]]):
-    """The SAME per-row feature-vector construction build_matrix() uses (over NUMERIC_FEATURES,
-    None -> 0.0), for a SINGLE row. Shared by both training-time (build_matrix) and live-scoring-
-    time (challenger_score) vectorization so the two paths can never silently drift apart — a
-    fix to imputation/feature handling only ever needs to change this one function."""
+    """The SAME per-row feature-vector construction build_matrix() uses, for a SINGLE row.
+    Shared by both training-time (build_matrix) and live-scoring-time (challenger_score)
+    vectorization so the two paths can never silently drift apart.
+
+    Review fix (2026-07-06): a genuinely missing value is now NaN, not 0.0. The old
+    `float(v or 0.0)` collided a real "we don't know" with a real, meaningful zero —
+    days_to_prime_day=0 means "the window opens today"; day_of_week=0 means Monday;
+    ebay_sold_count_30d=0 means "confirmed zero demand", not "no data". LightGBM (the current
+    challenger classifier, train_and_evaluate) handles NaN NATIVELY — it learns which split
+    direction missing values should default to from the data itself, rather than the model
+    being handed a fabricated number it can't tell apart from a real one. Booleans
+    (is_bts_window, *_trend_spike, *_stale) still convert cleanly via float(True)=1.0/
+    float(False)=0.0 — only an ACTUAL None becomes NaN."""
     import numpy as np
-    return np.array([float((features or {}).get(k) or 0.0) for k in NUMERIC_FEATURES])
+    out = []
+    for k in NUMERIC_FEATURES:
+        v = (features or {}).get(k)
+        out.append(float(v) if v is not None else float("nan"))
+    return np.array(out)
 
 
 def build_matrix(rows: List[Dict[str, Any]]) -> Tuple[Any, Any]:
-    """Rows -> (X, y) over NUMERIC_FEATURES only. None -> 0.0 (explicit, same as the
-    calibration diagnostic)."""
+    """Rows -> (X, y) over NUMERIC_FEATURES only, via vectorize_one (None -> NaN, not 0.0)."""
     import numpy as np
     X = np.array([vectorize_one(r.get("features")) for r in rows])
     y = np.array([1 if r["label"] else 0 for r in rows])
@@ -241,13 +267,17 @@ def bronze_agreement(clf, scaler, bronze_rows: List[Dict[str, Any]]) -> Optional
     outcome yet) rows. This is NOT a training signal and never influences the relevance target —
     bronze rows never entered Xtr/ytr/Xva/yva. A HIGH agreement rate could just mean the model
     learned the operator's own bias, not the market, so it is reported with that caveat every
-    time, never treated as validation. None when there are no bronze rows to score."""
+    time, never treated as validation. None when there are no bronze rows to score.
+
+    scaler is optional (None for the current LightGBM challenger, which needs no scaling —
+    kept as a parameter for a linear model's StandardScaler, tree-based or otherwise)."""
     if not bronze_rows:
         return None
     Xb, yb = build_matrix(bronze_rows)
     if len(Xb) == 0:
         return None
-    preds = clf.predict(scaler.transform(Xb))
+    Xb_input = scaler.transform(Xb) if scaler is not None else Xb
+    preds = clf.predict(Xb_input)
     agree = float((preds == yb).mean())
     return {"n": len(bronze_rows), "agreement_rate": round(agree, 3)}
 
@@ -274,10 +304,19 @@ def source_breakdown(val_rows: List[Dict[str, Any]], proba: List[float]) -> Dict
 
 
 def new_signal_importance(clf) -> Dict[str, float]:
-    """Each Session 55 signal feature's fitted coefficient (StandardScaler-normalized inputs, so
-    magnitudes are roughly comparable) — the evidence render_report()'s 'new signals' section
-    shows so a human can decide keep-or-cut. {} for a model without a linear .coef_ (only
-    meaningful for today's LogisticRegression challenger)."""
+    """Each Session 55 signal feature's fitted importance — the evidence render_report()'s 'new
+    signals' section shows so a human can decide keep-or-cut.
+
+    Prefers LightGBM's feature_importances_ (split-count/gain based, normalized to a 0-1 share
+    of the model's total — a rough parity with 25 features means "average" is ~0.04, so the
+    existing 0.05 near-zero threshold still reads as "below average use"). Falls back to a
+    linear model's signed .coef_ for backward compatibility with any OLDER saved artifact still
+    on disk. {} when the model exposes neither."""
+    importances = getattr(clf, "feature_importances_", None)
+    if importances is not None and len(importances):
+        total = float(sum(importances)) or 1.0
+        return {name: round(float(importances[i]) / total, 4)
+               for i, name in enumerate(NUMERIC_FEATURES) if name in NEW_SIGNAL_FEATURES}
     coefs = getattr(clf, "coef_", None)
     if coefs is None:
         return {}
@@ -286,12 +325,32 @@ def new_signal_importance(clf) -> Dict[str, float]:
            if name in NEW_SIGNAL_FEATURES}
 
 
+def _lightgbm_params(n_train: int) -> Dict[str, int]:
+    """Small-data-aware LightGBM hyperparameters. The actual training corpus today is a few
+    hundred rows (not yet the ~50k target), and LightGBM's stock defaults (min_child_samples=20,
+    num_leaves=31) badly underfit anything under a few hundred rows — LIVE-VERIFIED: a cleanly
+    separable 42-row synthetic fixture scores AUC=0.5 (learns nothing at all) with stock
+    defaults, AUC=1.0 with these scaled-down values. Scales back up toward LightGBM's own
+    defaults as the corpus grows toward the target, so nothing needs to change by hand later."""
+    return {
+        "min_child_samples": max(1, min(20, n_train // 10)),
+        "num_leaves": max(3, min(31, n_train // 3)),
+    }
+
+
 def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
     """The full training cycle on already-pulled rows. Pure of I/O to Supabase/Discord — callable
-    from tests with synthetic rows."""
+    from tests with synthetic rows.
+
+    Challenger model (review fix, 2026-07-06): LightGBM, not scikit-learn's LogisticRegression —
+    the project's own long-planned "V3 LightGBM later" step, brought forward because it's what
+    makes vectorize_one's NaN-for-missing fix actually usable: LightGBM handles NaN NATIVELY
+    (learns the best split direction for missing values from the data itself); scikit-learn's
+    StandardScaler/LogisticRegression reject NaN outright. Tree-based models are scale-
+    invariant, so there's no scaler at all now ("scaler": None in the returned dict — every
+    consumer of this dict already treats a None scaler as "skip the transform step")."""
     import backtest  # split_by_asin — the same leakage-safe splitter V2 tests enforce
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.preprocessing import StandardScaler
+    import lightgbm as lgb
 
     rows = assembled["rows"]
     if assembled.get("refused"):
@@ -306,15 +365,15 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         return {"refused": True, "reason": "training side has one class after the by-ASIN split",
                 "by_tier": assembled.get("by_tier", {})}
 
-    scaler = StandardScaler().fit(Xtr)
-    clf = LogisticRegression(max_iter=2000, class_weight="balanced").fit(scaler.transform(Xtr), ytr)
-    proba = clf.predict_proba(scaler.transform(Xva))[:, 1]
+    clf = lgb.LGBMClassifier(class_weight="balanced", random_state=42, verbosity=-1,
+                             **_lightgbm_params(len(Xtr))).fit(Xtr, ytr)
+    proba = clf.predict_proba(Xva)[:, 1]
 
     chall = rank_metrics([float(p) for p in proba], yva.tolist())
     champ = rank_metrics(champion_scores(val), yva.tolist())
     return {
         "refused": False,
-        "model": clf, "scaler": scaler, "features": list(NUMERIC_FEATURES),
+        "model": clf, "scaler": None, "features": list(NUMERIC_FEATURES),
         "train_rows": len(train), "val_rows": len(val),
         "train_asins": len({r["asin"] for r in train if r.get("asin")}),
         "val_asins": len({r["asin"] for r in val if r.get("asin")}),
@@ -322,7 +381,7 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         "champion": champ, "challenger": chall,
         "verdict": verdict_line(champ, chall),
         "silver_caveat": assembled.get("silver_caveat", ""),
-        "bronze_agreement": bronze_agreement(clf, scaler, assembled.get("bronze_rows") or []),
+        "bronze_agreement": bronze_agreement(clf, None, assembled.get("bronze_rows") or []),
         "bronze_caveat": assembled.get("bronze_caveat", ""),
         "by_source": source_breakdown(val, [float(p) for p in proba]),
         "new_signal_importance": new_signal_importance(clf),
@@ -374,9 +433,10 @@ def render_report(result: Dict[str, Any]) -> str:
         lines.append("")
     importance = result.get("new_signal_importance") or {}
     if importance:
-        lines.append("- New signals (Trends/calendar/eBay, Session 55) — fitted coefficient "
-                     "(StandardScaler-normalized inputs; |coef| < 0.05 flagged as a removal "
-                     "candidate, human decides — same kill-rule as everything else):")
+        lines.append("- New signals (Trends/calendar/eBay, Session 55) — normalized feature "
+                     "importance (LightGBM feature_importances_, share of total splits; "
+                     "< 0.05 flagged as a removal candidate, human decides — same kill-rule as "
+                     "everything else):")
         for name, coef in sorted(importance.items(), key=lambda kv: -abs(kv[1])):
             flag = "" if abs(coef) >= 0.05 else " ⚠ near-zero"
             lines.append(f"  - {name}: {coef}{flag}")
@@ -405,7 +465,7 @@ def save_artifacts(result: Dict[str, Any], out_dir: str) -> List[str]:
                                    "by_tier", "champion", "challenger", "verdict", "features",
                                    "by_source", "bronze_agreement", "new_signal_importance")}
     meta["trained_at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
-    meta["model_kind"] = "logreg-balanced (interim classical model; V3 LightGBM later)"
+    meta["model_kind"] = "LightGBM (class-balanced, small-data-adaptive hyperparameters; NaN-native missing-value handling — Session 55 review fix)"
     mpath = os.path.join(out_dir, "model.joblib")
     joblib.dump({"model": result["model"], "scaler": result["scaler"],
                  "features": result["features"], "meta": meta}, mpath)
@@ -570,12 +630,16 @@ def challenger_score(champion: Optional[Dict[str, Any]],
     (never raises) when no champion is loaded or scoring fails for any reason — callers fall
     back to the rule/triage score exactly as if nothing were promoted. NEVER affects any hard
     gate (score>=threshold, compliance/safety checks) — those stay rule-based always; this only
-    ever feeds an ORDERING decision, and only when explicitly promoted."""
+    ever feeds an ORDERING decision, and only when explicitly promoted.
+
+    champion["scaler"] is optional (None for the current LightGBM challenger, which needs no
+    scaling — tree-based models are scale-invariant; kept for a future/older linear model)."""
     if not champion:
         return None
     try:
         X = vectorize_one(features).reshape(1, -1)
-        Xs = champion["scaler"].transform(X)
+        scaler = champion.get("scaler")
+        Xs = scaler.transform(X) if scaler is not None else X
         proba = champion["model"].predict_proba(Xs)[:, 1]
         return float(proba[0])
     except Exception as e:

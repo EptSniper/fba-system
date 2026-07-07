@@ -9,6 +9,16 @@ scikit-learn>=1.3
 joblib>=1.3
 numpy>=1.24
 
+# The ranker challenger model (scout/train_ranker.py) — LightGBM handles missing (NaN) feature
+# values natively, which is why vectorize_one() imputes to NaN instead of a fabricated 0.0
+# (Session 55 review fix). Needed here (not just requirements-train.txt) because
+# scout/pipeline.py's live scoring path (challenger_score) unpickles + calls .predict_proba() on
+# whatever model a human has promoted via ai-brain.json scoring.rankingChampion — degrades to
+# an honest "falling back to the rule score" if absent, never a crash (see train_ranker.
+# load_challenger's own try/except), but the promoted challenger only actually SCORES with this
+# installed.
+lightgbm>=4.0
+
 # Optional: LLM analyst pass (Scout Agent Build Plan Prompt S1/S3) — skips gracefully without
 # an ANTHROPIC_API_KEY even if installed.
 anthropic>=0.39

@@ -70,26 +70,64 @@ def build_dataset() -> Dict[str, Any]:
     return assembled
 
 
+FINGERPRINT_SAMPLE_SIZE = 500  # bounded row-content sample — see training_set_fingerprint()
+
+
+def _fingerprint_row_identity(r: Dict[str, Any]) -> str:
+    return "|".join(str(x) for x in (
+        r.get("asin"), r.get("source"), r.get("label"), r.get("label_quality"),
+        r.get("simulation_date") or r.get("checkpoint_day") or "",
+    ))
+
+
+def _fingerprint_row_content(r: Dict[str, Any]) -> str:
+    feats = r.get("features") or {}
+    feat_str = "|".join(f"{k}={feats.get(k)}" for k in sorted(feats.keys()))
+    return _fingerprint_row_identity(r) + "::" + feat_str
+
+
 def training_set_fingerprint(assembled: Dict[str, Any]) -> Dict[str, Any]:
-    """A cheap signature of the CURRENT training set: row count + a content hash of every row's
-    identifying tuple (asin, source, label, label_quality, and whichever date/checkpoint field
-    distinguishes windows within a tier). Rows are upserted on natural keys (asin+simulation_date,
-    asin+checkpoint_day, ...) rather than given a stable integer id we can read cheaply across all
-    three tiers, so a content hash serves the same purpose as "latest row ids" here: it changes
-    the moment anything is added OR an existing row's content changes (e.g. a re-simulated
-    backtest window flipping its label) — a plain row-count comparison would miss that second
-    case. Comparing this against the last run's stored fingerprint answers "is there anything new
-    to train on since last time?" without a second, separate expensive pull."""
+    """A signature of the CURRENT training set — row identity + row CONTENT + the model's own
+    input schema, so the every-6h skip-if-unchanged guard can't stay blind to a change that
+    doesn't touch row identity.
+
+    Found on review (2026-07-06): the original version hashed ONLY each row's identifying tuple
+    (asin/source/label/label_quality/date) — never the feature VALUES. scout/signals/
+    trends_backfill.py patches features_snapshot IN PLACE on those exact same natural keys (same
+    asin/simulation_date/label, different feature content), and this session also expanded
+    NUMERIC_FEATURES from 10 to 25 fields — neither would have changed the old fingerprint at
+    all, so the skip guard would have suppressed every retrain after either change indefinitely.
+
+    Now: `schema_version` hashes NUMERIC_FEATURES itself, so ANY code change to what the model
+    trains on (an addition, removal, or reorder) busts the fingerprint even if the underlying
+    rows are byte-identical. `content_hash` still hashes every row's identity (cheap, and alone
+    already detects additions/removals) PLUS a bounded, deterministic SAMPLE of up to
+    FINGERPRINT_SAMPLE_SIZE rows' actual feature values (evenly spaced across the identity-sorted
+    order, so the sample is stable regardless of Supabase's own return order) — cheap even at
+    the ~50k-row corpus target, and now sensitive to a backfill rewriting content in place."""
     rows = assembled.get("rows") or []
-    keys = sorted(
-        "|".join(str(x) for x in (
-            r.get("asin"), r.get("source"), r.get("label"), r.get("label_quality"),
-            r.get("simulation_date") or r.get("checkpoint_day") or "",
-        ))
-        for r in rows
-    )
-    digest = hashlib.sha256("\n".join(keys).encode("utf-8")).hexdigest()
-    return {"row_count": len(rows), "content_hash": digest}
+    schema_version = hashlib.sha256("|".join(NUMERIC_FEATURES).encode("utf-8")).hexdigest()[:16]
+
+    identity_keys = sorted(_fingerprint_row_identity(r) for r in rows)
+
+    sorted_rows = sorted(rows, key=lambda r: _fingerprint_row_identity(r))
+    n = len(sorted_rows)
+    if n <= FINGERPRINT_SAMPLE_SIZE:
+        sample_rows = sorted_rows
+    else:
+        step = n / FINGERPRINT_SAMPLE_SIZE
+        sample_rows = [sorted_rows[int(i * step)] for i in range(FINGERPRINT_SAMPLE_SIZE)]
+    content_sample = sorted(_fingerprint_row_content(r) for r in sample_rows)
+
+    digest = hashlib.sha256(
+        ("\n".join(identity_keys) + "\n---\n" + "\n".join(content_sample)).encode("utf-8")
+    ).hexdigest()
+    return {
+        "row_count": len(rows),
+        "bronze_count": len(assembled.get("bronze_rows") or []),
+        "schema_version": schema_version,
+        "content_hash": digest,
+    }
 
 
 def fetch_last_fingerprint() -> Optional[Dict[str, Any]]:
@@ -493,14 +531,25 @@ def main(argv=None) -> int:
     append_report(block)
     print(block.encode("ascii", "replace").decode())
 
+    artifact_upload_ok = True  # nothing to upload when refused/dry-run — not a failure
     if not result.get("refused") and not args.dry_run:
         paths = save_artifacts(result, args.out_dir)
         uploaded = upload_to_storage(paths, _dt.date.today().isoformat())
         print(f"[train_ranker] artifacts: {len(paths)} saved, {uploaded} uploaded to storage")
+        artifact_upload_ok = uploaded > 0
     if not args.dry_run:
-        # Stored regardless of refused/trained so a repeated refusal with no new data also
-        # skips next time, instead of re-posting the same "not enough data" message every cadence.
-        upload_fingerprint(fp)
+        if artifact_upload_ok:
+            # Stored regardless of refused/trained so a repeated refusal with no new data also
+            # skips next time, instead of re-posting the same "not enough data" message every
+            # cadence. Skipped when a REAL training run's artifact upload failed (review fix,
+            # 2026-07-06): storing the fingerprint then would freeze the skip guard believing
+            # this data was already trained on, while ranker/current/ actually stays stale or
+            # missing — the next tick would see fp == last_fp and skip forever instead of
+            # retrying the upload.
+            upload_fingerprint(fp)
+        else:
+            print("[train_ranker] artifact upload failed — NOT storing the fingerprint, so the "
+                 "next run retries training+upload instead of silently freezing a stale model")
         post_summary(result)
     # A refusal is an HONEST outcome, not a failure — exit 0 so the scheduled job stays green
     # until data exists; real errors raise and exit non-zero via the traceback.

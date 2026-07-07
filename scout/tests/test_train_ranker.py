@@ -243,6 +243,57 @@ class TrainingSetFingerprintTest(unittest.TestCase):
         self.assertEqual(fp1, fp2)
         self.assertEqual(fp1["row_count"], 0)
 
+    def test_feature_value_change_at_same_identity_busts_fingerprint(self):
+        """Review fix (2026-07-06): scout/signals/trends_backfill.py patches features_snapshot
+        IN PLACE on the SAME (asin, simulation_date, label) natural key — the original
+        identity-only fingerprint was blind to this. A row whose feature VALUES change (same
+        identity) must now produce a different fingerprint."""
+        row_before = dict(self._row("B001"), features={"price": 20.0, "brand_trend_ratio": None})
+        row_after = dict(self._row("B001"), features={"price": 20.0, "brand_trend_ratio": 2.5})
+        fp1 = tr.training_set_fingerprint({"rows": [row_before]})
+        fp2 = tr.training_set_fingerprint({"rows": [row_after]})
+        self.assertEqual(fp1["row_count"], fp2["row_count"])
+        self.assertNotEqual(fp1["content_hash"], fp2["content_hash"])
+
+    def test_schema_version_changes_when_numeric_features_change(self):
+        """Review fix: a code-side change to NUMERIC_FEATURES (e.g. this session's 10->25
+        expansion) must bust the fingerprint even when the underlying rows are byte-identical —
+        the model's INPUT SCHEMA changed, which is exactly the kind of change the skip guard
+        must not silently ignore."""
+        rows = [self._row("B001")]
+        fp1 = tr.training_set_fingerprint({"rows": rows})
+        with mock.patch.object(tr, "NUMERIC_FEATURES", tr.NUMERIC_FEATURES + ("a_brand_new_feature",)):
+            fp2 = tr.training_set_fingerprint({"rows": rows})
+        self.assertNotEqual(fp1["schema_version"], fp2["schema_version"])
+        self.assertNotEqual(fp1, fp2)
+
+    def test_bronze_count_reflected_and_bumps_fingerprint(self):
+        """New operator buy/pass decisions (bronze rows) must also change the fingerprint, even
+        though they never enter `rows`/the relevance target — otherwise a week of fresh operator
+        decisions leaves bronze_agreement frozen at its last value forever."""
+        base = {"rows": [self._row("B001")], "bronze_rows": []}
+        with_bronze = {"rows": [self._row("B001")],
+                      "bronze_rows": [{"asin": "B002", "label": True, "features": {}}]}
+        fp1 = tr.training_set_fingerprint(base)
+        fp2 = tr.training_set_fingerprint(with_bronze)
+        self.assertEqual(fp1["bronze_count"], 0)
+        self.assertEqual(fp2["bronze_count"], 1)
+        self.assertNotEqual(fp1, fp2)
+
+    def test_sample_bounded_for_large_corpora(self):
+        """A ~50k-row corpus must not hash every row's full feature dict — only a bounded,
+        deterministic sample. Just confirms it completes quickly and is still order-stable."""
+        import time
+        big = [self._row(f"B{i:06d}", sim=f"2026-01-{(i % 28) + 1:02d}") for i in range(20000)]
+        for r in big:
+            r["features"] = {"price": float(i) for i in range(5)}
+        t0 = time.time()
+        fp1 = tr.training_set_fingerprint({"rows": big})
+        fp2 = tr.training_set_fingerprint({"rows": list(reversed(big))})
+        elapsed = time.time() - t0
+        self.assertEqual(fp1, fp2)
+        self.assertLess(elapsed, 5.0)  # generous ceiling — this must stay "cheap"
+
 
 class FingerprintStorageTest(unittest.TestCase):
     """fetch_last_fingerprint/upload_fingerprint — mocked network only, same pattern as
@@ -307,6 +358,67 @@ class FingerprintStorageTest(unittest.TestCase):
                                           "SUPABASE_SERVICE_KEY": "k"}), \
              mock.patch("requests.post", side_effect=RuntimeError("network down")):
             self.assertFalse(tr.upload_fingerprint({"row_count": 1, "content_hash": "x"}))
+
+
+class MainFingerprintOnFailedUploadTest(unittest.TestCase):
+    """Review fix (2026-07-06): a real training run whose artifact upload fails must NOT store
+    the fingerprint — doing so would freeze the skip guard believing this data was already
+    trained on, while ranker/current/ actually stays stale or missing."""
+
+    def test_fingerprint_not_stored_when_all_uploads_fail(self):
+        with mock.patch.object(tr, "build_dataset", return_value={"rows": []}), \
+             mock.patch.object(tr, "train_and_evaluate", return_value={
+                 "refused": False, "model": object(), "scaler": object(), "features": [],
+                 "train_rows": 1, "val_rows": 1, "train_asins": 1, "val_asins": 1, "by_tier": {},
+                 "champion": {"auc": None, "winners_in_top": 0, "top_n": 0},
+                 "challenger": {"auc": None, "winners_in_top": 0, "top_n": 0},
+                 "verdict": "x", "silver_caveat": "", "bronze_agreement": None,
+                 "bronze_caveat": "", "by_source": {}, "new_signal_importance": {}}), \
+             mock.patch.object(tr, "render_report", return_value="block"), \
+             mock.patch.object(tr, "append_report"), \
+             mock.patch.object(tr, "fetch_last_fingerprint", return_value=None), \
+             mock.patch.object(tr, "save_artifacts", return_value=["model.joblib", "metrics.json"]), \
+             mock.patch.object(tr, "upload_to_storage", return_value=0), \
+             mock.patch.object(tr, "upload_fingerprint", return_value=True) as mock_upload_fp, \
+             mock.patch.object(tr, "post_summary", return_value=True):
+            rc = tr.main([])
+        self.assertEqual(rc, 0)
+        mock_upload_fp.assert_not_called()
+
+    def test_fingerprint_stored_when_upload_succeeds(self):
+        with mock.patch.object(tr, "build_dataset", return_value={"rows": []}), \
+             mock.patch.object(tr, "train_and_evaluate", return_value={
+                 "refused": False, "model": object(), "scaler": object(), "features": [],
+                 "train_rows": 1, "val_rows": 1, "train_asins": 1, "val_asins": 1, "by_tier": {},
+                 "champion": {"auc": None, "winners_in_top": 0, "top_n": 0},
+                 "challenger": {"auc": None, "winners_in_top": 0, "top_n": 0},
+                 "verdict": "x", "silver_caveat": "", "bronze_agreement": None,
+                 "bronze_caveat": "", "by_source": {}, "new_signal_importance": {}}), \
+             mock.patch.object(tr, "render_report", return_value="block"), \
+             mock.patch.object(tr, "append_report"), \
+             mock.patch.object(tr, "fetch_last_fingerprint", return_value=None), \
+             mock.patch.object(tr, "save_artifacts", return_value=["model.joblib", "metrics.json"]), \
+             mock.patch.object(tr, "upload_to_storage", return_value=2), \
+             mock.patch.object(tr, "upload_fingerprint", return_value=True) as mock_upload_fp, \
+             mock.patch.object(tr, "post_summary", return_value=True):
+            rc = tr.main([])
+        self.assertEqual(rc, 0)
+        mock_upload_fp.assert_called_once()
+
+    def test_fingerprint_stored_on_honest_refusal(self):
+        """A refusal has no artifacts to upload — storing the fingerprint is still correct so a
+        repeated identical refusal also skips next time."""
+        with mock.patch.object(tr, "build_dataset", return_value={"rows": []}), \
+             mock.patch.object(tr, "train_and_evaluate",
+                               return_value={"refused": True, "reason": "not enough data", "by_tier": {}}), \
+             mock.patch.object(tr, "render_report", return_value="block"), \
+             mock.patch.object(tr, "append_report"), \
+             mock.patch.object(tr, "fetch_last_fingerprint", return_value=None), \
+             mock.patch.object(tr, "upload_fingerprint", return_value=True) as mock_upload_fp, \
+             mock.patch.object(tr, "post_summary", return_value=True):
+            rc = tr.main([])
+        self.assertEqual(rc, 0)
+        mock_upload_fp.assert_called_once()
 
 
 if __name__ == "__main__":

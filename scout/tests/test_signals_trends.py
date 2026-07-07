@@ -152,6 +152,35 @@ class TrendsFeaturesLeakageTest(unittest.TestCase):
         # the point AT as_of (Jan 12) must be excluded; only Jan 5 (10.0) is visible
         self.assertEqual(feats["interest_now_vs_90d_avg"], 1.0)  # 10/10
 
+    def test_week_boundary_leakage_mid_week_as_of_excludes_the_still_open_week(self):
+        """Review fix (2026-07-06): a Trends weekly point aggregates search interest over the
+        WHOLE week [week_start, week_start+6] — not a single day. The bucket for the week
+        starting Monday Nov 23, 2026 (a real Black Friday week) aggregates through Nov 29; an
+        as_of of Wednesday Nov 25 falls MID-WEEK, so that bucket's own aggregation window still
+        extends 4 days PAST as_of even though its week_start (Nov 23) is strictly before as_of.
+        The OLD `d < as_of` boundary would have let this still-accumulating, partially-future
+        bucket leak straight into the feature; the fix must exclude it entirely."""
+        clean_prior_week = dt.date(2026, 11, 16)     # fully closed before as_of — must be visible
+        still_open_week = dt.date(2026, 11, 23)       # Black Friday week — must be EXCLUDED
+        as_of = dt.date(2026, 11, 25)                 # Wednesday, mid-week of still_open_week
+
+        series = [(clean_prior_week, 20.0), (still_open_week, 999.0)]
+        feats = trends.trends_features("Lego", as_of, series=series)
+
+        # If the Black-Friday-week point leaked in, avg90 would blend 20 and 999 and the ratio
+        # would land well above 1.0 (and likely trip spike_flag) — it must not.
+        self.assertEqual(feats["interest_now_vs_90d_avg"], 1.0)  # 20 / 20, undiluted
+        self.assertFalse(feats["spike_flag"])
+
+    def test_week_boundary_leakage_closes_exactly_seven_days_later(self):
+        """The boundary is inclusive of a FULLY closed week: a week_start exactly
+        WEEK_LENGTH_DAYS before as_of has finished accumulating and must be visible."""
+        week_start = dt.date(2026, 11, 23)
+        as_of = week_start + dt.timedelta(days=trends.WEEK_LENGTH_DAYS)  # Nov 30 — fully closed
+        feats = trends.trends_features("Lego", as_of, series=[(week_start, 42.0)])
+        self.assertEqual(feats["interest_now_vs_90d_avg"], 1.0)
+        self.assertFalse(feats["stale"])
+
 
 class TrendsFeaturesMathTest(unittest.TestCase):
     def test_no_data_returns_stale_none(self):
@@ -167,7 +196,9 @@ class TrendsFeaturesMathTest(unittest.TestCase):
 
     def test_not_stale_when_recent(self):
         as_of = dt.date(2026, 6, 10)
-        series = [(as_of - dt.timedelta(days=5), 50.0)]
+        # week_start 12 days back -> its bucket closed 5 days ago (12 - WEEK_LENGTH_DAYS) —
+        # fully closed under the leakage-safe boundary AND within STALE_AFTER_DAYS (14).
+        series = [(as_of - dt.timedelta(days=12), 50.0)]
         feats = trends.trends_features("Lego", as_of, series=series)
         self.assertFalse(feats["stale"])
 

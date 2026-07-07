@@ -41,6 +41,7 @@ MAX_RETRIES = 3
 BASE_BACKOFF_SECONDS = 2.0
 SPIKE_THRESHOLD = 2.0
 STALE_AFTER_DAYS = 14   # a week's worth of slack past the expected weekly refresh cadence
+WEEK_LENGTH_DAYS = 7    # a Trends weekly bucket aggregates [week_start, week_start+6]
 
 try:
     from pytrends.request import TrendReq
@@ -188,16 +189,27 @@ def backfill_term(term: str, term_kind: str, client=None,
 def trends_features(term: str, as_of: _dt.date,
                     series: Optional[List[Tuple[_dt.date, float]]] = None) -> Dict[str, Any]:
     """interest_now_vs_90d_avg / slope_4wk / seasonal_z / spike_flag for `term` at `as_of`,
-    using ONLY weekly points strictly before as_of (leakage-safe — the same boundary
-    scout/backtest.py's feature builder enforces). series is injectable (already-fetched from
-    Supabase in bulk, e.g. by trends_backfill.py) or defaults to a live db.trends_series_for()
-    read. `stale` is True when the most recent available point is more than
-    STALE_AFTER_DAYS old — a failed live refresh still leaves the LAST KNOWN values usable, just
-    honestly flagged, never silently blocking or fabricating a fresher number."""
+    using ONLY weekly points whose ENTIRE aggregation window has closed strictly before as_of.
+    series is injectable (already-fetched from Supabase in bulk, e.g. by trends_backfill.py) or
+    defaults to a live db.trends_series_for() read. `stale` is True when the most recent
+    available point is more than STALE_AFTER_DAYS old — a failed live refresh still leaves the
+    LAST KNOWN values usable, just honestly flagged, never silently blocking or fabricating a
+    fresher number.
+
+    LEAKAGE FIX (review, 2026-07-06): a Trends weekly point aggregates search interest over
+    [week_start, week_start + WEEK_LENGTH_DAYS - 1] — a whole week, not a single day. The
+    original boundary (`d < as_of`) admitted the bucket CONTAINING as_of whenever its week_start
+    happened to fall before as_of, even though that bucket's own aggregation window still
+    extends PAST as_of for any as_of that isn't itself a week boundary — leaking up to 6 days of
+    future search interest (e.g. a Black-Friday-week spike) into a mid-week backtest simulation
+    date. The fix requires the bucket to be FULLY CLOSED (`d + WEEK_LENGTH_DAYS <= as_of`) —
+    the same strict leakage boundary scout/backtest.py's feature builder enforces for Keepa
+    history, just accounting for a week's own span instead of treating it as a point-in-time."""
     if series is None:
         raw = db.trends_series_for(term, before=as_of.isoformat())
         series = [(_dt.date.fromisoformat(r["week_start"]), float(r["interest"])) for r in raw]
-    past = sorted((d, v) for d, v in series if d < as_of)
+    week_span = _dt.timedelta(days=WEEK_LENGTH_DAYS)
+    past = sorted((d, v) for d, v in series if d + week_span <= as_of)
     if not past:
         return {"interest_now_vs_90d_avg": None, "slope_4wk": None, "seasonal_z": None,
                 "spike_flag": None, "stale": True}

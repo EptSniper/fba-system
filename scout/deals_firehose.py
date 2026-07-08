@@ -56,27 +56,91 @@ def sampling_config() -> Dict[str, Any]:
         return {}
 
 
-def _load_category_id_cache() -> Dict[str, int]:
+# Supabase Storage persistence — mirrors scout/backtest.py's proven _fetch_remote_state() /
+# _upload_remote_state() pattern exactly (audit finding, 2026-07-08 live incident): the on-disk
+# CACHE_PATH never survives a GitHub Actions runner (fresh checkout every run, no persistent
+# disk), so this cache — meant to be a ONE-TIME resolution cost — silently re-paid its live
+# category_lookup() cost on every single hourly burst. Same bucket ("models") as backtest's
+# state, different path.
+_CATEGORY_CACHE_BUCKET = "models"
+_CATEGORY_CACHE_STORAGE_PATH = "backtest/category_ids.json"
+
+
+def _category_cache_storage_headers() -> Dict[str, str]:
+    key = os.getenv("SUPABASE_SERVICE_KEY", "")
+    return {"apikey": key, "Authorization": f"Bearer {key}"}
+
+
+def _fetch_remote_category_cache() -> Dict[str, int]:
+    """{} on any failure/missing env — never raises; a missing remote cache just means the next
+    resolve_category_ids() call pays the (guarded, flat, cheap) live lookup cost once."""
     try:
-        with open(CACHE_PATH, encoding="utf-8") as f:
-            return json.load(f) or {}
-    except Exception:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return {}
+        r = requests.get(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_CATEGORY_CACHE_STORAGE_PATH}",
+            headers=_category_cache_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return {}
+        return r.json() or {}
+    except Exception as e:
+        log.warning("category id remote cache fetch failed (non-fatal): %s", e)
         return {}
 
 
+def _upload_remote_category_cache(mapping: Dict[str, int]) -> bool:
+    """Best-effort — never raises. Same bucket/upsert pattern backtest.py's resume state and
+    train_ranker.py's fingerprint already use for cross-run persistence on ephemeral runners."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        r = requests.post(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_CATEGORY_CACHE_STORAGE_PATH}",
+            headers={**_category_cache_storage_headers(), "x-upsert": "true",
+                    "Content-Type": "application/json"},
+            data=json.dumps(mapping).encode("utf-8"), timeout=30,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        log.warning("category id remote cache upload failed (non-fatal): %s", e)
+        return False
+
+
+def _load_category_id_cache() -> Dict[str, int]:
+    """Prefers the local file (fast path, unchanged for local dev / any persistent host) and
+    falls back to the Supabase-Storage-backed copy when the local file is empty/missing — see
+    _fetch_remote_category_cache()'s docstring for why that fallback exists."""
+    try:
+        with open(CACHE_PATH, encoding="utf-8") as f:
+            local = json.load(f) or {}
+        if local:
+            return local
+    except Exception:
+        pass
+    return _fetch_remote_category_cache()
+
+
 def _save_category_id_cache(mapping: Dict[str, int]) -> None:
+    """Persists BOTH locally (fast local-dev path, unchanged) AND to Supabase Storage, so the
+    cache actually survives an ephemeral GitHub Actions runner."""
     try:
         os.makedirs(os.path.dirname(CACHE_PATH), exist_ok=True)
         with open(CACHE_PATH, "w", encoding="utf-8") as f:
             json.dump(mapping, f, indent=2)
     except Exception as e:
         log.warning("category id cache save failed (non-fatal): %s", e)
+    _upload_remote_category_cache(mapping)
 
 
 def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callable] = None,
                          wait: bool = True) -> Dict[str, int]:
-    """category key -> Keepa root catId, resolved live ONCE then cached to disk (root ids are
-    stable Amazon browse nodes, so repeat runs never re-spend on this). Returns whatever subset
+    """category key -> Keepa root catId, resolved live ONCE then cached (root ids are stable
+    Amazon browse nodes, so repeat runs never re-spend on this). Returns whatever subset
     resolves; an unmapped category is left OUT of the rotation, never guessed at. Never raises.
 
     Review fix (2026-07-07, live incident): this call used to have NO wait= override (silently
@@ -89,9 +153,17 @@ def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callabl
     actually takes (880s observed live), with nothing on our side bounding it. Now explicitly
     threads wait (collect_hourly.py's hourly burst passes wait=False, same as every other Keepa
     call it makes) and wraps the call in keepa_client._with_deadline for defense-in-depth even
-    if wait=False's effect on this specific endpoint ever changes upstream."""
+    if wait=False's effect on this specific endpoint ever changes upstream.
+
+    Review fix (2026-07-08 audit): the cache is now Supabase-Storage-backed (see
+    _load_category_id_cache()) so it's a true one-time cost across ephemeral runners, AND this
+    call is now guarded by keepa_client._guard_flat — previously it hit the live endpoint on
+    every cache miss with no check the bank could even cover it, unlike every other Keepa call
+    in this module."""
     cached = _load_category_id_cache()
     if cached and all(c in cached for c in categories):
+        return cached
+    if not keepa_client._guard_flat(api, keepa_client.CATEGORY_LOOKUP_TOKENS, "category lookup"):
         return cached
     if lookup_fn is None:
         lookup_fn = api.category_lookup
@@ -180,7 +252,9 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     pages = pages if pages is not None else DEFAULT_PAGES_PER_RUN
 
     id_map: Dict[str, int] = {}
+    total_spent = 0
     if categories:
+        before = keepa_client._tokens_consumed(api)
         try:
             # Review fix (2026-07-07, live incident): wait= was never threaded through to the
             # resolver before — it silently defaulted to wait=True regardless of what THIS
@@ -189,10 +263,17 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
         except Exception as e:
             log.warning("category id resolution failed (non-fatal, unfiltered pull): %s",
                        keepa_client.redact_err(e))
+        after = keepa_client._tokens_consumed(api)
+        # Review fix (2026-07-08 audit): this cost used to go entirely unmeasured — a live
+        # category_lookup() call (a real spend once the guard above lets it through on a cache
+        # miss) never showed up in harvest()'s returned tokens_spent, understating this run's
+        # true cost to every caller that budgets off it (collect_hourly.py's tier-3 waterfall).
+        resolve_spent = keepa_client._delta(before, after)
+        if isinstance(resolve_spent, int) and resolve_spent > 0:
+            total_spent += resolve_spent
 
     out: List[Dict[str, Any]] = []
     seen = set()
-    total_spent = 0
     by_category: Dict[str, int] = {}
     pulled = 0
     for i in range(max(0, pages)):

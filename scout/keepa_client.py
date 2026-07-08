@@ -184,6 +184,10 @@ SELLER_QUERY_TOKENS_ESTIMATE = 10  # seller_asins() — UNVERIFIED, conservative
 DEALS_PAGE_TOKENS = 5          # deals_firehose.py's /deal page (<=150 deals) — Mehmet's spec,
                                 # UNVERIFIED live until the account's negative balance recovers
                                 # and a real dispatch confirms tokensConsumed (Session 55).
+CATEGORY_LOOKUP_TOKENS = 1     # category_lookup() — UNVERIFIED, conservative placeholder (same
+                                # precedent as SELLER_QUERY_TOKENS_ESTIMATE above); this is a
+                                # one-time-per-cache-miss call, guarded anyway per this module's
+                                # single-choke-point philosophy (audit finding, 2026-07-08).
 
 _guard_lock = threading.Lock()
 _guard_stats = {"skips": 0, "caps": 0}
@@ -209,8 +213,13 @@ def current_tokens_left(api, refresh: bool = True) -> Optional[int]:
     if refresh:
         try:
             api.update_status()
-        except Exception:
-            pass
+        except Exception as e:
+            # Review fix (2026-07-08 audit): this was a bare `pass` — a refresh failure (network
+            # blip, rate limit) silently fell back to whatever stale tokens_left happened to be
+            # cached, with zero trace it had happened. No `log` object exists in this module
+            # (every other diagnostic here uses print), so match that convention.
+            print(f"[keepa] update_status() refresh failed (falling back to stale tokens_left): "
+                 f"{redact_err(e)}")
     v = getattr(api, "tokens_left", None)
     return int(v) if isinstance(v, (int, float)) else None
 

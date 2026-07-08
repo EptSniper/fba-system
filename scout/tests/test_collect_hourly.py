@@ -75,14 +75,16 @@ class ObservedTokensProbeTest(unittest.TestCase):
 
 
 class BudgetWaterfallTest(unittest.TestCase):
-    """The core contract (revised 2026-07-07, live incident): tier 1 gets the full available
-    budget as its cap; tier 2 (hint-led scan) is now capped to (post-tier-1 budget minus
-    TIER3_RESERVE_FRACTION of it), NOT the full remainder — two live bursts showed tier 2 alone
-    consistently spending the ENTIRE bank (Product Finder's Pro-plan rejection + an undercounted
-    per-ASIN enrich estimate), leaving tier 3 (backtest collection, the tier that actually grows
-    the training corpus) with ZERO budget on every single run. Tier 3 itself still gets
-    'whatever tier 2 actually measured-spent, no further constraint' — only tier 2's OWN input
-    budget is now reserve-adjusted, a deliberate discovery-vs-training-data tradeoff."""
+    """The core contract (revised 2026-07-08, live incident): tier 1 (shadow rechecks) is now
+    capped to TIER1_RESERVE_FRACTION of the ORIGINAL available bank, not handed the whole thing —
+    due_shadow_checkpoints()'s own 400-error bug (fixed the same day) had silently zeroed tier 1's
+    real work on every run until now, masking the fact it was never actually bounded; a real
+    backlog (up to 500 overdue rows) could otherwise drain an entire run's budget on tier 1 alone,
+    the same failure tier 2 used to cause. Tier 2 (hint-led scan) is capped to (post-tier-1 budget
+    minus TIER3_RESERVE_FRACTION of the ORIGINAL available bank, not of whatever tier 1 leaves
+    behind) — so tier 3's guarantee can't shrink just because tier 1 had a big backlog that run.
+    Tier 3 itself still gets 'whatever tier 1 + tier 2 actually measured-spent, no further
+    constraint' — only tiers 1 and 2's OWN input budgets are reserve-adjusted."""
 
     def _run(self, api, shadow_spent, scan_spent, expect_bt_cap):
         with mock.patch.object(ch.config, "have_keepa", return_value=True), \
@@ -100,11 +102,15 @@ class BudgetWaterfallTest(unittest.TestCase):
              mock.patch.object(ch.backtest, "run_backtest") as mbacktest:
             mbacktest.return_value = {"status": "ok", "tokens_spent": 0}
             r = ch.run_hourly_collect(api=api)
-        # tier 1 got the FULL available budget as its cap
-        self.assertEqual(mrecheck.call_args.kwargs["token_cap"], api.tokens_left)
-        # tier 2 (hint_led_scan) got (available - shadow_spent) MINUS the tier-3 reserve
-        post_tier1 = api.tokens_left - shadow_spent
-        expected_tier2_budget = post_tier1 - int(post_tier1 * ch.TIER3_RESERVE_FRACTION)
+        # tier 1 got TIER1_RESERVE_FRACTION of the ORIGINAL available bank as its cap, not the
+        # full bank.
+        expected_tier1_cap = int(api.tokens_left * ch.TIER1_RESERVE_FRACTION)
+        self.assertEqual(mrecheck.call_args.kwargs["token_cap"], expected_tier1_cap)
+        # tier 2 (hint_led_scan) got (available - shadow_spent) MINUS the tier-3 reserve, where
+        # the reserve is a fraction of the ORIGINAL available bank, not of the post-tier-1 budget.
+        post_tier1 = max(0, api.tokens_left - shadow_spent)
+        tier3_reserve = int(api.tokens_left * ch.TIER3_RESERVE_FRACTION)
+        expected_tier2_budget = max(0, post_tier1 - tier3_reserve)
         self.assertEqual(mscan.call_args[0][1], expected_tier2_budget)
         if expect_bt_cap is None:
             mbacktest.assert_not_called()
@@ -113,8 +119,9 @@ class BudgetWaterfallTest(unittest.TestCase):
         return r
 
     def test_full_waterfall_with_remainder_for_backtest(self):
-        # post_tier1=50, reserve=int(50*0.35)=17, tier2_budget=33 -- but tier 3's OWN cap is
-        # still based on scan's REAL measured spend (20), not the tier2_budget it was given.
+        # available=60, tier3_reserve=int(60*0.35)=21, post_tier1=50, tier2_budget=max(0,50-21)=29
+        # -- but tier 3's OWN cap is still based on scan's REAL measured spend (20), not the
+        # tier2_budget it was given: post_tier1(50) - scan_spent(20) = 30.
         r = self._run(FakeApi(tokens_left=60), shadow_spent=10, scan_spent=20, expect_bt_cap=30)
         self.assertEqual(r["tokens_spent_total"], 10 + 20 + 0)
 
@@ -128,11 +135,38 @@ class BudgetWaterfallTest(unittest.TestCase):
         """The scenario that motivated this fix: tier 2's REAL measured spend equals its full
         given budget (it would gladly take the whole remainder if allowed to) -- proves the
         reserve is what leaves tier 3 a non-zero cap, not luck."""
-        post_tier1 = 60  # no shadow spend
-        tier2_budget = post_tier1 - int(post_tier1 * ch.TIER3_RESERVE_FRACTION)  # 60-21=39
-        r = self._run(FakeApi(tokens_left=60), shadow_spent=0, scan_spent=tier2_budget,
+        available = 60
+        tier3_reserve = int(available * ch.TIER3_RESERVE_FRACTION)  # 21
+        post_tier1 = available  # no shadow spend
+        tier2_budget = max(0, post_tier1 - tier3_reserve)  # 60-21=39
+        r = self._run(FakeApi(tokens_left=available), shadow_spent=0, scan_spent=tier2_budget,
                      expect_bt_cap=post_tier1 - tier2_budget)  # 21 left for tier 3
         self.assertGreater(post_tier1 - tier2_budget, 0)
+
+    def test_tier1_cap_is_bounded_not_the_whole_bank(self):
+        """Review fix (2026-07-08, live incident): tier 1 used to be handed the ENTIRE available
+        bank as its token_cap -- due_shadow_checkpoints()'s own 400-error bug (fixed the same
+        day) had silently zeroed tier 1's real work on every run, masking that it was never
+        actually bounded. Once real work resumes, an uncapped tier 1 could drain a whole run's
+        budget on a single large backlog (up to 500 overdue rows), reproducing the exact
+        "one tier eats everything" failure tier 2 used to cause."""
+        api = FakeApi(tokens_left=60)
+        with mock.patch.object(ch.config, "have_keepa", return_value=True), \
+             mock.patch.object(db, "start_run", return_value=1), \
+             mock.patch.object(db, "finish_run"), \
+             mock.patch.object(ch.datalake, "set_run_context"), \
+             mock.patch.object(ch.datalake, "reset_stats"), \
+             mock.patch.object(ch.datalake, "flush", return_value={}), \
+             mock.patch.object(ch.datalake, "digest_line", return_value=""), \
+             mock.patch.object(ch.shadow_outcomes, "run_rechecks",
+                               return_value={"status": "ok", "tokens_spent": 0}) as mrecheck, \
+             mock.patch.object(ch, "hint_led_scan",
+                               return_value={"status": "ok", "tokens_spent": 0,
+                                            "candidates": 0, "leads_logged": 0, "survivors": 0}), \
+             mock.patch.object(ch.backtest, "run_backtest", return_value={"status": "ok", "tokens_spent": 0}):
+            ch.run_hourly_collect(api=api)
+        self.assertLess(mrecheck.call_args.kwargs["token_cap"], api.tokens_left)
+        self.assertEqual(mrecheck.call_args.kwargs["token_cap"], int(60 * ch.TIER1_RESERVE_FRACTION))
 
 
 class AttachSignalFeaturesTest(unittest.TestCase):
@@ -302,6 +336,22 @@ class HintLedScanTest(unittest.TestCase):
         self.assertEqual(r["leads_logged"], 1)
         self.assertEqual(r["survivors"], 1)
         menqueue.assert_called_once()  # gate survivors get shadow-enqueued
+
+    def test_limit_reserves_for_the_finder_search_fallback_cost(self):
+        """Review fix (2026-07-08, live incident): `limit` used to be sized ONLY off enrich's
+        per-ASIN cost (token_budget // TOKENS_PER_CANDIDATE_ESTIMATE), reserving nothing for
+        find_candidates()'s own ~10-30 token search-fallback cost (Product Finder is
+        REQUEST_REJECTED on this Pro-plan key, so it ALWAYS falls back to a flat
+        SEARCH_TOKENS_PER_TERM/term search first) -- live-confirmed this made tier 2's real
+        combined spend structurally exceed its own token_budget every run. With 3 hints and a
+        100-token budget, the OLD sizing would give limit=25 (100//4); the fixed sizing must
+        reserve 3*SEARCH_TOKENS_PER_TERM=30 first, giving limit=(100-30)//4=17."""
+        api = FakeApi()
+        with mock.patch.object(ch.discovery_hints, "hinted_brand_seeds",
+                               return_value=["Lego", "Fisher-Price", "Melissa"]), \
+             mock.patch.object(keepa_client, "find_candidates", return_value=[]) as mfind:
+            ch.hint_led_scan(api, 100)
+        self.assertEqual(mfind.call_args.kwargs.get("limit"), 17)
 
     def test_hard_rejected_candidate_not_enqueued_as_survivor(self):
         api = FakeApi()

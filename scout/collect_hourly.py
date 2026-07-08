@@ -58,19 +58,40 @@ DEFAULT_HINT_SCAN_LIMIT = 60          # candidate-ASIN cap per burst tier 2, ind
 TOKENS_PER_CANDIDATE_ESTIMATE = 4     # sizing only — real spend is always measured after the fact.
                                       # Corrected from 3 to match keepa_client.ENRICH_TOKENS_PER_ASIN's
                                       # 2026-07-07 fix (two live bursts each measured exactly 4/ASIN).
-TIER3_RESERVE_FRACTION = 0.35         # Reserve this share of the POST-TIER-1 bank for tier 3
-                                      # (backtest collection) before tier 2 (discovery) spends
-                                      # anything. Review fix (2026-07-07, live incident): tier 2
-                                      # alone was consistently spending the ENTIRE bank (Product
-                                      # Finder's Pro-plan rejection forces a 10-token/term search
-                                      # fallback, plus the enrich guard's old undercounted per-ASIN
-                                      # estimate let it overdraw ~14 tokens past the cap every
-                                      # single run) -- leaving tier 3 with ZERO budget on every
-                                      # burst since the hang was fixed, so backtest_rows never grew
-                                      # even once. This is a deliberate discovery-vs-training-data
-                                      # tradeoff (Mehmet's call, 2026-07-07): tier 2 scans somewhat
-                                      # fewer candidates when the bank is full, so tier 3 actually
-                                      # gets a chance to grow the corpus that training depends on.
+TIER1_RESERVE_FRACTION = 0.25         # Cap tier 1 (shadow rechecks) to this share of the
+                                      # ORIGINAL bank (`available`, before anything spends) as
+                                      # its OWN per-run ceiling. Review fix (2026-07-08, live
+                                      # incident): tier 1 used to be handed the ENTIRE bank as
+                                      # its token_cap (collect_hourly.py never bounded it — only
+                                      # shadow_outcomes.py's own _recheck_token_cap() default
+                                      # existed, and that's only consulted when the CALLER passes
+                                      # token_cap=None, which collect_hourly.py never did). Once
+                                      # due_shadow_checkpoints()'s own 400-error bug (a separate
+                                      # fix, same date) stops silently zeroing tier 1's real work,
+                                      # a large one-time backlog of overdue shadow rows (up to 500
+                                      # per due_shadow_checkpoints()'s own limit) could otherwise
+                                      # drain an entire run's bank on tier 1 alone — exactly the
+                                      # "one tier eats everything" failure TIER3_RESERVE_FRACTION
+                                      # was built to fix for tier 2. shadow_outcomes.run_rechecks
+                                      # is itself resumable (overdue rows simply stay pending), so
+                                      # a big backlog drains gradually across many hourly runs
+                                      # instead of consuming one run's whole budget.
+TIER3_RESERVE_FRACTION = 0.35         # Reserve this share of the ORIGINAL bank (`available`, NOT
+                                      # whatever tier 1 leaves behind — review fix 2026-07-08, so
+                                      # tier 3's guarantee can't shrink just because tier 1 had a
+                                      # big backlog that run) for tier 3 (backtest collection)
+                                      # before tier 2 (discovery) spends anything. Review fix
+                                      # (2026-07-07, live incident): tier 2 alone was consistently
+                                      # spending the ENTIRE bank (Product Finder's Pro-plan
+                                      # rejection forces a 10-token/term search fallback, plus the
+                                      # enrich guard's old undercounted per-ASIN estimate let it
+                                      # overdraw ~14 tokens past the cap every single run) --
+                                      # leaving tier 3 with ZERO budget on every burst since the
+                                      # hang was fixed, so backtest_rows never grew even once.
+                                      # This is a deliberate discovery-vs-training-data tradeoff
+                                      # (Mehmet's call, 2026-07-07): tier 2 scans somewhat fewer
+                                      # candidates when the bank is full, so tier 3 actually gets
+                                      # a chance to grow the corpus that training depends on.
 
 # Review fix (2026-07-06): a defense-in-depth wall-clock budget, independent of the Trends N+1
 # fix above. keepa-collect.yml's own job timeout is 10 minutes; a run that's still going at this
@@ -214,17 +235,34 @@ def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[
         return {"status": "ok", "reason": "no fresh deal hints", "tokens_spent": 0,
                 "candidates": 0, "leads_logged": 0, "survivors": 0}
 
-    limit = max(1, min(DEFAULT_HINT_SCAN_LIMIT, token_budget // TOKENS_PER_CANDIDATE_ESTIMATE))
-    before = keepa_client._tokens_consumed(api)
+    # Review fix (2026-07-08, live incident): `limit` used to be sized ONLY off enrich's own
+    # per-ASIN cost (TOKENS_PER_CANDIDATE_ESTIMATE), with nothing reserved for find_candidates()'s
+    # OWN cost. On this Pro-plan key, Product Finder is REQUEST_REJECTED on every call
+    # (keepa_client.py's own confirmed comment), so find_candidates() ALWAYS falls back to a flat
+    # SEARCH_TOKENS_PER_TERM(10)/term search (up to 3 terms, 10-30 tokens) BEFORE enrich() ever
+    # runs. That real cost was never subtracted before sizing `limit`, so tier 2's TOTAL real
+    # spend structurally exceeded its own token_budget every run (live-confirmed: tier2_budget=39
+    # but real combined spend=45-46), eating into the tier-3 reserve that budget exists to
+    # protect. Reserve the worst-case finder cost up front before sizing enrich's candidate count.
+    finder_reserve = min(3, len(hints)) * keepa_client.SEARCH_TOKENS_PER_TERM
+    limit = max(1, min(DEFAULT_HINT_SCAN_LIMIT,
+                      max(0, token_budget - finder_reserve) // TOKENS_PER_CANDIDATE_ESTIMATE))
+    # Force a live refresh (not the passive _tokens_consumed) for the "before" probe too — the
+    # search fallback below uses raw requests.get() directly against api.keepa.com, bypassing the
+    # keepa.Keepa client object entirely, so it never updates api.tokens_left on its own; only an
+    # active update_status() probe (what current_tokens_left(refresh=True) does) sees its spend.
+    before = keepa_client.current_tokens_left(api, refresh=True)
     try:
         asins = _find_no_wait(api=api, brand_seeds=hints, limit=limit)
     except Exception as e:
         reason = redact.redact(str(e))
         log.warning("hourly hint-led finder failed (non-fatal): %s", reason)
-        return {"status": "error", "reason": reason, "tokens_spent": 0, "candidates": 0,
+        after = keepa_client.current_tokens_left(api, refresh=True)
+        return {"status": "error", "reason": reason,
+                "tokens_spent": keepa_client._delta(before, after) or 0, "candidates": 0,
                 "leads_logged": 0, "survivors": 0}
     if not asins:
-        after = keepa_client._tokens_consumed(api)
+        after = keepa_client.current_tokens_left(api, refresh=True)
         return {"status": "ok", "reason": "finder returned no candidates",
                 "tokens_spent": keepa_client._delta(before, after) or 0, "candidates": 0,
                 "leads_logged": 0, "survivors": 0}
@@ -234,7 +272,7 @@ def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[
     except Exception as e:
         reason = redact.redact(str(e))
         log.warning("hourly hint-led enrich failed (non-fatal): %s", reason)
-        after = keepa_client._tokens_consumed(api)
+        after = keepa_client.current_tokens_left(api, refresh=True)
         return {"status": "error", "reason": reason,
                 "tokens_spent": keepa_client._delta(before, after) or 0,
                 "candidates": len(asins), "leads_logged": 0, "survivors": 0}
@@ -322,15 +360,24 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
 
         budget = available
 
-        # Tier 1: shadow-outcome rechecks due today (labels.py's silver tier).
-        shadow_result = shadow_outcomes.run_rechecks(api=api, token_cap=budget, enrich_fn=_enrich_no_wait)
+        # Tier 1: shadow-outcome rechecks due today (labels.py's silver tier). Capped to
+        # TIER1_RESERVE_FRACTION of the ORIGINAL bank (not handed the whole thing) — see that
+        # constant's own comment: due_shadow_checkpoints() used to silently fail on every run (a
+        # separate fix, same date), so this cap was never actually exercised in practice; now
+        # that tier 1 can do real work again, an uncapped backlog could otherwise reproduce the
+        # exact "one tier eats everything" failure tier 2 used to cause.
+        tier1_cap = int(available * TIER1_RESERVE_FRACTION)
+        shadow_result = shadow_outcomes.run_rechecks(api=api, token_cap=tier1_cap, enrich_fn=_enrich_no_wait)
         summary["shadow"] = shadow_result
+        summary["tier1_cap"] = tier1_cap
         budget = max(0, budget - int(shadow_result.get("tokens_spent") or 0))
 
         # Tier 2: hint-led candidate scan through the normal gates/scoring/lead-upsert path.
-        # Capped to leave TIER3_RESERVE_FRACTION of the post-tier-1 bank for tier 3 — see that
-        # constant's own comment for why (tier 2 alone was starving tier 3 out completely).
-        tier3_reserve = int(budget * TIER3_RESERVE_FRACTION)
+        # Capped to leave TIER3_RESERVE_FRACTION of the ORIGINAL bank for tier 3 — see that
+        # constant's own comment for why (tier 2 alone was starving tier 3 out completely, and
+        # the reserve is computed from `available`, not `budget`, so tier 1's actual spend this
+        # run can't shrink tier 3's guarantee).
+        tier3_reserve = int(available * TIER3_RESERVE_FRACTION)
         tier2_budget = max(0, budget - tier3_reserve)
         summary["tier3_reserve"] = tier3_reserve
         if _deadline_exceeded(t0):

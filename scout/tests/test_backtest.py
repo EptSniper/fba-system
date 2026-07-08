@@ -259,6 +259,29 @@ class RunBacktestBudgetTest(unittest.TestCase):
         # tokens_spent in the returned summary is THIS RUN's spend, not the 500 already persisted.
         self.assertLess(r["tokens_spent"], 500)
 
+    def test_sampling_is_capped_to_leave_room_for_the_history_pull_loop(self):
+        """Review fix (2026-07-08, live incident, run 192): sample_asins_stratified() used to get
+        the run's ENTIRE token_cap as its ceiling -- dealfeed alone (capped at up to 4 deal pages
+        regardless of how big the ceiling is) could spend the whole cap and then some, leaving
+        the history-pull loop below with zero headroom. LIVE-CONFIRMED: cap=39, sample_spent=41,
+        rows_written=0 despite 599 ASINs sampled -- sampling had eaten the run's entire budget
+        before a single ASIN could be converted into a row. Proves sample_asins_stratified is now
+        invoked with at most (1 - SAMPLE_TOKEN_RESERVE_FRACTION) of the cap, guaranteeing the rest
+        for row-building."""
+        captured = {}
+
+        def fake_stratified(api, budget_tokens, target=bt.TARGET_ASINS, find_fn=None,
+                            firehose_fn=None):
+            captured["budget_tokens"] = budget_tokens
+            return [], 0, {"dealfeed": 0, "explore": 0, "onpolicy": 0}
+
+        with mock.patch.object(bt.config, "have_keepa", return_value=True), \
+             mock.patch.object(bt, "sample_asins_stratified", side_effect=fake_stratified):
+            bt.run_backtest(api=object(), token_cap=40, persist=False)
+
+        self.assertEqual(captured["budget_tokens"], 40 - int(40 * bt.SAMPLE_TOKEN_RESERVE_FRACTION))
+        self.assertLess(captured["budget_tokens"], 40, "sampling must not get the full run cap")
+
 
 class TrendPrefetchBatchTest(RunBacktestBudgetTest):
     """Review fix (2026-07-06): build_rows_for_asin()'s _fetch_trend_series() call used to have
@@ -283,6 +306,7 @@ class TrendPrefetchBatchTest(RunBacktestBudgetTest):
         with mock.patch.object(bt.config, "have_keepa", return_value=True), \
              mock.patch.object(bt, "backtest_token_cap", return_value=200), \
              mock.patch.object(bt, "parse_keepa_history", side_effect=fake_parse), \
+             mock.patch.object(bt, "sample_asins_explore", return_value=([], 0)), \
              mock.patch("brands.seed_brands", return_value=["Lego"]), \
              mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]), \
              mock.patch("signals.trends.prefetch_series", return_value={}) as mprefetch:

@@ -45,6 +45,17 @@ LABEL_HORIZON_DAYS = 60    # label observed at simulation_date + 60
 MIN_HISTORY_DAYS = 90      # need >=90 days of history BEFORE a window (for the avg90 features)
 _ENRICH_BATCH = 100
 TARGET_ASINS = 4000        # 3k-5k target; the token cap is the real limiter
+SAMPLE_TOKEN_RESERVE_FRACTION = 0.5   # cap sampling (dealfeed/explore/onpolicy combined) to at
+                                       # most half of run_backtest()'s token_cap, guaranteeing the
+                                       # other half for the history-pull loop that actually builds
+                                       # backtest_rows. Live-confirmed (2026-07-08, run 192): a
+                                       # 39-token cap with NO reserve let sampling alone spend 41
+                                       # tokens (599 ASINs sampled via dealfeed's full-cap
+                                       # ceiling), leaving zero headroom for the loop below —
+                                       # rows_written=0 despite a healthy sample. Same reserve
+                                       # philosophy as collect_hourly.py's TIER1/TIER3_RESERVE_
+                                       # FRACTION: one phase getting the whole budget by default
+                                       # starves the phase that actually matters downstream.
 
 # A normalized per-ASIN history is: {metric: [(day_ordinal:int, value:float|None), ...]} sorted by
 # day, where day_ordinal is date.toordinal(). None value = out-of-stock/no-data at that point.
@@ -697,9 +708,12 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
 
     # 1) stratified sample — dealfeed + explore (brand-agnostic) + onpolicy (unchanged, brand-
     #    seeded), budget-waterfalled (Session 55, learning.sampling). Product Finder/search/deal
-    #    spend all count against the same cap.
+    #    spend all count against the same cap. Reserved to at most SAMPLE_TOKEN_RESERVE_FRACTION
+    #    of `cap` (see that constant's docstring) so sampling can never eat the ENTIRE run budget
+    #    and leave nothing for step 2 below to actually convert into rows.
+    sample_budget = max(0, cap - int(cap * SAMPLE_TOKEN_RESERVE_FRACTION))
     sample_rows, sample_spent, sample_composition = sample_asins_stratified(
-        api, budget_tokens=max(0, cap - spent_this_run), target=target, find_fn=find_fn,
+        api, budget_tokens=sample_budget, target=target, find_fn=find_fn,
         firehose_fn=firehose_fn)
     spent_this_run += sample_spent
     asin_source = {r["asin"]: r["sample_source"] for r in sample_rows}

@@ -416,22 +416,84 @@ def _state_path() -> str:
     return os.path.join(datalake.lake_dir(), "_backtest_state.json")
 
 
-def _load_state() -> Dict[str, Any]:
+_STATE_BUCKET = "models"
+_STATE_STORAGE_PATH = "backtest/state.json"
+
+
+def _state_storage_headers() -> Dict[str, str]:
+    key = os.getenv("SUPABASE_SERVICE_KEY", "")
+    return {"apikey": key, "Authorization": f"Bearer {key}"}
+
+
+def _fetch_remote_state() -> Dict[str, Any]:
+    """The resume state (processed ASINs, spend, rows written), persisted in Supabase Storage —
+    see _load_state()'s docstring for why. {} on any failure/missing env — never raises, a
+    missing remote state just means 'start fresh', same as an empty local file always meant."""
     try:
-        with open(_state_path(), encoding="utf-8") as f:
-            return json.load(f) or {}
-    except Exception:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return {}
+        r = requests.get(f"{supa}/storage/v1/object/{_STATE_BUCKET}/{_STATE_STORAGE_PATH}",
+                         headers=_state_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return {}
+        return r.json() or {}
+    except Exception as e:
+        log.warning("backtest remote state fetch failed (non-fatal): %s", e)
         return {}
 
 
+def _upload_remote_state(st: Dict[str, Any]) -> bool:
+    """Best-effort — never raises. Same bucket/upsert pattern train_ranker.py already uses for
+    its own cross-run fingerprint, applied here for the backtest resume state."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        r = requests.post(
+            f"{supa}/storage/v1/object/{_STATE_BUCKET}/{_STATE_STORAGE_PATH}",
+            headers={**_state_storage_headers(), "x-upsert": "true", "Content-Type": "application/json"},
+            data=json.dumps(st).encode("utf-8"), timeout=30,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        log.warning("backtest remote state upload failed (non-fatal): %s", e)
+        return False
+
+
+def _load_state() -> Dict[str, Any]:
+    """Resume state (processed ASINs, spend, rows written so far). Review fix (2026-07-07, live
+    incident): _state_path() is a LOCAL file — on GitHub Actions (no persistent disk between
+    runs) it never actually survived, so every hourly burst silently started from empty state,
+    re-sampled fresh dealfeed candidates, spent its whole tier-3 budget on sampling alone, and
+    deferred everything (298 ASINs sampled, 0 processed, 0 rows written, observed live) — the
+    exact resumability this mechanism exists to provide never actually happened in production.
+    Now prefers the local file (fast path, unchanged for local dev / any persistent host) and
+    falls back to the Supabase-Storage-backed copy when the local file is empty/missing."""
+    try:
+        with open(_state_path(), encoding="utf-8") as f:
+            local = json.load(f) or {}
+        if local:
+            return local
+    except Exception:
+        pass
+    return _fetch_remote_state()
+
+
 def _save_state(st: Dict[str, Any]) -> None:
+    """Persists BOTH locally (fast local-dev path, unchanged) AND to Supabase Storage, so the
+    state actually survives an ephemeral GitHub Actions runner — see _load_state()'s docstring."""
     try:
         import datalake
         os.makedirs(datalake.lake_dir(), exist_ok=True)
         with open(_state_path(), "w", encoding="utf-8") as f:
             json.dump(st, f)
     except Exception as e:
-        log.warning("backtest state save failed (non-fatal): %s", e)
+        log.warning("backtest local state save failed (non-fatal): %s", e)
+    _upload_remote_state(st)
 
 
 def sample_asins_on_policy(api, budget_tokens: int, target: int = TARGET_ASINS,

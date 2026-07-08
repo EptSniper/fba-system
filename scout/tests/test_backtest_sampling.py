@@ -201,6 +201,7 @@ class SafetyArchitectureGuardTest(unittest.TestCase):
 
         with mock.patch.object(bt.config, "have_keepa", return_value=True), \
              mock.patch.object(bt, "backtest_token_cap", return_value=1000), \
+             mock.patch.object(bt, "_fetch_remote_state", return_value={}), \
              mock.patch.object(brands, "AVOID_BRANDS", ["Nike"]), \
              mock.patch("brands.seed_brands", return_value=[]), \
              mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]), \

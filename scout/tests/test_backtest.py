@@ -8,6 +8,7 @@ The LEAKAGE TESTS are the deliverable and lead this file:
      parallel reimplementation).
 Plus: windowing, the would_have_profited label math, the token-cap budget guard + resume.
 """
+import json
 import os
 import sys
 import datetime as dt
@@ -143,6 +144,18 @@ class RunBacktestBudgetTest(unittest.TestCase):
         import tempfile
         os.environ["DATALAKE_ENABLED"] = "0"  # don't touch the real lake; state file uses lake_dir
         os.environ["DATA_LAKE_DIR"] = tempfile.mkdtemp(prefix="fba-bt-test-")
+        # Review fix (2026-07-07): _load_state()/_save_state() now fall back to a real Supabase
+        # Storage read/write when the local state file is empty (the whole point of that fix —
+        # GitHub Actions has no persistent disk). Without isolating this too, these tests would
+        # silently read REAL cross-run production state (contaminating tokens_spent/
+        # asins_processed assertions with leftover live data) and could even write test fixture
+        # ASINs to the real bucket. Same isolation principle as the DATA_LAKE_DIR redirect above.
+        self._remote_patchers = [
+            mock.patch.object(bt, "_fetch_remote_state", return_value={}),
+            mock.patch.object(bt, "_upload_remote_state", return_value=False),
+        ]
+        for p in self._remote_patchers:
+            p.start()
 
     def tearDown(self):
         import shutil
@@ -152,6 +165,8 @@ class RunBacktestBudgetTest(unittest.TestCase):
                 os.environ.pop(k, None)
             else:
                 os.environ[k] = v
+        for p in self._remote_patchers:
+            p.stop()
 
     def test_disabled_without_keepa(self):
         with mock.patch.object(bt.config, "have_keepa", return_value=False):
@@ -325,6 +340,69 @@ class HistoryLoopBatchSizingTest(RunBacktestBudgetTest):
         # only 2 tokens were ever actually spent (measured via the tokens_left delta), never the
         # full 10-ASIN batch size the old `spent += len(batch)` would have charged
         self.assertEqual(r["tokens_spent"], 2)
+
+
+class RemoteStateFallbackTest(unittest.TestCase):
+    """Review fix (2026-07-07, live incident): _state_path() is a LOCAL file — on GitHub Actions
+    (no persistent disk between runs) it never survived, so every hourly burst silently started
+    from empty state, re-sampled fresh dealfeed candidates every single time, and never actually
+    progressed toward the resumable corpus (298 ASINs sampled, 0 processed, observed live).
+    _load_state()/_save_state() now fall back to a Supabase-Storage-backed copy — these tests
+    exercise that fallback directly (not via the full run_backtest() cycle above, which always
+    mocks the remote functions out for isolation)."""
+
+    def setUp(self):
+        self._env = {k: os.environ.get(k) for k in ("DATALAKE_ENABLED", "DATA_LAKE_DIR")}
+        import tempfile
+        os.environ["DATALAKE_ENABLED"] = "0"
+        os.environ["DATA_LAKE_DIR"] = tempfile.mkdtemp(prefix="fba-bt-remote-test-")
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(os.environ["DATA_LAKE_DIR"], ignore_errors=True)
+        for k, v in self._env.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+
+    def test_empty_local_file_falls_back_to_remote_state(self):
+        remote = {"processed_asins": ["B0REMOTE"], "spent_tokens": 42, "rows_written": 7}
+        with mock.patch.object(bt, "_fetch_remote_state", return_value=remote) as mfetch:
+            st = bt._load_state()
+        mfetch.assert_called_once()
+        self.assertEqual(st, remote)
+
+    def test_nonempty_local_file_is_preferred_over_remote(self):
+        local = {"processed_asins": ["B0LOCAL"], "spent_tokens": 1, "rows_written": 0}
+        with open(bt._state_path(), "w", encoding="utf-8") as f:
+            json.dump(local, f)
+        with mock.patch.object(bt, "_fetch_remote_state",
+                              side_effect=AssertionError("should not be called")):
+            st = bt._load_state()
+        self.assertEqual(st, local)
+
+    def test_save_state_writes_locally_and_uploads_remotely(self):
+        st = {"processed_asins": ["B0NEW"], "spent_tokens": 3, "rows_written": 1}
+        with mock.patch.object(bt, "_upload_remote_state") as mupload:
+            bt._save_state(st)
+        mupload.assert_called_once_with(st)
+        with open(bt._state_path(), encoding="utf-8") as f:
+            self.assertEqual(json.load(f), st)
+
+    def test_remote_fetch_failure_degrades_to_empty_not_a_crash(self):
+        with mock.patch("requests.get", side_effect=ConnectionError("network down")), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            st = bt._fetch_remote_state()
+        self.assertEqual(st, {})
+
+    def test_remote_upload_failure_is_non_fatal(self):
+        with mock.patch("requests.post", side_effect=ConnectionError("network down")), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            ok = bt._upload_remote_state({"processed_asins": []})
+        self.assertFalse(ok)
 
 
 if __name__ == "__main__":

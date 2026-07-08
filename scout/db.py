@@ -463,9 +463,16 @@ def get_cached_restriction(asin: str) -> Optional[Dict[str, Any]]:
     try:
         cutoff = (_dt.datetime.now(_dt.timezone.utc)
                  - _dt.timedelta(days=RESTRICTION_CACHE_DAYS)).isoformat()
+        # Review fix (2026-07-08, live incident): cutoff (a tz-aware ISO timestamp, e.g.
+        # "...+00:00") was interpolated raw/unquoted. PostgREST's query-string parser decodes an
+        # unescaped '+' as a space (the historic application/x-www-form-urlencoded convention),
+        # corrupting the UTC offset so Postgres rejects the whole filter with a 400 ("invalid
+        # input syntax for type timestamp with time zone"). Live-reproduced against production
+        # and confirmed fixed by _quote()ing the timestamp, matching every other timestamp/string
+        # filter value in this file (e.g. due_shadow_checkpoints() below, top_leads_raw()).
         r = requests.get(
             f"{SUPA}/rest/v1/spapi_restrictions_cache"
-            f"?asin=eq.{asin}&checked_at=gte.{cutoff}&select=*",
+            f"?asin=eq.{_quote(asin, safe='')}&checked_at=gte.{_quote(cutoff, safe='')}&select=*",
             headers=_headers(), timeout=10,
         )
         r.raise_for_status()
@@ -768,8 +775,17 @@ def due_shadow_checkpoints(now_iso: Optional[str] = None, limit: int = 500) -> L
         return []
     now_iso = now_iso or _dt.datetime.now(_dt.timezone.utc).isoformat()
     try:
+        # Review fix (2026-07-08, live incident): now_iso (a tz-aware ISO timestamp, e.g.
+        # "...+00:00") was interpolated raw/unquoted — the ONE filter value in this file that
+        # broke its own established _quote() convention (get_lead/top_leads_raw/leads_by_brand
+        # all quote their string/timestamp filters). PostgREST's query-string parser decodes an
+        # unescaped '+' as a space (the historic application/x-www-form-urlencoded convention),
+        # corrupting the UTC offset so Postgres rejected the WHOLE filter with a 400 every single
+        # time this ran ("invalid input syntax for type timestamp with time zone") — tier 1
+        # (shadow rechecks) silently did zero real work on every hourly burst since this was
+        # written. Live-reproduced against production and confirmed fixed by _quote()ing now_iso.
         r = requests.get(
-            f"{SUPA}/rest/v1/shadow_outcomes?status=eq.pending&due_at=lte.{now_iso}"
+            f"{SUPA}/rest/v1/shadow_outcomes?status=eq.pending&due_at=lte.{_quote(now_iso, safe='')}"
             f"&order=due_at.asc&limit={int(limit)}",
             headers=_headers(), timeout=10,
         )

@@ -215,6 +215,50 @@ class RunBacktestBudgetTest(unittest.TestCase):
         self.assertIn("A2", pulled)
         self.assertNotIn("A1", pulled)  # already processed -> skipped on resume
 
+    def test_large_persisted_lifetime_spend_does_not_permanently_zero_a_small_cap(self):
+        """Review fix (2026-07-08, live incident): before this fix, run_backtest() compared a
+        PERSISTED CUMULATIVE spend against THIS RUN's own small token_cap (e.g. 15, the typical
+        hourly-burst tier-3 reserve) via a single `spent` variable loaded straight from state.
+        That was harmless only because the state file never survived across GitHub Actions runs
+        (fixed separately, 2026-07-08) -- once persistence genuinely started working, a lifetime
+        total that only grows (e.g. 111, from real prior runs) permanently zeroed
+        `max(0, cap - spent)` on every future call, forever, regardless of how small `cap` itself
+        was. LIVE-CONFIRMED against a real run: token_cap=15, persisted spent=111 ->
+        sample_asins_stratified got budget_tokens=0 -> asins_sampled=0 forever after. This test
+        pre-seeds a lifetime spend far exceeding the explicit token_cap and asserts sampling and
+        processing still happen — proving the per-run budget check uses only THIS invocation's
+        own fresh spend, not the persisted lifetime counter."""
+        import json
+        state_path = bt._state_path()
+        os.makedirs(os.path.dirname(state_path), exist_ok=True)
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump({"processed_asins": [], "spent_tokens": 500, "rows_written": 0}, f)
+
+        pulled = []
+
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            return {"Lego": ["A1", "A2"]}.get((brand_seeds or [None])[0], [])
+
+        def fake_history(asins, api=None):
+            pulled.extend(asins)
+            return [{"asin": a, "data": None} for a in asins]
+
+        # dealfeed/explore stubbed to (0, 0) so this test isolates the cap-vs-lifetime-spend fix
+        # from an unrelated quirk in explore's own per-term budget sizing (not what's under test
+        # here) -- onpolicy (fake_find) should still get the run's full 15-token budget.
+        with mock.patch.object(bt.config, "have_keepa", return_value=True), \
+             mock.patch.object(bt, "backtest_token_cap", return_value=200), \
+             mock.patch.object(bt, "sample_asins_explore", return_value=([], 0)), \
+             mock.patch("brands.seed_brands", return_value=["Lego"]), \
+             mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]):
+            r = bt.run_backtest(api=object(), token_cap=15, find_fn=fake_find,
+                               history_fn=fake_history, persist=True)
+
+        self.assertGreater(r["asins_sampled"], 0, "sampling must not be gated by lifetime spend")
+        self.assertTrue(pulled, "history-pull loop must still run despite a large lifetime spend")
+        # tokens_spent in the returned summary is THIS RUN's spend, not the 500 already persisted.
+        self.assertLess(r["tokens_spent"], 500)
+
 
 class TrendPrefetchBatchTest(RunBacktestBudgetTest):
     """Review fix (2026-07-06): build_rows_for_asin()'s _fetch_trend_series() call used to have

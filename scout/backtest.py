@@ -508,13 +508,16 @@ def sample_asins_on_policy(api, budget_tokens: int, target: int = TARGET_ASINS,
     try:
         import brands
         seeds += brands.seed_brands(config.BRAND_SEED_LIMIT) or []
-    except Exception:
-        pass
+    except Exception as e:
+        # Review fix (2026-07-08 audit): was a bare `pass` — a broken brand-seed source silently
+        # dropped the entire seed list with no trace, making a starved sample look identical to
+        # "nothing configured".
+        log.warning("backtest sampling: brands.seed_brands() failed (non-fatal): %s", e)
     try:
         import discovery_hints
         seeds += [s for s in (discovery_hints.hinted_brand_seeds() or []) if s not in seeds]
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("backtest sampling: discovery_hints.hinted_brand_seeds() failed (non-fatal): %s", e)
 
     asins: List[str] = []
     seen = set()  # O(1) membership — list-scan dedupe goes quadratic at the 4-5k target
@@ -674,7 +677,21 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
 
     state = _load_state()
     processed = set(state.get("processed_asins", []))
-    spent = int(state.get("spent_tokens", 0))
+    # Review fix (2026-07-08, live incident): this used to be one `spent` variable, loaded from
+    # persisted state and compared directly against `cap` (this run's own tiny token_cap, e.g.
+    # 11-20 on a burst — collect_hourly.py's tier 3 only ever gets the hourly leftover, never
+    # backtest_token_cap()'s big campaign ceiling). That was harmless ONLY because the state
+    # file never actually survived between GitHub Actions runs (fixed 2026-07-08, "Persist
+    # backtest resume state to Supabase Storage") -- `spent` was always a fresh 0 at the start of
+    # every run, so `cap - spent == cap`. Now that persistence genuinely works, `spent_tokens` is
+    # a real CUMULATIVE lifetime total that only grows, so `cap - spent` goes negative almost
+    # immediately and STAYS at 0 forever after — LIVE-CONFIRMED (run 28910293641, 2026-07-08
+    # 01:15 UTC): token_cap=15, lifetime spent=111, sample_asins_stratified got
+    # budget_tokens=max(0,15-111)=0, and every run since would repeat this permanently. Split
+    # the two concepts: `lifetime_spent` (persisted, monotonic, reporting-only) vs
+    # `spent_this_run` (starts at 0 every call, gates every budget decision below).
+    lifetime_spent = int(state.get("spent_tokens", 0))
+    spent_this_run = 0
     rows_written = int(state.get("rows_written", 0))
     row_composition = dict(state.get("row_composition") or {})
 
@@ -682,9 +699,9 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
     #    seeded), budget-waterfalled (Session 55, learning.sampling). Product Finder/search/deal
     #    spend all count against the same cap.
     sample_rows, sample_spent, sample_composition = sample_asins_stratified(
-        api, budget_tokens=max(0, cap - spent), target=target, find_fn=find_fn,
+        api, budget_tokens=max(0, cap - spent_this_run), target=target, find_fn=find_fn,
         firehose_fn=firehose_fn)
-    spent += sample_spent
+    spent_this_run += sample_spent
     asin_source = {r["asin"]: r["sample_source"] for r in sample_rows}
     asins = [r["asin"] for r in sample_rows]
     todo = [a for a in asins if a not in processed]
@@ -705,7 +722,7 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
         # the batch to what's ACTUALLY affordable right now — the live bank AND the remaining
         # run budget — so a low-token hourly burst still gets some rows instead of zero.
         available = keepa_client.current_tokens_left(api)
-        headroom = max(0, cap - spent)
+        headroom = max(0, cap - spent_this_run)
         if available is None:
             # Can't read the bank — degrade to trusting the run's own cap headroom (same
             # fallback philosophy as keepa_client._guard_batch's "can't read, trust the caller").
@@ -733,7 +750,7 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
         # was inflating the persisted state and starving future runs' budgets for no reason).
         # Falls back to the requested batch size (an honest worst-case, never an undercount)
         # only when the counter itself can't be read.
-        spent += delta if isinstance(delta, int) and delta >= 0 else len(batch)
+        spent_this_run += delta if isinstance(delta, int) and delta >= 0 else len(batch)
         parsed = []
         for product in products:
             if not isinstance(product, dict) or not product.get("asin"):
@@ -784,13 +801,14 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
         processed.update(batch_asins)
 
     rows_written += built
+    lifetime_spent += spent_this_run
     datalake.flush("backtest")
     if persist:
-        _save_state({"processed_asins": sorted(processed), "spent_tokens": spent,
+        _save_state({"processed_asins": sorted(processed), "spent_tokens": lifetime_spent,
                      "rows_written": rows_written, "row_composition": row_composition})
 
     return {"status": "ok", "asins_sampled": len(asins), "asins_processed": len(processed),
-            "rows_written": built, "rows_total": rows_written, "tokens_spent": spent,
+            "rows_written": built, "rows_total": rows_written, "tokens_spent": spent_this_run,
             "token_cap": cap, "deferred_asins": deferred,
             "sample_composition": sample_composition, "row_composition": row_composition,
             "supabase_rows": db.count_backtest_rows() if persist else built,

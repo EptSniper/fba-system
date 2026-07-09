@@ -1,6 +1,9 @@
-import { Activity, BrainCircuit, CheckCircle2, Database, Gauge, GitCompareArrows, ShieldCheck, TriangleAlert } from "lucide-react";
+import { Activity, BrainCircuit, CheckCircle2, Database, Gauge, GitCompareArrows, LineChart, ShieldCheck, TriangleAlert } from "lucide-react";
 import { getBrain, getPicks, getMoney, getInventory, getEvents } from "@/lib/data";
-import { ActionLink, Badge, PageHeader, Panel } from "@/components/ui";
+import { ActionLink, Badge, EmptyState, PageHeader, Panel } from "@/components/ui";
+import { buildIntelligenceData } from "@/lib/intelligence-server";
+import { BacktestGrowthChart, CompositionBar, RankerAccuracyChart, RunTokensChart } from "@/components/scout-charts";
+import { num } from "@/lib/format";
 
 // Reads live sibling learning-hub/ files on every request (Code Review 2026-07-02, Finding
 // CS8) — without this, Next.js may statically cache the page at build time and serve stale
@@ -16,11 +19,12 @@ const LOOP = [
   ["Promote", "A challenger replaces the champion only after measurable offline improvement"],
 ];
 
-export default function IntelligencePage() {
+export default async function IntelligencePage() {
   const brain = getBrain();
   const picks = getPicks();
   const money = getMoney();
   const inventory = getInventory();
+  const intel = await buildIntelligenceData();
   // A large limit, not the feed's default 40 — this needs every outcome ever captured to judge
   // readiness honestly, not just the most recent page of the ledger.
   const outcomeEvents = getEvents(5000).filter((e) => e.kind === "outcome");
@@ -86,6 +90,67 @@ export default function IntelligencePage() {
           ))}
         </ol>
       </Panel>
+
+      {!intel.connected ? (
+        <Panel title="Training & collection" icon={<LineChart size={16} />} right="live">
+          <EmptyState
+            title="Supabase not configured"
+            hint="Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in control-center/.env.local to see collection/training charts."
+          />
+        </Panel>
+      ) : (
+        <>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <Panel
+              title="Backtest rows collected"
+              icon={<Database size={16} />}
+              right={`${num(intel.totalBacktestRows)} total`}
+            >
+              <BacktestGrowthChart data={intel.backtestGrowth} />
+            </Panel>
+            <Panel
+              title="Ranker accuracy over time"
+              icon={<LineChart size={16} />}
+              right="AUC, held-out"
+            >
+              <RankerAccuracyChart data={intel.rankerHistory} />
+            </Panel>
+          </div>
+
+          <Panel title="Collector token spend by tier" icon={<Activity size={16} />} right="hourly runs">
+            <RunTokensChart data={intel.runHistory} tierBreakdownAvailableSince={intel.tierBreakdownAvailableSince} />
+          </Panel>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <Panel title="Sampling composition" icon={<Database size={16} />} right="dealfeed / explore / onpolicy">
+              <CompositionBar
+                emptyHint="Fills in once sample_source is populated (migration 011, 2026-07-09)."
+                segments={[
+                  { label: "dealfeed", value: intel.sampleComposition.dealfeed, color: "var(--accent)" },
+                  { label: "explore", value: intel.sampleComposition.explore, color: "var(--info)" },
+                  { label: "onpolicy", value: intel.sampleComposition.onpolicy, color: "var(--profit)" },
+                  { label: "unknown (pre-migration)", value: intel.sampleComposition.unknown, color: "var(--text-faint)" },
+                ]}
+              />
+              {!intel.sampleSourceAvailableSince ? (
+                <p className="mt-2 text-[11px] text-faint">
+                  Every row so far predates sample_source tracking — this breaks out starting with the next
+                  dealfeed/explore/onpolicy sample.
+                </p>
+              ) : null}
+            </Panel>
+            <Panel title="Backtest label outcome" icon={<GitCompareArrows size={16} />} right="would-have-profited">
+              <CompositionBar
+                segments={[
+                  { label: "profitable", value: intel.labelComposition.profitable, color: "var(--profit)" },
+                  { label: "not profitable", value: intel.labelComposition.notProfitable, color: "var(--loss)" },
+                  { label: "unknown", value: intel.labelComposition.unknown, color: "var(--text-faint)" },
+                ]}
+              />
+            </Panel>
+          </div>
+        </>
+      )}
 
       <Panel title="Accuracy guardrails" icon={<TriangleAlert size={16} />} right="non-negotiable">
         <div className="grid gap-3 md:grid-cols-2">

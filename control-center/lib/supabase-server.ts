@@ -86,10 +86,64 @@ export type SupabaseRun = {
   tokens_left_end: number | null;
   error_summary: string | null;
   host: string | null;
+  // Migration 013 (2026-07-09) — per-tier token split + the backtest tier's own rows/ASINs-
+  // sampled counts. Null on any run recorded before this migration landed; a real collector run
+  // always sets tier1/tier2_tokens (tier3_tokens/backtest_* stay null if tier 3 was skipped).
+  tier1_tokens: number | null;
+  tier2_tokens: number | null;
+  tier3_tokens: number | null;
+  backtest_rows_written: number | null;
+  backtest_asins_sampled: number | null;
 };
 
 export function getRecentRuns(limit = 14): Promise<SupabaseRun[] | null> {
   return supaGet<SupabaseRun>(`runs?order=started_at.desc&limit=${limit}`);
+}
+
+// Migration 013 (2026-07-09) — one row per scout/train_ranker.py training run. The durable,
+// queryable record of champion/challenger AUC over time that ranker-report.md (cloud runs never
+// commit their copy back — train-ranker.yml's own header comment) and the Discord post
+// (human-readable, not queryable) never were.
+export type SupabaseRankerRun = {
+  id: number;
+  trained_at: string;
+  host: string | null;
+  refused: boolean;
+  refusal_reason: string | null;
+  row_count: number | null;
+  train_rows: number | null;
+  train_asins: number | null;
+  val_rows: number | null;
+  val_asins: number | null;
+  champion_auc: number | null;
+  champion_winners_in_top: number | null;
+  challenger_auc: number | null;
+  challenger_winners_in_top: number | null;
+  verdict: string | null;
+  by_tier: Record<string, { total: number; positive: number; negative: number }> | null;
+  by_source: Record<string, { n: number; auc: number | null }> | null;
+};
+
+export function getRankerRuns(limit = 60): Promise<SupabaseRankerRun[] | null> {
+  return supaGet<SupabaseRankerRun>(`ranker_runs?order=trained_at.desc&limit=${limit}`);
+}
+
+// A lean projection of backtest_rows for the collection-growth chart — deliberately excludes
+// features_snapshot (a large JSONB blob per row, irrelevant to a growth/composition chart).
+// Current corpus size (hundreds of rows) makes a full-table pull-and-aggregate-in-Node fine;
+// re-evaluate (a Postgres view or an RPC that aggregates server-side) if this ever approaches
+// DATA_ENGINE_PLAN's ~50k-row target, where even these 4 columns would be a multi-MB payload.
+export type SupabaseBacktestRowLite = {
+  created_at: string;
+  sample_source: string | null;
+  label_quality: string;
+  would_have_profited: boolean | null;
+};
+
+export function getBacktestRowsForChart(limit = 20000): Promise<SupabaseBacktestRowLite[] | null> {
+  return supaGet<SupabaseBacktestRowLite>(
+    `backtest_rows?select=created_at,sample_source,label_quality,would_have_profited&order=created_at.asc&limit=${limit}`,
+  );
 }
 
 export type SupabaseLead = {

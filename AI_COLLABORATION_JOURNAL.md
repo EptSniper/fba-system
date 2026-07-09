@@ -115,6 +115,157 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-09 — Claude Code Session 58 (continued yet again): secondary-axis sampling, a real promotion gate, and a live incident where the test suite was silently writing to production Supabase Storage
+
+Direct continuation of the entry below (same day, same body of work, resumed after a context
+compaction). Mehmet re-sent the same ML directive mid-flow (a delivery hiccup, not new content),
+then separately installed the `amazon-fba-oa` plugin and gave a standing instruction: **always
+use the fba-\* skills/experts going forward.** This entry covers what actually changed in THIS
+continuation, on top of the prior entry's already-committed work (`fb95a7b`, `cb7d0eb`, `65a27e4`
+— the category+explore rotation cursors, assembly-time caps, and the brain-proposal draft).
+
+#### Request and constraints
+
+Mehmet: (1) apply the same fix to the secondary sampling axis (rank/price/drop% bands) the
+category cursor already got; (2) add a poisoned-future leakage regression test for the windowed
+features; (3) do NOT let run 4's challenger win (flipped from losing to winning, ~0.73 vs ~0.69
+AUC, on only ~186 val rows, the SAME run the corpus widened from 4 to 13 categories) read as
+promotion-ready — add a real gate (consistency across runs + a time-held-out split), leaving
+`scoring.rankingChampion` untouched. Then: always route through the installed `fba-*` skills.
+
+#### Skills actually used this round
+
+`fba-ranker-architect` (validated the promotion-gate design before I wrote it — its one concrete
+correction: use 3 CONSECUTIVE wins, not a majority-of-N, since a majority tolerates a loss in the
+middle that contradicts "consistent"), `fba-leakage-auditor` (signed off clean on the new
+poisoned-future tests, `split_by_time()`, and the second model fit — one non-blocking watch-item
+for `fba-ml-evaluator` about label-tier mix someday confounding the time-split metric),
+`fba-qa-tester` (wrote and ran the 8-test `PromotionGateTest` suite), `fba-code-reviewer` (found
+a real BLOCKER before this shipped — see below). Honest gap: I did not invoke these through the
+Skill tool's native mechanism for the FIRST half of this session (before the plugin was
+installed) and even after installing it, I did not read each specialist's own `SKILL.md` file
+individually until Mehmet asked "did you use the skills" directly — I'd only read the shared
+`ml-doctrine.md`. Caught and closed that gap this round; noted honestly to Mehmet at the time.
+
+#### Implementation
+
+- **`scout/deals_firehose.py`** — Lever A part 2 (`ML_DEBIAS_PLAN.md`): a SECOND persisted cursor
+  (`models/backtest/dealfeed_secondary_cursor.json`, same Supabase Storage pattern as the
+  category cursor) rotating `salesRankRange`/`currentRange`/`deltaPercentRange` (rank/price/
+  drop%-band combinations, 27 total) layered on top of the existing category cursor — one full
+  combination per RUN, not per page, so a run explores one slice broadly across whichever
+  categories the category cursor lands on that run. `fetch_deal_page()` gained an `extra_filters`
+  param to carry these into the real `deal_parms` sent to Keepa.
+- **`scout/backtest.py`** — new `split_by_time()` (chronological split: latest `simulation_date`
+  = validation, everything earlier = training) alongside the existing `split_by_asin()` group
+  split. Deliberately allows the same ASIN to straddle the boundary here (the realistic
+  forward-prediction scenario this split exists to test), unlike `split_by_asin`'s exclusivity
+  requirement — the doctrine's own §4 gap this closes.
+- **`scout/train_ranker.py`** — `train_and_evaluate()` now also fits a SEPARATE `LGBMClassifier`
+  on `split_by_time()`'s holdout (reusing the by-ASIN-fitted model would have been methodologically
+  broken: that split doesn't exclude by time, so some "held out by date" rows could already be in
+  that model's own by-ASIN train set). New `promotion_gate(result, recent_runs)`: ready only if
+  (1) this run's primary split wins by the existing 0.02 AUC margin, (2) the challenger ALSO won,
+  by the same margin, on the 2 recorded runs immediately before this one — a strict streak of 3
+  consecutive wins, not a majority; an inconclusive/refused prior run breaks the streak rather
+  than being skipped over, (3) the new time-split ALSO confirms the win. Flags small-sample
+  caution (either split under ~150 val rows) regardless of readiness. Never writes
+  `scoring.rankingChampion` — verified no write path exists anywhere in this file.
+- **`scout/db.py`** — `recent_ranker_runs(limit)`, the read sibling of the existing
+  `record_ranker_run()`; verified the field names match key-for-key, including refused rows
+  correctly leaving `champion_auc`/`challenger_auc` as SQL NULL rather than a missing-key
+  surprise for the read side.
+- **`amazon-fba-oa/references/ml-doctrine.md`** — Cowork had already reconciled its model/split/
+  floor description against the actual code (LGBMClassifier+AUC, not LGBMRanker/NDCG; a flat
+  `minLabeledRows=30`, not a "groups" concept) by the time I got to it; I just verified and
+  committed it.
+
+#### fba-code-reviewer found a real BLOCKER before this shipped
+
+`secondary_axis_filters()` set `salesRankRange`/`currentRange`/`deltaPercentRange` but never
+`isRangeEnabled`/`isFilterEnabled`. Verified directly against the installed `keepa` package's
+source: `Keepa.deals()` JSON-dumps `deal_parms` verbatim with no auto-enabling of range filters —
+Keepa's own deals UI gates these behind separate toggles, so without them this whole feature
+risked being a SILENT NO-OP (every "band" secretly returning the same unfiltered results, with
+the mocked test suite structurally unable to catch a Keepa-side ignore — exactly the doctrine's
+"green tests, broken machine" cautionary tale). Fixed by adding both flags defensively. Also
+flagged (SHOULD-FIX, applied): 4 simultaneous AND'd filters can legitimately return zero-few
+deals for many combinations — added a log line pairing each run's active combo with its actual
+yield so a consistently-dry slice is visible instead of silently reducing collection.
+
+#### Live incident, caught by re-running the suite after the review fixes: tests were writing to REAL production Supabase Storage
+
+Re-running the full suite (a healthy habit, not superstition) surfaced
+`test_backtest_sampling.py::SampleAsinsExploreTest::test_seeds_with_category_keywords_not_brands`
+failing — but ONLY in the full-suite run, not in isolation. Root cause: importing `backtest.py`
+loads `.env` into `os.environ` at module scope, so `SUPABASE_URL`/`SUPABASE_SERVICE_KEY` are REAL
+for the rest of any process that imports it. `SampleAsinsExploreTest` and
+`SampleAsinsStratifiedTest` (in this older, separate test file — not one I'd touched today) never
+mocked `_fetch_remote_explore_cursor()`/`_upload_remote_explore_cursor()` (added in the prior
+continuation's `fb95a7b`), so every test in them silently READ, and via
+`test_stops_when_budget_exhausted`'s non-empty rotation actually WROTE, the real production
+`explore_cursor.json`. Confirmed directly against Supabase: the stored cursor (`4`) had genuinely
+drifted from test runs. Impact assessed as low/self-correcting (it's just an integer rotation
+position, mod'd against the real category-list length on every real read — worst case one
+category's turn gets skipped or repeated once) — not worth trying to reconstruct a "correct"
+prior value, but the exposure itself was real and is now fixed with the same isolation pattern
+`test_backtest.py::RunBacktestBudgetTest` already uses.
+
+While auditing every `run_backtest()`/`sample_asins_explore()`/`sample_asins_stratified()` call
+site in the suite for the same gap, found a second, unrelated latent bug in the same file:
+`SafetyArchitectureGuardTest`'s avoid-brand end-to-end test defined a `fake_firehose` fixture but
+never actually passed it to `run_backtest()` — the REAL `deals_firehose.harvest()` ran instead
+(same live-Supabase exposure, for its own category/secondary cursors). Wiring the fixture in
+correctly surfaced a THIRD bug: the fixture returned a bare ASIN string list where `harvest()`'s
+real contract is `{"asin","category"}` dicts, which crashed instantly once actually reached. Fixed
+the fixture's shape too. Verified the full fix by running the suite twice in a row (827 scout
+tests passed both times) to rule out order-dependent luck.
+
+#### Honest note on commit-message attribution
+
+My commit `7fecc88` ("Fix the real root cause of the corpus's 82.5% toys concentration") narrates
+the full root-cause story (rotation restarting at index 0, category cursor fix) as if it happened
+in that commit. It didn't — the category-rotation cursor and its root-cause discovery were
+already committed in the prior continuation's `fb95a7b`; `7fecc88` only added the secondary-axis
+rotation plus the two code-review fixes on top of it. The code in that commit is correct; the
+message overstates what was new in it. Not amended (repo convention: new commits, not rewriting
+pushed history) — recorded here for anyone reading git log rather than this journal.
+
+#### Verification
+
+`python run_all_tests.py`: 907 passed, 0 failed. Full `scout` suite additionally re-run twice in a
+row standalone (827/827, 827/827) to confirm the isolation fix wasn't order-dependent luck.
+`fba-leakage-auditor` sign-off: clean (target leakage, look-ahead/temporal, train/test
+contamination, label-tier encoding all checked against the actual current file contents, not just
+the description). `fba-code-reviewer`: 1 blocker found and fixed, 1 should-fix found and fixed, 2
+nits (not applied — both cosmetic/low-value). 5 commits pushed: `74ba3ba` (doctrine reconciliation),
+`7fecc88` (secondary axis + review fixes — see attribution note above), `0c8b98b` (split_by_time +
+poisoned-future tests), `6f9c79d` (promotion gate), `8f0eb81` (test-isolation live-incident fix).
+
+#### Limitations / honest status
+
+- **Implemented + tested (mocked):** secondary-axis rotation, `split_by_time`, the promotion gate,
+  the test-isolation fixes.
+- **NOT yet verified live:** whether the secondary-axis filters actually change what Keepa
+  returns (the `isRangeEnabled` fix is a defensive best-guess, not confirmed against a real
+  dispatch's per-band asin counts) — same UNVERIFIED status as `deltaPercentRange`'s sign/scale
+  convention, flagged in-code for the next live dealfeed run to confirm or refute.
+- The promotion gate has never yet been exercised against 3 real consecutive wins (the corpus is
+  still actively de-biasing, so consistency evidence is inherently weaker right now than it will
+  be once composition stabilizes — the gate's own reason text says so when relevant).
+- `ML_DEBIAS_PLAN.md`'s `learning.sampling` block (caps + rotation + alarms) remains a PROPOSAL in
+  `brain-proposals.md` from the prior continuation, still pending Mehmet's approval — nothing in
+  this round touched that status.
+
+#### Exact next safe step
+
+Wait for (or dispatch) one more real `keepa-collect` + `train-ranker` cycle, then: (1) check the
+collector's new "dealfeed secondary axis -> N asins" log line to see whether any rank/price/drop%
+combination is consistently dry (confirms or refutes the `isRangeEnabled`/`deltaPercentRange`
+uncertainty); (2) check whether `ranker_runs` shows a 3rd, 4th, 5th consecutive challenger win
+now that the corpus is broader — if it does, `promotion_gate()`'s report will say so, but
+promotion itself still requires Mehmet to flip `scoring.rankingChampion` by hand.
+
 ### 2026-07-09 — Claude Code Session 58 (continued further): activated the ML directive — root-caused and fixed the corpus bias, capped training assembly, audited leakage
 
 #### Request and constraints

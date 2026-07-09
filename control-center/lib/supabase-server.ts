@@ -100,6 +100,19 @@ export function getRecentRuns(limit = 14): Promise<SupabaseRun[] | null> {
   return supaGet<SupabaseRun>(`runs?order=started_at.desc&limit=${limit}`);
 }
 
+// The `runs` table also carries frequent LOCAL housekeeping entries (host !== the hourly cloud
+// collector) -- drain_inbox/reports/digest jobs that can fire many times a minute and, live-
+// observed, can fill an entire small `limit` on their own with zero real collector runs in it.
+// Filtered server-side (not fetched-then-filtered) so `limit` always means "N real collector
+// runs," not "N rows of whatever, hope some are real." Review fix (2026-07-09): this is exactly
+// the gap that made the Runs Health panel show "SKIPPED, 0/0/0/-" right after a real, successful
+// collector run -- the panel's own `runs[0]` was a local housekeeping tick, not the collector.
+const COLLECTOR_HOST = "github-actions-hourly";
+
+export function getCollectorRuns(limit = 14): Promise<SupabaseRun[] | null> {
+  return supaGet<SupabaseRun>(`runs?host=eq.${COLLECTOR_HOST}&order=started_at.desc&limit=${limit}`);
+}
+
 // Migration 013 (2026-07-09) — one row per scout/train_ranker.py training run. The durable,
 // queryable record of champion/challenger AUC over time that ranker-report.md (cloud runs never
 // commit their copy back — train-ranker.yml's own header comment) and the Discord post

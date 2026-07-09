@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Database, LineChart, Radar, ShieldCheck, Target } from "lucide-react";
 import { getBrain, getDeals, getInventory, getLeads, getMoney, getPicks } from "@/lib/data";
-import { getRecentRuns, getSearchLogRows, searchesDueCount, supabaseConfigured } from "@/lib/supabase-server";
+import { getCollectorRuns, getSearchLogRows, searchesDueCount, supabaseConfigured } from "@/lib/supabase-server";
 import { KpiCard, PickCard, IngestionFeed } from "@/components/blocks";
 import { ProfitChart } from "@/components/profit-chart";
 import { RunsHealth } from "@/components/runs-health";
@@ -23,7 +23,7 @@ export default async function TodayPage() {
   const brain = getBrain();
   const runsConfigured = supabaseConfigured();
   const [runsResult, searchLogResult] = runsConfigured
-    ? await Promise.all([getRecentRuns(14), getSearchLogRows()])
+    ? await Promise.all([getCollectorRuns(14), getSearchLogRows()])
     : [null, null];
   // Distinguish "Supabase not configured" from "configured, but this fetch failed" from
   // "configured and genuinely has zero runs" — three different honest states, not one.

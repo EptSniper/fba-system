@@ -2,12 +2,17 @@ import { Activity } from "lucide-react";
 import { Panel, Badge, EmptyState } from "@/components/ui";
 import { num, ago } from "@/lib/format";
 import type { SupabaseRun } from "@/lib/supabase-server";
+import { WorkflowTriggers } from "@/components/workflow-trigger";
 
-// CC1's Runs health panel — the observability run_daily.py already writes to Supabase's
+// CC1's Runs health panel — the observability collect_hourly.py already writes to Supabase's
 // `runs` table (System Blueprint Prompt G1/G2) but nothing in the UI showed it before this.
 // "connected: false" means Supabase isn't configured at all (honest "not connected", not a
 // fabricated empty run history); "connected: true, runs: []" means it IS configured but the
-// scout has genuinely never run yet — both are real, distinct states.
+// hourly collector has genuinely never run yet — both are real, distinct states. `runs` is
+// expected to already be filtered to the real collector (lib/supabase-server.ts's
+// getCollectorRuns) — Review fix (2026-07-09): this panel used to take ANY runs row, including
+// frequent local housekeeping ticks (run_daily.py) that fire far more often than the hourly
+// collector and could show a confusing "SKIPPED, 0/0/0/-" right after a real, successful run.
 export function RunsHealth({
   connected,
   fetchFailed,
@@ -34,7 +39,7 @@ export function RunsHealth({
       ) : fetchFailed ? (
         <EmptyState title="Could not reach Supabase" hint="The credentials are set, but the request failed — check the server log for the real error." />
       ) : !latest ? (
-        <EmptyState title="No runs recorded yet" hint="run_daily.py writes a runs row every cycle — this fills in once the scout has run at least once." />
+        <EmptyState title="No collector runs recorded yet" hint="keepa-collect.yml writes a runs row every hourly cycle — this fills in once it has run at least once." />
       ) : (
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
@@ -71,6 +76,7 @@ export function RunsHealth({
           ) : null}
         </div>
       )}
+      {connected ? <WorkflowTriggers /> : null}
     </Panel>
   );
 }

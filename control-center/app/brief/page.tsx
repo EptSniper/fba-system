@@ -2,8 +2,8 @@ import Link from "next/link";
 import { CalendarClock, ClipboardCheck, Compass, ListTodo, LineChart } from "lucide-react";
 import { getBrain } from "@/lib/data";
 import {
+  getCollectorRuns,
   getDealHints,
-  getRecentRuns,
   getSearchLogRows,
   searchesDueCount,
   supabaseConfigured,
@@ -31,7 +31,7 @@ export default async function BriefPage() {
   const runsConfigured = supabaseConfigured();
 
   const [runsResult, searchLogResult, queue, hintsResult] = runsConfigured
-    ? await Promise.all([getRecentRuns(14), getSearchLogRows(), buildQueue(), getDealHints(50)])
+    ? await Promise.all([getCollectorRuns(14), getSearchLogRows(), buildQueue(), getDealHints(50)])
     : [null, null, { connected: false, items: [] as Awaited<ReturnType<typeof buildQueue>>["items"] }, null];
 
   const runs = runsResult ?? [];

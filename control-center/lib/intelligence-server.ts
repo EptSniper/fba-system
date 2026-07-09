@@ -5,8 +5,8 @@
 // JSON) — a single source so the two can never drift apart, same pattern as lib/queue-server.ts.
 import {
   getBacktestRowsForChart,
+  getCollectorRuns,
   getRankerRuns,
-  getRecentRuns,
   supabaseConfigured,
 } from "./supabase-server";
 
@@ -60,22 +60,14 @@ function dayKey(iso: string): string {
 export async function buildIntelligenceData(): Promise<{ connected: false; error?: string } | IntelligenceData> {
   if (!supabaseConfigured()) return { connected: false };
 
-  const [rows, allRuns, rankerRuns] = await Promise.all([
+  const [rows, runs, rankerRuns] = await Promise.all([
     getBacktestRowsForChart(),
-    getRecentRuns(500),
+    getCollectorRuns(60),
     getRankerRuns(60),
   ]);
-  if (rows === null || allRuns === null || rankerRuns === null) {
+  if (rows === null || runs === null || rankerRuns === null) {
     return { connected: false, error: "Could not reach Supabase." };
   }
-
-  // The runs table also carries frequent LOCAL housekeeping entries (host !== the hourly cloud
-  // collector) — drain_inbox/reports/digest jobs that fire far more often than once an hour and
-  // would otherwise swamp a token/rows-per-run chart meant to show the actual collector's
-  // cadence (live-observed: 166 of the last 200 rows were local noise, only 34 were real
-  // collector runs). This mirrors the exact confusion the Morning Brief's own "Runs Health"
-  // panel caused by not making the same distinction.
-  const runs = allRuns.filter((r) => r.host === "github-actions-hourly").slice(0, 60);
 
   // Bucket backtest_rows by UTC day, tracking a running cumulative total plus that day's
   // sample-source composition. `rows` is already ordered oldest-first (see the query's own
@@ -116,7 +108,7 @@ export async function buildIntelligenceData(): Promise<{ connected: false; error
     { dealfeed: 0, explore: 0, onpolicy: 0, unknown: 0 } as SourceBucket,
   );
 
-  // Chronological (oldest first) for the token/rows-per-run chart — getRecentRuns() itself
+  // Chronological (oldest first) for the token/rows-per-run chart — getCollectorRuns() itself
   // returns newest-first (for the runs-health panel's "last run" use), so reverse here rather
   // than adding a second query variant for one caller.
   const runHistory: RunHistoryPoint[] = [...runs].reverse().map((r) => ({

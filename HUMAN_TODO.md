@@ -5,6 +5,12 @@ from that session's chat message). Ordered by value — do these roughly top to 
 item here needs a human because it requires an account signup, a payment, an identity/appeal
 decision, or a real product-analysis judgment call — nothing here can be automated further.
 
+> **ML doctrine applies.** Any work here touching data collection, features, training, serving,
+> evaluation, guardrails, or the item finder routes through the `fba-ml` crew (`fba-ml-lead` plans;
+> see `SKILLS_INDEX.md`'s ML crew section) and must obey `amazon-fba-oa/references/ml-doctrine.md`:
+> breadth/no-bias, no leakage (point-in-time features only), hard gates outside ML, shadow-by-default
+> with human-only promotion, honest metrics. Never hand-roll ML work without the crew.
+
 Exact env var names below always mean: paste the real value into **both**
 `API_KEYS.env` (the central registry) and the specific component `.env` file named — never
 into any tracked file, the journal, or chat.

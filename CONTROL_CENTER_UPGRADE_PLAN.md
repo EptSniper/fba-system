@@ -3,6 +3,12 @@
 **Date:** 2026-07-03 · **Author:** Claude (Cowork), applying fba-innovator + fba-designer + fba-architect standards to the Part-2 review findings · **Executor:** Claude Code (Prompts CC1–CC4); Cowork already handled the scheduling piece.
 **Prerequisites:** R3 (Part-2 fixes) should land first; CC1 needs migrations applied; CC4's chart piece waits on M2's eval.
 
+> **ML doctrine applies.** Any work here touching data collection, features, training, serving,
+> evaluation, guardrails, or the item finder routes through the `fba-ml` crew (`fba-ml-lead` plans;
+> see `SKILLS_INDEX.md`'s ML crew section) and must obey `amazon-fba-oa/references/ml-doctrine.md`:
+> breadth/no-bias, no leakage (point-in-time features only), hard gates outside ML, shadow-by-default
+> with human-only promotion, honest metrics. Never hand-roll ML work without the crew.
+
 ---
 
 ## 1. The idea that matters most

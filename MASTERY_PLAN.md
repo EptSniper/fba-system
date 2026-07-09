@@ -3,6 +3,12 @@
 **Date:** 2026-07-03 · **Author:** Claude (Cowork), from the full-system audit + web research (sources in `RESEARCH_WATCHLIST.md` and the research notes) · **Executor:** Claude Code (Prompts M1–M4); Mehmet for keys/decisions.
 **Companions:** `CODE_REVIEW_2026-07-02.md` (Parts 1–2 + R1/R2/R3 fix prompts), `DEAL_FINDER_BUILD_PLAN.md` (D2–D4), `SCOUT_AGENT_BUILD_PLAN.md` (S1–S4, built), `RESEARCH_WATCHLIST.md` (the material).
 
+> **ML doctrine applies.** Any work here touching data collection, features, training, serving,
+> evaluation, guardrails, or the item finder routes through the `fba-ml` crew (`fba-ml-lead` plans;
+> see `SKILLS_INDEX.md`'s ML crew section) and must obey `amazon-fba-oa/references/ml-doctrine.md`:
+> breadth/no-bias, no leakage (point-in-time features only), hard gates outside ML, shadow-by-default
+> with human-only promotion, honest metrics. Never hand-roll ML work without the crew.
+
 ---
 
 ## 1. Honest verdict first: are the tools experts today?

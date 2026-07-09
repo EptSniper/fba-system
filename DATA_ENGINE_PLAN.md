@@ -2,6 +2,12 @@
 
 **Date:** 2026-07-04 · **Author:** Claude (Cowork). Consolidates the three data-engine prompts previously given only in chat (so they can't get lost like T1 almost did). **Prereq: KEEPA_KEY is live (Session 45) and the key-day checklist has run.**
 
+> **ML doctrine applies.** Any work here touching data collection, features, training, serving,
+> evaluation, guardrails, or the item finder routes through the `fba-ml` crew (`fba-ml-lead` plans;
+> see `SKILLS_INDEX.md`'s ML crew section) and must obey `amazon-fba-oa/references/ml-doctrine.md`:
+> breadth/no-bias, no leakage (point-in-time features only), hard gates outside ML, shadow-by-default
+> with human-only promotion, honest metrics. Never hand-roll ML work without the crew.
+
 ## Layer 1 — already recording automatically (no action needed)
 
 Once the daily run goes live: every candidate's **pre-decision feature snapshot + explanation** (leads table, G1), **runs telemetry** (tokens, counts, errors), **deals** (950+/day from the Top-100 watch), **deal hints**, and every Review-Queue verdict as a **decision with reason code** (CC1). The prediction-ledger scaffold (S38) starts grading verdict predictions as they mature.

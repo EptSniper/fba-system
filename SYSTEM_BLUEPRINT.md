@@ -1,6 +1,13 @@
 # System Blueprint — the working, synced OA loop
 
 **Date:** 2026-07-01 · **Author:** Claude (Cowork), from live web research (all claims cited in the research notes below) · **Executor:** Claude Code for anything that is code; Mehmet for accounts/purchases.
+
+> **ML doctrine applies.** Any work here touching data collection, features, training, serving,
+> evaluation, guardrails, or the item finder routes through the `fba-ml` crew (`fba-ml-lead` plans;
+> see `SKILLS_INDEX.md`'s ML crew section) and must obey `amazon-fba-oa/references/ml-doctrine.md`:
+> breadth/no-bias, no leakage (point-in-time features only), hard gates outside ML, shadow-by-default
+> with human-only promotion, honest metrics. Never hand-roll ML work without the crew.
+
 **Companion doc:** `SCOUT_EXPERT_UPGRADE_BRIEF.md` (the scorer/UI expertise prompts). This doc is the layer above it: how every piece connects into one loop, what to buy, and in what order.
 
 ---

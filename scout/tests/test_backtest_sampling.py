@@ -30,6 +30,27 @@ BASE_HIST = {
 
 
 class SampleAsinsExploreTest(unittest.TestCase):
+    def setUp(self):
+        # Review fix (2026-07-09, live incident): sample_asins_explore() persists a rotation
+        # cursor via Supabase Storage (same mechanism as deals_firehose.py's category/secondary
+        # cursors). Importing backtest.py loads .env into os.environ at module scope, so
+        # SUPABASE_URL/SUPABASE_SERVICE_KEY are REAL for the rest of any process that imports
+        # it — without this isolation, every test below silently read (and, via
+        # test_stops_when_budget_exhausted's non-empty rotation, WROTE) the REAL production
+        # explore_cursor.json. Live-caught: a full-suite run advanced the real cursor and made
+        # test_seeds_with_category_keywords_not_brands order-dependent (it asserts the categories
+        # get seeded in the exact order passed, which only holds when the cursor is 0).
+        self._cursor_patchers = [
+            mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=0),
+            mock.patch.object(bt, "_upload_remote_explore_cursor", return_value=False),
+        ]
+        for p in self._cursor_patchers:
+            p.start()
+
+    def tearDown(self):
+        for p in self._cursor_patchers:
+            p.stop()
+
     def test_seeds_with_category_keywords_not_brands(self):
         seen_terms = []
 
@@ -58,6 +79,20 @@ class SampleAsinsExploreTest(unittest.TestCase):
 
 
 class SampleAsinsStratifiedTest(unittest.TestCase):
+    def setUp(self):
+        # Same isolation as SampleAsinsExploreTest.setUp -- sample_asins_stratified() calls
+        # sample_asins_explore() internally as part of its dealfeed->explore->onpolicy waterfall.
+        self._cursor_patchers = [
+            mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=0),
+            mock.patch.object(bt, "_upload_remote_explore_cursor", return_value=False),
+        ]
+        for p in self._cursor_patchers:
+            p.start()
+
+    def tearDown(self):
+        for p in self._cursor_patchers:
+            p.stop()
+
     def test_dealfeed_tried_first_then_explore_then_onpolicy(self):
         def fake_firehose(api, pages=None):
             return {"asins": [{"asin": "DEAL1", "category": "toys"}], "tokens_spent": 5}
@@ -184,7 +219,13 @@ class SafetyArchitectureGuardTest(unittest.TestCase):
         import config as bt_config
 
         def fake_firehose(api, pages=None):
-            return {"asins": ["B_AVOID"], "tokens_spent": 5}
+            # Review fix (2026-07-09): this fixture was defined but never actually passed to
+            # run_backtest() below -- the real deals_firehose.harvest() ran instead (silently
+            # hitting live Supabase Storage for its category/secondary-axis cursors). Now wired
+            # up for real, matching harvest()'s actual {"asins": [{"asin","category"}], ...}
+            # contract -- sample_asins_stratified()'s dealfeed step calls d.get("asin") on each
+            # entry, which a bare string list would break.
+            return {"asins": [{"asin": "B_AVOID", "category": None}], "tokens_spent": 5}
 
         def fake_find(api=None, brand_seeds=None, limit=None):
             return []
@@ -202,13 +243,15 @@ class SafetyArchitectureGuardTest(unittest.TestCase):
         with mock.patch.object(bt.config, "have_keepa", return_value=True), \
              mock.patch.object(bt, "backtest_token_cap", return_value=1000), \
              mock.patch.object(bt, "_fetch_remote_state", return_value={}), \
+             mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=0), \
+             mock.patch.object(bt, "_upload_remote_explore_cursor", return_value=False), \
              mock.patch.object(brands, "AVOID_BRANDS", ["Nike"]), \
              mock.patch("brands.seed_brands", return_value=[]), \
              mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]), \
              mock.patch("db.log_lead", side_effect=AssertionError("must never be called")), \
              mock.patch("db.upsert_backtest_rows", return_value=1) as mock_upsert:
             bt.run_backtest(api=object(), find_fn=fake_find, history_fn=fake_history,
-                            persist=False)
+                            firehose_fn=fake_firehose, persist=False)
         # If db.log_lead were ever invoked the mock's side_effect would have raised inside
         # run_backtest (which swallows exceptions per-batch, non-fatally) — assert instead that
         # upsert_backtest_rows saw the ip_risk-flagged row, proving the write path taken.

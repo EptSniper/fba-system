@@ -107,10 +107,44 @@ export function ReviewQueue({ initialItems, connected }: { initialItems: QueueIt
 
   return (
     <div className="flex flex-col gap-3 pb-16">
-      <p className="flex items-center gap-1.5 text-xs text-faint">
-        <Keyboard size={12} aria-hidden />
-        j/k navigate · A approve · R reject{current?.kind === "lead" ? " · W watch" : ""} · number key picks the reason
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-xs text-faint">
+          <Keyboard size={12} aria-hidden />
+          j/k navigate · A approve · R reject{current?.kind === "lead" ? " · W watch" : ""} · number key picks the reason
+        </p>
+        {/* Review fix (2026-07-09): the ONLY way to decide an item used to be the keyboard
+            shortcuts above (A/R/W) — there was no clickable affordance at all, so a mouse user
+            clicking cards was only ever selecting them, never actually recording a decision.
+            These buttons drive the exact same setPendingVerdict() path the keyboard does. */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            disabled={busy || !current}
+            onClick={() => setPendingVerdict("approve")}
+            className="cursor-pointer rounded border border-profit/40 px-2.5 py-1 text-xs font-medium text-profit transition-colors hover:bg-profit/10 disabled:opacity-50"
+          >
+            Approve
+          </button>
+          <button
+            type="button"
+            disabled={busy || !current}
+            onClick={() => setPendingVerdict("reject")}
+            className="cursor-pointer rounded border border-loss/40 px-2.5 py-1 text-xs font-medium text-loss transition-colors hover:bg-loss/10 disabled:opacity-50"
+          >
+            Reject
+          </button>
+          {current?.kind === "lead" ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setPendingVerdict("watch")}
+              className="cursor-pointer rounded border border-line px-2.5 py-1 text-xs text-ink transition-colors hover:border-accent disabled:opacity-50"
+            >
+              Watch
+            </button>
+          ) : null}
+        </div>
+      </div>
       {msg ? (
         <div className={cn("rounded border px-3 py-2 text-xs", msg.tone === "ok" ? "border-profit/30 text-profit" : "border-loss/30 text-loss")}>
           {msg.text}

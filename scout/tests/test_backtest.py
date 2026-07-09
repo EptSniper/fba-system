@@ -150,9 +150,13 @@ class RunBacktestBudgetTest(unittest.TestCase):
         # silently read REAL cross-run production state (contaminating tokens_spent/
         # asins_processed assertions with leftover live data) and could even write test fixture
         # ASINs to the real bucket. Same isolation principle as the DATA_LAKE_DIR redirect above.
+        # Same isolation for the explore rotation cursor (2026-07-09) -- a separate persisted
+        # blob (see sample_asins_explore()'s docstring for why it's not folded into state above).
         self._remote_patchers = [
             mock.patch.object(bt, "_fetch_remote_state", return_value={}),
             mock.patch.object(bt, "_upload_remote_state", return_value=False),
+            mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=0),
+            mock.patch.object(bt, "_upload_remote_explore_cursor", return_value=False),
         ]
         for p in self._remote_patchers:
             p.start()
@@ -471,6 +475,50 @@ class RemoteStateFallbackTest(unittest.TestCase):
                                           "SUPABASE_SERVICE_KEY": "fake"}):
             ok = bt._upload_remote_state({"processed_asins": []})
         self.assertFalse(ok)
+
+
+class SampleAsinsExploreRotationTest(RunBacktestBudgetTest):
+    """Review fix (2026-07-09, live incident): sample_asins_explore()'s category loop used to
+    always start at cats[0] -- under this function's typically small share of the sampling
+    budget (dealfeed takes its cut first), only the first 1-2 configured categories ever got a
+    real attempt, run after run. Live-confirmed: 100% of 200 dealfeed-sourced backtest_rows
+    collected were tagged "toys" (a related but separate rotation bug in deals_firehose.py), and
+    the wider corpus is 82.5% toys / top-5 brands 37% -- this function's own un-rotated loop was
+    a second contributor. A persisted cursor (own Supabase Storage path) now rotates the start
+    position across calls."""
+
+    def test_rotation_starts_from_the_persisted_cursor_not_always_index_zero(self):
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            return {"kitchen": ["B_KITCHEN"]}.get((brand_seeds or [None])[0], [])
+
+        with mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=1):
+            out, spent = bt.sample_asins_explore(
+                object(), budget_tokens=10, categories=["toys", "kitchen", "pet"], find_fn=fake_find)
+        # cursor=1 -> rotation starts at "kitchen"; budget only affords one category (flat 10/ea)
+        self.assertEqual([d["category"] for d in out], ["kitchen"])
+        self.assertEqual(spent, 10)
+
+    def test_cursor_advances_past_categories_actually_attempted(self):
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            return []
+
+        with mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=0), \
+             mock.patch.object(bt, "_upload_remote_explore_cursor") as mupload:
+            bt.sample_asins_explore(
+                object(), budget_tokens=20, categories=["toys", "kitchen", "pet"], find_fn=fake_find)
+        # cursor(0) + 2 categories attempted (20 budget / 10 each) -> next run starts at "pet"
+        mupload.assert_called_once_with(2)
+
+    def test_cursor_wraps_around_the_end_of_the_category_list(self):
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            return []
+
+        with mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=2), \
+             mock.patch.object(bt, "_upload_remote_explore_cursor") as mupload:
+            bt.sample_asins_explore(
+                object(), budget_tokens=20, categories=["toys", "kitchen", "pet"], find_fn=fake_find)
+        # cursor=2 ("pet") + 2 attempted wraps past the end of a 3-item list -> back to index 1
+        mupload.assert_called_once_with(1)
 
 
 if __name__ == "__main__":

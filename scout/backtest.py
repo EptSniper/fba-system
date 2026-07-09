@@ -507,6 +507,55 @@ def _save_state(st: Dict[str, Any]) -> None:
     _upload_remote_state(st)
 
 
+# ML de-bias fix (2026-07-09, live incident): sample_asins_explore()'s category loop below used
+# to always start at cats[0] on every call -- with its share of the sampling budget usually small
+# (dealfeed takes its cut first in the waterfall) and each category costing ~10 tokens, only the
+# first 1-2 configured categories ever got a real attempt, run after run. A separate persisted
+# cursor (own Supabase Storage path, NOT folded into _load_state()/_save_state()'s dict --
+# run_backtest() reads/writes that whole dict exactly once per call, so a second independent
+# read-modify-write from inside this function would race and could clobber it) fixes the same
+# structural bias deals_firehose.harvest() had.
+_EXPLORE_CURSOR_BUCKET = "models"
+_EXPLORE_CURSOR_STORAGE_PATH = "backtest/explore_cursor.json"
+
+
+def _fetch_remote_explore_cursor() -> int:
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return 0
+        r = requests.get(
+            f"{supa}/storage/v1/object/{_EXPLORE_CURSOR_BUCKET}/{_EXPLORE_CURSOR_STORAGE_PATH}",
+            headers=_state_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return 0
+        v = (r.json() or {}).get("cursor")
+        return int(v) if isinstance(v, (int, float)) else 0
+    except Exception as e:
+        log.warning("explore rotation cursor fetch failed (non-fatal, restarting at 0): %s", e)
+        return 0
+
+
+def _upload_remote_explore_cursor(cursor: int) -> bool:
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        r = requests.post(
+            f"{supa}/storage/v1/object/{_EXPLORE_CURSOR_BUCKET}/{_EXPLORE_CURSOR_STORAGE_PATH}",
+            headers={**_state_storage_headers(), "x-upsert": "true",
+                    "Content-Type": "application/json"},
+            data=json.dumps({"cursor": cursor}).encode("utf-8"), timeout=30,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        log.warning("explore rotation cursor upload failed (non-fatal): %s", e)
+        return False
+
+
 def sample_asins_on_policy(api, budget_tokens: int, target: int = TARGET_ASINS,
                            find_fn: Optional[Callable] = None) -> Tuple[List[str], int]:
     """Pull candidate ASINs via the SAME Product Finder stack the live scout uses — per friendly
@@ -562,19 +611,32 @@ def sample_asins_explore(api, budget_tokens: int, categories: Optional[List[str]
     depends on (keepa_client.find_candidates -> _search_asins), but seeds it with CATEGORY
     keywords ("toys", "kitchen", ...) instead of brand names, so the token spend buys category
     breadth instead of buy-discovery-biased brand coverage. No friendly/avoid brand list is ever
-    consulted. Returns ([{"asin","category"}], tokens_spent)."""
+    consulted. Returns ([{"asin","category"}], tokens_spent).
+
+    ML de-bias fix (2026-07-09, live incident): rotation now starts from a cursor persisted
+    ACROSS runs (see _fetch_remote_explore_cursor()'s docstring) instead of always restarting at
+    cats[0] — under this function's typically small budget share, that meant only the first 1-2
+    configured categories ever got a real attempt, forever."""
     if find_fn is None:
         import keepa_client
         find_fn = keepa_client.find_candidates
     cats = categories if categories is not None else (sampling_config().get("categories") or [])
 
+    rotation = list(cats)
+    cursor = 0
+    if rotation:
+        cursor = _fetch_remote_explore_cursor() % len(rotation)
+        rotation = rotation[cursor:] + rotation[:cursor]
+
     out: List[Dict[str, Any]] = []
     seen = set()
     spent = 0
+    attempted = 0
     import keepa_client
-    for cat in cats:
+    for cat in rotation:
         if spent >= budget_tokens:
             break
+        attempted += 1
         before = keepa_client._tokens_consumed(api)
         try:
             got = find_fn(api=api, brand_seeds=[cat], limit=50)
@@ -588,6 +650,8 @@ def sample_asins_explore(api, budget_tokens: int, categories: Optional[List[str]
             if a not in seen:
                 seen.add(a)
                 out.append({"asin": a, "category": cat})
+    if rotation:
+        _upload_remote_explore_cursor((cursor + attempted) % len(rotation))
     return out, spent
 
 

@@ -341,6 +341,125 @@ def _lightgbm_params(n_train: int) -> Dict[str, int]:
     }
 
 
+# --- ML de-bias: corpus concentration + caps (2026-07-09, ML_DEBIAS_PLAN.md Lever B) -----------
+# Live-measured root cause: the training corpus is 82.5% "toys" / top-5 brands 37% (Crocs 15.6% +
+# Jellycat 13.9% alone ~30%) -- a ranker trained on this learns "toys/Crocs/Jellycat", not
+# generalizable profit signal. This caps the TRAINING ASSEMBLY only (labels.assemble_training_rows()
+# and the raw backtest_rows lake are untouched -- calibration_report.py and any future consumer of
+# labels.py still see the TRUE distribution; only this ranker's own train/val split is balanced).
+DEFAULT_MAX_BRAND_CORPUS_SHARE = 0.06
+DEFAULT_MAX_CATEGORY_CORPUS_SHARE = 0.30
+DEFAULT_TOP5_BRAND_SHARE_ALARM = 0.20
+
+# ML_DEBIAS_PLAN.md's "Monitoring" section states these two alarm thresholds directly (not via a
+# proposed brain key, unlike the three defaults above) — kept as constants rather than brain-read
+# since the plan ties them to a fixed rule ("any category > 30%", "two brands > 25%"), not a
+# tunable operational knob.
+CATEGORY_CONCENTRATION_ALARM = 0.30
+BRAND_CONCENTRATION_ALARM = 0.25
+
+
+def sampling_caps_config() -> Dict[str, float]:
+    """learning.sampling's cap/alarm knobs from the brain, single-sourced like every other
+    threshold in this project. NOT YET a real ai-brain.json key as of this fix (proposed via
+    fba-brain-updater in learning-hub/tracking/brain-proposals.md, pending Mehmet's approval since
+    it changes what the model sees) -- these defaults match the exact values proposed there, so
+    the cap is already active with sensible numbers and picks up the brain's own value the moment
+    the proposal is approved, with no code change needed either way."""
+    try:
+        with open(BRAIN_PATH, encoding="utf-8") as f:
+            sampling = ((json.load(f) or {}).get("learning") or {}).get("sampling") or {}
+    except Exception:
+        sampling = {}
+    return {
+        "max_brand_share": float(sampling.get("maxBrandCorpusShare", DEFAULT_MAX_BRAND_CORPUS_SHARE)),
+        "max_category_share": float(sampling.get("maxCategoryCorpusShare", DEFAULT_MAX_CATEGORY_CORPUS_SHARE)),
+        "top5_brand_alarm": float(sampling.get("top5BrandShareAlarm", DEFAULT_TOP5_BRAND_SHARE_ALARM)),
+    }
+
+
+def _row_brand(r: Dict[str, Any]) -> str:
+    return (r.get("features") or {}).get("brand") or "unknown"
+
+
+def _row_category(r: Dict[str, Any]) -> str:
+    return (r.get("features") or {}).get("category") or "unknown"
+
+
+def corpus_concentration(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Brand/category composition + concentration (HHI, top-brand/top-5 shares, distinct counts)
+    for a set of training rows — the measurement ML_DEBIAS_PLAN.md's targets are defined against
+    (no category > 30%, no brand > 6%, top-5 < 20%, >= 10 categories). HHI here is the standard
+    sum-of-squared-shares on a 0-1 scale (0 = perfectly even, 1 = a single group owns everything)."""
+    total = len(rows)
+    if total == 0:
+        return {"total": 0, "distinct_brands": 0, "distinct_categories": 0,
+                "top_brand_share": 0.0, "top5_brand_share": 0.0, "top_category_share": 0.0,
+                "hhi_brand": 0.0, "hhi_category": 0.0, "brand_shares": {}, "category_shares": {}}
+    brand_counts: Dict[str, int] = {}
+    category_counts: Dict[str, int] = {}
+    for r in rows:
+        b = _row_brand(r)
+        c = _row_category(r)
+        brand_counts[b] = brand_counts.get(b, 0) + 1
+        category_counts[c] = category_counts.get(c, 0) + 1
+    brand_shares = {k: v / total for k, v in brand_counts.items()}
+    category_shares = {k: v / total for k, v in category_counts.items()}
+    sorted_brand_shares = sorted(brand_shares.values(), reverse=True)
+    return {
+        "total": total,
+        "distinct_brands": len(brand_counts),
+        "distinct_categories": len(category_counts),
+        "top_brand_share": sorted_brand_shares[0] if sorted_brand_shares else 0.0,
+        "top5_brand_share": sum(sorted_brand_shares[:5]),
+        "top_category_share": max(category_shares.values()) if category_shares else 0.0,
+        "hhi_brand": sum(s * s for s in brand_shares.values()),
+        "hhi_category": sum(s * s for s in category_shares.values()),
+        "brand_shares": brand_shares,
+        "category_shares": category_shares,
+    }
+
+
+def apply_corpus_caps(rows: List[Dict[str, Any]], max_brand_share: float,
+                      max_category_share: float) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """Subsamples `rows` so no single category exceeds max_category_share and no single brand
+    exceeds max_brand_share of the ORIGINAL total (ML_DEBIAS_PLAN.md Lever B). Keeps the MOST
+    RECENT windows per over-represented group (by simulation_date, descending) rather than
+    dropping ASINs outright — an ASIN with many windows in an over-represented category still
+    contributes its freshest signal, just not all of it. Category cap applied first (today's
+    skew is categorical: 82.5% toys), then brand cap on the result. Returns (capped_rows,
+    {"before": concentration, "after": concentration, "dropped": n})."""
+    before = corpus_concentration(rows)
+    total = before["total"]
+    if total == 0:
+        return rows, {"before": before, "after": before, "dropped": 0}
+
+    def _cap_by(rows_in: List[Dict[str, Any]], key_fn, max_share: float) -> List[Dict[str, Any]]:
+        groups: Dict[str, List[Dict[str, Any]]] = {}
+        for r in rows_in:
+            groups.setdefault(key_fn(r), []).append(r)
+        # Nothing to rebalance against when the whole set is one brand/category (a young/small
+        # corpus, or a test fixture that isn't exercising diversity at all) -- capping here would
+        # only destroy signal, not create diversity the data doesn't contain. Skip the cap
+        # entirely in that case rather than aggressively shrinking toward max(1, ...).
+        if len(groups) <= 1:
+            return rows_in
+        max_n = max(1, int(total * max_share))
+        out: List[Dict[str, Any]] = []
+        for group in groups.values():
+            if len(group) <= max_n:
+                out.extend(group)
+                continue
+            group_sorted = sorted(group, key=lambda r: str(r.get("simulation_date") or ""), reverse=True)
+            out.extend(group_sorted[:max_n])
+        return out
+
+    capped = _cap_by(rows, _row_category, max_category_share)
+    capped = _cap_by(capped, _row_brand, max_brand_share)
+    after = corpus_concentration(capped)
+    return capped, {"before": before, "after": after, "dropped": total - len(capped)}
+
+
 def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
     """The full training cycle on already-pulled rows. Pure of I/O to Supabase/Discord — callable
     from tests with synthetic rows.
@@ -359,14 +478,23 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
     if assembled.get("refused"):
         return {"refused": True, "reason": assembled["reason"], "by_tier": assembled.get("by_tier", {})}
 
+    # ML de-bias (2026-07-09, ML_DEBIAS_PLAN.md Lever B): cap brand/category concentration in the
+    # ASSEMBLY this ranker actually trains/validates on. Applied here (not in labels.py) so
+    # calibration_report.py's diagnostic still sees the TRUE uncapped distribution — only this
+    # ranker's own split is balanced.
+    caps = sampling_caps_config()
+    rows, concentration = apply_corpus_caps(
+        rows, max_brand_share=caps["max_brand_share"], max_category_share=caps["max_category_share"])
+
     train, val = backtest.split_by_asin(rows, val_fraction=0.3)
     if not train or not val:
-        return {"refused": True, "reason": "by-ASIN split left an empty side", "by_tier": assembled.get("by_tier", {})}
+        return {"refused": True, "reason": "by-ASIN split left an empty side",
+                "by_tier": assembled.get("by_tier", {}), "concentration": concentration}
     Xtr, ytr = build_matrix(train)
     Xva, yva = build_matrix(val)
     if len(set(ytr.tolist())) < 2:
         return {"refused": True, "reason": "training side has one class after the by-ASIN split",
-                "by_tier": assembled.get("by_tier", {})}
+                "by_tier": assembled.get("by_tier", {}), "concentration": concentration}
 
     clf = lgb.LGBMClassifier(class_weight="balanced", random_state=42, verbosity=-1,
                              **_lightgbm_params(len(Xtr))).fit(Xtr, ytr)
@@ -388,6 +516,15 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         "bronze_caveat": assembled.get("bronze_caveat", ""),
         "by_source": source_breakdown(val, [float(p) for p in proba]),
         "new_signal_importance": new_signal_importance(clf),
+        "concentration": concentration,
+        # ML_DEBIAS_PLAN.md's exact monitoring spec (raw pre-cap composition, so this reflects
+        # whether COLLECTION is still skewed — independent of this run's own assembly-time cap):
+        # alarm if any single category > 30%, or two-or-more individual brands each > 25%.
+        "concentration_alarm": (
+            concentration["before"]["top_category_share"] > CATEGORY_CONCENTRATION_ALARM
+            or sum(1 for s in concentration["before"]["brand_shares"].values()
+                  if s > BRAND_CONCENTRATION_ALARM) >= 2
+        ),
     }
 
 
@@ -420,6 +557,29 @@ def render_report(result: Dict[str, Any]) -> str:
         "Promotion is HUMAN-ONLY via the brain key scoring.rankingChampion — this job never "
         "touches ai-brain.json.", "",
     ]
+    conc = result.get("concentration")
+    if conc:
+        b, a = conc["before"], conc["after"]
+        alarm = " 🚨 **ALARM: category>30% or 2+ brands>25% — collection is still skewed**" if result.get("concentration_alarm") else ""
+        lines.append(f"- Corpus concentration (ML_DEBIAS_PLAN.md targets: no category >30%, no "
+                     f"brand >6%, top-5 <20%, >=10 categories):{alarm}")
+        lines.append(f"  - Before cap: {b['distinct_brands']} brands / {b['distinct_categories']} "
+                     f"categories, top-brand {b['top_brand_share']*100:.1f}%, top-5 "
+                     f"{b['top5_brand_share']*100:.1f}%, top-category {b['top_category_share']*100:.1f}%, "
+                     f"HHI(brand) {b['hhi_brand']:.3f}, HHI(category) {b['hhi_category']:.3f}")
+        if conc["dropped"]:
+            lines.append(f"  - After assembly-time cap: dropped {conc['dropped']} row(s) from "
+                         f"over-represented cells -> {a['distinct_brands']} brands / "
+                         f"{a['distinct_categories']} categories, top-brand "
+                         f"{a['top_brand_share']*100:.1f}%, top-5 {a['top5_brand_share']*100:.1f}%, "
+                         f"top-category {a['top_category_share']*100:.1f}% (raw lake untouched — "
+                         f"this cap only shapes what THIS run trains/validates on)")
+        else:
+            lines.append("  - No cap needed this run (already within targets)")
+        cat_shares = sorted(b["category_shares"].items(), key=lambda kv: -kv[1])[:10]
+        lines.append("  - Category shares (pre-cap): " +
+                     ", ".join(f"{k} {v*100:.1f}%" for k, v in cat_shares))
+        lines.append("")
     by_source = result.get("by_source") or {}
     if len(by_source) > 1 or (by_source and "n/a" not in by_source):
         lines.append("- Sampling-source breakdown (held-out slice, same model — never blended):")
@@ -661,15 +821,26 @@ def post_summary(result: Dict[str, Any]) -> bool:
     else:
         ch, xl = result["champion"], result["challenger"]
         tiers = "; ".join(f"{t}: {c['total']}" for t, c in sorted((result.get("by_tier") or {}).items()))
+        conc = result.get("concentration") or {}
+        alarmed = bool(result.get("concentration_alarm"))
+        conc_line = ""
+        if conc:
+            b = conc["before"]
+            conc_line = (
+                f"\n{'🚨 ' if alarmed else ''}Concentration: top-brand {b['top_brand_share']*100:.0f}%, "
+                f"top-5 {b['top5_brand_share']*100:.0f}%, top-category {b['top_category_share']*100:.0f}%, "
+                f"{b['distinct_brands']} brands / {b['distinct_categories']} categories"
+                + (" — **collection still skewed, see ML_DEBIAS_PLAN.md**" if alarmed else ""))
         embed = {
             "title": "🤖 Ranker trained (shadow) — champion vs challenger",
-            "color": 0x3987E5,
+            "color": 0xE24C4C if alarmed else 0x3987E5,
             "description": (
                 f"Rows: {result['train_rows']}+{result['val_rows']} (by-ASIN split) · tiers: {tiers}\n"
                 f"**Champion (triage formula):** AUC {ch['auc'] if ch['auc'] is not None else 'n/a'}, "
                 f"{ch['winners_in_top']}/{ch['top_n']} winners in top\n"
                 f"**Challenger (model):** AUC {xl['auc'] if xl['auc'] is not None else 'n/a'}, "
-                f"{xl['winners_in_top']}/{xl['top_n']} winners in top\n\n{result['verdict']}\n\n"
+                f"{xl['winners_in_top']}/{xl['top_n']} winners in top\n\n{result['verdict']}"
+                f"{conc_line}\n\n"
                 "Promotion is human-only: brain key `scoring.rankingChampion` (fba-brain-updater)."),
         }
     return discord_router.send("brain_proposals", [embed], username="FBA Scout — Ranker")

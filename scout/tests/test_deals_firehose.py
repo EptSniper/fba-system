@@ -119,6 +119,17 @@ class ResolveCategoryIdsTest(unittest.TestCase):
         self.assertNotIn("unmapped_category", resolved)
         self.assertTrue(os.path.exists(df.CACHE_PATH))
 
+    def test_hyphen_vs_underscore_category_key_still_resolves(self):
+        """Review fix (2026-07-09, live incident): ai-brain.json's learning.sampling.categories
+        spelled this key "electronics-accessories" (hyphen) while keepa_client._CATEGORY_MAP's
+        values use "electronics_accessories" (underscore) -- an exact-string inverse lookup
+        silently never matched, so this category never resolved and always fell back to an
+        unfiltered pull, one contributor to the corpus's category concentration."""
+        roots = {"1": {"catId": 111222333, "name": "Cell Phones & Accessories"}}
+        api = FakeApi(roots=roots)
+        resolved = df.resolve_category_ids(api, ["electronics-accessories"])
+        self.assertEqual(resolved.get("electronics-accessories"), 111222333)
+
     def test_second_call_uses_cache_not_a_live_lookup(self):
         roots = {"1": {"catId": 165793011, "name": "Toys & Games"}}
         api = FakeApi(roots=roots)
@@ -212,6 +223,20 @@ class CategoryCacheRemotePersistenceTest(unittest.TestCase):
 class HarvestTest(unittest.TestCase):
     def setUp(self):
         keepa_client.reset_guard_telemetry()
+        # Review fix (2026-07-09 ML de-bias audit): harvest() now persists a cross-run rotation
+        # cursor the same Supabase-Storage-backed way the category-id cache already does — same
+        # isolation reasoning as ResolveCategoryIdsTest: without stubbing these, a test could
+        # silently read/write the REAL production cursor state.
+        self._cursor_patchers = [
+            mock.patch.object(df, "_fetch_remote_cursor", return_value=0),
+            mock.patch.object(df, "_upload_remote_cursor", return_value=False),
+        ]
+        for p in self._cursor_patchers:
+            p.start()
+
+    def tearDown(self):
+        for p in self._cursor_patchers:
+            p.stop()
 
     def test_rotates_categories_and_dedupes(self):
         api = FakeApi(tokens_left=60, pages={
@@ -225,6 +250,41 @@ class HarvestTest(unittest.TestCase):
         self.assertEqual(asins, ["B001", "B002", "B003"])
         # B002 is deduped — only counted once, against whichever category's page introduced it
         self.assertEqual(result["by_category"], {"toys": 2, "kitchen": 1})
+
+    def test_rotation_starts_from_the_persisted_cursor_not_always_index_zero(self):
+        """Review fix (2026-07-09, live incident): harvest()'s rotation used to restart at
+        categories[0] on EVERY call -- with `pages` typically capped at 2-4 by the token budget
+        and ~10 categories configured, every hourly run only ever touched the first few entries.
+        Live-confirmed: 100% of 200 dealfeed-sourced backtest_rows collected were tagged "toys"
+        (index 0), driving an 82.5%-toys corpus. A persisted cursor must make a fresh run start
+        mid-list, not always at the front."""
+        api = FakeApi(tokens_left=60, pages={((99,), 0): ["B_KITCHEN"]})
+        with mock.patch.object(df, "_fetch_remote_cursor", return_value=1):
+            result = df.harvest(api, pages=1, categories=["toys", "kitchen", "pet"],
+                                resolve_fn=lambda api, cats, wait=True: {"kitchen": 99})
+        # cursor=1 -> rotation starts at "kitchen", so the single page pulled is "kitchen", not "toys"
+        self.assertEqual(result["by_category"], {"kitchen": 1})
+
+    def test_cursor_advances_past_categories_actually_attempted_this_run(self):
+        """The next run must pick up where this one left off, not restart -- otherwise a run that
+        only ever affords 1-2 pages would still never progress past the front of the list."""
+        api = FakeApi(tokens_left=60, pages={
+            ((1,), 0): ["A1"], ((2,), 0): ["A2"], ((3,), 0): ["A3"],
+        })
+        with mock.patch.object(df, "_fetch_remote_cursor", return_value=0), \
+             mock.patch.object(df, "_upload_remote_cursor") as mupload:
+            df.harvest(api, pages=2, categories=["toys", "kitchen", "pet"],
+                      resolve_fn=lambda api, cats, wait=True: {"toys": 1, "kitchen": 2, "pet": 3})
+        mupload.assert_called_once_with(2)  # cursor(0) + pulled(2) -> next run starts at "pet"
+
+    def test_cursor_wraps_around_the_end_of_the_category_list(self):
+        api = FakeApi(tokens_left=60, pages={((3,), 0): ["A3"], ((1,), 0): ["A1"]})
+        with mock.patch.object(df, "_fetch_remote_cursor", return_value=2), \
+             mock.patch.object(df, "_upload_remote_cursor") as mupload:
+            df.harvest(api, pages=2, categories=["toys", "kitchen", "pet"],
+                      resolve_fn=lambda api, cats, wait=True: {"toys": 1, "kitchen": 2, "pet": 3})
+        # cursor=2 ("pet") + 2 pulled wraps past the end of a 3-item list -> back to index 1
+        mupload.assert_called_once_with(1)
 
     def test_stops_early_when_bank_runs_dry(self):
         api = FakeApi(tokens_left=keepa_client.DEALS_PAGE_TOKENS)  # only 1 page affordable

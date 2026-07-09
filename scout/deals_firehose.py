@@ -137,6 +137,49 @@ def _save_category_id_cache(mapping: Dict[str, int]) -> None:
     _upload_remote_category_cache(mapping)
 
 
+_CURSOR_STORAGE_PATH = "backtest/dealfeed_cursor.json"
+
+
+def _fetch_remote_cursor() -> int:
+    """The rotation cursor (see harvest()'s docstring) — persisted the same way the category-id
+    cache is, since GitHub Actions has no disk between runs. 0 (start of the list) on any
+    failure/missing env — never raises."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return 0
+        r = requests.get(f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_CURSOR_STORAGE_PATH}",
+                         headers=_category_cache_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return 0
+        v = (r.json() or {}).get("cursor")
+        return int(v) if isinstance(v, (int, float)) else 0
+    except Exception as e:
+        log.warning("dealfeed rotation cursor fetch failed (non-fatal, restarting at 0): %s", e)
+        return 0
+
+
+def _upload_remote_cursor(cursor: int) -> bool:
+    """Best-effort — never raises."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        r = requests.post(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_CURSOR_STORAGE_PATH}",
+            headers={**_category_cache_storage_headers(), "x-upsert": "true",
+                    "Content-Type": "application/json"},
+            data=json.dumps({"cursor": cursor}).encode("utf-8"), timeout=30,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        log.warning("dealfeed rotation cursor upload failed (non-fatal): %s", e)
+        return False
+
+
 def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callable] = None,
                          wait: bool = True) -> Dict[str, int]:
     """category key -> Keepa root catId, resolved live ONCE then cached (root ids are stable
@@ -184,12 +227,19 @@ def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callabl
             by_name[name] = cat_id
     # keepa_client._CATEGORY_MAP maps Keepa's real root names -> our short keys; invert it to find
     # each configured category's expected Keepa root name, then its resolved id.
+    #
+    # ML de-bias audit (2026-07-09): ai-brain.json's learning.sampling.categories spelled this key
+    # "electronics-accessories" (hyphen) while _CATEGORY_MAP's values use "electronics_accessories"
+    # (underscore) -- an exact-string inverse lookup silently never matched, so this ONE category
+    # NEVER resolved and always fell back to an unfiltered pull. Normalizing hyphens to underscores
+    # on both sides makes the match robust to either spelling convention instead of requiring the
+    # two independently-edited files to stay byte-identical.
     inverse: Dict[str, str] = {}
     for keepa_name, short_key in keepa_client._CATEGORY_MAP.items():
-        inverse.setdefault(short_key, keepa_name)
+        inverse.setdefault(short_key.replace("-", "_"), keepa_name)
     resolved = dict(cached)
     for cat in categories:
-        keepa_name = inverse.get(cat)
+        keepa_name = inverse.get(cat.replace("-", "_"))
         if keepa_name and keepa_name in by_name:
             resolved[cat] = by_name[keepa_name]
     _save_category_id_cache(resolved)
@@ -246,10 +296,27 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     is resolvable, falling back to an unfiltered pull for any that aren't yet. Returns
     {"status", "asins": [{"asin","category"}], "pages_pulled", "tokens_spent", "by_category",
     "categories_resolved"}. NEVER raises — every ASIN here is a dealfeed candidate, brand-agnostic
-    by construction (no brand seed is ever consulted)."""
+    by construction (no brand seed is ever consulted).
+
+    ML de-bias fix (2026-07-09, live incident): the category rotation below used to restart at
+    `categories[0]` on EVERY call (`i` was always a fresh 0-based loop counter) -- with `pages`
+    typically capped at 2-4 by the run's token budget and ~10 categories configured, every single
+    hourly run only ever touched the FIRST few list entries. Live-confirmed: 100% of the 200
+    dealfeed-sourced backtest_rows collected since this rotation existed were tagged "toys" (list
+    index 0), and the corpus as a whole is 82.5% toys / top-5 brands 37% as a direct result — not a
+    sampling-luck fluke, a structural bug. A cursor now persists ACROSS runs (same Supabase Storage
+    pattern as the category-id cache above) so each run continues rotating from where the last one
+    left off, guaranteeing every configured category eventually gets a turn regardless of how few
+    pages any single run can afford."""
     cfg = sampling_config()
     categories = categories if categories is not None else (cfg.get("categories") or [])
     pages = pages if pages is not None else DEFAULT_PAGES_PER_RUN
+
+    rotation = list(categories)
+    cursor = 0
+    if rotation:
+        cursor = _fetch_remote_cursor() % len(rotation)
+        rotation = rotation[cursor:] + rotation[:cursor]
 
     id_map: Dict[str, int] = {}
     total_spent = 0
@@ -277,8 +344,8 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     by_category: Dict[str, int] = {}
     pulled = 0
     for i in range(max(0, pages)):
-        if categories:
-            cat = categories[i % len(categories)]
+        if rotation:
+            cat = rotation[i % len(rotation)]
             cat_id = id_map.get(cat)
         else:
             cat, cat_id = None, None
@@ -293,5 +360,10 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
                 out.append({"asin": a, "category": cat})
                 key = cat or "unfiltered"
                 by_category[key] = by_category.get(key, 0) + 1
+    if rotation:
+        # Advance past however many category slots THIS run actually attempted (successes and
+        # the one skip that broke the loop alike) so the next run picks up fresh ground instead
+        # of potentially re-hitting the same still-dry category first.
+        _upload_remote_cursor((cursor + pulled) % len(rotation))
     return {"status": "ok", "asins": out, "pages_pulled": pulled, "tokens_spent": total_spent,
             "by_category": by_category, "categories_resolved": sorted(id_map.keys())}

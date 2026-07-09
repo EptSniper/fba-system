@@ -687,5 +687,111 @@ class RankerRunFieldsTest(unittest.TestCase):
         mock_record.assert_not_called()
 
 
+class CorpusConcentrationAndCapsTest(unittest.TestCase):
+    """ML de-bias audit (2026-07-09): live-confirmed root cause of an 82.5%-toys / 37%-top-5-brand
+    training corpus was a structural sampling bug (no persisted rotation cursor — fixed in
+    deals_firehose.py/backtest.py separately). These guard the SECOND half of the fix: even with
+    broader collection, the training ASSEMBLY must cap any single brand/category from dominating
+    the objective (ML_DEBIAS_PLAN.md Lever B)."""
+
+    @staticmethod
+    def _row(asin, category, brand, sim_date, label=True):
+        return {"asin": asin, "label": label, "label_quality": "backtest",
+                "simulation_date": sim_date,
+                "features": {"category": category, "brand": brand, "price": 20}}
+
+    def test_concentration_computes_shares_and_hhi(self):
+        rows = (
+            [self._row(f"T{i}", "toys", "BrandA", "2026-01-01") for i in range(8)]
+            + [self._row(f"K{i}", "kitchen", "BrandB", "2026-01-01") for i in range(2)]
+        )
+        conc = tr.corpus_concentration(rows)
+        self.assertEqual(conc["total"], 10)
+        self.assertEqual(conc["distinct_categories"], 2)
+        self.assertEqual(conc["distinct_brands"], 2)
+        self.assertAlmostEqual(conc["top_category_share"], 0.8)
+        self.assertAlmostEqual(conc["top_brand_share"], 0.8)
+        self.assertAlmostEqual(conc["hhi_category"], 0.8**2 + 0.2**2)
+
+    def test_empty_rows_degrade_to_zeroed_report_not_a_crash(self):
+        conc = tr.corpus_concentration([])
+        self.assertEqual(conc["total"], 0)
+        self.assertEqual(conc["top_brand_share"], 0.0)
+
+    def test_cap_reduces_overrepresented_category_keeping_most_recent_windows(self):
+        # 27 toys rows (dates 2026-01-01..27) + 3 kitchen rows -> 30 total, cap at 30% = 9
+        toys = [self._row(f"T{i}", "toys", f"Brand{i}", f"2026-01-{i+1:02d}") for i in range(27)]
+        kitchen = [self._row(f"K{i}", "kitchen", f"BrandK{i}", "2026-02-01") for i in range(3)]
+        capped, info = tr.apply_corpus_caps(toys + kitchen, max_brand_share=1.0, max_category_share=0.30)
+        toys_kept = [r for r in capped if r["features"]["category"] == "toys"]
+        self.assertEqual(len(toys_kept), 9)
+        # Most-recent-first: the 9 kept must be the LATEST dates (19..27), not the earliest
+        kept_dates = sorted(r["simulation_date"] for r in toys_kept)
+        self.assertEqual(kept_dates, [f"2026-01-{i:02d}" for i in range(19, 28)])
+        self.assertEqual(len(capped), 12)  # 9 toys + 3 kitchen, all kitchen kept (under its cap)
+        self.assertEqual(info["dropped"], 18)
+        # The cap is relative to the ORIGINAL total (30 * 0.30 = 9), not the post-cap total (12) —
+        # toys' post-cap share (9/12=75%) looking high is expected, not a bug: kitchen's absolute
+        # count never scaled down just because toys did. before/after are both reported so a
+        # human reading the training report sees the real, honest before-and-after numbers.
+        self.assertAlmostEqual(info["before"]["top_category_share"], 27 / 30)
+
+    def test_cap_never_applied_when_only_one_group_present(self):
+        """Review fix: capping a corpus that is 100% one brand/category (a young corpus, or any
+        input that isn't exercising diversity) must NOT shrink it — there's nothing to rebalance
+        against, so doing so would only destroy signal, not create diversity."""
+        rows = [self._row(f"T{i}", "toys", "OnlyBrand", "2026-01-01") for i in range(50)]
+        capped, info = tr.apply_corpus_caps(rows, max_brand_share=0.06, max_category_share=0.30)
+        self.assertEqual(len(capped), 50)
+        self.assertEqual(info["dropped"], 0)
+
+    def test_brand_cap_applied_after_category_cap(self):
+        # One brand fills the whole (already-diverse-by-category) set -> still capped by brand.
+        rows = (
+            [self._row(f"A{i}", "toys", "BigBrand", f"2026-01-{i+1:02d}") for i in range(20)]
+            + [self._row(f"B{i}", "kitchen", "OtherBrand", "2026-01-01") for i in range(20)]
+        )
+        capped, info = tr.apply_corpus_caps(rows, max_brand_share=0.10, max_category_share=1.0)
+        big_brand_kept = [r for r in capped if r["features"]["brand"] == "BigBrand"]
+        self.assertEqual(len(big_brand_kept), 4)  # 40 total * 0.10 = 4
+        self.assertGreater(info["dropped"], 0)
+
+    def test_sampling_caps_config_falls_back_to_defaults_when_brain_key_absent(self):
+        with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps({"learning": {}}))):
+            caps = tr.sampling_caps_config()
+        self.assertEqual(caps["max_brand_share"], tr.DEFAULT_MAX_BRAND_CORPUS_SHARE)
+        self.assertEqual(caps["max_category_share"], tr.DEFAULT_MAX_CATEGORY_CORPUS_SHARE)
+        self.assertEqual(caps["top5_brand_alarm"], tr.DEFAULT_TOP5_BRAND_SHARE_ALARM)
+
+    def test_sampling_caps_config_reads_real_brain_values_once_approved(self):
+        brain = {"learning": {"sampling": {"maxBrandCorpusShare": 0.05, "maxCategoryCorpusShare": 0.25,
+                                           "top5BrandShareAlarm": 0.15}}}
+        with mock.patch("builtins.open", mock.mock_open(read_data=json.dumps(brain))):
+            caps = tr.sampling_caps_config()
+        self.assertEqual(caps["max_brand_share"], 0.05)
+        self.assertEqual(caps["max_category_share"], 0.25)
+
+    def test_train_and_evaluate_reports_concentration_and_raises_the_alarm(self):
+        # 40 rows all "toys" (>30% alarm threshold), separable label signal, single brand so the
+        # brand-cap no-op path (single group) doesn't confound this category-alarm assertion.
+        rows = []
+        for i in range(40):
+            profitable = i % 2 == 0
+            rows.append({
+                "asin": f"A{i:03d}", "label": profitable, "label_quality": "backtest",
+                "simulation_date": f"2026-01-{(i % 27) + 1:02d}",
+                "features": {"price": 20 if profitable else 80, "est_sales": 30 if profitable else 2,
+                            "offers": 5, "sales_rank": 10000, "weight_lb": 1.0,
+                            "avg_price_90": 20 if profitable else 80, "avg_offers_90": 5,
+                            "avg_sales_rank_90": 10000, "oos_90": 0, "amazon_bb_share": 0,
+                            "category": "toys", "brand": "unknown"},
+            })
+        result = tr.train_and_evaluate({"refused": False, "rows": rows, "by_tier": {
+            "backtest": {"total": 40, "positive": 20, "negative": 20}}, "silver_caveat": ""})
+        self.assertIn("concentration", result)
+        self.assertTrue(result["concentration_alarm"])
+        self.assertAlmostEqual(result["concentration"]["before"]["top_category_share"], 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()

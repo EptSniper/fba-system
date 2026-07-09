@@ -115,6 +115,242 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-09 — Claude Code Session 58 (continued further): activated the ML directive — root-caused and fixed the corpus bias, capped training assembly, audited leakage
+
+#### Request and constraints
+
+Mehmet pasted Cowork's `CLAUDE_CODE_ML_DIRECTIVE.md` seeding prompt (propagate the ML doctrine into
+every plan doc + do a first real crew pass: health read, de-bias plan, leakage re-check) followed by
+Cowork's own narrative of what it had already built (`amazon-fba-oa/references/ml-doctrine.md`, a
+10-skill `fba-ml-*` crew, `ML_DEBIAS_PLAN.md`), ending with **"DO ALL NO EXCEPTIONS, MAKE SURE YOU
+COMPLETE ALL WITH NO ERRORS."** Ultracode was flagged on for this turn.
+
+Constraint taken from this: verify every claim in the pasted narrative against the actual repo state
+before acting on it (a different tool's session summary is not ground truth — confirmed via direct
+file checks that `ml-doctrine.md`, all 10 skill directories, and `plugin.json` v0.3.0/34 skills DID
+exist for real, and that CLAUDE.md/SKILLS_INDEX.md/CLAUDE_CODE_GUIDE.md §0.5 already carried the
+mandate); never silently write to `ai-brain.json` even under "no exceptions" — the plan's own text
+says the `learning.sampling` additions are "pending Mehmet's OK," so those went through
+`brain-proposals.md` as a proposal, not a direct edit.
+
+#### Evidence inspected
+
+Read `amazon-fba-oa/references/ml-doctrine.md`, `CLAUDE_CODE_ML_DIRECTIVE.md`, `ML_DEBIAS_PLAN.md`,
+`amazon-fba-oa/skills/fba-brain-updater/SKILL.md`, `control-center/lib/proposals.ts` +
+`lib/proposal-drafts.ts` (the real proposal→stage→confirm mechanism already wired into the
+control-center's `/proposals` page). Ran a **live** Supabase health read (not a repeat of the
+pasted numbers) across `backtest_rows`, `shadow_outcomes`, `decisions`, `outcomes`, `runs`,
+`ranker_runs`. Read `scout/keepa_client.py`'s `_CATEGORY_MAP`, `scout/deals_firehose.py`'s
+`harvest()`/`resolve_category_ids()`, `scout/backtest.py`'s `sample_asins_explore()`, `scout/labels.py`'s
+`assemble_training_rows()`, `scout/train_ranker.py`'s `NUMERIC_FEATURES`/`build_dataset()`. Dispatched
+an independent agent for a leakage audit of the feature pipeline (kept separate from my own
+authoring context on purpose, per the project's "green unit tests, broken machine" cautionary tale).
+
+#### Findings — the live health read
+
+`backtest_rows`: **750** rows / 112 ASINs / 67 brands / **4** categories, class balance 581 positive /
+169 negative (77.5%). Category shares: toys 82.5%, shoes 15.7%, clothing 0.8%, none 0.9% — matches
+`ML_DEBIAS_PLAN.md`'s numbers exactly (confirms the plan's analysis was accurate, not stale/wrong).
+Brand shares: top-5 = 37.1% (Crocs 15.6% + Jellycat 13.9% alone ~30%). `shadow_outcomes`: 70.
+`decisions`: **0** (none of the 21 Review Queue items have a real decision yet — consistent with the
+just-fixed Approve-button bug from the prior entry; the fix landed but nothing's been re-approved
+since). `outcomes`: 0 (no realized purchases yet — expected). `runs`: 210. `ranker_runs`: 2 (both from
+earlier today; champion AUC 0.72-0.75 vs challenger 0.65 both times, "CHALLENGER LOSES — stays
+shadow"). `learning.minLabeledRows` = 30 — the corpus is ~25x over this floor.
+
+#### Root cause (not what the plan assumed) — a structural sampling bug, not "missing rotation"
+
+`ai-brain.json`'s `learning.sampling.categories` already lists 10 categories and both
+`deals_firehose.harvest()` and `backtest.sample_asins_explore()` already "rotate" through them —
+but **neither persists its position across calls**. `harvest()`'s `cat = categories[i % len(categories)]`
+and `sample_asins_explore()`'s `for cat in cats:` both restart at index 0 on every invocation. With
+`pages`/the search-fallback's own budget typically affording only 1-4 attempts per hourly run (Session
+57's `SAMPLE_TOKEN_RESERVE_FRACTION` fix, applied to protect row-building budget, incidentally shrank
+this further), only the FIRST few list entries — "toys" first — ever get a real attempt, forever.
+Live-confirmed: queried `backtest_rows` directly and found **100% of the 200 dealfeed-sourced rows**
+collected since the `category`/`sample_source` columns existed (migration 011) were tagged "toys."
+Separately found: `ai-brain.json` spells one category `"electronics-accessories"` (hyphen) while
+`keepa_client._CATEGORY_MAP`'s values use `"electronics_accessories"` (underscore) — an exact-string
+inverse lookup silently never matched, so that category never resolved at all.
+
+#### Implementation — Lever A (collection breadth)
+
+- `scout/deals_firehose.py`: `harvest()`'s category rotation now starts from a cursor persisted in
+  Supabase Storage (`models/backtest/dealfeed_cursor.json`, same pattern as the existing category-id
+  cache) and advances past however many categories THIS run actually attempted, so the next run
+  continues instead of restarting. `resolve_category_ids()`'s inverse-map lookup now normalizes
+  hyphens to underscores on both sides, fixing the `electronics-accessories` mismatch robustly
+  (rather than requiring the two independently-edited files to stay byte-identical).
+- `scout/backtest.py`: `sample_asins_explore()` gets the identical fix via its own persisted cursor
+  (`models/backtest/explore_cursor.json` — kept separate from `_load_state()`/`_save_state()`'s dict
+  deliberately: that dict is read-modify-written exactly once per `run_backtest()` call, so a second
+  independent read-modify-write from inside this function would race and could clobber it).
+
+#### Implementation — Lever B (training-assembly caps)
+
+- `scout/train_ranker.py`: new `corpus_concentration()` (brand/category shares, HHI, distinct counts,
+  top-brand/top-5 shares) and `apply_corpus_caps()` (subsamples to `maxBrandCorpusShare`/
+  `maxCategoryCorpusShare`, keeping the MOST RECENT windows per over-represented group, never
+  dropping ASINs outright). Applied in `train_and_evaluate()` right after `assembled["rows"]` is
+  read — deliberately NOT inside `labels.assemble_training_rows()`, so `calibration_report.py` (the
+  other caller) still sees the true, uncapped distribution; only this ranker's own train/val split is
+  balanced. Guarded against a real bug caught by its own test suite: capping a corpus that's 100% one
+  brand/category (a young corpus, or exactly what the existing synthetic test fixtures looked like)
+  must NOT shrink it — there's nothing to rebalance against, so the cap now no-ops when a dimension
+  has only one distinct value, instead of aggressively subsampling toward `max(1, ...)`.
+- Concentration reporting added to `render_report()` (before/after cap composition, HHI, category
+  shares) and `post_summary()`'s Discord embed (alarm color + message if any category >30% or two
+  brands >25%, per `ML_DEBIAS_PLAN.md`'s exact monitoring spec — computed off the pre-cap/raw
+  composition, since that reflects whether COLLECTION is still skewed, independent of this run's own
+  assembly-time cap).
+- `sampling_caps_config()` reads `learning.sampling.maxBrandCorpusShare`/`maxCategoryCorpusShare`/
+  `top5BrandShareAlarm` from the brain with defaults matching the proposed values exactly — the cap
+  is live NOW with sensible numbers and will pick up the brain's own value the moment the proposal
+  below is approved, no code change needed either way.
+
+#### Proposal (NOT applied — pending Mehmet's approval, per the plan's own instruction)
+
+Appended a `[ml-debias]` entry to `learning-hub/tracking/brain-proposals.md` (tagged
+`key: learning.sampling`, visible in the control-center's `/proposals` page) proposing the exact
+`learning.sampling` additions from `ML_DEBIAS_PLAN.md`: `maxBrandCorpusShare: 0.06`,
+`maxCategoryCorpusShare: 0.30`, `top5BrandShareAlarm: 0.20`, `breadthFirstBacktest: true`.
+`ai-brain.json` was NOT edited. A `scout/db/migrations/014_ranker_concentration.sql` (adds
+`ranker_runs.concentration JSONB` for historical charting) was written but **not applied** — the
+safety classifier correctly flagged it as a schema change Mehmet never specifically named, unlike
+migrations 011-013 which were part of the explicitly-requested dashboard work. Concentration is
+fully computed and reported (text report + Discord) without it; only historical charting of the
+trend is deferred until/if that column is added.
+
+#### Leakage audit (independent agent, read-only)
+
+Confirmed clean: windowed Keepa features strictly clipped before `simulation_date`
+(`backtest.py`'s `_last_before`/`_window_mean`/`_oos_fraction`/`_rank_drops`), label fields
+(`price_at_horizon`, `would_have_profited`, etc.) structurally excluded from `features_snapshot` by
+three independent layers (never written into `enriched`, `PRE_DECISION_FEATURES`'s allowlist,
+`labels.py`'s re-filter), the Trends week-boundary bug the doctrine cites as a past incident is
+genuinely fixed (`trends.py`'s window must close strictly before `as_of`, not just same-day), NaN
+(not 0.0) missing-value handling with `*_stale` flags as real model inputs, eBay signals never touch
+the backtest path.
+
+One real, low-frequency concern found (not caused by anything this session touched): `brand`/
+`category`/`weight_lb` are derived ONCE from a present-day Keepa product lookup and reused across
+EVERY historical window for that ASIN (`backtest.py`'s `parse_keepa_history`) — if a product's real
+catalog category/brand changed historically, older windows would carry today's categorization, not
+what was knowable then. Acceptable for THIS session's corpus-balancing use of brand/category (grouping
+by an ASIN's current catalog identity to avoid over-representing it is a reasonable stand-in — brand/
+category rarely change), but worth a future look if it's ever promoted to an actual model feature
+(it is not — `NUMERIC_FEATURES` never includes brand/category as direct model inputs).
+
+Doctrine-vs-code mismatches found in `ml-doctrine.md` (recorded here per the project's "preserve the
+historical document, record the conflict" rule — not silently edited):
+1. §5 says the model is "LightGBM `LGBMRanker` (lambdarank, NDCG@k), grouped." The actual code is
+   `lgb.LGBMClassifier(class_weight="balanced")` evaluated by AUC — no ranking objective, no grouping.
+2. §5 says the refusal floor is "~50 groups / ~800 rows." The actual floor is
+   `ai-brain.json learning.minLabeledRows = 30`, a flat row count — no "groups" concept exists in the
+   code at all.
+3. (New) §4 says "Split train/test by time, not random." The actual and only split
+   (`backtest.split_by_asin`) is a deterministic hash-of-ASIN GROUP split — neither time-based nor
+   random.
+
+#### Files changed
+
+- Modified: `scout/deals_firehose.py`, `scout/backtest.py`, `scout/train_ranker.py`,
+  `scout/tests/test_deals_firehose.py`, `scout/tests/test_backtest.py`,
+  `scout/tests/test_train_ranker.py`, `learning-hub/tracking/brain-proposals.md`,
+  `DATA_ENGINE_PLAN.md`, `SYSTEM_BLUEPRINT.md`, `MASTERY_PLAN.md`,
+  `CONTROL_CENTER_UPGRADE_PLAN.md`, `HUMAN_TODO.md` (doctrine-reference header, via a parallel
+  Workflow — `THIS_WEEK.md` already had one from Cowork).
+- New: `scout/db/migrations/014_ranker_concentration.sql` (written, **not applied**).
+
+#### Verification
+
+**Tested**: `python -m py_compile` on every changed scout file — clean. `python run_all_tests.py` —
+**886 passed, 0 failed** across all 4 suites (scout 806, scout_pro 36, knowledge-rag 35, scripts 9),
+deal-exam eval 100%. New regression tests: rotation-cursor start/advance/wrap for both
+`deals_firehose.harvest()` and `backtest.sample_asins_explore()`, the hyphen/underscore category-key
+fix, `corpus_concentration()`/`apply_corpus_caps()` (share/HHI math, most-recent-kept ordering, the
+single-group no-op guard, brand-cap-after-category-cap), `sampling_caps_config()`'s brain-vs-default
+read. All 6 plan docs confirmed to reference `ml-doctrine.md` exactly once.
+
+**NOT yet verified live**: none of today's collector/training runs have happened since these fixes
+landed, so there's no live-observed proof yet that the corpus's category/brand mix actually improves
+run over run. That requires waiting for real `keepa-collect.yml`/`train-ranker.yml` cycles (or
+dispatching them) and re-running the same live health-read query.
+
+#### Limitations / honest status
+
+- **Implemented + tested (mocked)**: rotation cursors, category-key normalization, concentration
+  caps/reporting/alarm, doctrine propagation.
+- **NOT applied**: the `ai-brain.json learning.sampling` additions (proposed, pending approval) and
+  migration 014 (written, not applied — needs explicit authorization, unlike 011-013).
+- **NOT live-verified**: whether the fix actually widens the corpus over the next several collector
+  cycles — the mechanism is correct and unit-tested against the exact live-reproduced bug pattern
+  (100% dealfeed rows tagged "toys"), but proving the trend requires real runs after this push.
+  `decisions` is still 0 — the Review Queue Approve-button fix from the prior entry hasn't been
+  exercised for real yet either.
+
+#### Exact next safe step
+
+Wait for (or dispatch) the next few `keepa-collect.yml` runs, then re-run the same live query used
+for this session's health read (`backtest_rows` grouped by `features_snapshot->>category` /
+`->>brand`) and compare against today's baseline (toys 82.5%, top-5 brands 37.1%) — falling
+concentration is the proof this actually worked, not just that it compiles. Separately: Mehmet should
+review the `[ml-debias]` proposal in the control-center's `/proposals` page (or here) and approve/
+reject the `learning.sampling` block before the NEXT training run, so `sampling_caps_config()` starts
+reading real brain values instead of code defaults.
+
+### 2026-07-09 — Claude (Cowork) Session: ML expert crew (10 skills) + ML doctrine + permanent mandate
+
+#### Request
+
+Mehmet: focus the ML on the ranker + item finder; double-check we're not collecting from only certain
+brands/items (want max, varied data); build a 20-year-expert skill for EVERY ML component (data collection,
+utilization, training, leakage-checking, error-checking, guardrails, analyst, accuracy checkers, "everything is
+going how it's supposed to"); integrate so every ML/command-center task always uses them; generate a durable
+Claude Code directive and propagate it into everything (now + future builds/upgrades); remember it forever.
+
+#### Data-breadth check (live, via Supabase MCP)
+
+Verified the training corpus `backtest_rows` (grain = ASIN × `simulation_date`; one `would_have_profited` label +
+`label_quality` tier; ~7 rows/ASIN). Found the bias Mehmet suspected: **~550 rows / 81 ASINs / 67 brands but 4
+categories, and Crocs 15.6% + Jellycat 13.9% ≈ 30% of rows** — friendly-brand/hint-led skew in training data.
+De-biasing/breadth is now the #1 ML priority. (backtest_rows also observed jumping 228→550 — first new training
+data since 2026-07-05; the collector-hang fix worked, run 162 succeeded with real tokens_consumed.)
+
+#### Implemented (files created/changed)
+
+- `amazon-fba-oa/references/ml-doctrine.md` (new) — the backbone: pipeline map, training-data grain + label
+  tiers, breadth/no-bias mandate, no-leakage rules, ranker/promotion gates, honest metrics, a cautionary-tale bug
+  library (dead artifact, batch>bank, fingerprint-identity, telemetry-None, mislabeled eBay feature), hard-gates-
+  outside-ML, no-auto-buy/promote, and the crew roster.
+- 10 new `fba-` ML skills (each a 20-yr specialist, grounded in the real stack): `fba-ml-lead`,
+  `fba-scout-strategist` (item finder), `fba-ml-data-engineer`, `fba-feature-engineer`, `fba-ranker-architect`
+  (design + serving/utilization), `fba-ml-trainer`, `fba-leakage-auditor`, `fba-ml-evaluator` (accuracy),
+  `fba-ml-guardian` (guardrails/safety), `fba-ml-debugger`.
+- Integration: `amazon-fba-oa/.claude-plugin/plugin.json` → v0.3.0, all **34 skills** registered (validated: all
+  parse, fba-prefixed, names match folders). `SKILLS_INDEX.md` → ML crew section + mandatory ML chain + ML
+  non-negotiables. `CLAUDE.md` → ML mandate paragraph. `CLAUDE_CODE_GUIDE.md` → new **§0.5 THE ML MANDATE**
+  (always-loaded via CLAUDE.md import), including a PROPAGATE rule: bake the doctrine + crew-routing into every
+  command-center plan/doc and every future build/upgrade.
+- `CLAUDE_CODE_ML_DIRECTIVE.md` (new) — the one-time paste-ready seeding prompt for Claude Code to adopt the
+  standing behavior, propagate the doctrine into the plan docs (THIS_WEEK/DATA_ENGINE_PLAN/SYSTEM_BLUEPRINT/
+  MASTERY_PLAN/CONTROL_CENTER_UPGRADE_PLAN/HUMAN_TODO), and run a first crew pass (ML health read + de-bias plan
+  + leakage re-check).
+- Memory: added permanent `ml-crew-and-doctrine` memory entry.
+
+#### Status / limitations
+
+Skills are solid drafts (not eval-looped). No code in scout/scout_pro changed — the doctrine/crew guide HOW the
+learning code must be built/reviewed; Claude Code still does the implementation. Plugin must be reinstalled in
+Cowork/Claude Code to pick up the 10 new skills. Guardrails unchanged (no auto-buy/promote, hard gates outside ML).
+
+#### Exact next safe step
+
+In Claude Code, paste `CLAUDE_CODE_ML_DIRECTIVE.md` once: it propagates the doctrine into the plan docs and runs
+the crew's first pass — an `fba-ml-lead` health read + the `fba-scout-strategist`/`fba-ml-data-engineer` de-bias
+plan (widen brand/category coverage, per-brand caps, stratified sampling) + an `fba-leakage-auditor` re-check
+before the next retrain. De-biasing the corpus is the top priority. No purchase/promotion implied.
+
 ### 2026-07-09 — Claude Code Session 58 (continued): "run now" buttons for the collector/ranker, live-verified end-to-end
 
 Direct continuation of the Session 58 entry below, same day. After the dashboard shipped, Mehmet

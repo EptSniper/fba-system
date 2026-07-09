@@ -49,28 +49,43 @@ the friendly-brand/hint-led sampling bleeding into training. **Fix and prevent i
 - **Missing ≠ zero.** Impute missing to **NaN** (LightGBM handles it natively), not 0.0 — a trend ratio of 0 or
   days-to-holiday of 0 are meaningful values. Add explicit `*_stale` / missing flags **as model inputs**, so the
   model can't encode label-tier membership through the mere presence/absence of a feature.
-- Never log the scout's own past verdict as its success label (self-confirmation). Split train/test by **time**, not random.
+- Never log the scout's own past verdict as its success label (self-confirmation).
+- **Train/test split (as-coded 2026-07-09):** a deterministic **group split by ASIN** (`backtest.split_by_asin`)
+  — prevents the same ASIN's windows leaking across train↔test (good), but is NOT time-based, so it does not yet
+  test temporal generalization; a time-held-out split is a tracked future safeguard.
+- **Known low-frequency caveat:** `brand`/`category`/`weight_lb` are looked up once from the present-day product
+  and reused across an ASIN's historical windows — acceptable today because brand/category are only grouping keys,
+  NOT model features (`NUMERIC_FEATURES` excludes them); revisit if ever promoted to an actual feature.
 
 ## 5. The ranker + promotion
 
-- Model: **LightGBM `LGBMRanker` (lambdarank, NDCG@k)**, grouped (e.g. by `simulation_date` cohort). It competes
-  as a **challenger** against the deterministic triage formula (the champion).
+- **Model (as-coded 2026-07-09, ground truth):** `lgb.LGBMClassifier(class_weight="balanced")` predicting
+  P(would-profit), used to **rank** candidates by that probability, evaluated by **AUC**. It competes as a
+  **challenger** against the deterministic triage formula (the champion) in **shadow**. Promote ONLY when it
+  *consistently* beats the champion on held-out AUC across multiple runs AND a human flips
+  `scoring.rankingChampion` — never on a single run (one win can be small-sample noise; e.g. as the corpus
+  de-biased, run 4 flipped from losing to winning ~0.73 vs ~0.69 on only ~186 val rows — promising, not a promote).
+  *(Future upgrade target, NOT current: a true
+  learning-to-rank objective — `LGBMRanker` lambdarank/NDCG@k with query groups. Where any `fba-ml` skill
+  describes lambdarank/NDCG/groups, treat it as the target; this section + `train_ranker.py` are the truth.)*
 - **No auto-promotion.** A challenger is promoted only by a human flipping `scoring.rankingChampion`, and only
-  after it beats the champion on a **time-held-out** set on the metric that matters. Default is **shadow mode**
-  (the model orders a shadow queue that's logged but not acted on).
-- The trainer **refuses** below the minimum (~50 groups / ~800 rows — confirm the exact numbers in
-  `train_ranker.py`); it must say "not enough data," never train on noise.
+  after it beats the champion on the held-out split on the metric that matters (currently **AUC** on the
+  group-by-ASIN split). Default is **shadow mode** (the model orders a shadow queue that's logged but not acted on).
+- The trainer **refuses** below the minimum — `ai-brain.json` `learning.minLabeledRows` (**currently 30**, a flat
+  row count; there is no "groups" concept in the code). 30 is a low floor: the corpus is ~25× over it, but
+  `fba-ml-evaluator` must still caution that clearing the floor ≠ enough data for a confident promotion.
 - Training output must have a **reader**: the trained artifact is loaded and actually orders the queue, or it's
   dead weight. (This was a real bug — a model trained every cycle that nothing loaded.)
 
 ## 6. Honest metrics & evaluation
 
-- Report offline metrics with **small-sample caution** and confidence, and never conflate offline NDCG with real
-  buy performance — **offline ≠ online**. The truth is realized outcomes, which lag by weeks.
+- Report offline metrics with **small-sample caution** and confidence, and never conflate the offline metric
+  (currently **AUC**) with real buy performance — **offline ≠ online**. The truth is realized outcomes, which lag by weeks.
 - Every training run emits a report: dataset size + concentration, class balance, feature importances (with the
   dead/constant features named), metric vs champion, and an explicit go/no-go on promotion. Constant-zero features
   usually mean a plumbing break (producer unwired), not a useless signal — investigate before deleting.
-- Calibrate if probabilities are used downstream; a ranker's scores are ordinal, not probabilities.
+- The current classifier's outputs ARE probabilities (P(would-profit)) — **calibrate them** if used as anything
+  beyond a within-list ranking. (A future `LGBMRanker`'s scores would be ordinal, not probabilities.)
 
 ## 7. Cautionary tales (the failure modes the crew exists to catch)
 

@@ -246,15 +246,104 @@ def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callabl
     return resolved
 
 
+# ML de-bias Lever A, part 2 (2026-07-09, ML_DEBIAS_PLAN.md): "vary a secondary axis across runs
+# — rank sub-bands, price bands, 90-day drop% buckets — so you sweep the whole surface, not one
+# corner." Category rotation alone still means every page within a category pulls whatever
+# Keepa's /deal feed ranks first for that category (often the same handful of highly-active
+# listings); rotating these filters too spreads collection across DIFFERENT slices of each
+# category's surface. keepa.Keepa.deals()'s documented DEAL_REQUEST_KEYS include
+# "salesRankRange", "currentRange" (price, in cents — same *100 convention as
+# keepa_client.py's own Product Finder filters), and "deltaPercentRange" (price-drop %).
+#
+# deltaPercentRange's exact sign/scale convention is UNVERIFIED live (Keepa's own docs are terse
+# here) — an inverted sign would just return fewer/no deals for that slice sometimes, degrading
+# to breadth-neutral rather than erroring (fetch_deal_page already handles an empty page fine);
+# flagged for confirmation once real per-band deal counts come back.
+RANK_SUB_BANDS = [(0, 30000), (30000, 90000), (90000, 200000)]
+PRICE_BANDS_DOLLARS = [(8, 20), (20, 40), (40, 60)]
+DROP_PERCENT_BANDS = [(50, 100), (20, 50), (5, 20)]  # biggest drops first; UNVERIFIED convention
+
+_SECONDARY_CURSOR_STORAGE_PATH = "backtest/dealfeed_secondary_cursor.json"
+_SECONDARY_AXIS_SIZE = len(RANK_SUB_BANDS) * len(PRICE_BANDS_DOLLARS) * len(DROP_PERCENT_BANDS)
+
+
+def _fetch_remote_secondary_cursor() -> int:
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return 0
+        r = requests.get(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_SECONDARY_CURSOR_STORAGE_PATH}",
+            headers=_category_cache_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return 0
+        v = (r.json() or {}).get("cursor")
+        return int(v) if isinstance(v, (int, float)) else 0
+    except Exception as e:
+        log.warning("dealfeed secondary-axis cursor fetch failed (non-fatal, restarting at 0): %s", e)
+        return 0
+
+
+def _upload_remote_secondary_cursor(cursor: int) -> bool:
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        r = requests.post(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_SECONDARY_CURSOR_STORAGE_PATH}",
+            headers={**_category_cache_storage_headers(), "x-upsert": "true",
+                    "Content-Type": "application/json"},
+            data=json.dumps({"cursor": cursor}).encode("utf-8"), timeout=30,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        log.warning("dealfeed secondary-axis cursor upload failed (non-fatal): %s", e)
+        return False
+
+
+def secondary_axis_filters(index: int) -> Dict[str, Any]:
+    """Decomposes a combined cursor position into one (rank band, price band, drop% band) combo
+    and returns the matching keepa.Keepa.deals() filter keys. Cycles through all
+    len(RANK_SUB_BANDS)*len(PRICE_BANDS_DOLLARS)*len(DROP_PERCENT_BANDS) combinations as `index`
+    advances — one full combo per dealfeed run (see harvest()), not per page, so a run explores
+    one specific slice broadly across whichever categories the category cursor lands on."""
+    index = index % _SECONDARY_AXIS_SIZE
+    rank_idx, rem = divmod(index, len(PRICE_BANDS_DOLLARS) * len(DROP_PERCENT_BANDS))
+    price_idx, drop_idx = divmod(rem, len(DROP_PERCENT_BANDS))
+    rank_lo, rank_hi = RANK_SUB_BANDS[rank_idx]
+    price_lo, price_hi = PRICE_BANDS_DOLLARS[price_idx]
+    drop_lo, drop_hi = DROP_PERCENT_BANDS[drop_idx]
+    return {
+        "salesRankRange": [rank_lo, rank_hi],
+        "currentRange": [int(price_lo * 100), int(price_hi * 100)],
+        "deltaPercentRange": [drop_lo, drop_hi],
+        # Review fix (2026-07-09, fba-code-reviewer, BLOCKER): keepa.Keepa.deals() JSON-dumps
+        # deal_parms verbatim -- it does not auto-enable range filters. Keepa's own deals UI
+        # gates these behind separate toggles; WITHOUT them, salesRankRange/currentRange/
+        # deltaPercentRange above risk being silently ignored (every "band" secretly returns the
+        # same unfiltered results -- a silent no-op, ml-doctrine.md §7's "green tests, broken
+        # machine" failure class, since FakeApi.deals() in tests can't catch a Keepa-side ignore).
+        # Harmless if unneeded; closes the gap if it is. Still UNVERIFIED until a live dispatch's
+        # per-band asin counts confirm the filters are actually taking effect.
+        "isRangeEnabled": True,
+        "isFilterEnabled": True,
+    }
+
+
 def fetch_deal_page(api, category: Optional[str] = None, category_id: Optional[int] = None,
-                    page: int = 0, wait: bool = True) -> Dict[str, Any]:
+                    page: int = 0, wait: bool = True,
+                    extra_filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """One /deal page (<=150 deals), guarded so its flat DEALS_PAGE_TOKENS cost never overdraws
     the bank. wait: True (default) lets the keepa lib drip-pace against the token bucket like
     every other endpoint in this project; scout/collect_hourly.py's burst collector passes
     wait=False (DATA_ENGINE_PLAN.md's "never block on a refill" rule) — the guard above already
     means this call is only attempted when the bank covers it, so wait=False rarely matters in
     practice, but it keeps this endpoint consistent with keepa_client.py's own wait= convention
-    rather than being the one silent exception to it. Returns {"status", "asins": [...],
+    rather than being the one silent exception to it. extra_filters (e.g. secondary_axis_filters())
+    are merged directly into the deal_parms sent to Keepa. Returns {"status", "asins": [...],
     "tokens_spent", "category", "page"}. NEVER raises — a rejected/failed call degrades to an
     honest empty result."""
     ok = keepa_client._guard_flat(api, DEALS_PAGE_TOKENS, "deals firehose page")
@@ -264,6 +353,8 @@ def fetch_deal_page(api, category: Optional[str] = None, category_id: Optional[i
     deal_parms: Dict[str, Any] = {"page": page, "domainId": 1, "priceTypes": [0]}
     if category_id is not None:
         deal_parms["includeCategories"] = [category_id]
+    if extra_filters:
+        deal_parms.update(extra_filters)
     before = keepa_client._tokens_consumed(api)
     try:
         # Review fix (2026-07-07): wrapped in _with_deadline for defense-in-depth (matching
@@ -307,7 +398,13 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     sampling-luck fluke, a structural bug. A cursor now persists ACROSS runs (same Supabase Storage
     pattern as the category-id cache above) so each run continues rotating from where the last one
     left off, guaranteeing every configured category eventually gets a turn regardless of how few
-    pages any single run can afford."""
+    pages any single run can afford.
+
+    ML de-bias fix, Lever A part 2 (2026-07-09, ML_DEBIAS_PLAN.md): category rotation alone still
+    means every page pulls whatever Keepa's /deal feed ranks first WITHIN that category — often
+    the same handful of highly-active listings. A second persisted cursor (secondary_axis_filters())
+    layered on top rotates rank/price/drop% bands too, one full combination per RUN (not per page,
+    so a run explores one slice broadly across whichever categories the category cursor lands on)."""
     cfg = sampling_config()
     categories = categories if categories is not None else (cfg.get("categories") or [])
     pages = pages if pages is not None else DEFAULT_PAGES_PER_RUN
@@ -317,6 +414,9 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     if rotation:
         cursor = _fetch_remote_cursor() % len(rotation)
         rotation = rotation[cursor:] + rotation[:cursor]
+
+    secondary_cursor = _fetch_remote_secondary_cursor()
+    secondary_filters = secondary_axis_filters(secondary_cursor)
 
     id_map: Dict[str, int] = {}
     total_spent = 0
@@ -349,7 +449,8 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
             cat_id = id_map.get(cat)
         else:
             cat, cat_id = None, None
-        page = fetch_deal_page(api, category=cat, category_id=cat_id, page=0, wait=wait)
+        page = fetch_deal_page(api, category=cat, category_id=cat_id, page=0, wait=wait,
+                              extra_filters=secondary_filters)
         pulled += 1
         total_spent += page.get("tokens_spent") or 0
         if page.get("status") == "skipped":
@@ -365,5 +466,18 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
         # the one skip that broke the loop alike) so the next run picks up fresh ground instead
         # of potentially re-hitting the same still-dry category first.
         _upload_remote_cursor((cursor + pulled) % len(rotation))
+    # One full secondary-axis combination per RUN (not per page/category slot) -- advances
+    # regardless of how many pages this run actually pulled, so a starved run doesn't repeat the
+    # same rank/price/drop% slice next time either.
+    _upload_remote_secondary_cursor((secondary_cursor + 1) % _SECONDARY_AXIS_SIZE)
+    # Review fix (2026-07-09, fba-code-reviewer SHOULD-FIX): 4 simultaneous filters (category +
+    # rank + price + drop%) can legitimately AND down to zero-few real deals for many
+    # combinations -- not a bug, but silent if nothing surfaces it. Logging the combo alongside
+    # its actual yield makes a consistently-dry slice visible in the collector's own output
+    # instead of only discoverable by manually cross-referencing the corpus later.
+    if pulled:
+        log.info("dealfeed secondary axis %s -> %d unique asin(s) across %d page(s)",
+                 secondary_filters, len(out), pulled)
     return {"status": "ok", "asins": out, "pages_pulled": pulled, "tokens_spent": total_spent,
-            "by_category": by_category, "categories_resolved": sorted(id_map.keys())}
+            "by_category": by_category, "categories_resolved": sorted(id_map.keys()),
+            "secondary_axis_filters": secondary_filters}

@@ -220,6 +220,42 @@ class CategoryCacheRemotePersistenceTest(unittest.TestCase):
         self.assertFalse(ok)
 
 
+class SecondaryAxisFiltersTest(unittest.TestCase):
+    """ML de-bias Lever A part 2 (2026-07-09, ML_DEBIAS_PLAN.md): rank/price/drop%-band rotation
+    layered on top of the category cursor, so successive runs sweep different SLICES of each
+    category instead of always pulling whatever Keepa ranks first."""
+
+    def test_index_zero_is_the_first_band_combo(self):
+        filters = df.secondary_axis_filters(0)
+        self.assertEqual(filters["salesRankRange"], list(df.RANK_SUB_BANDS[0]))
+        self.assertEqual(filters["deltaPercentRange"], list(df.DROP_PERCENT_BANDS[0]))
+        lo, hi = df.PRICE_BANDS_DOLLARS[0]
+        self.assertEqual(filters["currentRange"], [lo * 100, hi * 100])  # dollars -> cents
+
+    def test_index_cycles_through_every_combo_before_repeating(self):
+        def _hashable(v):
+            return tuple(v) if isinstance(v, list) else v
+
+        combos = [df.secondary_axis_filters(i) for i in range(df._SECONDARY_AXIS_SIZE)]
+        seen = {tuple(sorted((k, _hashable(v)) for k, v in combo.items())) for combo in combos}
+        self.assertEqual(len(seen), df._SECONDARY_AXIS_SIZE)  # every combo is distinct
+        self.assertEqual(df.secondary_axis_filters(0), df.secondary_axis_filters(df._SECONDARY_AXIS_SIZE))
+
+    def test_enables_the_range_filters_keepa_requires(self):
+        """Review fix (2026-07-09, fba-code-reviewer, BLOCKER): keepa.Keepa.deals() sends
+        deal_parms verbatim -- without isRangeEnabled/isFilterEnabled, salesRankRange/
+        currentRange/deltaPercentRange risk being silently ignored by Keepa's own API."""
+        filters = df.secondary_axis_filters(0)
+        self.assertIs(filters["isRangeEnabled"], True)
+        self.assertIs(filters["isFilterEnabled"], True)
+
+    def test_negative_or_oversized_index_wraps_safely(self):
+        # harvest() always mods by len(...) before storing, but the function itself degrades
+        # gracefully on any index rather than trusting every caller got that right.
+        self.assertEqual(df.secondary_axis_filters(df._SECONDARY_AXIS_SIZE + 2),
+                         df.secondary_axis_filters(2))
+
+
 class HarvestTest(unittest.TestCase):
     def setUp(self):
         keepa_client.reset_guard_telemetry()
@@ -230,6 +266,8 @@ class HarvestTest(unittest.TestCase):
         self._cursor_patchers = [
             mock.patch.object(df, "_fetch_remote_cursor", return_value=0),
             mock.patch.object(df, "_upload_remote_cursor", return_value=False),
+            mock.patch.object(df, "_fetch_remote_secondary_cursor", return_value=0),
+            mock.patch.object(df, "_upload_remote_secondary_cursor", return_value=False),
         ]
         for p in self._cursor_patchers:
             p.start()
@@ -314,6 +352,32 @@ class HarvestTest(unittest.TestCase):
             result["tokens_spent"],
             keepa_client.CATEGORY_LOOKUP_TOKENS + keepa_client.DEALS_PAGE_TOKENS,
         )
+
+    def test_secondary_axis_filters_reach_the_live_deal_parms(self):
+        """ML de-bias Lever A part 2: rank/price/drop%-band filters must actually reach Keepa's
+        deal_parms, not just exist as an unused helper function."""
+        seen_parms = []
+
+        class RecordingApi(FakeApi):
+            def deals(self, deal_parms, domain=None, wait=True):
+                seen_parms.append(dict(deal_parms))
+                return super().deals(deal_parms, domain=domain, wait=wait)
+
+        api = RecordingApi(tokens_left=60, pages={((11,), 0): ["B001"]})
+        with mock.patch.object(df, "_fetch_remote_secondary_cursor", return_value=5):
+            df.harvest(api, pages=1, categories=["toys"],
+                      resolve_fn=lambda api, cats, wait=True: {"toys": 11})
+        expected = df.secondary_axis_filters(5)
+        for key, value in expected.items():
+            self.assertEqual(seen_parms[0].get(key), value)
+
+    def test_secondary_cursor_advances_by_exactly_one_per_run(self):
+        api = FakeApi(tokens_left=60, pages={((1,), 0): ["A1"], ((2,), 0): ["A2"]})
+        with mock.patch.object(df, "_fetch_remote_secondary_cursor", return_value=3), \
+             mock.patch.object(df, "_upload_remote_secondary_cursor") as mupload:
+            df.harvest(api, pages=2, categories=["toys", "kitchen"],
+                      resolve_fn=lambda api, cats, wait=True: {"toys": 1, "kitchen": 2})
+        mupload.assert_called_once_with(4)  # +1 regardless of pages pulled this run
 
 
 if __name__ == "__main__":

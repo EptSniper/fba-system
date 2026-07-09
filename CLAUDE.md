@@ -12,11 +12,20 @@ For every session:
 
 ## Skills — check the team before you act (applies to every AI: Cowork, the scheduled task, Claude Code)
 
-This repo ships a 24-skill expert plugin in `amazon-fba-oa/` (`fba-*`). **Standing rule:** before any
+This repo ships a 34-skill expert plugin in `amazon-fba-oa/` (`fba-*`). **Standing rule:** before any
 non-trivial task, confirm the action matches the goal, then scan the skills index — if the task matches or is
 even related to a skill, **use it** (open `amazon-fba-oa/skills/<name>/SKILL.md` and follow it). Chain skills
 when several apply; only improvise when nothing fits. The skills encode the rules the code must obey and several
 write into the files the code reads (`ai-brain.json`, the RAG corpus, the trackers), so don't re-derive them.
+
+**ML mandate (applies to every current component and every future build/upgrade of the command center):** the
+learning system is the core of this project. ANY task touching ML or the command center — data collection,
+features, training, serving, evaluation, guardrails, debugging, or the item finder — MUST route through the
+`fba-ml-*` crew + `fba-scout-strategist` (see the ML section of `SKILLS_INDEX.md` and
+`amazon-fba-oa/references/ml-doctrine.md`). Non-negotiable ML rules: collect **as much and as varied data as
+possible** (brand-agnostic, category-diverse — no friendly-brand skew); **no leakage** (pre-decision features
+only, missing=NaN, point-in-time); **hard gates stay outside ML**; the model **only ranks, never buys**;
+**shadow-by-default, no auto-promotion** (a human flips `scoring.rankingChampion`). Weave this into every plan.
 
 The canonical routing index (what to use when) and the full engineering guide:
 

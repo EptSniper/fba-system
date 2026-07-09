@@ -23,7 +23,7 @@ They share one rulebook: `amazon-fba-oa/references/` (`oa-criteria.md`, `guardra
 
 ---
 
-## The 24 skills — use when…
+## The 34 skills — use when…
 
 ### Sourcing & product analysis (the business logic)
 
@@ -64,6 +64,21 @@ They share one rulebook: `amazon-fba-oa/references/` (`oa-criteria.md`, `guardra
 | `fba-qa-tester` | writing/running tests, regression coverage |
 | `fba-data-analyst` | analyzing the operation's own numbers/outcomes once real data exists |
 
+### ML crew (the learning system — the ranker + item finder). MANDATE: every ML / command-center learning task routes through these — now and for all future builds/upgrades. Read `amazon-fba-oa/references/ml-doctrine.md`.
+
+| Skill | Use when the task is… |
+|---|---|
+| `fba-ml-lead` | anything spanning >1 ML component, "is the ML healthy / going right", plan/coordinate the ML build — use FIRST |
+| `fba-scout-strategist` | the item finder / what ASIN universe we sample, breadth, "are we only collecting certain brands", coverage |
+| `fba-ml-data-engineer` | collection→dataset, the data lake, dedupe, stratification, `backtest_rows`, label tiers, class balance |
+| `fba-feature-engineer` | designing/changing features, point-in-time snapshots, missing→NaN + stale flags, dead/constant features |
+| `fba-ranker-architect` | the model itself — LightGBM/LambdaRank, groups, champion/challenger, serving/utilization, promotion gate |
+| `fba-ml-trainer` | running/scheduling training, cadence, fingerprint, minimum-rows refuse, artifact registry/versioning |
+| `fba-leakage-auditor` | checking for target/temporal/train-test leakage — **sign-off required before any promotion** |
+| `fba-ml-evaluator` | "is the model actually accurate", metrics, calibration, offline-vs-online, bias slices, promotion evidence |
+| `fba-ml-guardian` | ML safety/guardrails, shadow-vs-live, no-auto-promote/buy, rollback/kill-switch — **final safety gate** |
+| `fba-ml-debugger` | ML pipeline broken/stuck/"too good"/silent bug (corpus not growing, trainer skips, model unused, telemetry off) |
+
 ---
 
 ## Common chains
@@ -74,9 +89,17 @@ They share one rulebook: `amazon-fba-oa/references/` (`oa-criteria.md`, `guardra
   `fba-qa-tester` → `fba-session-journal`.
 - **Ingest research (daily task / Claude Code):** `fba-transcript-ingest` for every new transcript/doc;
   `fba-brain-updater` if a finding should change a buying threshold.
+- **Any ML / learning work (data, features, ranker, training, serving):** `fba-ml-lead` plans →
+  `fba-scout-strategist` / `fba-ml-data-engineer` / `fba-feature-engineer` / `fba-ranker-architect` /
+  `fba-ml-trainer` implement → `fba-leakage-auditor` + `fba-ml-evaluator` + `fba-ml-guardian` **sign off
+  before any promotion or ship** → `fba-ml-debugger` when something's wrong. This chain is mandatory.
 
-## Non-negotiables that always apply (from `references/guardrails.md`)
+## Non-negotiables that always apply (from `references/guardrails.md` + `references/ml-doctrine.md`)
 
 Separate "am I allowed?" from "can it profit?"; humans approve purchases (no auto-buy/money movement);
 no secrets in source/browser/outputs; honest status words (implemented ≠ tested ≠ deployed); single source of
-truth in `ai-brain.json`; cite sources. These hold regardless of which skill is in use.
+truth in `ai-brain.json`; cite sources. **For ML specifically:** collect as much and as varied data as possible
+(brand-agnostic, category-diverse — no friendly-brand skew); no leakage (pre-decision features only, missing=NaN,
+point-in-time); hard gates stay outside ML; the model only ranks (never buys); shadow-by-default and no
+auto-promotion (a human flips `scoring.rankingChampion`). These hold regardless of which skill is in use, for
+every current component and every future build/upgrade.

@@ -1,12 +1,12 @@
 {
   "name": "amazon-fba-oa",
-  "description": "Amazon FBA online-arbitrage expert team: 24 fba- skills for sourcing, buy/no-buy deal analysis, Keepa/SellerAmp/chart reading, market & data analysis, and listing SEO, plus the project rituals (journal, ai-brain, RAG, leads) and an engineering crew (architect, coder, reviewer, debugger, database, design, QA, innovation). Enforces the ai-brain.json gates, the allowed-vs-profitable split, and human-approved buying.",
-  "version": "0.2.0",
+  "description": "Amazon FBA online-arbitrage expert team (34 fba- skills). Sourcing & deal analysis, Keepa/SellerAmp/chart reading, market & data analysis, listing SEO; the project rituals (journal, ai-brain, RAG, leads); an engineering crew (architect, coder, reviewer, debugger, database, design, QA); and a full ML crew for the learning system (ml-lead, scout-strategist item-finder, ml-data-engineer, feature-engineer, ranker-architect, ml-trainer, leakage-auditor, ml-evaluator, ml-guardian, ml-debugger). Enforces ai-brain.json gates, the ML doctrine (breadth/no-bias, no leakage, no auto-promote, hard gates outside ML), the allowed-vs-profitable split, and human-approved buying.",
+  "version": "0.3.0",
   "author": {
     "name": "Mehmet"
   },
   "license": "MIT",
-  "keywords": ["amazon", "fba", "online-arbitrage", "keepa", "selleramp", "sourcing", "compliance", "rag", "scout", "supabase", "nextjs"],
+  "keywords": ["amazon", "fba", "online-arbitrage", "keepa", "selleramp", "sourcing", "compliance", "rag", "scout", "supabase", "nextjs", "machine-learning", "ranker", "lightgbm"],
   "skills": [
     "./skills/fba-deal-analyst",
     "./skills/fba-sourcing-scout",
@@ -31,6 +31,16 @@
     "./skills/fba-feedback-giver",
     "./skills/fba-innovator",
     "./skills/fba-qa-tester",
-    "./skills/fba-data-analyst"
+    "./skills/fba-data-analyst",
+    "./skills/fba-ml-lead",
+    "./skills/fba-scout-strategist",
+    "./skills/fba-ml-data-engineer",
+    "./skills/fba-feature-engineer",
+    "./skills/fba-ranker-architect",
+    "./skills/fba-ml-trainer",
+    "./skills/fba-leakage-auditor",
+    "./skills/fba-ml-evaluator",
+    "./skills/fba-ml-guardian",
+    "./skills/fba-ml-debugger"
   ]
 }

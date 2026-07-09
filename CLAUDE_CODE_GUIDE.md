@@ -32,11 +32,43 @@ Never print or commit `knowledge-rag/.env` or any key. The handoff file has the 
 
 ---
 
+## 0.5 THE ML MANDATE — the core of this project (read every session, apply to every build & future upgrade)
+
+The learning system (the item finder + the ranker that learns what to buy) is the heart of this whole build.
+It has a dedicated **ML expert crew** and a doctrine — **`amazon-fba-oa/references/ml-doctrine.md`** — and both
+are mandatory.
+
+**Rule 1 — always use the ML crew.** ANY task touching ML or the command center's learning path — data
+collection, features, training, serving/utilization, evaluation, guardrails, debugging, or the item finder —
+routes through the specialists: `fba-ml-lead` plans → `fba-scout-strategist` / `fba-ml-data-engineer` /
+`fba-feature-engineer` / `fba-ranker-architect` / `fba-ml-trainer` implement → `fba-leakage-auditor` +
+`fba-ml-evaluator` + `fba-ml-guardian` **must sign off before any promotion or ship** → `fba-ml-debugger` when
+something's wrong. Never hand-roll ML work without them.
+
+**Rule 2 — the non-negotiable ML laws** (full detail in `ml-doctrine.md`):
+- **Breadth / no bias:** collect *as much and as varied* data as possible — brand-agnostic, category-diverse.
+  The corpus is skewed today (Crocs+Jellycat ≈ 30%, 4 categories); every collection/training change must widen
+  coverage and report concentration, never narrow it. Hints order candidates; they never restrict membership.
+- **No leakage:** pre-decision features only, point-in-time (strictly ≤ `simulation_date`), missing = NaN (not 0)
+  + explicit stale flags. Outcomes are labels, never inputs.
+- **Hard gates stay outside ML** (eligibility/IP/Amazon-Buy-Box/price band). The model **only ranks — it never buys.**
+- **Shadow-by-default, no auto-promotion:** a human flips `scoring.rankingChampion`; nothing auto-promotes or auto-buys.
+- **Honest metrics:** time-held-out splits, small-sample caution, offline ≠ realized outcomes, per-brand/category slices.
+
+**Rule 3 — PROPAGATE it (this is what Mehmet means by "integrate it into everything, now and for the future").**
+Whenever you create or upgrade *any* command-center component, plan, prompt, or doc — `THIS_WEEK.md`,
+`DATA_ENGINE_PLAN.md`, `SYSTEM_BLUEPRINT.md`, `MASTERY_PLAN.md`, `CONTROL_CENTER_UPGRADE_PLAN.md`, `HUMAN_TODO.md`,
+new build briefs, new modules — reference `ml-doctrine.md` at the top and bake the crew-routing + the ML laws
+into it, so every future build and upgrade inherits this automatically. If you add a new learning component,
+add or update the matching `fba-ml-*` skill for it too. This doctrine is permanent; keep it in mind always.
+
+---
+
 ## 1. The hard rule: use the skills, don't wing it
 
-There is a plugin in this repo, **`amazon-fba-oa/`**, containing 24 expert skills (`fba-*`). Each is a
-`SKILL.md` instruction file under `amazon-fba-oa/skills/<name>/`. They share one rulebook in
-`amazon-fba-oa/references/` (`oa-criteria.md`, `guardrails.md`, `stack-map.md`, `sourcing-methods.md`).
+There is a plugin in this repo, **`amazon-fba-oa/`**, containing 34 expert skills (`fba-*`) — including the ML
+crew above. Each is a `SKILL.md` instruction file under `amazon-fba-oa/skills/<name>/`. They share one rulebook in
+`amazon-fba-oa/references/` (`oa-criteria.md`, `guardrails.md`, `stack-map.md`, `sourcing-methods.md`, `ml-doctrine.md`).
 
 **Before doing a task that matches a skill below, open that skill's `SKILL.md` and follow it.** If the
 plugin is installed (see §5) you can invoke skills natively; if not, just read the file directly — they

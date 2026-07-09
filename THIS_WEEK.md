@@ -31,6 +31,14 @@ Done since last update: T1+T2+T3 built and live-verified (Sessions 43–44); KEE
 plan. Decision: stay on Pro for now. Budget split (from the Session-46-era analysis): ~600/day scan,
 ~80/day shadow rechecks, ~700/day backtest — full first training corpus achievable on Pro in ~5 weeks.
 
+- [ ] **★ TOP ML PRIORITY (added 2026-07-09) — DE-BIAS THE TRAINING CORPUS.** Paste **`ML_DEBIAS_PLAN.md`**
+      (it has a ready Claude Code prompt). The live corpus is skewed — **toys 82.5%, Crocs+Jellycat ~30%** —
+      so the ranker isn't worth training until coverage widens. Route through the ML crew:
+      `fba-ml-lead` → `fba-scout-strategist` + `fba-ml-data-engineer` → `fba-ml-evaluator` +
+      `fba-leakage-auditor`. First read `amazon-fba-oa/references/ml-doctrine.md` and propagate the ML mandate
+      into the plan docs per **`CLAUDE_CODE_ML_DIRECTIVE.md`** (§0.5 of CLAUDE_CODE_GUIDE is now permanent).
+      Every ML / command-center task, now and future, uses the fba-ml crew.
+
 - [ ] **1. GL1** — go live on the trickle (prompt below — paste this FIRST). STILL PENDING (Mehmet's switch):
       V0/V1/V2 are built + tested but no data flows until this run goes live on real Keepa. Also apply
       migrations **009 (shadow_outcomes) + 010 (backtest_rows)** when going live.

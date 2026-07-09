@@ -115,6 +115,60 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-09 — Claude Code Session 58 (continued): "run now" buttons for the collector/ranker, live-verified end-to-end
+
+Direct continuation of the Session 58 entry below, same day. After the dashboard shipped, Mehmet
+asked when the next hourly collection was, then (mid-answer) asked why the new "Ranker accuracy
+over time" chart was empty, then asked for a button to trigger collection/training on demand and
+"make sure that the button does everything it needs to do to automatically do it."
+
+**Root cause of both questions was the same:** both `keepa-collect.yml` (cron `7 * * * *`) and
+`train-ranker.yml` (cron `41 * * * *`) had gone quiet for 3.5-4 hours — live-confirmed `active`
+(not disabled by the 60-day guard), just GitHub's own scheduler not firing on time, the same
+platform limitation flagged in the prior entry. The Ranker Accuracy chart was additionally empty
+because `train-ranker.yml` hadn't run even once since migration 013 (`ranker_runs`) landed.
+
+**Built real manual triggers**, not a placeholder: `lib/github-server.ts` (`dispatchWorkflow()` /
+`getLatestRun()` against GitHub's REST API, using the same fine-grained PAT already in
+`API_KEYS.env` from this session's earlier `gh` auth setup, mirrored into
+`control-center/.env.local` — SERVER-ONLY, never reaches the client bundle), a
+`/api/ops/dispatch` (+`/status`) route pair, and `components/workflow-trigger.tsx` (buttons that
+dispatch then poll, distinguishing "the run I just triggered" from "the same old run" by
+capturing the latest run BEFORE dispatching — `workflow_dispatch` itself returns 204 before the
+run even starts, so naive immediate polling would misreport stale status). Added to the Runs
+Health panel (Morning Brief + Today pages).
+
+**Live-verified the whole chain, not just that the API returned 200:** dispatched
+`keepa-collect.yml` (wrote 119 new rows, 550→669) then `train-ranker.yml` through the new
+endpoint — it found genuinely new data, trained for real (champion AUC 0.746, challenger 0.651),
+and a direct Supabase query confirmed the `ranker_runs` row landed correctly (verdict string's
+em-dash stored as the correct `0x2014` codepoint — a `curl | python` mojibake in one of my own
+diagnostic one-liners on Windows briefly looked like a real encoding bug; it wasn't, ruled out
+by querying Supabase directly with forced UTF-8 stdout).
+
+**Also fixed while there:** the Runs Health panel's actual root confusion from Mehmet's earlier
+screenshot ("SKIPPED, 0/0/0/-" right after a real successful run) — `runs[0]` took whichever
+`runs` row was newest of ANY kind, including frequent local `run_daily.py` housekeeping ticks that
+can fill an entire small `limit` with zero real collector runs. New `getCollectorRuns()`
+(`lib/supabase-server.ts`) filters to `host="github-actions-hourly"` server-side; both pages
+that render `RunsHealth` and `lib/intelligence-server.ts` (replacing its own fetch-500-then-filter
+workaround) now use it.
+
+**Files:** new `control-center/lib/github-server.ts`, `app/api/ops/dispatch/route.ts`,
+`app/api/ops/dispatch/status/route.ts`, `components/workflow-trigger.tsx`; modified
+`lib/supabase-server.ts`, `lib/intelligence-server.ts`, `components/runs-health.tsx`,
+`app/brief/page.tsx`, `app/page.tsx`, and `control-center/.env.local` (gitignored, not committed
+— `GITHUB_PAT`/`GITHUB_REPO` mirrored from `API_KEYS.env`).
+
+**Verification:** `npm run typecheck` clean, `npm audit` 0 vulnerabilities, both new API routes
+exercised live (not just read against mocks) — the train-ranker dispatch is the same real run
+whose AUC numbers are quoted above. Pushed (`593a57c`).
+
+**Limitation:** `GITHUB_PAT`/`GITHUB_REPO` only exist in the local `.env.local` right now — if
+this control-center is ever run from a Vercel deployment (bundled `hub-data/` snapshots elsewhere
+in this repo suggest it has been), the same two vars need adding to Vercel's environment or the
+buttons will 503 there with an honest "not configured" error, never a silent no-op.
+
 ### 2026-07-09 — Claude Code Session 58: live verification of Session 57's fixes, a Review Queue bug that silently ate 21 approvals, and a new Scout Intelligence training/collection dashboard
 
 #### Request and constraints

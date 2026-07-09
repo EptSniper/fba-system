@@ -115,6 +115,155 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-09 — Claude Code Session 58: live verification of Session 57's fixes, a Review Queue bug that silently ate 21 approvals, and a new Scout Intelligence training/collection dashboard
+
+#### Request and constraints
+
+Continuation of Session 57. Mehmet asked me to open the control-center locally and confirm data
+collection/training actually happened. Verified live: `backtest_rows` grew 228 → 550 (Supabase
+query + a fresh `keepa-collect` run's own JSON summary showing `rows_written: 67` in one run),
+and `train_ranker.py` retrained on the new 550 rows (23:45 UTC run log: champion AUC 0.72,
+challenger 0.65) — but `ranker-report.md` in the repo still showed only the stale 2026-07-05
+entry, since cloud training runs never commit their copy back (train-ranker.yml's own header
+comment). Reported this honestly rather than declaring the whole incident closed.
+
+Mehmet then, in one message: (1) said he'd approved the Review Queue and asked me to "do them";
+(2) asked whether the Morning Brief's "Runs Health" panel was actually about data
+collection/training, and if not, asked for a new tool with graphs/charts showing collection,
+training, and scout/ML accuracy over time; (3) asked me to double-check the hourly cadence is
+real. Constraint carried over from CLAUDE.md: purchase/external actions stay human-only — I did
+not and would not auto-approve queue items on Mehmet's behalf.
+
+#### Evidence inspected
+
+`curl` against `/api/ops/queue` and `/api/ops/runs` (dev server running locally); read
+`lib/queue-server.ts`, `components/review-queue.tsx`, `app/api/ops/decide/route.ts`,
+`lib/supabase-server.ts`, `app/intelligence/page.tsx`; checked `scout/db/migrations/` for
+already-written-but-unapplied migrations (011, 012) via `mcp__Supabase__list_migrations`; checked
+`scout/db.py`'s `start_run`/`finish_run`, `scout/collect_hourly.py`'s tier summary construction,
+`scout/train_ranker.py`'s `render_report`/`main()`; re-ran `gh run list` for both workflows with
+current timestamps.
+
+#### Implementation / changes
+
+1. **Review Queue had no clickable decision affordance.** `components/review-queue.tsx`: a queue
+   card's `onClick` only ever called `setSelected` — the actual approve/reject/watch decision
+   fired ONLY via keyboard shortcuts (A/R/W), documented in one small `text-xs text-faint` hint
+   line easy to miss. Live Supabase query confirmed the actual bug this caused: all 21 queued
+   leads had zero decisions recorded despite Mehmet believing he'd approved them by clicking.
+   Fix: added real Approve/Reject/Watch buttons that call the same `setPendingVerdict()` the
+   keyboard shortcuts already use — no change to `/api/ops/decide` or the decision flow itself.
+   Verified visually via a Playwright screenshot of `/queue` after the fix.
+2. **"Runs Health" answer:** confirmed by reading the code — that panel shows the single most
+   recent `runs` row of ANY kind, including frequent LOCAL housekeeping entries
+   (`host="Berk"`, drain_inbox/reports/digest) that fire far more often than the hourly cloud
+   collector. A local housekeeping tick landing after the last real collector run is exactly why
+   Mehmet's screenshot showed "SKIPPED, 0/0/0/—" even though the collector had genuinely run
+   hours earlier. Not a training/collection status panel by design.
+3. **New Scout Intelligence dashboard** (`app/intelligence/page.tsx`, extended): backtest-rows
+   cumulative growth chart, ranker champion/challenger AUC-over-time chart, a per-collector-run
+   token-spend-by-tier bar chart, and two composition bars (sampling source, backtest label
+   outcome). Built with the already-installed `recharts` + the app's existing CSS custom
+   properties (`--accent`/--info/--profit/etc.), matching `components/profit-chart.tsx`'s
+   existing convention — no new chart library, no new palette. Loaded the `dataviz` skill first;
+   ran its palette validator on the planned categorical hues (`--accent`/--info/--profit`) — it
+   FAILED the lightness-band/chroma-floor checks (reads slightly pastel on the dark surface) but
+   PASSED CVD separation and contrast; since this is the app's existing, already-shipped palette
+   (not something to redesign in this task), proceeded with it and added the "secondary encoding"
+   the skill calls for in that case (every chart has a visible legend and/or direct value labels,
+   never color-alone).
+   - The run-history chart filters to `host="github-actions-hourly"` only — live-observed 166 of
+     the last 200 `runs` rows were local noise, only 34 were the real collector, which would have
+     swamped a chart meant to show the collector's own cadence (the same confusion Finding 2
+     above is about).
+   - Every chart whose backing data JUST started being tracked (ranker_runs, the `runs` tier
+     columns, backtest_rows.sample_source) shows an honest empty/note state naming the exact
+     migration and when it starts populating, rather than a misleading all-zero/all-gray chart.
+4. **Migrations applied (all additive-only, confirmed via `mcp__Supabase__list_migrations`
+   before and after):** 011 (`backtest_rows.sample_source/category/ip_risk` — already written in
+   Session 55, never applied) and 012 (`trends_series` table — already written, never applied;
+   explains a `trends_series_bulk 404` seen in an earlier live log) were both sitting unapplied.
+   New migration 013 adds `ranker_runs` (one row per training run: champion/challenger AUC,
+   verdict, tier composition — the durable record `ranker-report.md`/Discord never were) and five
+   nullable columns on `runs` (`tier1_tokens`, `tier2_tokens`, `tier3_tokens`,
+   `backtest_rows_written`, `backtest_asins_sampled`). The first `apply_migration` call was
+   correctly blocked by the session's own safety classifier (schema change to a live shared
+   resource without explicit sign-off) — asked Mehmet directly via AskUserQuestion, got "yes,
+   apply all 3," then applied them.
+5. **Wired the new columns/table into the Python side:** `scout/db.py` gained
+   `record_ranker_run()`; `scout/train_ranker.py`'s `main()` calls it once per actual training run
+   (never on a skip-if-unchanged tick) via a new pure `_ranker_run_fields()` helper;
+   `scout/collect_hourly.py`'s `finish_run()` call now passes the tier/backtest fields it already
+   computes into `summary`.
+6. Found and fixed an unrelated pre-existing flaky test while running the full suite:
+   `test_reflect_and_memory.py`'s two `run_weekly()` tests hardcoded `"2026-07-02"` as a
+   "recent" decision date; `run_weekly()`'s real 7-day lookback window had aged past it as actual
+   time passed, an inevitable failure unrelated to any code change here. Fixed to compute the
+   fixture date relative to `now()`.
+7. **Honest cadence check (the thing Mehmet explicitly asked to double-check):** both
+   `keepa-collect.yml` (cron `7 * * * *`) and `train-ranker.yml` (cron `41 * * * *`) are
+   configured hourly and ARE firing successfully every time they run — but GitHub Actions' own
+   `schedule:` trigger is NOT reliably hourly in practice. Live-observed actual gaps between
+   consecutive scheduled runs ranged ~1.5-3.5 hours (e.g. keepa-collect: 12:24 → 15:25 → 17:43 →
+   19:41 → 21:14 → 23:13 UTC on 2026-07-08, then NOTHING scheduled for 3.5+ hours after that,
+   confirmed as of 02:44 UTC 2026-07-09). Both workflows are confirmed `active` (not disabled by
+   the 60-day-inactivity auto-disable). This is a known, documented GitHub Actions platform
+   limitation for `schedule:` triggers under load, not a bug in this project's own code — there
+   is no code fix for it. Flagged to Mehmet as something to watch; if multi-hour gaps become the
+   norm rather than the exception, an external cron service calling the `workflow_dispatch` API
+   would be a more reliable alternative, but that's a real infra decision, not implemented here.
+
+#### Files changed
+
+- Modified: `control-center/components/review-queue.tsx`, `control-center/app/intelligence/page.tsx`,
+  `control-center/lib/supabase-server.ts`, `scout/db.py`, `scout/collect_hourly.py`,
+  `scout/train_ranker.py`, `scout/tests/test_collect_hourly.py`, `scout/tests/test_db_idempotency.py`,
+  `scout/tests/test_train_ranker.py`, `scout/tests/test_reflect_and_memory.py`.
+- New: `scout/db/migrations/013_ranker_runs_and_tier_columns.sql`,
+  `control-center/lib/intelligence-server.ts`, `control-center/app/api/ops/intelligence/route.ts`,
+  `control-center/components/scout-charts.tsx`.
+
+#### Verification
+
+**Tested:** `python run_all_tests.py` — 866 passed, 0 failed (up from 855 pre-session; includes
+new tests for `record_ranker_run`, `_ranker_run_fields`, the `finish_run` tier wiring, and the
+reflect.py date fix). `npm run typecheck` — clean. `npm run build` — succeeded (run once, before
+discovering it must never run concurrently with a live `npm run dev` on the same `.next/` dir —
+it corrupted the dev server's cache mid-session; fixed by killing the dev process and deleting
+`.next` before restarting `npm run dev` alone). `npm audit --audit-level=moderate` — 0
+vulnerabilities. Migrations 011/012/013 confirmed applied via `mcp__Supabase__list_migrations`
+before and after. Visually verified both the Review Queue's new buttons and the Scout
+Intelligence charts via Playwright screenshots of the locally running dev server (`npx
+playwright@1 screenshot`, since no project-level run skill or `chromium-cli` existed yet — worth
+a `/run-skill-generator` pass later). All 4 commits pushed to `origin/master`.
+
+#### Limitations / honest status
+
+- **NOT yet observed:** a live run where the `runs` table's new tier columns and `ranker_runs`
+  actually populate — every existing row predates migration 013 (applied ~02:17 UTC 2026-07-09),
+  so the dashboard is correctly showing honest empty/note states for those specific charts. The
+  next real `keepa-collect`/`train-ranker` firing (whenever GitHub's scheduler gets to it — see
+  the cadence finding above) will be the first to prove this end-to-end.
+- The `sample_source`/`category` breakdown (migration 011) is similarly all "unknown" for the
+  550 existing `backtest_rows` — they predate the column. Only rows written after ~02:17 UTC
+  2026-07-09 will carry it.
+- The dataviz palette validator's lightness/chroma FAIL on the app's existing categorical hues
+  (`--accent`/--info/--profit`) was not addressed — CVD separation and contrast both passed, and
+  redesigning the app-wide palette was out of scope for a dashboard addition; noted here so it
+  isn't silently forgotten if a future session touches chart color.
+- `ranker-report.md`'s cloud-vs-local staleness gap (flagged at the end of Session 57) was NOT
+  fixed by committing the file back from CI — instead solved more robustly via `ranker_runs`,
+  which is now the durable source of truth regardless of whether the `.md` file or Discord post
+  ever succeed. The `.md` file itself is still only current after a local run.
+
+#### Exact next safe step
+
+Wait for (or manually dispatch) the next `keepa-collect` and `train-ranker` runs, then reload
+`/intelligence` and confirm: the token-spend-by-tier chart shows a real tier1/tier2/tier3 stacked
+bar (not the gray "pre-breakdown" fallback) for the newest run, and the ranker-accuracy chart
+shows its first real point instead of the empty state. If a multi-hour scheduling gap repeats
+again, that's the moment to decide whether an external trigger is worth adding — not before.
+
 ### 2026-07-08 — Claude Code Session 57: exhaustive 8-agent pipeline audit (13 findings) + fixed every finding, after repeated failed live-collection attempts
 
 #### Request and constraints

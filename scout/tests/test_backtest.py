@@ -59,6 +59,40 @@ class LeakageBoundaryTest(unittest.TestCase):
         self.assertEqual(bt._last_before(series, BASE + 21), 3.0)
         self.assertIsNone(bt._last_before(series, BASE + 0))
 
+    # ML leakage audit (2026-07-09, fba-leakage-auditor): test_poisoned_future_point_is_invisible
+    # above already proves the WHOLE feature_as_of() pipeline is leakage-safe, but only exercises
+    # _window_mean indirectly (avg_price_90/avg_offers_90/etc.) and never exercises
+    # _oos_fraction/_rank_drops at all (the constant fixture has no out-of-stock gaps or rank
+    # drops for either to compute over). These inject a spike strictly AFTER as_of directly into
+    # each function and assert the returned value is byte-identical to the unpoisoned run.
+
+    def test_window_mean_poisoned_future_is_invisible(self):
+        series = [(BASE + d, 10.0) for d in range(90)]
+        as_of = BASE + 90
+        clean = bt._window_mean(series, as_of, 90)
+        poisoned = series + [(as_of, 999999.0), (as_of + 5, 888888.0)]
+        self.assertEqual(bt._window_mean(poisoned, as_of, 90), clean)
+        self.assertEqual(clean, 10.0)
+
+    def test_oos_fraction_poisoned_future_is_invisible(self):
+        # Alternating in-stock/out-of-stock (None) before as_of -> a known non-trivial baseline.
+        series = [(BASE + d, None if d % 2 == 0 else 10.0) for d in range(90)]
+        as_of = BASE + 90
+        clean = bt._oos_fraction(series, as_of, 90)
+        self.assertGreater(clean, 0.0)
+        # Inject future IN-STOCK points -- if they leaked in, they'd DILUTE (lower) the oos
+        # fraction, so this specifically catches a future point silently entering the window.
+        poisoned = series + [(as_of, 10.0), (as_of + 1, 10.0), (as_of + 2, 10.0)]
+        self.assertEqual(bt._oos_fraction(poisoned, as_of, 90), clean)
+
+    def test_rank_drops_poisoned_future_is_invisible(self):
+        series = [(BASE + 0, 100.0), (BASE + 5, 50.0), (BASE + 10, 60.0), (BASE + 15, 20.0)]
+        as_of = BASE + 20
+        clean = bt._rank_drops(series, as_of, 30)
+        self.assertEqual(clean, 2)  # 100->50 and 60->20
+        poisoned = series + [(as_of, 5.0), (as_of + 1, 1.0), (as_of + 2, 0.5)]
+        self.assertEqual(bt._rank_drops(poisoned, as_of, 30), clean)
+
 
 class SplitByAsinTest(unittest.TestCase):
     def test_asin_windows_never_straddle_split(self):
@@ -74,6 +108,47 @@ class SplitByAsinTest(unittest.TestCase):
         # deterministic (no Math.random) — same split on a re-run
         train2, _ = bt.split_by_asin(rows, val_fraction=0.3)
         self.assertEqual({r["asin"] for r in train2}, train_asins)
+
+
+class SplitByTimeTest(unittest.TestCase):
+    """The promotion-gate time-held-out split (ML de-bias audit, 2026-07-09): split_by_asin is a
+    same-time GROUP split (prevents an ASIN's windows straddling train/val) but was never
+    time-based — ml-doctrine.md §4 flags this as a tracked gap. split_by_time tests forward
+    generalization instead: does the model trained on the past predict the FUTURE."""
+
+    def test_val_is_the_chronologically_latest_slice(self):
+        rows = [{"asin": f"A{i}", "simulation_date": f"2026-01-{i+1:02d}", "label": True}
+               for i in range(20)]
+        train, val = bt.split_by_time(rows, val_fraction=0.3)
+        self.assertEqual(len(val), 6)  # round(20*0.3)
+        self.assertEqual(len(train), 14)
+        # every val date must be later than every train date -- no future-in-train leakage
+        self.assertLess(max(r["simulation_date"] for r in train),
+                        min(r["simulation_date"] for r in val))
+
+    def test_same_asin_may_straddle_the_split_by_design(self):
+        """Unlike split_by_asin, an ASIN's earlier window in train + later window in val is the
+        INTENDED forward-prediction scenario here, not leakage."""
+        rows = [{"asin": "A1", "simulation_date": "2026-01-01", "label": True},
+               {"asin": "A1", "simulation_date": "2026-06-01", "label": True}]
+        train, val = bt.split_by_time(rows, val_fraction=0.5)
+        self.assertEqual(train[0]["simulation_date"], "2026-01-01")
+        self.assertEqual(val[0]["simulation_date"], "2026-06-01")
+
+    def test_deterministic_no_random(self):
+        rows = [{"asin": f"A{i}", "simulation_date": f"2026-01-{i+1:02d}", "label": True}
+               for i in range(10)]
+        train1, val1 = bt.split_by_time(rows)
+        train2, val2 = bt.split_by_time(rows)
+        self.assertEqual(train1, train2)
+        self.assertEqual(val1, val2)
+
+    def test_empty_and_tiny_inputs_degrade_safely(self):
+        self.assertEqual(bt.split_by_time([]), ([], []))
+        one = [{"asin": "A1", "simulation_date": "2026-01-01", "label": True}]
+        train, val = bt.split_by_time(one, val_fraction=0.3)
+        self.assertEqual(train, [])
+        self.assertEqual(val, one)  # a single row can't be split further -> it's the val side
 
 
 class MatchLivePipelineTest(unittest.TestCase):

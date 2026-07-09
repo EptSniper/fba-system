@@ -344,6 +344,24 @@ def _stable_hash(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()[:8]
 
 
+def split_by_time(rows: List[Dict[str, Any]], val_fraction: float = 0.3
+                 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Chronological split: the LATEST simulation_date rows become validation, everything earlier
+    is training — tests whether the model generalizes FORWARD in time, which split_by_asin (a
+    same-time GROUP split, deliberately not time-based — see ml-doctrine.md §4) does not.
+
+    Unlike split_by_asin, the SAME ASIN's earlier window may sit in train while its later window
+    sits in val here — that is the realistic forward-prediction scenario this split exists to
+    check, not leakage (each row's own features_snapshot is already point-in-time-safe regardless
+    of which side of any split it lands on). Deterministic given the input order (stable sort by
+    simulation_date, ties broken by asin) — no Math.random."""
+    sorted_rows = sorted(rows, key=lambda r: (str(r.get("simulation_date") or ""), r.get("asin") or ""))
+    n_val = max(1, int(round(len(sorted_rows) * val_fraction))) if sorted_rows else 0
+    if n_val >= len(sorted_rows):
+        return [], sorted_rows
+    return sorted_rows[:-n_val], sorted_rows[-n_val:]
+
+
 # --- Keepa history adapter (LIVE-VERIFIED 2026-07-05, Session 51) -----------
 def _to_ordinal(t) -> Optional[int]:
     """A keepa time point -> date ordinal. The keepa lib (to_datetime=True) yields

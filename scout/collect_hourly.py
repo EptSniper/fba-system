@@ -425,12 +425,24 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         # daily digest's honest "N runs skipped due to negative Keepa balance" line.
         summary["tokens_left_end"] = keepa_client.current_tokens_left(api, refresh=True)
         summary["guard"] = keepa_client.guard_telemetry()
+        # Migration 013 (2026-07-09): the per-tier token split and the backtest tier's
+        # rows/ASINs-sampled counts used to exist ONLY in this run's own printed JSON summary,
+        # discarded the moment the GitHub Actions runner tore down — nothing durable recorded
+        # which tier got how much of the token budget or how many rows a given run actually
+        # wrote, so the control-center's training/collection charts had no history to read.
+        # These are the same `summary` fields already computed above; just persisted now.
+        bt = summary.get("backtest") or {}
         db.finish_run(
             run_id, "failed" if error_summary else "success",
             asins_scanned=(summary.get("scan") or {}).get("candidates"),
             tokens_consumed=summary.get("tokens_spent_total"),
             tokens_left_end=summary.get("tokens_left_end"),
             error_summary=error_summary,
+            tier1_tokens=(summary.get("shadow") or {}).get("tokens_spent"),
+            tier2_tokens=(summary.get("scan") or {}).get("tokens_spent"),
+            tier3_tokens=bt.get("tokens_spent"),
+            backtest_rows_written=bt.get("rows_written"),
+            backtest_asins_sampled=bt.get("asins_sampled"),
         )
 
 

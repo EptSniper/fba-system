@@ -1111,3 +1111,25 @@ def trends_series_bulk(terms: List[str], limit_per_term: int = 400) -> Dict[str,
     except Exception as e:
         print(f"[db] trends_series_bulk failed ({len(terms)} terms): {e}")
         return {t: [] for t in terms if t}
+
+
+def record_ranker_run(**fields: Any) -> bool:
+    """One row per scout/train_ranker.py training run (migration 013) — the durable, queryable
+    record that ranker-report.md and the Discord post never were. train_ranker.py calls this
+    every time it actually trains (never on a skip-if-unchanged tick); the control-center's
+    training-history chart reads it back. Never raises; returns False on any failure/disabled,
+    same degrade-gracefully convention as every other write in this module."""
+    if not enabled():
+        return False
+    try:
+        r = requests.post(
+            f"{SUPA}/rest/v1/ranker_runs",
+            headers=_headers({"Prefer": "return=minimal"}),
+            json=fields, timeout=15,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"[db] record_ranker_run failed (non-fatal, ranker-report.md/Discord still get "
+             f"this run's result): {e}")
+        return False

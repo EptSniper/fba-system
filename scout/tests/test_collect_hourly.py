@@ -298,6 +298,40 @@ class SafetyDeadlineTest(unittest.TestCase):
         mfinish.assert_called_once()
 
 
+class FinishRunTierBreakdownTest(unittest.TestCase):
+    """Review fix (2026-07-09, migration 013): the per-tier token split and the backtest tier's
+    rows/ASINs-sampled counts used to exist ONLY in this run's printed JSON summary, discarded
+    the moment the GitHub Actions runner tore down. finish_run() now persists them so the
+    control-center's training/collection charts have real history to read."""
+
+    def test_tier_and_backtest_fields_reach_finish_run(self):
+        api = FakeApi(tokens_left=60)
+        with mock.patch.object(ch.config, "have_keepa", return_value=True), \
+             mock.patch.object(db, "start_run", return_value=1), \
+             mock.patch.object(db, "finish_run") as mfinish, \
+             mock.patch.object(ch.datalake, "set_run_context"), \
+             mock.patch.object(ch.datalake, "reset_stats"), \
+             mock.patch.object(ch.datalake, "flush", return_value={}), \
+             mock.patch.object(ch.datalake, "digest_line", return_value=""), \
+             mock.patch.object(ch.shadow_outcomes, "run_rechecks",
+                               return_value={"status": "ok", "tokens_spent": 3}), \
+             mock.patch.object(ch, "hint_led_scan",
+                               return_value={"status": "ok", "tokens_spent": 13, "candidates": 1,
+                                            "leads_logged": 1, "survivors": 0}), \
+             mock.patch.object(ch.backtest, "run_backtest",
+                               return_value={"status": "ok", "tokens_spent": 20,
+                                            "rows_written": 9, "asins_sampled": 300}), \
+             mock.patch.object(ch, "_deadline_exceeded", return_value=False):
+            ch.run_hourly_collect(api=api)
+        mfinish.assert_called_once()
+        kwargs = mfinish.call_args.kwargs
+        self.assertEqual(kwargs["tier1_tokens"], 3)
+        self.assertEqual(kwargs["tier2_tokens"], 13)
+        self.assertEqual(kwargs["tier3_tokens"], 20)
+        self.assertEqual(kwargs["backtest_rows_written"], 9)
+        self.assertEqual(kwargs["backtest_asins_sampled"], 300)
+
+
 class HintLedScanTest(unittest.TestCase):
     def setUp(self):
         self._keepa_patch = mock.patch.object(keepa_client, "_KEEPA", True)

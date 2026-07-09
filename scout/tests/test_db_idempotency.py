@@ -229,6 +229,37 @@ def test_finish_run_patches_with_status_and_counts():
         assert body["leads_upserted"] == 3
 
 
+def test_record_ranker_run_noop_without_supabase():
+    with patch.object(db, "SUPA", ""), patch.object(db, "KEY", ""):
+        assert db.record_ranker_run(champion_auc=0.7) is False
+
+
+def test_record_ranker_run_posts_the_given_fields():
+    """Migration 013 (2026-07-09) — the durable, queryable record of champion/challenger AUC
+    over time that ranker-report.md (cloud runs never commit their copy back) and the Discord
+    post (not queryable) never were."""
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.post.return_value = _mock_response(None)
+        ok = db.record_ranker_run(host="github-actions-hourly", refused=False, row_count=550,
+                                  champion_auc=0.72, verdict="CHALLENGER LOSES")
+        assert ok is True
+        assert mock_requests.post.called
+        url = mock_requests.post.call_args[0][0]
+        body = mock_requests.post.call_args[1]["json"]
+        assert "ranker_runs" in url
+        assert body["champion_auc"] == 0.72
+        assert body["row_count"] == 550
+        assert body["verdict"] == "CHALLENGER LOSES"
+
+
+def test_record_ranker_run_failure_is_non_fatal():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.post.return_value = _mock_response(None, status=500)
+        assert db.record_ranker_run(champion_auc=0.5) is False
+
+
 def test_pipeline_records_a_failed_run_on_exception():
     """The whole point of G1: a run that raises must still leave a `runs` row behind,
     with status='failed' and the error message — never silently lost."""

@@ -7,6 +7,7 @@ ANTHROPIC_API_KEY exists in this environment). File writes are redirected to a t
 patching MEMORY_DIR/REPORT_PATH — nothing here touches the real learning-hub/ tree.
 """
 import ast
+import datetime as dt
 import inspect
 import os
 import sys
@@ -180,7 +181,11 @@ def test_run_weekly_unavailable_without_key():
 
 
 def test_run_weekly_reflects_on_each_active_brand():
-    leads = [{"brand": "Jellycat", "decisions": [{"decided_at": "2026-07-02T00:00:00+00:00"}]}]
+    # A relative "yesterday" timestamp, not a hardcoded date literal (Review fix, 2026-07-09: the
+    # old hardcoded "2026-07-02" fell out of run_weekly()'s real 7-day lookback window the moment
+    # real time passed it, an inevitable failure the moment this test outlived one week).
+    recent = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1)).isoformat()
+    leads = [{"brand": "Jellycat", "decisions": [{"decided_at": recent}]}]
     with patch.object(reflect.analyst, "configured", return_value=True), \
          patch.object(reflect.db, "leads_with_outcomes", return_value=leads), \
          patch.object(reflect.db, "leads_by_brand", return_value=leads), \
@@ -191,7 +196,8 @@ def test_run_weekly_reflects_on_each_active_brand():
 
 
 def test_run_weekly_survives_a_brand_erroring():
-    leads = [{"brand": "Jellycat", "decisions": [{"decided_at": "2026-07-02T00:00:00+00:00"}]}]
+    recent = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1)).isoformat()
+    leads = [{"brand": "Jellycat", "decisions": [{"decided_at": recent}]}]
     with patch.object(reflect.analyst, "configured", return_value=True), \
          patch.object(reflect.db, "leads_with_outcomes", return_value=leads), \
          patch.object(reflect.db, "leads_by_brand", return_value=leads), \

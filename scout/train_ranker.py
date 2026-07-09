@@ -36,6 +36,7 @@ import datetime as _dt
 import hashlib
 import json
 import os
+import socket
 import sys
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -674,6 +675,37 @@ def post_summary(result: Dict[str, Any]) -> bool:
     return discord_router.send("brain_proposals", [embed], username="FBA Scout — Ranker")
 
 
+def _ranker_run_fields(result: Dict[str, Any], fp: Dict[str, Any]) -> Dict[str, Any]:
+    """Builds one migration-013 ranker_runs row from a train_and_evaluate() result + this
+    training set's fingerprint (row_count) — the durable, queryable record of champion/challenger
+    AUC over time that ranker-report.md (cloud runs never commit it back) and the Discord post
+    (human-readable, not queryable) never were."""
+    fields: Dict[str, Any] = {
+        "host": socket.gethostname(),
+        "refused": bool(result.get("refused")),
+        "row_count": fp.get("row_count"),
+        "by_tier": result.get("by_tier") or {},
+    }
+    if result.get("refused"):
+        fields["refusal_reason"] = result.get("reason")
+        return fields
+    champ = result.get("champion") or {}
+    chall = result.get("challenger") or {}
+    fields.update({
+        "train_rows": result.get("train_rows"),
+        "train_asins": result.get("train_asins"),
+        "val_rows": result.get("val_rows"),
+        "val_asins": result.get("val_asins"),
+        "champion_auc": champ.get("auc"),
+        "champion_winners_in_top": champ.get("winners_in_top"),
+        "challenger_auc": chall.get("auc"),
+        "challenger_winners_in_top": chall.get("winners_in_top"),
+        "verdict": result.get("verdict"),
+        "by_source": result.get("by_source") or {},
+    })
+    return fields
+
+
 # --- entry point -----------------------------------------------------------------
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Train the shadow ranker + champion/challenger eval.")
@@ -710,6 +742,8 @@ def main(argv=None) -> int:
         print(f"[train_ranker] artifacts: {len(paths)} saved, {uploaded} uploaded to storage")
         artifact_upload_ok = uploaded > 0
     if not args.dry_run:
+        import db
+        db.record_ranker_run(**_ranker_run_fields(result, fp))
         if artifact_upload_ok:
             # Stored regardless of refused/trained so a repeated refusal with no new data also
             # skips next time, instead of re-posting the same "not enough data" message every

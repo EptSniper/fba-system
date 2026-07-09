@@ -575,7 +575,8 @@ class MainFingerprintOnFailedUploadTest(unittest.TestCase):
              mock.patch.object(tr, "save_artifacts", return_value=["model.joblib", "metrics.json"]), \
              mock.patch.object(tr, "upload_to_storage", return_value=0), \
              mock.patch.object(tr, "upload_fingerprint", return_value=True) as mock_upload_fp, \
-             mock.patch.object(tr, "post_summary", return_value=True):
+             mock.patch.object(tr, "post_summary", return_value=True), \
+             mock.patch("db.record_ranker_run", return_value=True):
             rc = tr.main([])
         self.assertEqual(rc, 0)
         mock_upload_fp.assert_not_called()
@@ -595,7 +596,8 @@ class MainFingerprintOnFailedUploadTest(unittest.TestCase):
              mock.patch.object(tr, "save_artifacts", return_value=["model.joblib", "metrics.json"]), \
              mock.patch.object(tr, "upload_to_storage", return_value=2), \
              mock.patch.object(tr, "upload_fingerprint", return_value=True) as mock_upload_fp, \
-             mock.patch.object(tr, "post_summary", return_value=True):
+             mock.patch.object(tr, "post_summary", return_value=True), \
+             mock.patch("db.record_ranker_run", return_value=True):
             rc = tr.main([])
         self.assertEqual(rc, 0)
         mock_upload_fp.assert_called_once()
@@ -610,10 +612,79 @@ class MainFingerprintOnFailedUploadTest(unittest.TestCase):
              mock.patch.object(tr, "append_report"), \
              mock.patch.object(tr, "fetch_last_fingerprint", return_value=None), \
              mock.patch.object(tr, "upload_fingerprint", return_value=True) as mock_upload_fp, \
-             mock.patch.object(tr, "post_summary", return_value=True):
+             mock.patch.object(tr, "post_summary", return_value=True), \
+             mock.patch("db.record_ranker_run", return_value=True):
             rc = tr.main([])
         self.assertEqual(rc, 0)
         mock_upload_fp.assert_called_once()
+
+
+class RankerRunFieldsTest(unittest.TestCase):
+    """Review fix (2026-07-09): champion/challenger AUC history used to live ONLY in
+    ranker-report.md (cloud runs never commit their copy back — see train-ranker.yml's own
+    header comment) and a Discord post (human-readable, not queryable). Migration 013's
+    ranker_runs table is the durable record; _ranker_run_fields() builds the row."""
+
+    def test_trained_result_maps_every_chart_field(self):
+        result = {
+            "refused": False, "train_rows": 400, "train_asins": 60, "val_rows": 140,
+            "val_asins": 20, "by_tier": {"backtest": {"total": 550, "positive": 436, "negative": 114}},
+            "champion": {"auc": 0.72, "winners_in_top": 10, "top_n": 10},
+            "challenger": {"auc": 0.65, "winners_in_top": 9, "top_n": 10},
+            "verdict": "VERDICT: CHALLENGER LOSES — stays shadow.",
+            "by_source": {"dealfeed": {"n": 100, "auc": 0.6}},
+        }
+        fields = tr._ranker_run_fields(result, {"row_count": 550})
+        self.assertEqual(fields["refused"], False)
+        self.assertEqual(fields["row_count"], 550)
+        self.assertEqual(fields["train_rows"], 400)
+        self.assertEqual(fields["champion_auc"], 0.72)
+        self.assertEqual(fields["champion_winners_in_top"], 10)
+        self.assertEqual(fields["challenger_auc"], 0.65)
+        self.assertEqual(fields["verdict"], result["verdict"])
+        self.assertEqual(fields["by_tier"], result["by_tier"])
+        self.assertEqual(fields["by_source"], result["by_source"])
+        self.assertIn("host", fields)
+
+    def test_refused_result_omits_auc_fields_and_keeps_the_reason(self):
+        fields = tr._ranker_run_fields(
+            {"refused": True, "reason": "not enough data", "by_tier": {}}, {"row_count": 3})
+        self.assertEqual(fields["refused"], True)
+        self.assertEqual(fields["refusal_reason"], "not enough data")
+        self.assertNotIn("champion_auc", fields)
+        self.assertNotIn("verdict", fields)
+
+    def test_main_records_a_ranker_run_when_it_actually_trains(self):
+        with mock.patch.object(tr, "build_dataset", return_value={"rows": []}), \
+             mock.patch.object(tr, "train_and_evaluate", return_value={
+                 "refused": False, "model": object(), "scaler": object(), "features": [],
+                 "train_rows": 1, "val_rows": 1, "train_asins": 1, "val_asins": 1, "by_tier": {},
+                 "champion": {"auc": None, "winners_in_top": 0, "top_n": 0},
+                 "challenger": {"auc": None, "winners_in_top": 0, "top_n": 0},
+                 "verdict": "x", "silver_caveat": "", "bronze_agreement": None,
+                 "bronze_caveat": "", "by_source": {}, "new_signal_importance": {}}), \
+             mock.patch.object(tr, "render_report", return_value="block"), \
+             mock.patch.object(tr, "append_report"), \
+             mock.patch.object(tr, "fetch_last_fingerprint", return_value=None), \
+             mock.patch.object(tr, "save_artifacts", return_value=["model.joblib"]), \
+             mock.patch.object(tr, "upload_to_storage", return_value=1), \
+             mock.patch.object(tr, "upload_fingerprint", return_value=True), \
+             mock.patch.object(tr, "post_summary", return_value=True), \
+             mock.patch("db.record_ranker_run", return_value=True) as mock_record:
+            rc = tr.main([])
+        self.assertEqual(rc, 0)
+        mock_record.assert_called_once()
+
+    def test_main_does_not_record_on_a_dry_run(self):
+        with mock.patch.object(tr, "build_dataset", return_value={"rows": []}), \
+             mock.patch.object(tr, "train_and_evaluate", return_value={
+                 "refused": True, "reason": "not enough data", "by_tier": {}}), \
+             mock.patch.object(tr, "render_report", return_value="block"), \
+             mock.patch.object(tr, "append_report"), \
+             mock.patch("db.record_ranker_run", return_value=True) as mock_record:
+            rc = tr.main(["--dry-run"])
+        self.assertEqual(rc, 0)
+        mock_record.assert_not_called()
 
 
 if __name__ == "__main__":

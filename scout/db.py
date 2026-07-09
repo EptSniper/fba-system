@@ -1133,3 +1133,24 @@ def record_ranker_run(**fields: Any) -> bool:
         print(f"[db] record_ranker_run failed (non-fatal, ranker-report.md/Discord still get "
              f"this run's result): {e}")
         return False
+
+
+def recent_ranker_runs(limit: int = 5) -> List[Dict[str, Any]]:
+    """Last N ranker_runs rows, newest first — the promotion-consistency check (ML de-bias audit,
+    2026-07-09): a single run's challenger win can be small-sample noise (e.g. run 4 flipped from
+    losing to winning on only ~186 val rows as the corpus de-biased), so train_ranker.py checks
+    whether the challenger has ALSO won recently, not just this run. [] if unavailable/disabled —
+    never raises, same degrade-gracefully convention as every other read in this module."""
+    if not enabled():
+        return []
+    try:
+        r = requests.get(
+            f"{SUPA}/rest/v1/ranker_runs?select=trained_at,refused,champion_auc,challenger_auc,verdict"
+            f"&order=trained_at.desc&limit={limit}",
+            headers=_headers(), timeout=15,
+        )
+        r.raise_for_status()
+        return r.json() or []
+    except Exception as e:
+        print(f"[db] recent_ranker_runs failed (non-fatal): {e}")
+        return []

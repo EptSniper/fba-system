@@ -58,6 +58,88 @@ class VerdictTest(unittest.TestCase):
         self.assertIn("INCONCLUSIVE", tr.verdict_line({"auc": None}, {"auc": 0.9}))
 
 
+def _gate_result(champ_auc=0.60, chall_auc=0.70, val_rows=200, time_split=None):
+    return {"champion": {"auc": champ_auc}, "challenger": {"auc": chall_auc},
+            "val_rows": val_rows, "time_split": time_split}
+
+
+def _gate_time_split(champ_auc=0.60, chall_auc=0.70, val_rows=200):
+    return {"champion_auc": champ_auc, "challenger_auc": chall_auc, "val_rows": val_rows}
+
+
+def _gate_prior_run(champ_auc=0.60, chall_auc=0.70, refused=False):
+    return {"champion_auc": champ_auc, "challenger_auc": chall_auc, "refused": refused}
+
+
+class PromotionGateTest(unittest.TestCase):
+    """ML de-bias audit (2026-07-09; design reviewed with fba-ranker-architect, tests written
+    with fba-qa-tester): promotion_gate() is the gate that stops a single lucky run (run 4:
+    challenger flipped from losing to winning ~0.73 vs ~0.69 on ~186 val rows the SAME run a
+    de-bias fix widened category coverage 4->13) from reading as promotion-ready. It only shapes
+    report/Discord text -- scoring.rankingChampion is never written by this function or anywhere
+    in train_ranker.py (see NoPromotionGuardTest above)."""
+
+    def test_primary_loss_blocks_ready_with_clear_reason(self):
+        result = _gate_result(champ_auc=0.60, chall_auc=0.61, time_split=_gate_time_split())
+        gate = tr.promotion_gate(result, [])
+        self.assertFalse(gate["ready"])
+        self.assertFalse(gate["primary_win"])
+        self.assertIn("did not win", gate["reason"])
+
+    def test_primary_win_alone_is_not_consistent(self):
+        # 0 prior runs -> only this run's win counted -> consecutive_wins=1, needs 3.
+        gate = tr.promotion_gate(_gate_result(time_split=_gate_time_split()), [])
+        self.assertFalse(gate["ready"])
+        self.assertEqual(gate["consecutive_wins"], 1)
+        self.assertIn("CONSECUTIVE", gate["reason"])
+
+    def test_time_split_disagreement_blocks_ready_despite_consistency(self):
+        recent = [_gate_prior_run(), _gate_prior_run()]  # both wins -> 3 consecutive incl. this run
+        result = _gate_result(time_split=_gate_time_split(champ_auc=0.60, chall_auc=0.61))  # inside margin
+        gate = tr.promotion_gate(result, recent)
+        self.assertTrue(gate["primary_win"])
+        self.assertEqual(gate["consecutive_wins"], 3)
+        self.assertFalse(gate["time_split_win"])
+        self.assertFalse(gate["ready"])
+        self.assertIn("does NOT confirm", gate["reason"])
+
+    def test_fully_passing_case_is_ready(self):
+        recent = [_gate_prior_run(), _gate_prior_run()]
+        result = _gate_result(val_rows=300, time_split=_gate_time_split(val_rows=300))
+        gate = tr.promotion_gate(result, recent)
+        self.assertTrue(gate["ready"])
+        self.assertFalse(gate["small_sample"])
+
+    def test_refused_prior_run_breaks_the_streak_not_skipped(self):
+        # A refused run immediately before this one must BREAK the streak (count=1), not be
+        # transparently skipped over (which would let two separated wins still "count" as 3).
+        recent = [_gate_prior_run(refused=True), _gate_prior_run(), _gate_prior_run()]
+        gate = tr.promotion_gate(_gate_result(time_split=_gate_time_split()), recent)
+        self.assertEqual(gate["consecutive_wins"], 1)
+        self.assertFalse(gate["ready"])
+
+    def test_missing_auc_in_prior_run_also_breaks_the_streak(self):
+        recent = [{"champion_auc": None, "challenger_auc": None, "refused": False},
+                 _gate_prior_run(), _gate_prior_run()]
+        gate = tr.promotion_gate(_gate_result(time_split=_gate_time_split()), recent)
+        self.assertEqual(gate["consecutive_wins"], 1)
+
+    def test_small_sample_caution_appears_even_when_ready(self):
+        recent = [_gate_prior_run(), _gate_prior_run()]
+        result = _gate_result(val_rows=50, time_split=_gate_time_split(val_rows=300))
+        gate = tr.promotion_gate(result, recent)
+        self.assertTrue(gate["ready"])  # small sample cautions, never blocks readiness
+        self.assertTrue(gate["small_sample"])
+        self.assertIn("SMALL-SAMPLE", gate["reason"])
+
+    def test_missing_time_split_counts_as_small_sample_and_blocks_ready(self):
+        recent = [_gate_prior_run(), _gate_prior_run()]
+        gate = tr.promotion_gate(_gate_result(time_split=None), recent)
+        self.assertFalse(gate["time_split_win"])
+        self.assertFalse(gate["ready"])
+        self.assertTrue(gate["small_sample"])
+
+
 class TrainAndEvaluateTest(unittest.TestCase):
     def _rows(self, n_asins=20, windows=3):
         rows = []

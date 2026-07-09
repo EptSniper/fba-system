@@ -252,7 +252,12 @@ def rank_metrics(scores: List[Optional[float]], y: List[int], top_n: int = 10) -
     return {"auc": auc, "winners_in_top": int(y[top].sum()), "top_n": min(top_n, len(y))}
 
 
-def verdict_line(champ: Dict[str, Any], chall: Dict[str, Any], margin: float = 0.02) -> str:
+PROMOTION_AUC_MARGIN = 0.02
+PROMOTION_CONSECUTIVE_WINS_REQUIRED = 3
+PROMOTION_MIN_VAL_ROWS = 150  # small-sample-caution threshold, either split
+
+
+def verdict_line(champ: Dict[str, Any], chall: Dict[str, Any], margin: float = PROMOTION_AUC_MARGIN) -> str:
     """The explicit champion/challenger verdict (V3 spec wording). The challenger must BEAT the
     champion's AUC by `margin` to even claim a win — and a win still only REQUESTS promotion."""
     ca, xa = champ.get("auc"), chall.get("auc")
@@ -262,6 +267,88 @@ def verdict_line(champ: Dict[str, Any], chall: Dict[str, Any], margin: float = 0
         return ("VERDICT: CHALLENGER WINS on held-out AUC — promotion requires human approval "
                 "(flip scoring.rankingChampion via fba-brain-updater; nothing was auto-applied).")
     return "VERDICT: CHALLENGER LOSES — stays shadow."
+
+
+def _run_won(run: Dict[str, Any]) -> Optional[bool]:
+    """None (inconclusive) breaks a consecutive-wins streak the same as a loss — a refused or
+    single-class run doesn't confirm the streak continued."""
+    if run.get("refused"):
+        return None
+    ca, xa = run.get("champion_auc"), run.get("challenger_auc")
+    if ca is None or xa is None:
+        return None
+    return xa > ca + PROMOTION_AUC_MARGIN
+
+
+def promotion_gate(result: Dict[str, Any], recent_runs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Whether this run's challenger win is ACTUALLY promotion-ready (ML de-bias audit,
+    2026-07-09; design reviewed with fba-ranker-architect) — a single run's win is not enough:
+    run 4 flipped from losing to winning (~0.73 vs ~0.69 AUC) on only ~186 val rows the SAME run
+    a de-bias fix widened category coverage from 4 to 13 — promising, not proof. Requires ALL of:
+
+      1. This run's primary (by-ASIN GROUP split) win by PROMOTION_AUC_MARGIN.
+      2. CONSECUTIVE wins: the challenger also won, by the same margin, on the
+         PROMOTION_CONSECUTIVE_WINS_REQUIRED-1 recorded runs immediately before this one — a
+         strict run of consecutive wins, not a majority (a 2-of-3 record that tolerates a loss in
+         between isn't "consistent," it's "more wins than losses"). An inconclusive/refused run
+         breaks the streak. Fewer prior runs than required -> not yet consistent, honestly so.
+      3. The time-held-out split (result["time_split"] — forward generalization, a DIFFERENT axis
+         than the by-ASIN group split) ALSO shows a win by the same margin.
+
+    Also flags small-sample caution (either split's val_rows below PROMOTION_MIN_VAL_ROWS)
+    regardless of whether the gate is otherwise satisfied — the corpus is still small and, right
+    now, still actively de-biasing (composition shifting run over run), which is weaker
+    consistency evidence than the same streak on a stable corpus.
+
+    This function only shapes the REPORT/Discord recommendation text. scoring.rankingChampion is
+    never written here or anywhere in this file — a human always makes the actual promotion call
+    via fba-brain-updater."""
+    champ, chall = result.get("champion") or {}, result.get("challenger") or {}
+    ca, xa = champ.get("auc"), chall.get("auc")
+    primary_win = ca is not None and xa is not None and xa > ca + PROMOTION_AUC_MARGIN
+
+    consecutive_wins = 0
+    for won in [primary_win] + [_run_won(r) for r in recent_runs]:
+        if not won:
+            break
+        consecutive_wins += 1
+    consistent = consecutive_wins >= PROMOTION_CONSECUTIVE_WINS_REQUIRED
+
+    time_split = result.get("time_split") or {}
+    ts_champ, ts_chall = time_split.get("champion_auc"), time_split.get("challenger_auc")
+    time_split_win = (ts_champ is not None and ts_chall is not None
+                     and ts_chall > ts_champ + PROMOTION_AUC_MARGIN)
+
+    val_rows = result.get("val_rows") or 0
+    time_val_rows = time_split.get("val_rows") or 0
+    small_sample = val_rows < PROMOTION_MIN_VAL_ROWS or time_val_rows < PROMOTION_MIN_VAL_ROWS
+
+    ready = primary_win and consistent and time_split_win
+    if not primary_win:
+        reason = "challenger did not win this run's primary (by-ASIN) split"
+    elif not consistent:
+        reason = (f"won {consecutive_wins}/{PROMOTION_CONSECUTIVE_WINS_REQUIRED} needed "
+                 f"CONSECUTIVE recorded runs (including this one) — needs a run of wins, not "
+                 f"just this one")
+    elif not time_split:
+        reason = ("primary split + consistency both pass, but no time-held-out split was "
+                 "computable this run (corpus too small/single-class for a chronological split)")
+    elif not time_split_win:
+        reason = (f"primary split win + consistent across recent runs, but the time-held-out "
+                 f"(forward-generalization) split does NOT confirm it (champion "
+                 f"{ts_champ}, challenger {ts_chall})")
+    else:
+        reason = "primary split win + consistent across recent runs + time-held-out split confirms it"
+    if small_sample:
+        reason += (f" — SMALL-SAMPLE CAUTION: val_rows={val_rows}, "
+                  f"time_split val_rows={time_val_rows} (below {PROMOTION_MIN_VAL_ROWS})")
+
+    return {
+        "ready": ready, "reason": reason, "primary_win": primary_win,
+        "consecutive_wins": consecutive_wins,
+        "consecutive_wins_required": PROMOTION_CONSECUTIVE_WINS_REQUIRED,
+        "time_split_win": time_split_win, "small_sample": small_sample,
+    }
 
 
 def bronze_agreement(clf, scaler, bronze_rows: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -502,6 +589,35 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
 
     chall = rank_metrics([float(p) for p in proba], yva.tolist())
     champ = rank_metrics(champion_scores(val), yva.tolist())
+
+    # ML de-bias audit (2026-07-09) — promotion-gate part 2: split_by_asin is a same-time GROUP
+    # split (prevents an ASIN's windows straddling train/val) but was never time-based
+    # (ml-doctrine.md §4's tracked gap). A time-held-out split additionally tests whether the
+    # model generalizes FORWARD, not just to unseen ASINs at the same point in time — a single
+    # run's by-ASIN win (e.g. run 4's ~0.73 vs ~0.69 on ~186 val rows) is not proof of that.
+    # Best-effort: degrades to None (never blocks the primary training result) if the corpus is
+    # too small/single-class for a meaningful chronological split.
+    time_split = None
+    try:
+        time_train, time_val = backtest.split_by_time(rows, val_fraction=0.3)
+        if time_train and time_val:
+            Xtt, ytt = build_matrix(time_train)
+            Xtv, ytv = build_matrix(time_val)
+            if len(set(ytt.tolist())) >= 2 and len(set(ytv.tolist())) >= 2:
+                time_clf = lgb.LGBMClassifier(class_weight="balanced", random_state=42,
+                                             verbosity=-1, **_lightgbm_params(len(Xtt))).fit(Xtt, ytt)
+                time_proba = time_clf.predict_proba(Xtv)[:, 1]
+                time_chall = rank_metrics([float(p) for p in time_proba], ytv.tolist())
+                time_champ = rank_metrics(champion_scores(time_val), ytv.tolist())
+                time_split = {
+                    "train_rows": len(time_train), "val_rows": len(time_val),
+                    "champion_auc": time_champ.get("auc"), "challenger_auc": time_chall.get("auc"),
+                    "verdict": verdict_line(time_champ, time_chall),
+                }
+    except Exception as e:
+        print(f"[train_ranker] time-held-out split evaluation failed (non-fatal, primary result "
+             f"unaffected): {type(e).__name__}")
+
     return {
         "refused": False,
         "model": clf, "scaler": None, "features": list(NUMERIC_FEATURES),
@@ -511,6 +627,7 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         "by_tier": assembled.get("by_tier", {}),
         "champion": champ, "challenger": chall,
         "verdict": verdict_line(champ, chall),
+        "time_split": time_split,
         "silver_caveat": assembled.get("silver_caveat", ""),
         "bronze_agreement": bronze_agreement(clf, None, assembled.get("bronze_rows") or []),
         "bronze_caveat": assembled.get("bronze_caveat", ""),
@@ -557,6 +674,20 @@ def render_report(result: Dict[str, Any]) -> str:
         "Promotion is HUMAN-ONLY via the brain key scoring.rankingChampion — this job never "
         "touches ai-brain.json.", "",
     ]
+    ts = result.get("time_split")
+    if ts:
+        lines.append(
+            f"- Time-held-out split (forward-generalization check — a DIFFERENT axis than the "
+            f"by-ASIN group split above; train {ts['train_rows']} / val {ts['val_rows']} rows, "
+            f"chronologically split): CHAMPION AUC "
+            f"{ts['champion_auc'] if ts['champion_auc'] is not None else 'n/a'} · CHALLENGER AUC "
+            f"{ts['challenger_auc'] if ts['challenger_auc'] is not None else 'n/a'} — {ts['verdict']}")
+        lines.append("")
+    gate = result.get("promotion_gate")
+    if gate:
+        status = "READY FOR HUMAN REVIEW" if gate["ready"] else "NOT YET PROMOTION-READY"
+        lines.append(f"- **Promotion gate: {status}** — {gate['reason']}")
+        lines.append("")
     conc = result.get("concentration")
     if conc:
         b, a = conc["before"], conc["after"]
@@ -902,6 +1033,15 @@ def main(argv=None) -> int:
             return 0
 
     result = train_and_evaluate(assembled)
+    # ML de-bias audit (2026-07-09) — promotion-gate part 3: the consistency check needs recent
+    # ranker_runs history (a DB read), so it's gated by --dry-run the same way every other impure
+    # I/O step in this function already is; train_and_evaluate() itself stays pure/DB-free for
+    # testability. A dry run's report simply omits the gate section (render_report degrades to
+    # skipping it when "promotion_gate" isn't in result).
+    if not result.get("refused") and not args.dry_run:
+        import db
+        recent_runs = db.recent_ranker_runs(limit=PROMOTION_CONSECUTIVE_WINS_REQUIRED - 1)
+        result["promotion_gate"] = promotion_gate(result, recent_runs)
     block = render_report(result)
     append_report(block)
     print(block.encode("ascii", "replace").decode())

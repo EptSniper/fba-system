@@ -47,3 +47,49 @@ no ledger entry exists).
 
 ---
 
+## 2026-07-06 02:00 UTC — proposal run
+
+- **[knowledge-driven]** Ran a knowledge-base check for current OA thresholds — read the RAG answer directly (`python knowledge-rag/ask.py "current BSR ROI profit threshold"`) and compare by eye against ai-brain.json. (sample size: 0, confidence: manual review suggested)
+
+**1 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+
+## 2026-07-07 02:00 UTC — proposal run
+
+- **[knowledge-driven]** Ran a knowledge-base check for current OA thresholds — read the RAG answer directly (`python knowledge-rag/ask.py "current BSR ROI profit threshold"`) and compare by eye against ai-brain.json. (sample size: 0, confidence: manual review suggested)
+
+**1 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+
+## 2026-07-08 02:00 UTC — proposal run
+
+- **[data-driven]** Average Keepa token usage over 5 run(s) is 61/day, vs the System Blueprint's assumed ~7500/day. (sample size: 5, confidence: worth reviewing)
+- **[knowledge-driven]** Knowledge-base check unavailable this run: (loading BAAI/bge-base-en-v1.5 once...)
+2026-07-07 22:00:26.354 | WARNING  | fastembed.common.model_management:download_files_from_huggingface:225 - Local file sizes do not match the metadata.
+{"error (sample size: 0, confidence: unavailable)
+
+**2 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+
+## 2026-07-09 02:00 UTC — proposal run
+
+- **[data-driven]** Average Keepa token usage over 7 run(s) is 80/day, vs the System Blueprint's assumed ~7500/day. (sample size: 7, confidence: worth reviewing)
+- **[knowledge-driven]** Knowledge-base check unavailable this run: (loading BAAI/bge-base-en-v1.5 once...)
+2026-07-08 22:00:53.280 | WARNING  | fastembed.common.model_management:download_files_from_huggingface:225 - Local file sizes do not match the metadata.
+{"error (sample size: 0, confidence: unavailable)
+
+**2 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+
+## 2026-07-09 07:24 UTC — proposal run
+
+- **[ml-debias]** Live-measured training corpus concentration (Supabase `backtest_rows`, 750 rows / 112 ASINs / 67 brands / 4 categories): toys 82.5%, top-5 brands 37.1% (Crocs 15.6% + Jellycat 13.9% alone ~30%). Root cause found and already fixed in code this session (a persisted rotation cursor was missing in `deals_firehose.harvest()` and `backtest.sample_asins_explore()`, so every run restarted at the same leading list entries — 100% of the 200 dealfeed rows collected since the category column existed were tagged "toys"). This proposal adds the config so the fix and the new training-assembly cap (`scout/train_ranker.py`'s `apply_corpus_caps()`, already live using these exact values as code defaults) read from a single source instead of a hardcoded fallback. Proposed `learning.sampling` additions (merge into the existing block, do not replace it): `{"maxBrandCorpusShare": 0.06, "maxCategoryCorpusShare": 0.30, "top5BrandShareAlarm": 0.20, "breadthFirstBacktest": true, "source": "ML de-bias plan 2026-07-09 (ML_DEBIAS_PLAN.md) — collection/sampling config, not buy gates"}`. Guardrails unaffected: hard gates stay outside ML, no auto-promotion, no auto-buy — this only shapes what the ranker's own training assembly sees. (sample size: 750, confidence: high — root cause confirmed via direct Supabase query and a live-reproduced 100%-toys dealfeed sample, key: `learning.sampling`)
+
+**1 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+

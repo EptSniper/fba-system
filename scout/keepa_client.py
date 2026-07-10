@@ -358,6 +358,17 @@ _CATEGORY_MAP = {
     "baby": "baby",
     "cell phones & accessories": "electronics_accessories",
     "electronics": "electronics_accessories",
+    # fba-scout-strategist (2026-07-10): ML_DEBIAS_PLAN.md's 16-seed rotation lists these, but
+    # they had no root mapping, so even after Mehmet approves the brain category expansion
+    # (learning-hub/tracking/brain-proposals.md) they could never have resolved to a Keepa
+    # browse-node filter. Names are Keepa US root-category names (matched case-insensitively
+    # against api.category_lookup(0) output; an unmatched name degrades to an unfiltered pull,
+    # never a wrong filter).
+    "automotive": "automotive",
+    "patio, lawn & garden": "garden",
+    "arts, crafts & sewing": "arts_crafts",
+    "musical instruments": "musical_instruments",
+    "industrial & scientific": "industrial",
 }
 
 

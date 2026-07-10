@@ -93,3 +93,22 @@ no ledger entry exists).
 
 ---
 
+## 2026-07-10 02:00 UTC — proposal run
+
+- **[data-driven]** Average Keepa token usage over 1 run(s) is 60/day, vs the System Blueprint's assumed ~7500/day. (sample size: 1, confidence: too small to act)
+- **[knowledge-driven]** Knowledge-base check unavailable this run: (loading BAAI/bge-base-en-v1.5 once...)
+2026-07-09 22:00:29.784 | WARNING  | fastembed.common.model_management:download_files_from_huggingface:225 - Local file sizes do not match the metadata.
+{"error (sample size: 0, confidence: unavailable)
+
+**2 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+
+
+## 2026-07-10 07:35 UTC — proposal run (fba-scout-strategist, Session 59 follow-through)
+
+- **[ml-breadth]** Expand `learning.sampling.categories` from 10 entries to ML_DEBIAS_PLAN.md's full 16-seed rotation by ADDING: `"home"`, `"health"`, `"clothing"`, `"automotive"`, `"garden"`, `"arts_crafts"`, `"musical_instruments"`, `"industrial"` (keep the existing 10; note `home`/`health`/`clothing` already resolve via existing `_CATEGORY_MAP` roots and appear organically in the corpus — listing them makes their coverage deliberate instead of incidental). The code side is ALREADY shipped and inert-until-approved: `keepa_client._CATEGORY_MAP` now carries Keepa US root names for all five previously-unmapped seeds (2026-07-10), the dealfeed/explore rotation cursors handle any list length, and an unresolvable category logs a warning and degrades to an unfiltered pull — never a wrong filter. Effect: each hourly dealfeed/explore rotation slot sweeps a wider market surface, directly serving doctrine §3's breadth mandate; more categories per full rotation cycle means slightly fewer visits per category per day (same total token spend, spread wider) — the intended trade. Guardrails unaffected: collection/sampling config only, not buy gates; hard gates stay outside ML; no auto-promotion; no auto-buy. (sample size: corpus 1,742 rows / 13 organic categories at proposal time, confidence: high — key: `learning.sampling.categories`)
+
+**1 proposal(s) pending human review.** ai-brain.json was NOT changed.
+
+---

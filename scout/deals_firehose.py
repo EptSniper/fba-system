@@ -234,14 +234,20 @@ def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callabl
     # NEVER resolved and always fell back to an unfiltered pull. Normalizing hyphens to underscores
     # on both sides makes the match robust to either spelling convention instead of requiring the
     # two independently-edited files to stay byte-identical.
-    inverse: Dict[str, str] = {}
+    # fba-scout-strategist (2026-07-10): keep EVERY alias per short key (setdefault used to keep
+    # only the first — "baby" only ever tried "baby products", "electronics_accessories" only
+    # "cell phones & accessories" — so a Keepa root rename to the shadowed alias would silently
+    # degrade that category to unfiltered forever). Resolve to whichever alias the live lookup
+    # actually returned.
+    inverse: Dict[str, List[str]] = {}
     for keepa_name, short_key in keepa_client._CATEGORY_MAP.items():
-        inverse.setdefault(short_key.replace("-", "_"), keepa_name)
+        inverse.setdefault(short_key.replace("-", "_"), []).append(keepa_name)
     resolved = dict(cached)
     for cat in categories:
-        keepa_name = inverse.get(cat.replace("-", "_"))
-        if keepa_name and keepa_name in by_name:
-            resolved[cat] = by_name[keepa_name]
+        for keepa_name in inverse.get(cat.replace("-", "_"), []):
+            if keepa_name in by_name:
+                resolved[cat] = by_name[keepa_name]
+                break
     _save_category_id_cache(resolved)
     return resolved
 
@@ -324,6 +330,52 @@ def _upload_remote_secondary_cursor(cursor: int) -> bool:
         return True
     except Exception as e:
         log.warning("dealfeed secondary-axis cursor upload failed (non-fatal): %s", e)
+        return False
+
+
+_YIELD_STATS_STORAGE_PATH = "backtest/dealfeed_yield_stats.json"
+
+
+def _combo_key(filters: Dict[str, Any]) -> str:
+    """A compact stable key for one secondary-axis combo, e.g. 'rank30000-90000|c2500-6000|drop20-100'."""
+    r = filters.get("salesRankRange") or ["?", "?"]
+    c = filters.get("currentRange") or ["?", "?"]
+    d = filters.get("deltaPercentRange") or ["?", "?"]
+    return f"rank{r[0]}-{r[1]}|c{c[0]}-{c[1]}|drop{d[0]}-{d[1]}"
+
+
+def _update_remote_yield_stats(combo_key: str, asins: int, pages: int) -> bool:
+    """fba-scout-strategist (2026-07-10): cross-run per-combo yield accounting. The per-run log
+    line made a dry slice visible only to someone scrolling one run's output; this blob
+    accumulates {combo -> {runs, pages, asins}} across runs so a consistently-dry combo is
+    QUERYABLE (the digest or a human can read one JSON and see which slices earn their 5
+    tokens/page and which should be widened/dropped). Best-effort, never raises — same Storage
+    pattern as every other cross-run blob in this module."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        stats: Dict[str, Any] = {}
+        r = requests.get(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_YIELD_STATS_STORAGE_PATH}",
+            headers=_category_cache_storage_headers(), timeout=15)
+        if r.status_code == 200:
+            stats = r.json() or {}
+        entry = stats.get(combo_key) or {"runs": 0, "pages": 0, "asins": 0}
+        entry["runs"] += 1
+        entry["pages"] += pages
+        entry["asins"] += asins
+        stats[combo_key] = entry
+        up = requests.post(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_YIELD_STATS_STORAGE_PATH}",
+            headers={**_category_cache_storage_headers(), "x-upsert": "true",
+                    "Content-Type": "application/json"},
+            data=json.dumps(stats).encode("utf-8"), timeout=30)
+        up.raise_for_status()
+        return True
+    except Exception as e:
+        log.warning("dealfeed yield-stats update failed (non-fatal): %s", e)
         return False
 
 
@@ -471,6 +523,13 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
         resolve_spent = keepa_client._delta(before, after)
         if isinstance(resolve_spent, int) and resolve_spent > 0:
             total_spent += resolve_spent
+        unresolved = [c for c in categories if c not in id_map]
+        if unresolved:
+            # fba-scout-strategist (2026-07-10): a persistently-unresolvable category silently
+            # degrades to unfiltered pulls — fine as a fallback, but it must be VISIBLE, not a
+            # coverage hole discovered months later in the corpus composition.
+            log.warning("dealfeed: %d configured categorie(s) did not resolve to a Keepa root "
+                       "(unfiltered fallback): %s", len(unresolved), unresolved)
 
     out: List[Dict[str, Any]] = []
     seen = set()
@@ -523,6 +582,7 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     if pulled:
         log.info("dealfeed secondary axis %s -> %d unique asin(s) across %d page(s)",
                  secondary_filters, len(out), pulled)
+        _update_remote_yield_stats(_combo_key(secondary_filters), len(out), pulled)
     return {"status": "ok", "asins": out, "pages_pulled": pulled, "tokens_spent": total_spent,
             "dry_slots_refetched": dry_slots_refetched,
             "by_category": by_category, "categories_resolved": sorted(id_map.keys()),

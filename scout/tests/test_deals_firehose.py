@@ -283,6 +283,7 @@ class HarvestTest(unittest.TestCase):
             mock.patch.object(df, "_upload_remote_cursor", return_value=False),
             mock.patch.object(df, "_fetch_remote_secondary_cursor", return_value=0),
             mock.patch.object(df, "_upload_remote_secondary_cursor", return_value=False),
+            mock.patch.object(df, "_update_remote_yield_stats", return_value=False),
         ]
         for p in self._cursor_patchers:
             p.start()
@@ -420,6 +421,29 @@ class HarvestTest(unittest.TestCase):
             df.harvest(api, pages=2, categories=["toys", "kitchen"],
                       resolve_fn=lambda api, cats, wait=True: {"toys": 1, "kitchen": 2})
         mupload.assert_called_once_with(4)  # +1 regardless of pages pulled this run
+
+
+class YieldStatsTest(unittest.TestCase):
+    def test_combo_key_is_compact_and_stable(self):
+        key = df._combo_key({"salesRankRange": [0, 30000], "currentRange": [800, 2500],
+                             "deltaPercentRange": [20, 100]})
+        self.assertEqual(key, "rank0-30000|c800-2500|drop20-100")
+
+    def test_harvest_records_yield_for_the_active_combo(self):
+        api = FakeApi(tokens_left=60, pages={((11,), 0): ["B001", "B002"]})
+        with mock.patch.object(df, "_fetch_remote_secondary_cursor", return_value=0),              mock.patch.object(df, "_upload_remote_secondary_cursor", return_value=False),              mock.patch.object(df, "_fetch_remote_cursor", return_value=0),              mock.patch.object(df, "_upload_remote_cursor", return_value=False),              mock.patch.object(df, "_update_remote_yield_stats", return_value=True) as mstats:
+            df.harvest(api, pages=1, categories=["toys"],
+                      resolve_fn=lambda api, cats, wait=True: {"toys": 11})
+        mstats.assert_called_once()
+        key, asins, pages = mstats.call_args.args
+        self.assertEqual(asins, 2)
+        self.assertEqual(pages, 1)
+        self.assertTrue(key.startswith("rank"))
+
+    def test_stats_update_failure_is_non_fatal(self):
+        with mock.patch("requests.get", side_effect=ConnectionError("down")),              mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            self.assertFalse(df._update_remote_yield_stats("rank0-1|c1-2|drop3-4", 5, 1))
 
 
 if __name__ == "__main__":

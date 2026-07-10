@@ -115,6 +115,34 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-10 — Claude Code Session 59 (closure): the shadow-scoring TypeError root-caused and fixed — oos_90 was Keepa's raw per-price-type array
+
+The last open defect from the Session 59 audit chain, run to ground with the instrumentation
+shipped earlier (543c3db): the live error was `float() argument must be a string or a real
+number, not 'list'` inside `vectorize_one` — and a local repro off a raw-shaped product proved
+the source: `keepa_client._normalize` passed `stats.outOfStockPercentage90` through RAW, and
+Keepa returns it as a per-price-type ARRAY. The bug hid for the field's whole life because every
+rule-side consumer isinstance-guards (so the `oos > 30` red flag has silently NEVER fired on a
+live product — a second real defect found by the same trace), and the only unguarded consumer,
+challenger shadow scoring, never executed until shadow loading was ungated. Every live
+`features_snapshot` had stored the array in jsonb too — a training time bomb for the day
+shadow_outcomes silver rows mature.
+
+**Fixed (eec29e3), tested (949/0), and LIVE-PROVEN:** `_oos_pct()` extracts the NEW-price-type
+scalar (fallback AMAZON, `-1`/absent → None, never 0), `vectorize_one` degrades any non-numeric
+value to NaN (one malformed field costs one feature, never the candidate), 8 regression tests
+including the full raw-product→normalize→snapshot→challenger_score path. Verification run
+29118847409: zero challenger_score failures, and lead 387 now carries `challenger_proba = 0.988`
+— the first shadow score ever persisted from the production path. Also this session: Mehmet
+refreshed the plugin marketplace (fba-ml-ops + all fixed skills now serving), approved brain
+proposals applied earlier, and the dev server was restarted on localhost:3000.
+
+**Exact next safe step:** let the hourly cadence run; check in a day that (a) shadow scores
+accumulate across many leads, (b) the promotion gate rebuilds its distinct-dataset streak with
+time-split evidence (3+ runs needed), and (c) the concentration alarm clears as the 18-category
+rotation dilutes toys below 30%.
+
+
 ### 2026-07-10 — Claude Code Session 59 (continued): the four expert directives — scout-strategist, ml-data-engineer, ranker-architect, feature-engineer each found and shipped their lane's improvements
 
 Mehmet invoked four skills directly (/fba-scout-strategist, /fba-ml-data-engineer,

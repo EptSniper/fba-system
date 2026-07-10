@@ -48,6 +48,69 @@ class RankMetricsTest(unittest.TestCase):
         self.assertIsNone(m["auc"])
 
 
+class MetricHonestyTest(unittest.TestCase):
+    """ML audit (2026-07-09): winners_in_top was information-free at a ~77-94% positive base
+    rate (a champion with AUC 0.329 — worse than random — still scored 10/10 in the committed
+    2026-07-05 report). rank_metrics now reports base_rate/precision/lift so every count reads
+    against chance, and auc_delta_ci quantifies whether an AUC gap clears the noise floor."""
+
+    def test_rank_metrics_reports_base_rate_and_lift(self):
+        # 8 of 10 positive (base 0.8); a perfect scorer puts both negatives last.
+        y = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+        scores = [0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.1, 0.1]
+        m = tr.rank_metrics(scores, y, top_n=5)
+        self.assertEqual(m["base_rate"], 0.8)
+        self.assertEqual(m["precision_at_top"], 1.0)
+        self.assertEqual(m["lift_at_top"], 1.25)  # 1.0 / 0.8
+
+    def test_rank_metrics_lift_of_1_means_chance(self):
+        # A constant scorer's top-N is arbitrary; precision ~= base rate, lift ~= 1 given the
+        # stable argsort — the honest 'this ordering carries no information' reading.
+        y = [1, 1, 1, 0] * 5
+        m = tr.rank_metrics([0.5] * 20, y, top_n=20)
+        self.assertEqual(m["precision_at_top"], m["base_rate"])
+        self.assertEqual(m["lift_at_top"], 1.0)
+
+    def test_auc_delta_ci_clear_winner_excludes_zero(self):
+        y = [1, 0] * 30
+        chall = [0.9 if v else 0.1 for v in y]          # perfect
+        champ = [0.5 + 0.001 * i for i in range(60)]     # ~random drift
+        ci = tr.auc_delta_ci(champ, chall, y)
+        self.assertIsNotNone(ci)
+        self.assertGreater(ci["delta_low"], 0)
+
+    def test_auc_delta_ci_identical_scorers_includes_zero(self):
+        y = [1, 0] * 30
+        scores = [0.5 + 0.01 * (i % 7) for i in range(60)]
+        ci = tr.auc_delta_ci(scores, list(scores), y)
+        self.assertIsNotNone(ci)
+        self.assertLessEqual(ci["delta_low"], 0)
+        self.assertGreaterEqual(ci["delta_high"], 0)
+
+    def test_auc_delta_ci_single_class_is_none_not_fabricated(self):
+        self.assertIsNone(tr.auc_delta_ci([0.5, 0.6], [0.6, 0.5], [1, 1]))
+
+    def test_slice_breakdown_groups_and_min_n(self):
+        rows = ([{"features": {"category": "toys"}, "label": i % 2 == 0} for i in range(12)]
+               + [{"features": {"category": "pet"}, "label": True} for _ in range(3)])
+        proba = [0.5] * 15
+        out = tr.slice_breakdown(rows, proba, tr._row_category, min_n=10)
+        self.assertIn("toys", out)
+        self.assertEqual(out["toys"]["n"], 12)
+        self.assertNotIn("pet", out)  # below min_n — too small to say anything
+
+    def test_gate_blocks_when_ci_does_not_clear_zero(self):
+        """A margin win whose bootstrap CI straddles zero must NOT count as a primary win."""
+        result = _gate_result(time_split=_gate_time_split())
+        result["auc_delta_ci"] = {"delta_low": -0.01, "delta_high": 0.15, "delta_mean": 0.07,
+                                  "n_boot": 500}
+        gate = tr.promotion_gate(result, [_gate_prior_run(), _gate_prior_run()])
+        self.assertTrue(gate["margin_win"])
+        self.assertFalse(gate["ci_clears"])
+        self.assertFalse(gate["ready"])
+        self.assertIn("CI", gate["reason"])
+
+
 class VerdictTest(unittest.TestCase):
     def test_challenger_must_beat_margin(self):
         champ = {"auc": 0.60}

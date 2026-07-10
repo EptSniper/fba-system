@@ -240,8 +240,14 @@ def champion_scores(rows: List[Dict[str, Any]]) -> List[Optional[float]]:
 
 # --- evaluation ---------------------------------------------------------------
 def rank_metrics(scores: List[Optional[float]], y: List[int], top_n: int = 10) -> Dict[str, Any]:
-    """AUC + winners-in-top-N for one scorer. None scores rank last. AUC is None when only one
-    class is present (never fabricated)."""
+    """AUC + top-N precision/lift for one scorer. None scores rank last. AUC is None when only
+    one class is present (never fabricated).
+
+    ML audit fix (2026-07-09): the raw winners_in_top count is information-free at this corpus's
+    ~77-94% positive base rate (random ordering expects ~7.7-9.4/10 — the committed 2026-07-05
+    report proved it: a champion with AUC 0.329, WORSE than random, still scored 10/10). Every
+    surface now gets base_rate/precision_at_top/lift_at_top so the count can be read against
+    chance: lift 1.0 = indistinguishable from random ordering."""
     import numpy as np
     from sklearn.metrics import roc_auc_score
     s = np.array([(-1e18 if v is None else float(v)) for v in scores])
@@ -249,7 +255,43 @@ def rank_metrics(scores: List[Optional[float]], y: List[int], top_n: int = 10) -
     auc = float(roc_auc_score(y, s)) if len(set(y.tolist())) > 1 else None
     order = np.argsort(-s)
     top = order[:top_n]
-    return {"auc": auc, "winners_in_top": int(y[top].sum()), "top_n": min(top_n, len(y))}
+    n_top = min(top_n, len(y))
+    base_rate = round(float(y.mean()), 3) if len(y) else None
+    precision = round(float(y[top].sum()) / n_top, 3) if n_top else None
+    lift = (round(precision / base_rate, 2) if precision is not None and base_rate else None)
+    return {"auc": auc, "winners_in_top": int(y[top].sum()), "top_n": n_top,
+            "base_rate": base_rate, "precision_at_top": precision, "lift_at_top": lift}
+
+
+def auc_delta_ci(champ_scores: List[Optional[float]], chall_scores: List[Optional[float]],
+                 y: List[int], n_boot: int = 500) -> Optional[Dict[str, float]]:
+    """Paired bootstrap 95% CI of (challenger AUC − champion AUC) on the SHARED validation
+    slice (ML audit fix, 2026-07-09): the Hanley-McNeil SE of a single AUC at this corpus's
+    val sizes (~0.03-0.05) exceeds PROMOTION_AUC_MARGIN (0.02), so a point-estimate margin win
+    can be pure noise — the gate now also demands the CI's lower bound clear zero. Deterministic
+    (fixed-seed RNG — this runs inside the reproducible training path). None when either scorer
+    can't produce an AUC (single-class slice) — never fabricated."""
+    import numpy as np
+    from sklearn.metrics import roc_auc_score
+    y_arr = np.array(y)
+    if len(set(y_arr.tolist())) < 2:
+        return None
+    champ = np.array([(-1e18 if v is None else float(v)) for v in champ_scores])
+    chall = np.array([(-1e18 if v is None else float(v)) for v in chall_scores])
+    rng = np.random.RandomState(42)
+    deltas = []
+    n = len(y_arr)
+    for _ in range(n_boot):
+        idx = rng.randint(0, n, n)
+        y_b = y_arr[idx]
+        if len(set(y_b.tolist())) < 2:
+            continue  # a resample with one class can't score — skip, never fabricate
+        deltas.append(float(roc_auc_score(y_b, chall[idx]) - roc_auc_score(y_b, champ[idx])))
+    if len(deltas) < n_boot // 2:
+        return None  # too many degenerate resamples for an honest interval
+    lo, hi = np.percentile(deltas, [2.5, 97.5])
+    return {"delta_low": round(float(lo), 4), "delta_high": round(float(hi), 4),
+            "delta_mean": round(float(np.mean(deltas)), 4), "n_boot": len(deltas)}
 
 
 PROMOTION_AUC_MARGIN = 0.02
@@ -324,7 +366,16 @@ def promotion_gate(result: Dict[str, Any], recent_runs: List[Dict[str, Any]],
     the streak walk: a win only extends the streak when the training set actually changed."""
     champ, chall = result.get("champion") or {}, result.get("challenger") or {}
     ca, xa = champ.get("auc"), chall.get("auc")
-    primary_win = ca is not None and xa is not None and xa > ca + PROMOTION_AUC_MARGIN
+    margin_win = ca is not None and xa is not None and xa > ca + PROMOTION_AUC_MARGIN
+    # ML audit fix (2026-07-09, no-uncertainty-treatment finding): the single-AUC standard error
+    # at these val sizes (~0.03-0.05, Hanley-McNeil) EXCEEDS the 0.02 point-estimate margin, so
+    # a margin win alone can be pure noise. When a paired-bootstrap CI on the AUC delta is
+    # available, the win must also clear it (CI lower bound > 0 — the gap is distinguishable
+    # from zero at 95%). No CI (single-class slice / degenerate resamples) -> margin-only,
+    # honestly weaker, and the reason says which standard was applied.
+    ci = result.get("auc_delta_ci")
+    ci_clears = ci is None or ci.get("delta_low", -1) > 0
+    primary_win = margin_win and ci_clears
 
     seen_hashes = {content_hash} if content_hash else set()
     distinct_prior: List[Dict[str, Any]] = []
@@ -354,11 +405,16 @@ def promotion_gate(result: Dict[str, Any], recent_runs: List[Dict[str, Any]],
 
     ready = primary_win and consistent and time_split_win
     if not primary_win:
-        reason = "challenger did not win this run's primary (by-ASIN) split"
+        if margin_win and not ci_clears:
+            reason = (f"challenger beat the margin on the primary split but the bootstrap 95% "
+                     f"CI on the AUC gap does not clear zero (low {ci.get('delta_low')}) — "
+                     f"statistically indistinguishable from noise at this val size")
+        else:
+            reason = "challenger did not win this run's primary (by-ASIN) split"
     elif not consistent:
         reason = (f"won {consecutive_wins}/{PROMOTION_CONSECUTIVE_WINS_REQUIRED} needed "
-                 f"CONSECUTIVE recorded runs (including this one) — needs a run of wins, not "
-                 f"just this one")
+                 f"CONSECUTIVE distinct-dataset runs (including this one) — needs a run of "
+                 f"wins on changing data, not just this one")
     elif not time_split:
         reason = ("primary split + consistency both pass, but no time-held-out split was "
                  "computable this run (corpus too small/single-class for a chronological split)")
@@ -367,13 +423,21 @@ def promotion_gate(result: Dict[str, Any], recent_runs: List[Dict[str, Any]],
                  f"(forward-generalization) split does NOT confirm it (champion "
                  f"{ts_champ}, challenger {ts_chall})")
     else:
-        reason = "primary split win + consistent across recent runs + time-held-out split confirms it"
+        reason = ("primary split win (bootstrap CI clears zero) + consistent across distinct-"
+                 "dataset runs + time-held-out split confirms it")
+        # Standing caveat the docstring promises (ML audit 2026-07-09): every streak run trains
+        # on a DIFFERENT corpus snapshot while de-biasing is active — say so in the READY text
+        # itself, not only when samples are small.
+        reason += (" — note: each streak run trained on a different corpus snapshot "
+                  "(composition still shifting during de-bias); weaker evidence than the same "
+                  "streak on a stable corpus")
     if small_sample:
         reason += (f" — SMALL-SAMPLE CAUTION: val_rows={val_rows}, "
                   f"time_split val_rows={time_val_rows} (below {PROMOTION_MIN_VAL_ROWS})")
 
     return {
         "ready": ready, "reason": reason, "primary_win": primary_win,
+        "margin_win": margin_win, "ci_clears": ci_clears,
         "consecutive_wins": consecutive_wins,
         "consecutive_wins_required": PROMOTION_CONSECUTIVE_WINS_REQUIRED,
         "time_split_win": time_split_win, "small_sample": small_sample,
@@ -401,34 +465,52 @@ def bronze_agreement(clf, scaler, bronze_rows: List[Dict[str, Any]]) -> Optional
     return {"n": len(bronze_rows), "agreement_rate": round(agree, 3)}
 
 
-def source_breakdown(val_rows: List[Dict[str, Any]], proba: List[float]) -> Dict[str, Any]:
-    """Per sample_source rank_metrics on the SAME held-out slice/predictions (Session 55,
-    learning.sampling): lets the report compare onpolicy vs explore vs dealfeed performance
-    separately, never blended. Rows without a sample_source (gold/silver rows, which predate this
-    tagging) are grouped under 'n/a'. A group with only one class present is reported as a count
-    only — AUC stays None rather than fabricated."""
-    by_source: Dict[str, List[int]] = {}
+def slice_breakdown(val_rows: List[Dict[str, Any]], proba: List[float],
+                    key_fn, max_groups: Optional[int] = None,
+                    min_n: int = 1) -> Dict[str, Any]:
+    """Per-group rank_metrics on the SAME held-out slice/predictions, grouped by key_fn(row).
+    A group with only one class present is reported as a count only — AUC stays None rather
+    than fabricated. max_groups keeps only the largest-N groups (by n); min_n drops groups too
+    small to say anything about.
+
+    ML audit fix (2026-07-09): generalized from the sample_source-only breakdown so the report
+    can ALSO slice by category and brand — ML_DEBIAS_PLAN.md's monitoring section requires
+    per-category/per-brand metric slices specifically so a model that only works on
+    toys/Crocs is caught BEFORE promotion; until this, only the sample-source slice existed."""
+    by_key: Dict[str, List[int]] = {}
     for i, r in enumerate(val_rows):
-        src = r.get("sample_source") or "n/a"
-        by_source.setdefault(src, []).append(i)
+        by_key.setdefault(key_fn(r), []).append(i)
+    groups = sorted(by_key.items(), key=lambda kv: -len(kv[1]))
+    if max_groups is not None:
+        groups = groups[:max_groups]
     out: Dict[str, Any] = {}
-    for src, idxs in by_source.items():
+    for key, idxs in groups:
+        if len(idxs) < min_n:
+            continue
         y_sub = [1 if val_rows[i]["label"] else 0 for i in idxs]
         p_sub = [float(proba[i]) for i in idxs]
         if len(set(y_sub)) < 2:
-            out[src] = {"n": len(idxs), "auc": None}
+            out[key] = {"n": len(idxs), "auc": None}
         else:
-            out[src] = {"n": len(idxs), **rank_metrics(p_sub, y_sub, top_n=min(10, len(idxs)))}
+            out[key] = {"n": len(idxs), **rank_metrics(p_sub, y_sub, top_n=min(10, len(idxs)))}
     return out
+
+
+def source_breakdown(val_rows: List[Dict[str, Any]], proba: List[float]) -> Dict[str, Any]:
+    """Per sample_source rank_metrics on the SAME held-out slice/predictions (Session 55,
+    learning.sampling): onpolicy vs explore vs dealfeed, never blended. Rows without a
+    sample_source (gold/silver rows, which predate this tagging) group under 'n/a'."""
+    return slice_breakdown(val_rows, proba, lambda r: r.get("sample_source") or "n/a")
 
 
 def new_signal_importance(clf) -> Dict[str, float]:
     """Each Session 55 signal feature's fitted importance — the evidence render_report()'s 'new
     signals' section shows so a human can decide keep-or-cut.
 
-    Prefers LightGBM's feature_importances_ (split-count/gain based, normalized to a 0-1 share
-    of the model's total — a rough parity with 25 features means "average" is ~0.04, so the
-    existing 0.05 near-zero threshold still reads as "below average use"). Falls back to a
+    Prefers LightGBM's feature_importances_ (split-count based, normalized to a 0-1 share of
+    the model's total — an exactly-average feature owns 1/len(NUMERIC_FEATURES) ≈ 0.036 at the
+    current 28 features; render_report flags anything below HALF that dynamic average, never a
+    fixed constant that could sit above average — ML audit fix 2026-07-09). Falls back to a
     linear model's signed .coef_ for backward compatibility with any OLDER saved artifact still
     on disk. {} when the model exposes neither."""
     importances = getattr(clf, "feature_importances_", None)
@@ -616,8 +698,13 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
                              **_lightgbm_params(len(Xtr))).fit(Xtr, ytr)
     proba = clf.predict_proba(Xva)[:, 1]
 
-    chall = rank_metrics([float(p) for p in proba], yva.tolist())
-    champ = rank_metrics(champion_scores(val), yva.tolist())
+    proba_list = [float(p) for p in proba]
+    champ_scores_list = champion_scores(val)
+    chall = rank_metrics(proba_list, yva.tolist())
+    champ = rank_metrics(champ_scores_list, yva.tolist())
+    # Paired bootstrap CI on the AUC gap (ML audit 2026-07-09): the single-AUC SE at these val
+    # sizes (~0.03-0.05) exceeds the 0.02 point-estimate margin — the gate reads this too.
+    delta_ci = auc_delta_ci(champ_scores_list, proba_list, yva.tolist())
 
     # ML de-bias audit (2026-07-09) — promotion-gate part 2: split_by_asin is a same-time GROUP
     # split (prevents an ASIN's windows straddling train/val) but was never time-based
@@ -660,7 +747,13 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         "silver_caveat": assembled.get("silver_caveat", ""),
         "bronze_agreement": bronze_agreement(clf, None, assembled.get("bronze_rows") or []),
         "bronze_caveat": assembled.get("bronze_caveat", ""),
-        "by_source": source_breakdown(val, [float(p) for p in proba]),
+        "by_source": source_breakdown(val, proba_list),
+        # ML_DEBIAS_PLAN.md monitoring (ML audit 2026-07-09): per-category/per-brand metric
+        # slices on the held-out set — the specific safeguard against promoting a model that
+        # only works on toys/Crocs. min_n=10: below that a slice AUC is noise, not signal.
+        "by_category": slice_breakdown(val, proba_list, _row_category, max_groups=8, min_n=10),
+        "by_brand": slice_breakdown(val, proba_list, _row_brand, max_groups=8, min_n=10),
+        "auc_delta_ci": delta_ci,
         "new_signal_importance": new_signal_importance(clf),
         "concentration": concentration,
         # ML_DEBIAS_PLAN.md's exact monitoring spec (raw pre-cap composition, so this reflects
@@ -688,13 +781,28 @@ def render_report(result: Dict[str, Any]) -> str:
                   "No model was fit; nothing was uploaded or promoted.", ""]
         return "\n".join(lines)
     ch, xl = result["champion"], result["challenger"]
+
+    def _topline(m):
+        # Lift vs base rate (ML audit 2026-07-09): the raw winners-in-top count is
+        # information-free at a ~77-94% positive base rate — print it WITH its chance baseline.
+        auc = round(m["auc"], 3) if m.get("auc") is not None else "n/a"
+        if m.get("precision_at_top") is not None and m.get("base_rate"):
+            return (f"AUC {auc} · top-{m['top_n']} precision {m['precision_at_top']:.2f} vs "
+                   f"base {m['base_rate']:.2f} (lift {m['lift_at_top']}x)")
+        return f"AUC {auc} · winners in top {m['top_n']}: {m['winners_in_top']}"
+
     lines += [
         f"- Split BY ASIN: train {result['train_rows']} rows / {result['train_asins']} asins; "
         f"val {result['val_rows']} rows / {result['val_asins']} asins",
-        f"- CHAMPION (deterministic triage): AUC {ch['auc'] if ch['auc'] is not None else 'n/a'}"
-        f" · winners in top {ch['top_n']}: {ch['winners_in_top']}",
-        f"- CHALLENGER (classical model, shadow): AUC {xl['auc'] if xl['auc'] is not None else 'n/a'}"
-        f" · winners in top {xl['top_n']}: {xl['winners_in_top']}",
+        f"- CHAMPION (deterministic triage): {_topline(ch)}",
+        f"- CHALLENGER (classical model, shadow): {_topline(xl)}",
+    ]
+    ci = result.get("auc_delta_ci")
+    if ci:
+        lines.append(f"- AUC gap (challenger − champion) paired-bootstrap 95% CI: "
+                     f"[{ci['delta_low']}, {ci['delta_high']}] (mean {ci['delta_mean']}, "
+                     f"{ci['n_boot']} resamples) — a gap whose CI includes zero is noise, not a win")
+    lines += [
         "",
         f"**{result['verdict']}**",
         "",
@@ -714,7 +822,13 @@ def render_report(result: Dict[str, Any]) -> str:
         lines.append("")
     gate = result.get("promotion_gate")
     if gate:
-        status = "READY FOR HUMAN REVIEW" if gate["ready"] else "NOT YET PROMOTION-READY"
+        # Small samples get their own STATUS word, not just a buried mid-sentence caution (ML
+        # audit 2026-07-09): a human skimming for the bold headline must see the caveat there.
+        if gate["ready"]:
+            status = ("READY — SMALL-SAMPLE CAUTION, treat as provisional" if gate.get("small_sample")
+                     else "READY FOR HUMAN REVIEW")
+        else:
+            status = "NOT YET PROMOTION-READY"
         lines.append(f"- **Promotion gate: {status}** — {gate['reason']}")
         lines.append("")
     conc = result.get("concentration")
@@ -747,21 +861,41 @@ def render_report(result: Dict[str, Any]) -> str:
             auc_str = m["auc"] if m.get("auc") is not None else "n/a (single class in slice)"
             lines.append(f"  - **{src}**: n={m['n']}, AUC {auc_str}")
         lines.append("")
+    # Per-category/per-brand slices (ML audit 2026-07-09, ML_DEBIAS_PLAN.md monitoring): the
+    # specific pre-promotion safeguard against a model that only works on toys/Crocs.
+    for slice_key, slice_title in (("by_category", "Per-category"), ("by_brand", "Per-brand (top by n)")):
+        sl = result.get(slice_key) or {}
+        if sl:
+            lines.append(f"- {slice_title} held-out slice (n>=10; a slice where the challenger "
+                         f"LOSES while winning overall = it only works on the big cells):")
+            for key, m in sorted(sl.items(), key=lambda kv: -kv[1]["n"]):
+                auc_str = m["auc"] if m.get("auc") is not None else "n/a (single class)"
+                lines.append(f"  - **{key}**: n={m['n']}, AUC {auc_str}")
+            lines.append("")
     bronze = result.get("bronze_agreement")
     if bronze:
         lines.append(
             f"- Bronze agreement (auxiliary, NOT a training signal): the model agrees with the "
             f"operator's own buy/pass decision on {bronze['agreement_rate']*100:.0f}% of "
-            f"{bronze['n']} decision-only row(s). {result.get('bronze_caveat') or ''}")
+            f"{bronze['n']} decision-only row(s) — at predict()'s implicit 0.5 cutoff on "
+            f"UNCALIBRATED balanced-class probabilities, so the rate is threshold-dependent, "
+            f"not a calibrated accuracy. {result.get('bronze_caveat') or ''}")
         lines.append("")
     importance = result.get("new_signal_importance") or {}
     if importance:
-        lines.append("- New signals (Trends/calendar/eBay, Session 55) — normalized feature "
-                     "importance (LightGBM feature_importances_, share of total splits; "
-                     "< 0.05 flagged as a removal candidate, human decides — same kill-rule as "
-                     "everything else):")
+        # ML audit fix (2026-07-09): the old fixed 0.05 flag sat ABOVE the true average share
+        # (1/28 features ≈ 0.036), so features earning 25%+ above-average importance were
+        # labeled "near-zero removal candidates" — a human following the kill-rule could cut
+        # genuinely useful signals. The flag is now half the average share, computed from the
+        # actual feature count.
+        near_zero = round(0.5 / max(1, len(NUMERIC_FEATURES)), 4)
+        lines.append(f"- New signals (Trends/calendar/eBay, Session 55) — normalized feature "
+                     f"importance (LightGBM feature_importances_, share of total splits; "
+                     f"< {near_zero} = below half the {len(NUMERIC_FEATURES)}-feature average "
+                     f"share, flagged as a removal candidate — human decides, same kill-rule "
+                     f"as everything else):")
         for name, coef in sorted(importance.items(), key=lambda kv: -abs(kv[1])):
-            flag = "" if abs(coef) >= 0.05 else " ⚠ near-zero"
+            flag = "" if abs(coef) >= near_zero else " ⚠ below half-average share"
             lines.append(f"  - {name}: {coef}{flag}")
         lines.append("")
     return "\n".join(lines)
@@ -1014,7 +1148,11 @@ def post_summary(result: Dict[str, Any]) -> bool:
         gate = result.get("promotion_gate") or {}
         gate_line = ""
         if gate:
-            gate_status = "READY FOR HUMAN REVIEW" if gate.get("ready") else "NOT YET PROMOTION-READY"
+            if gate.get("ready"):
+                gate_status = ("READY — SMALL-SAMPLE CAUTION, treat as provisional"
+                              if gate.get("small_sample") else "READY FOR HUMAN REVIEW")
+            else:
+                gate_status = "NOT YET PROMOTION-READY"
             gate_line = f"\n**Promotion gate: {gate_status}** — {gate.get('reason')}"
         embed = {
             "title": "🤖 Ranker trained (shadow) — champion vs challenger",

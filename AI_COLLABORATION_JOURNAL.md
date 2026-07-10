@@ -115,6 +115,54 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-10 — Claude Code Session 59 (continued): the four expert directives — scout-strategist, ml-data-engineer, ranker-architect, feature-engineer each found and shipped their lane's improvements
+
+Mehmet invoked four skills directly (/fba-scout-strategist, /fba-ml-data-engineer,
+/fba-ranker-architect, /fba-feature-engineer): "find improvement steps, then work until done."
+Also completed the live verification the main Session 59 entry left as next-step. 4 commits
+(e4c6176, 1791f40, 22b2774 + the journal), all pushed; full suite 941 passed / 0 failed.
+
+**Live verification (both hourly jobs dispatched on the fixed code)**: collector — the
+secondary-axis filters demonstrably WORK (one $25-60 × rank-30-90k slice yielded 190 unique
+ASINs; isRangeEnabled honored, not a silent no-op), ranking_model recorded, 38 rows written
+(corpus 1,742 at the time). Trainer — lift-vs-base rendering, tier weights
+(backtest 1.0/silver 2.0/gold 4.0) applied, time-split on 1,100/472 rows, and the hardened gate
+HONESTLY reading NOT-YET (this run's challenger lost the primary split 0.683 vs 0.692 while
+winning the time axis 0.807 vs 0.758 — the exact honest signal the hardening exists to surface).
+
+**fba-scout-strategist (e4c6176)**: Keepa root names added for the 5 unmapped ML_DEBIAS_PLAN
+seed categories (inert until the paired brain proposal — appended to brain-proposals.md,
+learning.sampling.categories 10→16, PENDING Mehmet — is approved); alias-list inverse lookup
+(setdefault was shadowing all but the first alias per key); harvest() warns on unresolvable
+categories; cross-run per-combo yield stats blob (dry slices become queryable data).
+
+**fba-ml-data-engineer (1791f40)**: the audit's top efficiency finding fixed — the
+sampled-but-deferred remainder now persists as state["pending"] (capped 3000, source/category
+tags kept, failed-upsert batches re-queue); next run drains the backlog FIRST and skips sampling
+entirely while the backlog exceeds what the cap can pull, so backlogged runs convert their FULL
+tier-3 budget into training rows instead of re-buying discovery. Backward-compatible state.
+
+**fba-ranker-architect (22b2774)**: _lightgbm_params saturated to full stock capacity at ~93
+train rows with zero regularization; ramp slowed (full 31 leaves needs ~1.2k train rows) +
+feature_fraction 0.8 / lambda_l2 1.0; NO early stopping on the reported val split (selection
+leak). Honest mid-streak model-config change noted in the docstring dated 2026-07-10 — the
+distinct-dataset gate makes every counted win re-prove under the current model.
+
+**fba-feature-engineer (22b2774)**: the pipeline path's 18-features-NaN train/serve skew closed —
+the signal producer moved to scout/signals/attach.py, shared by collect_hourly (unchanged
+behavior, same name kept) AND pipeline.run_once (attaches after enrich, best-effort); its shadow
+enqueues no longer write silver rows missing every signal field (the day_of_week per-path tier
+fingerprint, doctrine §4). Seam tests added. Trends data confirmed present (6,786 rows) for the
+features to draw on going forward.
+
+**Status words**: everything above implemented + tested (941/0 this session); the backlog-drain,
+capacity params, and pipeline-path attach are NOT yet observed in a live cloud run (next hourly
+cycles will show pending_drained/sampling_skipped in the collector summary and the new params in
+the trainer's next artifact meta). Next safe step: read the next 2-3 hourly run summaries for
+pending_drained > 0 and steady rows_written; watch the gate streak rebuild; the two brain
+proposals remain pending Mehmet's approval.
+
+
 ### 2026-07-09/10 — Claude Code Session 59: the full ML audit — 12 specialist lenses, 72 findings, every confirmed one fixed (incl. a reopened dead-artifact BLOCKER), skills reconciled, fba-ml-ops added
 
 #### Request and constraints

@@ -24,9 +24,14 @@ real current design before changing it.
 
 ## Design principles
 
-- **`LGBMRanker` (lambdarank, NDCG@k), grouped** — groups are the query cohorts you'd actually rank together
-  (e.g. per `simulation_date`). The label is the tiered `would_have_profited`; weight by label tier
-  (gold > bronze > silver > backtest).
+- **Current (as-coded — mirror of doctrine §5, reconciled 2026-07-09):** `lgb.LGBMClassifier`
+  (class-balanced + per-tier sample weights) ranking by P(would-profit), evaluated by AUC on the
+  group-by-ASIN split PLUS a time-held-out confirmation and a paired-bootstrap CI on the AUC gap;
+  promotion gate = margin win + CI clears zero + 3 consecutive distinct-dataset wins + human flip
+  of `scoring.rankingChampion`. `train_ranker.py` is the truth.
+- **Target (NOT current — revisit at ~5k rows with >=50 mixed-label sim-date groups of >=10 rows):**
+  `LGBMRanker` (lambdarank, NDCG@k), grouped by simulation_date cohorts, introduced as a SECOND
+  challenger reported on identical splits — never an in-place swap that resets the evidence chain.
 - **Champion/challenger, human-gated.** The deterministic triage formula is the champion. A learned model is a
   **challenger** and is promoted ONLY by a human flipping `scoring.rankingChampion`, only after it beats the
   champion on a **time-held-out** set (hand the proof to fba-ml-evaluator). Never auto-promote.

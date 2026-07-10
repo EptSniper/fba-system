@@ -72,10 +72,17 @@ class SampleAsinsExploreTest(unittest.TestCase):
             calls.append(brand_seeds)
             return []
 
+        bt.sample_asins_explore(object(), budget_tokens=20,
+                                categories=["toys", "kitchen", "pet", "beauty"], find_fn=fake_find)
+        # ML audit fix (2026-07-09): each term costs a flat ~10 tokens and the loop now
+        # PRE-checks affordability (spent + 10 must FIT the budget) — budget=20 affords exactly
+        # 2 terms. The old assertion (budget=15 -> 2 calls, i.e. 20 spent against 15) was the
+        # documented overspend bug itself; see SamplerBudgetPreCheckTest in test_backtest.py.
+        self.assertEqual(len(calls), 2)
+        calls.clear()
         bt.sample_asins_explore(object(), budget_tokens=15,
                                 categories=["toys", "kitchen", "pet", "beauty"], find_fn=fake_find)
-        # each call is charged the flat 10-token fallback (unreadable counters) -> budget=15 stops after 2
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(calls), 1)  # 15 affords ONE 10-token term, never one-and-a-half
 
 
 class SampleAsinsStratifiedTest(unittest.TestCase):

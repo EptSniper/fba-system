@@ -12,7 +12,7 @@ For every session:
 
 ## Skills — check the team before you act (applies to every AI: Cowork, the scheduled task, Claude Code)
 
-This repo ships a 34-skill expert plugin in `amazon-fba-oa/` (`fba-*`). **Standing rule:** before any
+This repo ships a 35-skill expert plugin in `amazon-fba-oa/` (`fba-*`). **Standing rule:** before any
 non-trivial task, confirm the action matches the goal, then scan the skills index — if the task matches or is
 even related to a skill, **use it** (open `amazon-fba-oa/skills/<name>/SKILL.md` and follow it). Chain skills
 when several apply; only improvise when nothing fits. The skills encode the rules the code must obey and several

@@ -66,7 +66,7 @@ add or update the matching `fba-ml-*` skill for it too. This doctrine is permane
 
 ## 1. The hard rule: use the skills, don't wing it
 
-There is a plugin in this repo, **`amazon-fba-oa/`**, containing 34 expert skills (`fba-*`) — including the ML
+There is a plugin in this repo, **`amazon-fba-oa/`**, containing 35 expert skills (`fba-*`) — including the ML
 crew above. Each is a `SKILL.md` instruction file under `amazon-fba-oa/skills/<name>/`. They share one rulebook in
 `amazon-fba-oa/references/` (`oa-criteria.md`, `guardrails.md`, `stack-map.md`, `sourcing-methods.md`, `ml-doctrine.md`).
 
@@ -183,8 +183,8 @@ Either way, the skills' shared rulebook is `amazon-fba-oa/references/`.
 
 ## 6. What already exists (so you don't redo it)
 
-- **`amazon-fba-oa/`** — the 24-skill plugin (sourcing/analysis, project rituals, engineering crew),
-  built and validated; 5 skills (`fba-deal-analyst`, `fba-compliance-checker`, `fba-keepa-analyst`,
+- **`amazon-fba-oa/`** — the 35-skill plugin (sourcing/analysis, project rituals, engineering crew,
+  and the 11-skill ML crew), built and validated; 5 skills (`fba-deal-analyst`, `fba-compliance-checker`, `fba-keepa-analyst`,
   `fba-selleramp-analyst`, `fba-sourcing-scout`) are eval-hardened. Installable package +
   test artifacts are in **`fba-skill-evals/`**.
 - **`scout/`** — Python OA discovery + scoring/gates (loads `ai-brain.json`); 382 tests pass

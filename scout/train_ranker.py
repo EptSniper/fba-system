@@ -88,7 +88,14 @@ def build_dataset() -> Dict[str, Any]:
     return assembled
 
 
-FINGERPRINT_SAMPLE_SIZE = 500  # bounded row-content sample — see training_set_fingerprint()
+# ML audit fix (2026-07-09): below this corpus size EVERY row's content is hashed — 1455 short
+# strings is trivially cheap, and the old always-500 sample left ~2/3 of rows content-blind: an
+# in-place backfill (trends_backfill.py rewrites features_snapshot on identical natural keys —
+# the exact scenario the content hash was built for) confined to unsampled rows was persistently
+# invisible to the skip guard. The 500-row sample only kicks in past the full-coverage bound,
+# sized for the ~50k-row target corpus.
+FINGERPRINT_FULL_COVERAGE_MAX_ROWS = 10000
+FINGERPRINT_SAMPLE_SIZE = 500  # bounded row-content sample ABOVE the full-coverage bound
 
 
 def _fingerprint_row_identity(r: Dict[str, Any]) -> str:
@@ -130,8 +137,8 @@ def training_set_fingerprint(assembled: Dict[str, Any]) -> Dict[str, Any]:
 
     sorted_rows = sorted(rows, key=lambda r: _fingerprint_row_identity(r))
     n = len(sorted_rows)
-    if n <= FINGERPRINT_SAMPLE_SIZE:
-        sample_rows = sorted_rows
+    if n <= FINGERPRINT_FULL_COVERAGE_MAX_ROWS:
+        sample_rows = sorted_rows  # full content coverage — an in-place patch ALWAYS busts the hash
     else:
         step = n / FINGERPRINT_SAMPLE_SIZE
         sample_rows = [sorted_rows[int(i * step)] for i in range(FINGERPRINT_SAMPLE_SIZE)]

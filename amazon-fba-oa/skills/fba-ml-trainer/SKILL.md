@@ -24,7 +24,7 @@ cadence, fingerprint, minimum thresholds, and where artifacts land — Supabase 
 
 ## What you get right
 
-- **Refuse, don't fake.** Below the minimum (~50 groups / ~800 rows — confirm in code) the trainer must print
+- **Refuse, don't fake.** Below the minimum — ai-brain.json `learning.minLabeledRows` (a flat row count, currently 30, both classes required; there is no 'groups' concept in the code) — the trainer must print
   "not enough data" and exit cleanly, never train on noise.
 - **Fingerprint on CONTENT, not identity.** The "skip if unchanged" guard must hash schema version + a sample of
   feature *values*, so a Trends backfill that rewrites features in place, or a 10→25 feature expansion, actually
@@ -38,7 +38,7 @@ cadence, fingerprint, minimum thresholds, and where artifacts land — Supabase 
 ## Output
 
 ```
-TRAINING RUN — [dataset __ rows/__ groups]
+TRAINING RUN — [dataset __ rows / content_hash __]
 Gate: [trained / refused: below minimum / skipped: fingerprint unchanged (content-hashed)]
 Artifact: [version, dataset+code+brain hashes, feature list] → registry
 Report: [metric vs champion, importances, dead features] → fba-ml-evaluator

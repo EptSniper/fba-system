@@ -932,7 +932,7 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
                 # Upsert failed (e.g. migration 010/011 not applied / network): do NOT mark these
                 # ASINs processed — resume would then skip them forever with ZERO rows stored,
                 # a silent training-data hole (Review 2026-07-05). Their raw histories are in
-                # the lake, so the retry next run costs dedupe-cheap tokens only.
+                # the lake, so the retry re-spends HISTORY_TOKENS_PER_ASIN per ASIN (the lake dedupe saves STORAGE, not tokens) — acceptable because a silent training-data hole is worse than the token cost.
                 batch_asins = []
             else:
                 for r in rows:

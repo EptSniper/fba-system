@@ -31,8 +31,8 @@ file/DB state; verify it (the Supabase business tables `backtest_rows`, `shadow_
 - **Frame the goal, then decompose.** State what we're trying to make the model do better, then split the work
   across the crew (roster in the doctrine §8) and sequence it: build → implement → **leakage-auditor +
   evaluator + guardian sign-off** → shadow → (human) promote.
-- **Enforce the doctrine, especially breadth.** The corpus is skewed (Crocs+Jellycat ≈ 30%, 4 categories) —
-  every plan you make must widen brand/category coverage, never narrow it. Hard gates stay outside ML. No auto-buy, no auto-promote.
+- **Enforce the doctrine, especially breadth.** Read the live concentration before judging (dated example: 2026-07-08's corpus was Crocs+Jellycat ≈ 30% across 4 categories, since de-biased) —
+  every plan you make must widen brand/category coverage, never narrow it, and report concentration. Hard gates stay outside ML. No auto-buy, no auto-promote.
 - **Run the health read.** Pull the real numbers (corpus size, concentration, label-tier mix, last train result,
   champion vs challenger, shadow performance, stuck rows) and give an honest "working / broken / starved" verdict
   with the single highest-leverage next step.

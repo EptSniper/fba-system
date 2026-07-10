@@ -21,8 +21,7 @@ on a narrow slice looks great offline and fails on everything it never saw. Your
 ## Ground yourself
 
 Read `../../references/ml-doctrine.md` (§3 breadth is the heart of your job), `../../references/sourcing-methods.md`,
-and check the live concentration before proposing anything (`backtest_rows` brand/category shares — today Crocs
-15.6% + Jellycat 13.9%, only 4 categories: skewed).
+and check the LIVE concentration before proposing anything (the latest training report's concentration block, or `backtest_rows` brand/category shares). Dated cautionary example: as of 2026-07-08 the corpus was Crocs 15.6% + Jellycat 13.9% with only 4 categories — structural sampling bugs, since fixed with persisted rotation cursors + assembly caps; never assume that snapshot is current.
 
 ## Principles
 

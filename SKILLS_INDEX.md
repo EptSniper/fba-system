@@ -23,7 +23,7 @@ They share one rulebook: `amazon-fba-oa/references/` (`oa-criteria.md`, `guardra
 
 ---
 
-## The 34 skills — use when…
+## The 35 skills — use when…
 
 ### Sourcing & product analysis (the business logic)
 
@@ -78,6 +78,7 @@ They share one rulebook: `amazon-fba-oa/references/` (`oa-criteria.md`, `guardra
 | `fba-ml-evaluator` | "is the model actually accurate", metrics, calibration, offline-vs-online, bias slices, promotion evidence |
 | `fba-ml-guardian` | ML safety/guardrails, shadow-vs-live, no-auto-promote/buy, rollback/kill-switch — **final safety gate** |
 | `fba-ml-debugger` | ML pipeline broken/stuck/"too good"/silent bug (corpus not growing, trainer skips, model unused, telemetry off) |
+| `fba-ml-ops` | the unattended automation layer — GitHub Actions schedules/dispatch/concurrency, cross-run Supabase Storage state (cursors/fingerprints/artifacts), token-budget partitioning, CI dependency pins, "the cron didn't fire" |
 
 ---
 

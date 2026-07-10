@@ -1113,44 +1113,73 @@ def trends_series_bulk(terms: List[str], limit_per_term: int = 400) -> Dict[str,
         return {t: [] for t in terms if t}
 
 
+# Columns that only exist once migrations 014/015 are applied — record_ranker_run strips these
+# and retries when PostgREST rejects the insert, so a pre-migration database loses only these
+# keys, never the whole run row (the same NOT-APPLIED-tolerant pattern upsert_backtest_rows
+# uses for migration 011's columns).
+RANKER_RUNS_MIGRATION_ONLY_FIELDS = {
+    "concentration",                                            # 014
+    "content_hash", "time_split_champion_auc",                  # 015
+    "time_split_challenger_auc", "time_split_val_rows", "promotion_gate",
+}
+
+
 def record_ranker_run(**fields: Any) -> bool:
-    """One row per scout/train_ranker.py training run (migration 013) — the durable, queryable
-    record that ranker-report.md and the Discord post never were. train_ranker.py calls this
-    every time it actually trains (never on a skip-if-unchanged tick); the control-center's
-    training-history chart reads it back. Never raises; returns False on any failure/disabled,
-    same degrade-gracefully convention as every other write in this module."""
+    """One row per non-skipped scout/train_ranker.py run — trained AND refused (refused rows are
+    deliberately recorded: promotion_gate's consecutive-wins streak treats them as
+    streak-breaking evidence via _run_won); only skip-if-unchanged ticks write nothing
+    (migrations 013/014/015). The durable, queryable record that ranker-report.md and the
+    Discord post never were; the control-center's training-history chart reads it back. Never
+    raises; returns False on any failure/disabled, same degrade-gracefully convention as every
+    other write in this module."""
     if not enabled():
         return False
-    try:
-        r = requests.post(
-            f"{SUPA}/rest/v1/ranker_runs",
-            headers=_headers({"Prefer": "return=minimal"}),
-            json=fields, timeout=15,
-        )
-        r.raise_for_status()
-        return True
-    except Exception as e:
-        print(f"[db] record_ranker_run failed (non-fatal, ranker-report.md/Discord still get "
-             f"this run's result): {e}")
-        return False
+    for attempt_fields in (fields,
+                          {k: v for k, v in fields.items()
+                           if k not in RANKER_RUNS_MIGRATION_ONLY_FIELDS}):
+        try:
+            r = requests.post(
+                f"{SUPA}/rest/v1/ranker_runs",
+                headers=_headers({"Prefer": "return=minimal"}),
+                json=attempt_fields, timeout=15,
+            )
+            r.raise_for_status()
+            return True
+        except Exception as e:
+            if attempt_fields is not fields:
+                print(f"[db] record_ranker_run failed (non-fatal, ranker-report.md/Discord "
+                     f"still get this run's result): {e}")
+                return False
+            print(f"[db] record_ranker_run: full insert failed ({e}); retrying without "
+                 f"migration-014/015 columns (run scout/db/migrations/014+015 to enable them)")
+    return False
 
 
 def recent_ranker_runs(limit: int = 5) -> List[Dict[str, Any]]:
     """Last N ranker_runs rows, newest first — the promotion-consistency check (ML de-bias audit,
     2026-07-09): a single run's challenger win can be small-sample noise (e.g. run 4 flipped from
     losing to winning on only ~186 val rows as the corpus de-biased), so train_ranker.py checks
-    whether the challenger has ALSO won recently, not just this run. [] if unavailable/disabled —
-    never raises, same degrade-gracefully convention as every other read in this module."""
+    whether the challenger has ALSO won recently, not just this run. Selects the migration-015
+    gate-evidence columns (content_hash for the streak-padding dedup, time-split AUCs for the
+    both-axes win check) and falls back to the pre-015 column list on a 400 so a pre-migration
+    database still gets the basic streak read. [] if unavailable/disabled — never raises, same
+    degrade-gracefully convention as every other read in this module."""
     if not enabled():
         return []
-    try:
-        r = requests.get(
-            f"{SUPA}/rest/v1/ranker_runs?select=trained_at,refused,champion_auc,challenger_auc,verdict"
-            f"&order=trained_at.desc&limit={limit}",
-            headers=_headers(), timeout=15,
-        )
-        r.raise_for_status()
-        return r.json() or []
-    except Exception as e:
-        print(f"[db] recent_ranker_runs failed (non-fatal): {e}")
-        return []
+    selects = (
+        "trained_at,refused,champion_auc,challenger_auc,verdict,content_hash,"
+        "time_split_champion_auc,time_split_challenger_auc",
+        "trained_at,refused,champion_auc,challenger_auc,verdict",  # pre-015 fallback
+    )
+    for i, select in enumerate(selects):
+        try:
+            r = requests.get(
+                f"{SUPA}/rest/v1/ranker_runs?select={select}&order=trained_at.desc&limit={limit}",
+                headers=_headers(), timeout=15,
+            )
+            r.raise_for_status()
+            return r.json() or []
+        except Exception as e:
+            if i == len(selects) - 1:
+                print(f"[db] recent_ranker_runs failed (non-fatal): {e}")
+    return []

@@ -67,8 +67,20 @@ def _gate_time_split(champ_auc=0.60, chall_auc=0.70, val_rows=200):
     return {"champion_auc": champ_auc, "challenger_auc": chall_auc, "val_rows": val_rows}
 
 
-def _gate_prior_run(champ_auc=0.60, chall_auc=0.70, refused=False):
-    return {"champion_auc": champ_auc, "challenger_auc": chall_auc, "refused": refused}
+_HASH_COUNTER = [0]
+
+
+def _gate_prior_run(champ_auc=0.60, chall_auc=0.70, refused=False, ts_champ=0.60, ts_chall=0.70,
+                    content_hash=None):
+    """A ranker_runs row as db.recent_ranker_runs() returns it post-migration-015: the streak
+    now requires BOTH axes recorded (primary + time-split AUCs) and a DISTINCT content_hash per
+    counted win — each helper call defaults to a fresh unique hash so tests opt IN to collisions."""
+    if content_hash is None:
+        _HASH_COUNTER[0] += 1
+        content_hash = f"hash{_HASH_COUNTER[0]}"
+    return {"champion_auc": champ_auc, "challenger_auc": chall_auc, "refused": refused,
+            "time_split_champion_auc": ts_champ, "time_split_challenger_auc": ts_chall,
+            "content_hash": content_hash}
 
 
 class PromotionGateTest(unittest.TestCase):
@@ -119,10 +131,48 @@ class PromotionGateTest(unittest.TestCase):
         self.assertFalse(gate["ready"])
 
     def test_missing_auc_in_prior_run_also_breaks_the_streak(self):
-        recent = [{"champion_auc": None, "challenger_auc": None, "refused": False},
+        recent = [{"champion_auc": None, "challenger_auc": None, "refused": False,
+                  "content_hash": "hX"},
                  _gate_prior_run(), _gate_prior_run()]
         gate = tr.promotion_gate(_gate_result(time_split=_gate_time_split()), recent)
         self.assertEqual(gate["consecutive_wins"], 1)
+
+    def test_prior_run_without_time_split_evidence_breaks_the_streak(self):
+        """ML audit fix (2026-07-09): a prior win recorded WITHOUT time-split AUCs (pre-015
+        rows) is inconclusive — the streak must not credit wins the gate can no longer verify
+        on both axes."""
+        recent = [_gate_prior_run(ts_champ=None, ts_chall=None), _gate_prior_run()]
+        gate = tr.promotion_gate(_gate_result(time_split=_gate_time_split()), recent)
+        self.assertEqual(gate["consecutive_wins"], 1)
+        self.assertFalse(gate["ready"])
+
+    def test_prior_run_losing_the_time_split_breaks_the_streak(self):
+        recent = [_gate_prior_run(ts_champ=0.70, ts_chall=0.60), _gate_prior_run()]
+        gate = tr.promotion_gate(_gate_result(time_split=_gate_time_split()), recent)
+        self.assertEqual(gate["consecutive_wins"], 1)
+
+    def test_duplicate_dataset_wins_collapse_not_pad_the_streak(self):
+        """ML audit fix (2026-07-09, streak-padding guard): training is deterministic, so a
+        re-run on an identical dataset reproduces the identical win — duplicate content_hash
+        rows must collapse to ONE piece of evidence, including against THIS run's own hash."""
+        recent = [
+            _gate_prior_run(content_hash="same"),   # duplicate of this run's dataset
+            _gate_prior_run(content_hash="same"),   # and of each other
+            _gate_prior_run(content_hash="other"),
+        ]
+        gate = tr.promotion_gate(_gate_result(time_split=_gate_time_split()), recent,
+                                content_hash="same")
+        # this run (1) + "other" (1) = 2; both "same" rows collapsed away
+        self.assertEqual(gate["consecutive_wins"], 2)
+        self.assertFalse(gate["ready"])
+
+    def test_distinct_dataset_wins_do_extend_the_streak(self):
+        recent = [_gate_prior_run(content_hash="h1"), _gate_prior_run(content_hash="h2")]
+        gate = tr.promotion_gate(
+            _gate_result(val_rows=300, time_split=_gate_time_split(val_rows=300)), recent,
+            content_hash="h0")
+        self.assertEqual(gate["consecutive_wins"], 3)
+        self.assertTrue(gate["ready"])
 
     def test_small_sample_caution_appears_even_when_ready(self):
         recent = [_gate_prior_run(), _gate_prior_run()]

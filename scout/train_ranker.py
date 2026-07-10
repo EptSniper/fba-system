@@ -271,16 +271,29 @@ def verdict_line(champ: Dict[str, Any], chall: Dict[str, Any], margin: float = P
 
 def _run_won(run: Dict[str, Any]) -> Optional[bool]:
     """None (inconclusive) breaks a consecutive-wins streak the same as a loss — a refused or
-    single-class run doesn't confirm the streak continued."""
+    single-class run doesn't confirm the streak continued.
+
+    ML audit fix (2026-07-09): a prior run now counts as a WIN only if its recorded
+    time-held-out split ALSO confirmed (migration 015 persists it) — the streak exists to prove
+    consistency on the same evidence the gate demands of THIS run, so a prior win with no
+    recorded forward-generalization evidence (pre-015 rows: NULL) is inconclusive, not a win.
+    That means the streak honestly restarts from the first post-015 run rather than crediting
+    historical wins the gate can no longer verify on both axes."""
     if run.get("refused"):
         return None
     ca, xa = run.get("champion_auc"), run.get("challenger_auc")
     if ca is None or xa is None:
         return None
-    return xa > ca + PROMOTION_AUC_MARGIN
+    if not (xa > ca + PROMOTION_AUC_MARGIN):
+        return False
+    tsc, tsx = run.get("time_split_champion_auc"), run.get("time_split_challenger_auc")
+    if tsc is None or tsx is None:
+        return None  # no recorded time-split evidence — can't confirm the streak on both axes
+    return tsx > tsc + PROMOTION_AUC_MARGIN
 
 
-def promotion_gate(result: Dict[str, Any], recent_runs: List[Dict[str, Any]]) -> Dict[str, Any]:
+def promotion_gate(result: Dict[str, Any], recent_runs: List[Dict[str, Any]],
+                   content_hash: Optional[str] = None) -> Dict[str, Any]:
     """Whether this run's challenger win is ACTUALLY promotion-ready (ML de-bias audit,
     2026-07-09; design reviewed with fba-ranker-architect) — a single run's win is not enough:
     run 4 flipped from losing to winning (~0.73 vs ~0.69 AUC) on only ~186 val rows the SAME run
@@ -302,13 +315,29 @@ def promotion_gate(result: Dict[str, Any], recent_runs: List[Dict[str, Any]]) ->
 
     This function only shapes the REPORT/Discord recommendation text. scoring.rankingChampion is
     never written here or anywhere in this file — a human always makes the actual promotion call
-    via fba-brain-updater."""
+    via fba-brain-updater.
+
+    ML audit fix (2026-07-09): `content_hash` (this run's training-set fingerprint hash) guards
+    against STREAK PADDING — training is fully deterministic (random_state=42, hash/sort-based
+    splits), so a re-run on an identical dataset reproduces the identical win. Prior runs whose
+    recorded content_hash duplicates this run's (or an already-counted one) are collapsed before
+    the streak walk: a win only extends the streak when the training set actually changed."""
     champ, chall = result.get("champion") or {}, result.get("challenger") or {}
     ca, xa = champ.get("auc"), chall.get("auc")
     primary_win = ca is not None and xa is not None and xa > ca + PROMOTION_AUC_MARGIN
 
+    seen_hashes = {content_hash} if content_hash else set()
+    distinct_prior: List[Dict[str, Any]] = []
+    for r in recent_runs:
+        h = r.get("content_hash")
+        if h and h in seen_hashes:
+            continue  # duplicate dataset — the same deterministic result, not new evidence
+        if h:
+            seen_hashes.add(h)
+        distinct_prior.append(r)
+
     consecutive_wins = 0
-    for won in [primary_win] + [_run_won(r) for r in recent_runs]:
+    for won in [primary_win] + [_run_won(r) for r in distinct_prior]:
         if not won:
             break
         consecutive_wins += 1
@@ -971,6 +1000,22 @@ def post_summary(result: Dict[str, Any]) -> bool:
                 f"top-5 {b['top5_brand_share']*100:.0f}%, top-category {b['top_category_share']*100:.0f}%, "
                 f"{b['distinct_brands']} brands / {b['distinct_categories']} categories"
                 + (" — **collection still skewed, see ML_DEBIAS_PLAN.md**" if alarmed else ""))
+        # ML audit fix (2026-07-09): the gate + time-split used to be computed and then omitted
+        # from this embed — the human saw the inviting single-run "CHALLENGER WINS" verdict with
+        # none of the evidence the gate exists to demand. This is the PROPOSAL surface, so the
+        # gate verdict leads.
+        ts = result.get("time_split") or {}
+        ts_line = ""
+        if ts:
+            ts_line = (f"\n**Time-held-out (forward) split:** champion AUC "
+                      f"{ts['champion_auc'] if ts['champion_auc'] is not None else 'n/a'} vs challenger "
+                      f"{ts['challenger_auc'] if ts['challenger_auc'] is not None else 'n/a'} "
+                      f"({ts.get('val_rows')} val rows)")
+        gate = result.get("promotion_gate") or {}
+        gate_line = ""
+        if gate:
+            gate_status = "READY FOR HUMAN REVIEW" if gate.get("ready") else "NOT YET PROMOTION-READY"
+            gate_line = f"\n**Promotion gate: {gate_status}** — {gate.get('reason')}"
         embed = {
             "title": "🤖 Ranker trained (shadow) — champion vs challenger",
             "color": 0xE24C4C if alarmed else 0x3987E5,
@@ -980,21 +1025,28 @@ def post_summary(result: Dict[str, Any]) -> bool:
                 f"{ch['winners_in_top']}/{ch['top_n']} winners in top\n"
                 f"**Challenger (model):** AUC {xl['auc'] if xl['auc'] is not None else 'n/a'}, "
                 f"{xl['winners_in_top']}/{xl['top_n']} winners in top\n\n{result['verdict']}"
-                f"{conc_line}\n\n"
+                f"{ts_line}{gate_line}{conc_line}\n\n"
                 "Promotion is human-only: brain key `scoring.rankingChampion` (fba-brain-updater)."),
         }
     return discord_router.send("brain_proposals", [embed], username="FBA Scout — Ranker")
 
 
 def _ranker_run_fields(result: Dict[str, Any], fp: Dict[str, Any]) -> Dict[str, Any]:
-    """Builds one migration-013 ranker_runs row from a train_and_evaluate() result + this
-    training set's fingerprint (row_count) — the durable, queryable record of champion/challenger
-    AUC over time that ranker-report.md (cloud runs never commit it back) and the Discord post
-    (human-readable, not queryable) never were."""
+    """Builds one migration-013/014/015 ranker_runs row from a train_and_evaluate() result +
+    this training set's fingerprint — the durable, queryable record of champion/challenger AUC
+    over time that ranker-report.md (cloud runs never commit it back) and the Discord post
+    (human-readable, not queryable) never were.
+
+    ML audit fix (2026-07-09): now also persists the gate's full evidence — content_hash
+    (streak-padding guard: which dataset produced this run), the time-held-out split AUCs
+    (forward generalization, gate part 3), the promotion_gate verdict itself, and the
+    before/after-cap concentration payload (migration 014's column, previously never sent —
+    it existed solely for this and stayed NULL on every row)."""
     fields: Dict[str, Any] = {
         "host": socket.gethostname(),
         "refused": bool(result.get("refused")),
         "row_count": fp.get("row_count"),
+        "content_hash": fp.get("content_hash"),
         "by_tier": result.get("by_tier") or {},
     }
     if result.get("refused"):
@@ -1014,6 +1066,20 @@ def _ranker_run_fields(result: Dict[str, Any], fp: Dict[str, Any]) -> Dict[str, 
         "verdict": result.get("verdict"),
         "by_source": result.get("by_source") or {},
     })
+    ts = result.get("time_split") or {}
+    if ts:
+        fields.update({
+            "time_split_champion_auc": ts.get("champion_auc"),
+            "time_split_challenger_auc": ts.get("challenger_auc"),
+            "time_split_val_rows": ts.get("val_rows"),
+        })
+    if result.get("promotion_gate"):
+        fields["promotion_gate"] = result["promotion_gate"]
+    conc = result.get("concentration")
+    if conc:
+        # The alarm bool rides inside the jsonb payload rather than a separate column — the
+        # dashboard reads the whole payload anyway.
+        fields["concentration"] = {**conc, "alarm": bool(result.get("concentration_alarm"))}
     return fields
 
 
@@ -1049,8 +1115,11 @@ def main(argv=None) -> int:
     # skipping it when "promotion_gate" isn't in result).
     if not result.get("refused") and not args.dry_run:
         import db
-        recent_runs = db.recent_ranker_runs(limit=PROMOTION_CONSECUTIVE_WINS_REQUIRED - 1)
-        result["promotion_gate"] = promotion_gate(result, recent_runs)
+        # Fetch more priors than strictly needed — promotion_gate collapses duplicate
+        # content_hash rows (streak-padding guard), so extra rows are the dedup headroom.
+        recent_runs = db.recent_ranker_runs(limit=(PROMOTION_CONSECUTIVE_WINS_REQUIRED - 1) + 5)
+        result["promotion_gate"] = promotion_gate(result, recent_runs,
+                                                  content_hash=fp.get("content_hash"))
     block = render_report(result)
     append_report(block)
     print(block.encode("ascii", "replace").decode())

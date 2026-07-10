@@ -112,3 +112,13 @@ no ledger entry exists).
 **1 proposal(s) pending human review.** ai-brain.json was NOT changed.
 
 ---
+
+## 2026-07-10 07:50 UTC — decisions applied
+
+Both pending ML proposals **APPROVED by Mehmet** ("i also approved everything in brain proposal") and
+**APPLIED** to ai-brain.json via fba-brain-updater: the [ml-debias] learning.sampling caps/alarms block
+(2026-07-09) and the [ml-breadth] category expansion to 18 entries (2026-07-10). JSON validated;
+scout/config.py, train_ranker.sampling_caps_config(), and backtest.sampling_config() all load cleanly.
+Decision records in brain-proposal-decisions.jsonl.
+
+---

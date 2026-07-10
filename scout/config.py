@@ -371,7 +371,14 @@ def active_criteria() -> dict:
 # ----------------------------------------------------------------------------
 # Weight given to the ML model probability vs the transparent rule score when a
 # trained model exists. 0.0 = ignore model, 1.0 = trust only the model.
-MODEL_BLEND_WEIGHT: float = _f("MODEL_BLEND_WEIGHT", 0.5)
+# ML audit fix (2026-07-09): default 0.0, opt-in via env. At the old 0.5 default, the
+# LEGACY sklearn model (scout_model.joblib, a separate artifact from the ranker) would
+# have blended into blended_score at 50% weight the moment any such artifact appeared on
+# disk — and blended_score gates threshold MEMBERSHIP (which candidates get posted), not
+# just order, live-by-default with no shadow phase and no champion/challenger gate. The
+# ranker path (scoring.rankingChampion) is the governed way to let a model influence
+# anything; this stays 0 unless a human explicitly sets MODEL_BLEND_WEIGHT.
+MODEL_BLEND_WEIGHT: float = _f("MODEL_BLEND_WEIGHT", 0.0)
 MIN_LABELS_TO_TRAIN: int = _i("MIN_LABELS_TO_TRAIN", 20)  # need real data first
 
 # DISABLED BY DEFAULT (Code Review 2026-07-02, Finding B4): this legacy SQLite-based retrain

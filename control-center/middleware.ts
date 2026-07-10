@@ -30,11 +30,20 @@ export function middleware(req: NextRequest) {
 
   if (!authConfigured) {
     const deployed = Boolean(process.env.VERCEL);
-    const supabaseConfigured = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
-    if (deployed && supabaseConfigured) {
+    // ML audit fix (2026-07-09): the failsafe used to key ONLY on Supabase credentials — but
+    // /api/ops/dispatch needs only GITHUB_PAT to trigger REAL workflow_dispatch runs (an
+    // unauthenticated caller could hammer keepa-collect and drain the 60-token Keepa bank on
+    // demand), and other server credentials are just as privileged. A deployed instance with
+    // ANY privileged credential and no operator auth is a misconfiguration, not a mode.
+    const privileged = Boolean(
+      (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) ||
+        process.env.GITHUB_PAT ||
+        process.env.ANTHROPIC_API_KEY,
+    );
+    if (deployed && privileged) {
       return new NextResponse(
-        "This deployment has live Supabase credentials but no operator auth. " +
-          "Set BASIC_AUTH_USER and BASIC_AUTH_PASS in the deployment env to enable access.",
+        "This deployment has privileged server credentials (Supabase/GitHub/Anthropic) but no " +
+          "operator auth. Set BASIC_AUTH_USER and BASIC_AUTH_PASS in the deployment env to enable access.",
         { status: 503 },
       );
     }

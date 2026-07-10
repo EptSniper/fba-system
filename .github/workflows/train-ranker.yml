@@ -90,6 +90,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           DISCORD_WEBHOOK_BRAIN_PROPOSALS: ${{ secrets.DISCORD_WEBHOOK_BRAIN_PROPOSALS }}
+          # ML audit fix (2026-07-09): the training step itself needs the system-health stream
+          # too — an undelivered concentration ALARM retries there (train_ranker.py main());
+          # before this, only the job-failure step had it, so a rotting brain-proposals webhook
+          # silenced the safety alarm with zero signal anywhere.
+          DISCORD_WEBHOOK_SYSTEM_HEALTH: ${{ secrets.DISCORD_WEBHOOK_SYSTEM_HEALTH }}
           RANKER_OUT_DIR: ${{ github.workspace }}/ranker-out
         run: python3 train_ranker.py
 

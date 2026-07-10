@@ -1,12 +1,21 @@
 # Minimal deps for the cloud ranker-training job (.github/workflows/train-ranker.yml).
 # Deliberately NOT scout/requirements.txt: training needs no keepa/anthropic/pyarrow — smaller
 # install = faster + cheaper Actions minutes (same reasoning as requirements-dealwatch.txt).
-requests>=2.31
-python-dotenv>=1.0
-numpy>=1.24
-scikit-learn>=1.3
-joblib>=1.3
+#
+# PINNED EXACTLY (ML audit fix, 2026-07-09): these used to be '>=' lower bounds resolved fresh
+# from PyPI every hourly run (the workflow deliberately has no cross-run pip cache) — the exact
+# "unpinned drift" failure the fba-ml-trainer skill forbids: a new lightgbm/sklearn release
+# landing mid-week silently changes the model that trains, contaminating the promotion gate's
+# consecutive-wins evidence chain with a library change the AUC comparison can't distinguish
+# from a data change. Versions below are the ones live CI runs actually installed 2026-07-09
+# (recorded in each artifact's meta.lib_versions); bump DELIBERATELY, one at a time, with a
+# training run's before/after AUC checked.
+requests==2.31.0
+python-dotenv==1.2.2
+numpy==2.5.1
+scikit-learn==1.9.0
+joblib==1.5.3
 # The challenger classifier itself (Session 55 review fix — replaces LogisticRegression so
 # vectorize_one's None->NaN missing-value imputation is actually usable; LightGBM handles NaN
 # natively, scikit-learn's linear models reject it outright).
-lightgbm>=4.0
+lightgbm==4.6.0

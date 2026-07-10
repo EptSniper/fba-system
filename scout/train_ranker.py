@@ -997,16 +997,43 @@ def append_report(block: str) -> None:
 
 
 # --- artifacts + Supabase storage ----------------------------------------------
-def save_artifacts(result: Dict[str, Any], out_dir: str) -> List[str]:
-    """Persist model.joblib + metrics.json into out_dir. Returns the file paths."""
+def save_artifacts(result: Dict[str, Any], out_dir: str,
+                   fp: Optional[Dict[str, Any]] = None) -> List[str]:
+    """Persist model.joblib + metrics.json into out_dir. Returns the file paths.
+
+    ML audit fix (2026-07-09, traceability): meta now stamps everything needed to tie the
+    artifact back to exactly what produced it — the dataset fingerprint (content_hash +
+    schema_version), the code commit (GITHUB_SHA, free in Actions), a hash of ai-brain.json
+    (the gates/config in force), and the installed ML library versions (the trainer skill's
+    'unpinned drift has bitten this project' rule — an artifact must say what built it)."""
     import joblib
     os.makedirs(out_dir, exist_ok=True)
     paths = []
     meta = {k: result[k] for k in ("train_rows", "val_rows", "train_asins", "val_asins",
                                    "by_tier", "champion", "challenger", "verdict", "features",
                                    "by_source", "bronze_agreement", "new_signal_importance")}
+    for extra in ("time_split", "promotion_gate", "auc_delta_ci", "tier_weights", "concentration"):
+        if result.get(extra) is not None:
+            meta[extra] = result[extra]
     meta["trained_at"] = _dt.datetime.now(_dt.timezone.utc).isoformat()
     meta["model_kind"] = "LightGBM (class-balanced, small-data-adaptive hyperparameters; NaN-native missing-value handling — Session 55 review fix)"
+    if fp:
+        meta["dataset_content_hash"] = fp.get("content_hash")
+        meta["dataset_schema_version"] = fp.get("schema_version")
+        meta["dataset_row_count"] = fp.get("row_count")
+    meta["code_commit"] = os.getenv("GITHUB_SHA")
+    try:
+        import hashlib
+        with open(BRAIN_PATH, "rb") as bf:
+            meta["brain_sha256"] = hashlib.sha256(bf.read()).hexdigest()[:16]
+    except Exception:
+        meta["brain_sha256"] = None
+    try:
+        import lightgbm, sklearn, numpy
+        meta["lib_versions"] = {"lightgbm": lightgbm.__version__,
+                               "scikit-learn": sklearn.__version__, "numpy": numpy.__version__}
+    except Exception:
+        meta["lib_versions"] = None
     mpath = os.path.join(out_dir, "model.joblib")
     joblib.dump({"model": result["model"], "scaler": result["scaler"],
                  "features": result["features"], "meta": meta}, mpath)
@@ -1023,10 +1050,21 @@ def _storage_headers() -> Dict[str, str]:
     return {"apikey": key, "Authorization": f"Bearer {key}"}
 
 
-def upload_to_storage(paths: List[str], date_prefix: str) -> int:
-    """Upload artifacts to the private `models` bucket, twice each: versioned
-    ranker/<date>/... AND the stable ranker/current/... the local fetch reads. Creates the
-    bucket if missing. Returns files uploaded (0 on any hard failure — never raises)."""
+def upload_to_storage(paths: List[str], date_prefix: str, include_current: bool = True) -> int:
+    """Upload artifacts to the private `models` bucket: versioned ranker/<timestamp>/... always,
+    plus the stable ranker/current/... (what fetch_current_model/load_challenger serve) only
+    when include_current. Creates the bucket if missing. Returns files uploaded (0 on any hard
+    failure — never raises).
+
+    ML audit fix (2026-07-09): ranker/current used to be overwritten by EVERY trained run —
+    including one whose challenger just LOST to the champion — so the serving slot a human
+    promotion points at was a moving pipeline, not a reviewed model: the hour after a
+    promotion, a freshly-trained worse model could silently replace the one the human reviewed.
+    main() now passes include_current=False when this run's challenger did not win. Rollback
+    procedure: every run keeps its full-timestamp ranker/<ts>/ copy — copy a chosen version's
+    model.joblib + metrics.json over ranker/current/ (and delete current/fingerprint.json so
+    the next run re-fingerprints), or flip scoring.rankingChampion back to 'rule' for an
+    immediate kill-switch."""
     import requests
     supa = os.getenv("SUPABASE_URL", "").rstrip("/")
     if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
@@ -1041,9 +1079,10 @@ def upload_to_storage(paths: List[str], date_prefix: str) -> int:
         print(f"[train_ranker] bucket create failed (continuing): {type(e).__name__}")
     n = 0
     import mimetypes
+    prefixes = [f"ranker/{date_prefix}"] + (["ranker/current"] if include_current else [])
     for path in paths:
         name = os.path.basename(path)
-        for prefix in (f"ranker/{date_prefix}", "ranker/current"):
+        for prefix in prefixes:
             try:
                 with open(path, "rb") as f:
                     r = requests.post(
@@ -1348,8 +1387,17 @@ def main(argv=None) -> int:
 
     artifact_upload_ok = True  # nothing to upload when refused/dry-run — not a failure
     if not result.get("refused") and not args.dry_run:
-        paths = save_artifacts(result, args.out_dir)
-        uploaded = upload_to_storage(paths, _dt.date.today().isoformat())
+        paths = save_artifacts(result, args.out_dir, fp=fp)
+        # Full timestamp, not date-only (ML audit 2026-07-09): hourly runs used to overwrite
+        # the SAME ranker/<date>/ slot up to ~24x/day, so intra-day rollback was impossible.
+        ts_prefix = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H%MZ")
+        # A LOSING challenger never overwrites the serving slot (see upload_to_storage's
+        # docstring). margin_win: this run's challenger beat the champion on the primary split.
+        challenger_won = bool((result.get("promotion_gate") or {}).get("margin_win"))
+        uploaded = upload_to_storage(paths, ts_prefix, include_current=challenger_won)
+        if not challenger_won:
+            print("[train_ranker] challenger did not win this run — versioned artifact kept, "
+                 "ranker/current NOT overwritten (serving slot only ever advances on a win)")
         print(f"[train_ranker] artifacts: {len(paths)} saved, {uploaded} uploaded to storage")
         artifact_upload_ok = uploaded > 0
     if not args.dry_run:
@@ -1367,7 +1415,24 @@ def main(argv=None) -> int:
         else:
             print("[train_ranker] artifact upload failed — NOT storing the fingerprint, so the "
                  "next run retries training+upload instead of silently freezing a stale model")
-        post_summary(result)
+        posted = post_summary(result)
+        # ML audit fix (2026-07-09): the concentration alarm used to self-silence — a missing/
+        # rotated webhook returned False, main() discarded it, the job exited 0, and the safety
+        # channel could rot indefinitely. An undelivered ALARM now retries on the system-health
+        # stream and prints loudly either way (the workflow log is the last-resort surface).
+        if not posted and result.get("concentration_alarm"):
+            print("[train_ranker] ALARM UNDELIVERED: concentration alarm could not post to "
+                 "brain_proposals — retrying on system_health")
+            try:
+                import discord_router
+                discord_router.send("system_health", [{
+                    "title": "⚠ Ranker concentration ALARM undelivered",
+                    "description": "brain_proposals webhook missing/failing; collection is "
+                                   "still skewed (category >30% or 2+ brands >25%) — check "
+                                   "DISCORD_WEBHOOK_BRAIN_PROPOSALS.",
+                    "color": 0xE24C4C}], username="FBA Scout — Ranker")
+            except Exception as e:
+                print(f"[train_ranker] system_health fallback also failed: {type(e).__name__}")
     # A refusal is an HONEST outcome, not a failure — exit 0 so the scheduled job stays green
     # until data exists; real errors raise and exit non-zero via the traceback.
     return 0

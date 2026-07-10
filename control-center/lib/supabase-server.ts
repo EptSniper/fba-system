@@ -49,6 +49,42 @@ async function supaGet<T>(pathAndQuery: string): Promise<T[] | null> {
   }
 }
 
+// PostgREST silently caps every response at the server's max-rows setting (1000 on this
+// project — LIVE-CONFIRMED 2026-07-09: a limit=20000 request returned exactly 1000 rows) no
+// matter how large a `limit=` the query string asks for. scout/db.py already paginates for
+// exactly this reason; this is the same fix on the dashboard side. Review fix (2026-07-09,
+// live incident): the Scout Intelligence growth chart froze at 1000 rows — with
+// order=created_at.asc the cap keeps the OLDEST page, so every row past #1000 was silently
+// invisible and the chart stopped matching reality the moment the corpus outgrew one page.
+const SUPA_PAGE_SIZE = 1000;
+
+async function supaGetAll<T>(pathAndQuery: string, hardCap = 60000): Promise<T[] | null> {
+  if (!supabaseConfigured()) return null;
+  const sep = pathAndQuery.includes("?") ? "&" : "?";
+  const out: T[] = [];
+  try {
+    for (let offset = 0; offset < hardCap; offset += SUPA_PAGE_SIZE) {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/${pathAndQuery}${sep}limit=${SUPA_PAGE_SIZE}&offset=${offset}`,
+        { headers: headers(), cache: "no-store" },
+      );
+      if (!res.ok) {
+        console.error(`[supabase-server] GET(all) ${pathAndQuery} offset=${offset} -> HTTP ${res.status}`);
+        // A mid-pagination failure returns null rather than a silently-partial set — a
+        // truncated result masquerading as complete is exactly the bug this function fixes.
+        return null;
+      }
+      const page = (await res.json()) as T[];
+      out.push(...page);
+      if (page.length < SUPA_PAGE_SIZE) break;
+    }
+    return out;
+  } catch (err) {
+    console.error(`[supabase-server] GET(all) ${pathAndQuery} failed:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 async function supaWrite(
   method: "POST" | "PATCH",
   pathAndQuery: string,
@@ -153,9 +189,11 @@ export type SupabaseBacktestRowLite = {
   would_have_profited: boolean | null;
 };
 
-export function getBacktestRowsForChart(limit = 20000): Promise<SupabaseBacktestRowLite[] | null> {
-  return supaGet<SupabaseBacktestRowLite>(
-    `backtest_rows?select=created_at,sample_source,label_quality,would_have_profited&order=created_at.asc&limit=${limit}`,
+export function getBacktestRowsForChart(): Promise<SupabaseBacktestRowLite[] | null> {
+  // supaGetAll (not supaGet): the corpus outgrew PostgREST's 1000-row page cap on 2026-07-09 —
+  // a single-page read froze the growth chart at the oldest 1000 rows. Paginates to completion.
+  return supaGetAll<SupabaseBacktestRowLite>(
+    `backtest_rows?select=created_at,sample_source,label_quality,would_have_profited&order=created_at.asc`,
   );
 }
 

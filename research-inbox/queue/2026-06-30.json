@@ -40,7 +40,8 @@
       "topic": "fba_oa_mastery",
       "why": "Advanced Keepa Product Finder filtering tactics beyond the beginner tutorials already in the corpus.",
       "isLongCourse": false,
-      "status": "queued"
+      "status": "done",
+      "note": "Re-fetched 2026-07-07 with real captions; transcript distilled 2026-07-08 (daily run). Do not re-pull."
     }
   ]
 }

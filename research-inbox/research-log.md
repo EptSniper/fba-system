@@ -5,6 +5,75 @@ ingested, transcripts processed, and anything skipped (already known). No secret
 
 <!-- The scheduled task appends entries below this line, newest first. -->
 
+## 2026-07-09 (daily run)
+- **8 new items** (under cap; OA/bookkeeping search space saturated, so skewed to finance + system angles).
+  **2 text sources** fetched + distilled → `research-insights.md`, staged in `corpus-staging.jsonl`
+  (64 → 69 lines): Plugbooks **bookkeeping 2026** (settlement reconciliation, FIFO COGS, cash-vs-accrual;
+  + flagged UNVERIFIED search snippets DD+7 Mar-12-2026 & 1099-K $20k/200 TY2026) and ScoutClaw **OA guide
+  2026** (corroborates ai-brain gates — 30% ROI, BSR<100k, 3–5-unit start, returns buffer; no brain change).
+- **3 YouTube queued** → `queue/2026-07-09.json`: Tcd4jAkOi6Q (NEW sourcing method), FRK7JY7_EJY (reverse
+  sourcing FAST), ctwXY3Vwy8o (Keepa new-feature). **2 arXiv fetch-pending** (sandbox provenance block):
+  2604.14572 (Don't-Retrieve-Navigate / skills-as-knowledge), 2603.04549 (Adaptive Memory Admission).
+  **1 fetch-failed:** DanubeData pgvector guide (binary/garbage response) → for Claude Code re-fetch.
+- **Transcripts:** 0 unprocessed (only README in transcripts/). Manifest 79 → 87 items; digest written;
+  `CLAUDE_CODE_HANDOFF.md` refreshed. Pending now: **3 videos queued**, 0 unprocessed transcripts.
+
+## 2026-07-08 (daily run)
+- **5 new items** (under cap): **3 text sources** fetched + distilled to `research-insights.md`, staged in
+  `corpus-staging.jsonl` (60 → 64 lines) — Nova FBA **reimbursement** guide (new topic: Nov-2025 shift to
+  reimbursing at sourcing cost, not retail; enter per-SKU COGS + 60-day invoice docs), Logos **2026
+  FBA-changes** roundup (prep-services ended Jan 1 2026, ~6→5-mo storage, +$0.08/unit fees), and SellerAmp
+  **10 under-used features**. **2 arXiv fetch-pending** (SAGE 2605.12061, AtomMem 2606.19847 — sandbox
+  provenance-blocked, flagged for Claude Code). **No YouTube queued** (searches surfaced only dupes/a
+  re-upload).
+- **1 transcript ingested:** `TBFh9vFBq7k` (previously LOGIN_REQUIRED) re-fetched with real captions →
+  distilled (Keepa settings config + all-three-sub-graphs + Pro-tracking-as-sourcing-tool); status flipped
+  `fetch-failed → transcript-processed`, RAW moved to `processed/`, queue item → `done`. `9QGs4hfKrhY`
+  confirmed duplicate, RAW moved to `processed/`.
+- **Fully caught up:** 0 videos queued, 0 unprocessed transcripts. Manifest 74 → 79 items; digest written;
+  `CLAUDE_CODE_HANDOFF.md` refreshed.
+
+## 2026-07-07 (daily run)
+- **5 new items** (under cap; OA-guide/bookkeeping search space is saturated, so skewed to new angles):
+  **2 YouTube queued** to `queue/2026-07-07.json` (1kgp13McYLc OA sourcing masterclass [long course];
+  wwNw5vNAyeM Keepa **chart-reading** tutorial) + **2 text sources** saved to `text-sources/2026-07-07/`,
+  distilled into `research-insights.md`, staged in `corpus-staging.jsonl` (55 → 57 lines): BuildMVPFast
+  hybrid-search-RAG (vector+BM25+RRF+rerank, pgvector+pg_search — concrete knowledge-rag upgrade path) and
+  OA Challenge "5 Keepa Power Moves" (named KPF tactic taxonomy; procedures gated).
+- **1 fetch-failed** recorded: arXiv 2604.07595 ROZA Graphs (self-improving RAG) — provenance-blocked in
+  this sandbox, snippet only, flagged for Claude Code re-fetch.
+- No transcripts to ingest (only already-handled RAW.json remain). Queue housekeeping: 07-06 `9QGs4hfKrhY`
+  → done (confirmed duplicate). **3 videos now pending pull** (X6JjPUZd4xw no-caption re-check + today's 2).
+  Manifest 69 → 74 items; digest written; `CLAUDE_CODE_HANDOFF.md` refreshed.
+
+## 2026-07-06 (daily run)
+- **8 new items** (under cap, quality over quantity): **2 YouTube queued** to `queue/2026-07-06.json`
+  (X6JjPUZd4xw overlooked-listings KPF method; 9QGs4hfKrhY SAS profiles/settings/panels config) + **4 text
+  sources** saved to `text-sources/2026-07-06/`, distilled into `research-insights.md`, staged in
+  `corpus-staging.jsonl` (46 → 50 lines, JSON-validated): Snapl 2026 FBA prep requirements (prep now fully
+  seller-owned; unverified FNSKU-mandate claim flagged), QuickBooks 2026 seller tax (1099-K back to
+  $20k/200, nexus, resale certificates), SellerApp IP-complaint playbook, arXiv 2602.23716 ProductResearch
+  (Alibaba supervisor-verified e-commerce research agents).
+- **2 fetch-failed** recorded: Seller Central G200141500 (JS shell — third SC failure; it's the [policy]
+  doc behind the FNSKU claim) and arXiv 2602.05152 RAG-without-Forgetting (unreadable PDF) — both flagged
+  for re-fetch in Claude Code.
+- No transcripts to ingest (only the stuck TBFh9vFBq7k RAW). **7 videos now pending pull** (2 from 07-04,
+  3 from 07-05, 2 today). Manifest 61 → 69 items; digest written; `CLAUDE_CODE_HANDOFF.md` refreshed.
+
+
+## 2026-07-05 (daily run)
+- **10 new items** (at cap): **3 YouTube queued** to `queue/2026-07-05.json` (hxk1JS4EsU4 free full OA
+  course Dec-2025; D3FhvdMVLl8 anti-storefront-stalking counterweight; ljlERpMrcBk live stalking session)
+  + **5 text sources** saved to `text-sources/2026-07-05/`, distilled into `research-insights.md`, staged
+  in `corpus-staging.jsonl` (41 → 46 lines, JSON-validated): SellerAmp Charts-panel official doc,
+  EntreResource 2026 playbook (quantity-last buy order, return allowance), Aura 2026 OA guide
+  (inventory-turn rules, margin stacking), arXiv 2502.14930 RAGVA (8 production-RAG challenges),
+  arXiv 2508.13390 FLAIR (deployed feedback-learning retrieval — self-learning-RAG recipe).
+- **2 fetch-failed** recorded: Seller Central G201100890 (JS shell, same as G200140860) and n8nlab.io
+  n8n product-research guide (empty body) — both flagged for browser re-fetch in Claude Code.
+- No transcripts to ingest (only the stuck TBFh9vFBq7k RAW). **5 videos now pending pull** (2 from 07-04
+  + 3 today). Manifest 51 → 61 items; digest written; `CLAUDE_CODE_HANDOFF.md` refreshed.
+
 ## 2026-07-04 (daily run)
 - **9 new items** (within cap): **2 YouTube queued** to `queue/2026-07-04.json` (rdltezXxIrk Keepa PF
   tutorial; jeqFx9ZiOhg AMZ Prep every-fee-explained 2026) + **7 text sources** saved to

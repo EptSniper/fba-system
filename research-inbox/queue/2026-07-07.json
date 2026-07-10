@@ -1,0 +1,25 @@
+{
+  "date": "2026-07-07",
+  "videos": [
+    {
+      "videoId": "1kgp13McYLc",
+      "title": "Amazon Online Arbitrage Product Sourcing MASTERCLASS For 2026",
+      "channel": "unknown (verify on pull)",
+      "url": "https://www.youtube.com/watch?v=1kgp13McYLc",
+      "topic": "fba_oa_mastery",
+      "why": "Masterclass-length sourcing walkthrough; complements the 101/beginner sourcing videos already ingested with a deeper single-session masterclass angle",
+      "isLongCourse": true,
+      "status": "done"
+    },
+    {
+      "videoId": "wwNw5vNAyeM",
+      "title": "Keepa Charts: The Ultimate Amazon FBA Tutorial for 2026",
+      "channel": "unknown (verify on pull)",
+      "url": "https://www.youtube.com/watch?v=wwNw5vNAyeM",
+      "topic": "fba_oa_mastery",
+      "why": "Chart-reading focus (reading the Keepa graph itself) vs. the Product-Finder-heavy Keepa videos already in the corpus; feeds fba-keepa-analyst / fba-chart-reader",
+      "isLongCourse": false,
+      "status": "done"
+    }
+  ]
+}

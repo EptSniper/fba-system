@@ -1,0 +1,36 @@
+{
+  "date": "2026-07-05",
+  "note": "The daily task writes one queue file per day (e.g. 2026-06-30.json) listing YouTube videos/courses to transcribe. fetch_transcripts.py reads files matching YYYY-MM-DD.json, pulls transcripts via the API, and sets each item's status to 'done'.",
+  "videos": [
+    {
+      "videoId": "hxk1JS4EsU4",
+      "title": "Beginners Guide To Amazon FBA Online Arbitrage in 2026 (Free Course)",
+      "channel": "unknown (verify on pull)",
+      "url": "https://www.youtube.com/watch?v=hxk1JS4EsU4",
+      "topic": "fba_oa_mastery",
+      "why": "Dec-2025 free full-course format; the manifest prefers long courses and this is the newest complete OA course found that isn't already ingested",
+      "isLongCourse": true,
+      "status": "done"
+    },
+    {
+      "videoId": "D3FhvdMVLl8",
+      "title": "Storefront Stalking is NOT a Profitable Sourcing Method | Amazon FBA Sourcing Tutorial",
+      "channel": "unknown (verify on pull)",
+      "url": "https://www.youtube.com/watch?v=D3FhvdMVLl8",
+      "topic": "fba_oa_mastery",
+      "why": "Contrarian counterweight: the corpus now holds several pro-storefront-stalking sources; this argues the method's weaknesses, which the brain needs for a balanced view",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "ljlERpMrcBk",
+      "title": "Live Online Arbitrage Sourcing: Storefront Stalking Tutorial | Amazon FBA Sourcing",
+      "channel": "unknown (verify on pull)",
+      "url": "https://www.youtube.com/watch?v=ljlERpMrcBk",
+      "topic": "fba_oa_mastery",
+      "why": "Live sourcing session showing the actual click-path of storefront stalking; live sessions ground the theory transcripts with real decision-making",
+      "isLongCourse": false,
+      "status": "done"
+    }
+  ]
+}

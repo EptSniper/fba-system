@@ -1,0 +1,26 @@
+{
+  "date": "2026-07-06",
+  "videos": [
+    {
+      "videoId": "X6JjPUZd4xw",
+      "title": "Sourcing Overlooked Listings Using Keepa Product Finder",
+      "channel": "unknown (verify on pull)",
+      "url": "https://www.youtube.com/watch?v=X6JjPUZd4xw",
+      "topic": "fba_oa_mastery",
+      "why": "New KPF angle not yet in the corpus: finding OVERLOOKED/low-competition listings rather than generic filter walkthroughs; complements the Parameter Method video ingested 07-04",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "9QGs4hfKrhY",
+      "title": "SellerAmp Setup Tutorial (2025 Update) | How to Configure Profiles, Settings & SAS Panels",
+      "channel": "unknown (verify on pull)",
+      "url": "https://www.youtube.com/watch?v=9QGs4hfKrhY",
+      "topic": "fba_oa_mastery",
+      "why": "Existing SAS transcripts cover usage, not configuration; this one is specifically profiles/settings/panel setup, which feeds the fba-selleramp-analyst settings guidance",
+      "isLongCourse": false,
+      "status": "done",
+      "note": "Resolved as duplicate of hxk1JS4EsU4 (identical transcript, different videoId) -- already ingested; do not re-pull."
+    }
+  ]
+}

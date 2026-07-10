@@ -1,0 +1,36 @@
+{
+  "date": "2026-07-09",
+  "note": "The daily task writes one queue file per day. fetch_transcripts.py reads files matching YYYY-MM-DD.json, pulls transcripts via the API, and sets each item's status to 'done'.",
+  "videos": [
+    {
+      "videoId": "Tcd4jAkOi6Q",
+      "title": "Online Arbitrage Just Got Easier - NEW Sourcing Method",
+      "channel": "unknown (verify on fetch)",
+      "url": "https://www.youtube.com/watch?v=Tcd4jAkOi6Q",
+      "topic": "fba_oa_mastery",
+      "why": "Claims a NEW OA sourcing method for the current market; worth transcribing to see if it adds a technique beyond the storefront-stalking / Keepa-PF playbook already in the corpus.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "FRK7JY7_EJY",
+      "title": "How to Find Profitable Amazon Products FAST in 2026 (Reverse Sourcing)",
+      "channel": "unknown (verify on fetch)",
+      "url": "https://www.youtube.com/watch?v=FRK7JY7_EJY",
+      "topic": "fba_oa_mastery",
+      "why": "Reverse-sourcing / storefront-stalking angle; check whether it details the Keepa-50-storefront + ArbiSource '1-2 punch' workflow surfaced in search, which would be a concrete addition to the sourcing insights.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "ctwXY3Vwy8o",
+      "title": "How To Use Keepa for Amazon FBA (New Feature Tutorial)",
+      "channel": "unknown (verify on fetch)",
+      "url": "https://www.youtube.com/watch?v=ctwXY3Vwy8o",
+      "topic": "fba_oa_mastery",
+      "why": "Framed around a NEW Keepa feature; our Keepa corpus is deep but a genuinely new-feature walkthrough (e.g. post-Feb-2026 shipping-in-price change) could update the chart-reading rules.",
+      "isLongCourse": false,
+      "status": "done"
+    }
+  ]
+}

@@ -263,6 +263,20 @@ per the project's source-of-truth order. Cite the source URL.
   avoid-brands list; the article's "keep your own IP-complaint tracker" is exactly what leads.json/
   ai-brain brand lists already do — keep feeding outcomes back. (sellerapp.com/blog/amazon-ip-complaint)
 
+### 2026-07-09 (daily run)
+- **[practitioner]** *Amazon Arbitrage: The Complete Guide for 2026* (ScoutClaw, vendor blog) — a clean
+  standard OA/RA primer that **corroborates the project's existing gates** rather than adding new mechanics:
+  target **≥30% ROI after all fees** ("most experienced sellers" — matches ai-brain `minRoi:0.3`); **start
+  with 3–5 units** of any new ASIN before scaling; **BSR under ~100k** in most categories and a *climbing*
+  BSR = fading demand; ASIN-match variation traps (color/size/model/pack = different ASIN/price) are the
+  most common costly error; build a **5–10% returns buffer** (apparel/shoes run 15–25% returns — "if a deal
+  only works at 0% returns it doesn't work"); research brand/IP risk before sourcing. Two useful contrasts:
+  (1) the guide's own ScoutClaw tool advertises a **15%+ margin deal bar** while the editorial advice says
+  30% ROI — a reminder that vendor deal-flow thresholds are looser than a disciplined buyer's. (2) Honest
+  2026 reality: margins compressed (~40% → ~25% on comparable deals), fees up, more gating; still viable as
+  a disciplined business. Nothing here should change ai-brain; it's confirmation, not new signal.
+  (scoutclaw.com/blog/amazon-arbitrage-guide.html)
+
 ## Sourcing & finding products (incl. Keepa, SellerAmp, storefront stalking)
 
 ### 2026-06-30
@@ -392,6 +406,43 @@ per the project's source-of-truth order. Cite the source URL.
   The step-by-step lives behind Scribehow embeds / a paid playbook — this is a map of what's possible, not
   the procedures. (oachallenge.com/5-keepa-power-moves)
 
+### 2026-07-08 (daily run)
+- **[practitioner]** *Online Arbitrage Sourcing Using Keepa (ADVANCED TACTICS)* (TBFh9vFBq7k, Chris Grant /
+  OA Challenge — transcript re-fetched with real captions this run; actual content is a full Keepa
+  settings + chart-reading + Pro-tracking tutorial). Most of the demand-read material duplicates
+  wwNw5vNAyeM already staged (monthly-sold gold line is a customer-count RANGE not literal units and only
+  ~3.5M of 1B+ ASINs get it, losing the line ≠ sales stopped; rank-drops ≠ units; buy-box is regionally
+  directional via Amazon's flywheel). New, durable pieces: (1) **Concrete settings config** — custom range
+  180 days, close-up view OFF, filter out extreme values, tracking mode = **Pro**, 30% price-reduction
+  preset, alert re-arm timer at the **1-day minimum** (so you can see how often a product actually drops),
+  enable "let Keepa gather Amazon prices" (crowd-sourced accuracy), enable **hover-overlay mini-graphs**
+  (sales rank + buy box + Amazon + new, 180d) to read a chart without opening the listing, and enable
+  stock-quantity on the offers page (Pro). (2) **Use all THREE Keepa sub-graphs, not two** — turn on the
+  **sub-category rank**; top-level and sub-category rank should move congruently, and a large divergence is
+  a flag to dig deeper. (3) **Line semantics that change reads:** the purple "new" line **excludes**
+  shipping (no truck icon) while the buy-box line **includes** shipping; the little orange triangles are
+  new-3P-FBA offer data points, **not sales**. (4) **Pro tracking as a sourcing tool, not just alerts:**
+  track **new-offer-count thresholds** (e.g. "only profitable at ≤6 sellers" → alert at 6-or-fewer; a
+  meltable only sellable at ≥3 sellers), **sales-rank thresholds** for seasonal sell-timing, and buy-box
+  up/down; always toggle **include-shipping** when tracking new 3P sellers so the tracked number is the
+  true landed price; use **memo + tags** (source URL + "sell at $X") to build a searchable tracked-item DB.
+- **[practitioner]** *SellerAmp SAS: Moves to Max Out Your Margins — 10 under-used features*
+  (selleramp.com, Hollie Payne, pub Oct 2025 / updated Jun 2026) — SAS power-features operators skip:
+  (1) **Profit-Calculator what-ifs** ("shipping +10%", "packaging ×2") + **FBM-vs-FBA side by side** (winner
+  flips seasonally). (2) **Settings are the foundation** — wrong sales-tax/prep/inbound/return-rate/labor/
+  packaging makes every ROI wrong; update quarterly. (3) **Offers Panel** — seller rating/review-count/
+  fulfilment type, live stock (max/min order-qty signal), price incl+excl shipping, your ROI if matched,
+  lowest-10 prices, FBA-vs-FBM split, Prime-only filter → spot weak/low-stock/overpriced competition.
+  (4) **Google Sheets export** for team/VA lead pipelines. (5) **History tab** — re-check "almost
+  profitable" leads; shifts can flip old rejects into buys. (6) **Notes & Tags** — personal sourcing DB
+  (Seasonal/High-Margin/Brand-Restricted/Heavy; "avoid – returns issue"), filter/export by tag.
+  (7) **Charts Panel** (Keepa-powered) — hover exact points, zoom/pan 30d↔1yr. (8) **AI Image Search** —
+  photo → correct ASIN with no link; catches mismatched/duplicate listings. (9) **QVS** — ASIN,
+  is-Amazon-selling, FBA/FBM counts, variations, BSR, first-review on the Amazon search page.
+  (10) **Variation navigation** — check each variant's own rank/margin; low-competition variants leak
+  profit. Bonus: keep a **10–15% margin buffer** for seasonal volatility. Related: SAS **Advanced Search**
+  (launched Jun 2026) = saved/shareable custom filter searches — relevant to scout-style saved queries.
+
 ## Finances & account management
 
 ### 2026-06-30
@@ -472,6 +523,50 @@ per the project's source-of-truth order. Cite the source URL.
   over-collection. Reseller-relevant: **resale certificates avoid paying sales tax on OA inventory buys**
   — direct COGS reduction. Distinguish the Marketplace Tax Collection Report (Amazon paid) from the Sales
   Tax Calculation Report (you owe). (quickbooks.intuit.com)
+
+### 2026-07-08 (daily run)
+- **[practitioner + policy]** *Amazon FBA Reimbursement Guide 2026* (Nova Analytics, updated May 2026) — a
+  profit lever the corpus hadn't covered. **[policy] Big shift (effective Nov 15 2025): Amazon reimburses
+  lost/damaged/destroyed FBA inventory at MANUFACTURING/sourcing cost, not retail** — recoveries down
+  50–75% (a $40 SKU with $9 landed cost now reimburses ~$9). Two mandatory defenses: **enter accurate
+  Cost-of-Goods on every active SKU** (Inventory → Manage All Inventory; missing/zero cost → near-zero
+  payout) and **submit supplier-invoice cost docs within 60 days** of a claim (else Amazon's lower estimate
+  applies). Nine claimable categories: lost-in-warehouse (~35–40% of claims), damaged-in-warehouse,
+  lost-inbound, customer-return-not-received (5–10% never arrive), removal lost/damaged, fee overcharges
+  (wrong dims/weight tier), switcheroo returns, MCF errors, duplicate refunds. Filing: needs
+  SKU/FNSKU/qty/transaction-ID/date; documented inbound claims hit **90%+ approval vs <40%**; ~**18-month
+  window** for most types but **removal orders only 90 days**; first-line support denies ~40% of valid
+  claims → escalate. Rule of thumb: 1–3% of FBA inventory has a reimbursable issue/yr, ~$1.5–3k/yr
+  recoverable. For our OA model this reinforces **honest-COGS** discipline and is a candidate control-center
+  signal (reimbursement tracking) later.
+- **[practitioner]** *What Amazon FBA Changes in 2026 Mean for Sellers* (Logos Distribution 3PL, Dec 2025 /
+  updated Jul 2026 — **verify each in Seller Central before acting**): (1) **another FBA fee increase
+  ~+$0.08/unit** average for 2026. (2) **Amazon ended US FBA prep & labeling services (Jan 1 2026)** —
+  FNSKU labeling, poly-bagging, bubble-wrap, bundling now the seller's/3PL's job before inventory reaches
+  the FC (every OA unit must be prepped upstream). (3) **storage limits tightened mid-2025 ~6 → ~5 months**
+  of forecasted sales — more restocking, higher Q4/Prime-Day stockout risk. (4) **reimbursement valued at
+  sourcing cost** (corroborates Nova). (5) diversification argument (Dec-2025 regional listing-hide
+  incident) — FBM/other channels as a hedge. Search-snippet claims (NOT fetched, for Claude Code to verify):
+  **commingling/stickerless ends Mar 31 2026**, and **retail receipts no longer valid for ungating —
+  wholesale invoices/LOA required**.
+
+### 2026-07-09 (daily run)
+- **[practitioner]** *Amazon Seller Accounting & Bookkeeping (2026 Guide)* (Plugbooks, vendor blog) —
+  standard-but-sound bookkeeping fundamentals for OA. Durable points: (1) **"Sales" ≠ "Deposits"** — Amazon
+  nets dozens of fees before payout, so reconciling the **settlement report every ~2 weeks** (match gross
+  sales, subtract fees, adjust refunds, verify the deposit) is the single most important accounting step.
+  (2) **Separate business bank/card**; never commingle. (3) **FIFO COGS + landed-cost tracking** — you can't
+  compute true profit without per-unit landed cost (reinforces the honest-COGS rule the reimbursement-at-
+  cost change already made urgent — see Nova 2026-07-08). (4) **Categorize fees separately** (referral / FBA
+  / storage / PPC) or profitability-by-product is wrong. (5) Cash basis is fine under ~$1M revenue; accrual
+  is more accurate period-by-period and required over ~$1M. (6) Marketplace-facilitator sales tax is
+  collected by Amazon in many states but **income tax is still the seller's**. Product pitch at the end is
+  marketing — ignore. (plugbooks.io/amazon-seller-accounting)
+- **[practitioner — UNVERIFIED search snippets, flagged for Seller Central/IRS verification]** Two
+  cash-flow/tax items surfaced in search but were **NOT on any fetched page**: **DD+7** — Amazon reportedly
+  begins holding funds **7 days after delivery starting Mar 12 2026** (worsens the OA cash-conversion cycle
+  and distorts cash-basis month boundaries); and the **1099-K reporting threshold reportedly reverts to
+  $20,000 AND 200 transactions for tax-year 2026**. Do not treat as fact until confirmed.
 
 ## Building the system (AI, RAG, dashboard, control-center)
 
@@ -705,22 +800,24 @@ per the project's source-of-truth order. Cite the source URL.
   them** — nuances the common "avoid recently-suppressed listings" heuristic into a matter of degree, not an
   absolute pass signal. (5) Seasonal-product timing rule: **be first in or last out** — entering mid-ramp
   means competing at peak competition for shrinking margin; either front-run the season before competition
-  floods in, or hold for the tail when only a few sellers remain. (6) A genuinely useful buy-decision
-  framework: read sales-rank movement, buy-box trend, Amazon's own listing history, the **FBA-vs-FBM price
-  gap** (FBA price sitting close to buy box while FBM sits below = FBA sellers are winning the sales — an
-  "FBA bump" signal), offer-count trend, and rating-count trend as a secondary check when sales-rank data is
-  thin — then frame the buy as an **asymmetric bet**: if even the worst historical low price still roughly
-  breaks even and the typical/current price profits well, the trade is favorable even if not every unit
-  sells at the best price.
-- **[practitioner]** *Sourcing Overlooked Listings Using Keepa Product Finder* (X6JjPUZd4xw) — grocery-
-  category bundle/multi-pack and no-UPC listings are systematically missed by barcode-scanning RA sellers
-  and UPC-matching tools (e.g. Tactical Arbitrage), because a multi-pack's UPC doesn't match the single-unit
-  product data those tools expect, or the listing has no UPC logged for that specific pack size at all.
-  Concrete Product Finder recipe: category=Grocery, size="pack" (select all pack-size options), 30-day
-  sales-rank cutoff, a buy-box price band, Amazon-out-of-stock toggle — narrows millions of candidates to a
-  few hundred. Separate technique: pull a broad category list, then filter to rows where the **UPC column is
-  blank** — these are listings a barcode scan could never surface. Always cross-check that the listing's
-  stated brand actually matches who's currently selling on it (a mismatch is either a data error or a sign
+  floods in, or hol
+### 2026-07-09 (daily run — build-the-system)
+- **[fetch-pending / snippet only]** Two on-thread arXiv papers were surfaced but the sandbox fetch-
+  provenance rule blocks arXiv `/abs/` + PDF (same failure mode as SAGE 2605.12061 / ROZA 2604.07595 —
+  flagged for Claude Code re-fetch): (1) **"Don't Retrieve, Navigate: Distilling Enterprise Knowledge into
+  Navigable Agent Skills for QA and RAG" (arXiv 2604.14572)** — argues for distilling a corpus into
+  navigable *agent skills* rather than pure vector retrieval; directly relevant to our skills-as-knowledge
+  design (the fba-* plugin already encodes rules as skills). (2) **"Adaptive Memory Admission Control for
+  LLM Agents" (arXiv 2603.04549)** — when to *admit* a fact into long-term memory; on-thread with the
+  AtomMem (2606.19847) / self-learning-RAG line and directly applicable to how ai-brain.json / the corpus
+  decide what durable facts to keep vs. drop. Distill both after a real-browser fetch before staging.
+- **[fetch-failed]** *Build a RAG System with pgvector on Managed PostgreSQL (2026)* (DanubeData,
+  danubedata.ro/blog/pgvector-rag-managed-postgres-2026) — WebFetch returned compressed/binary garbage
+  (server sent an unreadable encoding), so no usable text. Directly on-stack for our Supabase/pgvector RAG;
+  search snippet frames it as a pgvector production build guide (mature pgvector, <1M vectors, hybrid
+  search native). Worth a Claude Code / browser re-fetch. Corroborated by already-staged BuildMVPFast
+  (2026-07-07) hybrid-search mechanics — no new action needed until re-fetched.
+ data error or a sign
   the rights-holder isn't policing the listing — read both ways, don't assume either).
 - **[practitioner]** *Amazon Online Arbitrage Product Sourcing MASTERCLASS For 2026* (1kgp13McYLc) — a
   full beginner course; most content already covered by earlier ingested videos, but two new concrete
@@ -734,3 +831,43 @@ per the project's source-of-truth order. Cite the source URL.
   another discount-gift-card marketplace alongside CardCookie/Raise from earlier videos) and a vivid
   COVID-era seasonal-pool-price example ($147 normal -> $325 in 2020 -> $475 in 2021) used to make the
   point that arbitrage is mostly about reliably profitable *boring* products, not chasing spikes.
+
+### 2026-07-10 (Claude Code — transcript ingestion, 3 queued videos)
+- **[practitioner]** *Online Arbitrage Just Got Easier — NEW Sourcing Method* (Tcd4jAkOi6Q) — first look
+  at **SellerAmp's new Advanced Search**: query across ALL products (not one storefront) by 90-day avg
+  sales rank (≤~175k), ≥3 avg sellers/90d, Amazon-in-Buy-Box ≤50%, then narrow by a brand seeded from
+  reverse sourcing and sort by 90-day Buy Box **ascending price** (rising price = better profit odds).
+  Time brand-digs to retailer promos: check the brand's retail site for sale banners / coupon-extension
+  hits FIRST — no promo, skip and revisit. Margin manufacturing: discounted gift cards (CardCenter/
+  CardCookie, 12-15%) stacked on retail coupons (15-20%) flipped two near-misses into $8-10/unit at
+  30-35% ROI. The **"lowest-ever sales rank" flag** finds all-time-high-demand items (restock-gap and
+  price-spike plays). Risk read matches our price-spike guard: a price that "randomly shot up" is a risky
+  max-cost base vs a long stable history; rank 14k→2k entering season = accelerating item.
+- **[practitioner]** *How to Find Profitable Amazon Products FAST in 2026 — Reverse Sourcing* (FRK7JY7_EJY,
+  Chris Grant) — four methods, starting from a blank screen: (1) seed from **retailer-exclusive brands**
+  (Equate/Spring Valley=Walmart, Up&Up/Goodfellow=Target, Kirkland=Costco, Sephora Collection) — any 3P
+  seller there is necessarily an arbitrageur of that retailer, so their storefronts are pre-qualified for
+  stalking; prefer sellers with **≤200-250 reviews and ≥4 stars** (ungating profile closer to a newer
+  seller's). (2) The **"shotgun method"**: Keepa product → Data→Offers→include historical offers → export
+  up to ~50 seller IDs → Product Finder "seller is one of" + rank <300k (current/30d/90d) + price ≥$25
+  (current/30d/90d) + a 30-day price-drop **corridor of -45% to +7%** → a ~200-product sourcing session.
+  [NOTE for our stack: this needs Keepa Product Finder, which is REQUEST_REJECTED on our Pro plan — a
+  manual/UI method for us; but the rank/price/drop *corridor* idea independently validates our dealfeed
+  secondary-axis band rotation.] (3) Margin stack: cashback 3-8% + gift cards 12-15% (CardCookie/CardDepot)
+  + coupon extensions (Coupert/Rakuten/Honey); verify pack counts via reviews and images (a "2-pack" image
+  that's one pair; 30-count-4-pack vs 60-pack traps) — the same pack-mismatch risk our compliance gate
+  flags. (4) Risk heuristics worth encoding: **"buying the pinch"** (rising seller count → price about to
+  slide) and the **asymmetric-bet test** (breakeven vs the 6-month price low — Bombas socks failed it).
+  Storefront Stalker Pro re-checks chosen storefronts every 4h for new items (creator-affiliated claim).
+- **[practitioner]** *How To Use Keepa for Amazon FBA — New Feature Tutorial* (ctwXY3Vwy8o) — three new
+  Keepa features: (1) **historical sales-rank filter** ("crystal ball"): current rank 75k-200k AND
+  December-last-year rank 1-20k = pre-season Q4 winners before the charts move; brand-scoped variant
+  predicts which wholesale SKUs to load before the PO. (2) **No-current-rank + strong historical rank** =
+  invisible listings (OOS/merged/bad category node) — restock plays with zero competition. (3)
+  **Historical offers + cross-seller matching**: one seller ID with the historical toggle exposes their
+  entire lifetime catalog (2,195 vs 158 live ASINs) for export/automation; N seller IDs + "X of them
+  match" + Search Insights' top-brands (all-time vs now) reveals which brands competitors converge on and
+  how their mix is shifting. Also usable on your OWN seller ID (+ Buy Box 90-day delta -100..-20) as a
+  replenishment finder for past products now rising in price. [ML note: the historical-rank-divergence
+  signal (Dec-rank vs now-rank) is a legitimate seasonal-demand feature idea for the backtest side —
+  flagged for fba-feature-engineer as an idea, no threshold change proposed.]

@@ -220,7 +220,14 @@ def vectorize_one(features: Optional[Dict[str, Any]]):
     out = []
     for k in NUMERIC_FEATURES:
         v = (features or {}).get(k)
-        out.append(float(v) if v is not None else float("nan"))
+        # fba-ml-debugger (2026-07-10, live incident): a list-valued field (Keepa's raw
+        # per-price-type oos_90 array, since fixed at the source in keepa_client._oos_pct)
+        # crashed float() here on EVERY live candidate — and because challenger_score catches
+        # broadly, shadow scoring silently degraded to None across the board. Any non-numeric
+        # value now degrades to NaN (LightGBM-native missing) instead of killing the whole
+        # vector: one malformed field must cost one feature, never the candidate. bool stays
+        # BEFORE the isinstance check (bool is an int subclass, float(True)=1.0 is intended).
+        out.append(float(v) if isinstance(v, (int, float)) else float("nan"))
     return np.array(out)
 
 

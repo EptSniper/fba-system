@@ -372,6 +372,26 @@ _CATEGORY_MAP = {
 }
 
 
+def _oos_pct(v):
+    """Keepa's stats.outOfStockPercentage90 is a PER-PRICE-TYPE ARRAY (like current/avg90), not
+    a scalar — this was passed through raw for the field's whole life (fba-ml-debugger,
+    2026-07-10, live-instrumented + locally reproduced). Nobody noticed because every rule-side
+    consumer isinstance-guards (so the oos>30 red flag silently NEVER fired on live products)
+    and the only unguarded consumer — challenger shadow scoring — never executed until shadow
+    loading was ungated. Extract the NEW-price-type entry (IDX_NEW — the closest live analog to
+    backtest._oos_fraction's price-series availability, keeping train/serve semantics aligned),
+    falling back to AMAZON's; Keepa's -1 sentinel and absent values -> None, never 0 (missing
+    is not zero — doctrine §4). A scalar (already-correct form) passes through unchanged."""
+    if isinstance(v, (int, float)):
+        return float(v) if v >= 0 else None
+    if isinstance(v, (list, tuple)):
+        for idx in (IDX_NEW, IDX_AMAZON):
+            if len(v) > idx and isinstance(v[idx], (int, float)) and v[idx] >= 0:
+                return float(v[idx])
+        return None
+    return None
+
+
 def _category_from_tree(product: Dict[str, Any]):
     """Map Keepa's categoryTree to one of this project's referral-rate keys. Tries every level
     leaf-to-root (the mapping table is deliberately incomplete); falls back to the raw root
@@ -500,7 +520,7 @@ def _normalize(product: Dict[str, Any]) -> Dict[str, Any]:
         "buybox_seller": bb_seller,
         "buybox_price": bb_price,
         "has_buybox": has_buybox,
-        "oos_90": stats.get("outOfStockPercentage90"),
+        "oos_90": _oos_pct(stats.get("outOfStockPercentage90")),
         "avg_price_90": avg_price_90,
         "avg_offers_90": avg_offers_90,
         "avg_sales_rank_90": avg_sales_rank_90,

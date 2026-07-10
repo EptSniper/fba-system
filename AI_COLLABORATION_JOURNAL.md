@@ -115,6 +115,139 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-09/10 — Claude Code Session 59: the full ML audit — 12 specialist lenses, 72 findings, every confirmed one fixed (incl. a reopened dead-artifact BLOCKER), skills reconciled, fba-ml-ops added
+
+#### Request and constraints
+
+Mehmet: "Do a full review of everything we did and inquired in this project… I mainly want you
+taking a look at the ML and fixing everything about it… Check for accuracy guardrails, leakages,
+and any problems related to ML and everything else… use the agents and experts we have;
+moreover, also take a look at them, fix anything or upgrade if anything is needed and if you
+think any agents or skills are missing fix them too." Mid-session additions: fix the Scout
+Intelligence graphs ("it doesn't match") and "continue non stop." Ultracode was on for the audit
+launch.
+
+#### Evidence inspected
+
+- A 12-lens specialist audit workflow — one finder agent per `fba-ml-*` crew skill (each grounded
+  in its own SKILL.md + ml-doctrine.md) plus skills-auditor, app-systems, docs-plans, and a
+  free-roaming red-team lens, with an adversarial verification phase. 7 of 12 finders completed
+  before a subagent session limit (resets 2:20am ET) killed the remaining 5 + the triage agent;
+  the 72 raw findings were recovered from the workflow journal
+  (`subagents/workflows/wf_716c2843-cff/journal.jsonl`) and triaged inline.
+- Live ground truth throughout: Supabase reads (corpus grew 1455→1582 rows DURING the session;
+  13 categories / 94+ brands / ~77% positive), `gh run view` logs, live schema probes
+  (`trends_series` existed but held **0 rows**; `ranker_runs` lacked migrations 014/015).
+
+#### Implementation / changes — 8 commits, all pushed (fd5f477, 35d4601, 98e0f→6de7e02 range)
+
+1. **Scout Intelligence charts frozen at 1000 rows** (`fd5f477`, live incident Mehmet reported):
+   PostgREST caps every response at 1000 rows regardless of `limit=`; with `order=created_at.asc`
+   the dashboard kept the OLDEST page, so the growth chart flat-lined the moment the corpus
+   passed 1000. `control-center/lib/supabase-server.ts` now paginates to completion
+   (`supaGetAll`); verified live at 1,582 = exact DB count.
+2. **BLOCKER — shadow mode never shadowed** (`35d4601`, doctrine §5/§7's dead-artifact tale
+   reopened one hop downstream): `load_challenger()` refused to load unless ALREADY promoted, the
+   hourly path (the only production scanning path) never called `_rank_winners`, and the computed
+   score was dropped. Zero live shadow evidence could ever accrue, and even a human promotion
+   would have changed nothing observable hourly. Now: the artifact always best-effort loads
+   (shadow scores every candidate), the score persists into each lead's `explanation` jsonb
+   (NEVER features_snapshot — PRE_DECISION_FEATURES filtering unchanged, self-confirmation
+   impossible), survivors are ranked with `ranking_model` recorded, and the brain key gates ONLY
+   real-ordering use. Rule-mode ordering byte-identical (test-proven).
+3. **Promotion-gate evidence made durable and unpaddable**: migrations **014 + 015 applied live**
+   (concentration, content_hash, time-split AUCs, promotion_gate jsonb on `ranker_runs`); the
+   consecutive-wins streak now requires DISTINCT-dataset wins (content-hash dedup — training is
+   deterministic, so a re-run on identical data reproduces the identical win) confirmed on BOTH
+   axes (primary + recorded time-split); the Discord proposal embed now leads with the gate.
+4. **Metric honesty**: `winners_in_top` was information-free at a 77-94% positive base rate (the
+   committed 2026-07-05 report showed an AUC-0.329 champion — worse than random — scoring a
+   flattering 10/10); now precision/lift@top vs base rate everywhere. Paired-bootstrap 95% CI on
+   the AUC gap wired into the gate (the 0.02 margin sits BELOW the single-AUC SE at current val
+   sizes). Per-category/per-brand held-out slices added (ML_DEBIAS_PLAN's anti-"toys-only-model"
+   safeguard). Small samples get their own READY status wording; near-zero importance flag is
+   now dynamic (half the true average share, not a fixed 0.05 that sat ABOVE average).
+5. **Training correctness**: per-tier sample weights (brain key `learning.tierWeights`, defaults
+   backtest 1.0 / silver 2.0 / gold 4.0 — 1455 sim labels no longer drown the ~70 real silver
+   rows); corpus caps now hash-based (the keep-most-recent policy was piling capped groups into
+   the time-split's validation slice); dateless silver/gold rows excluded from the time split
+   (they sorted as "" = before all dates → newest data leaked into the forward check's TRAIN
+   side); eBay live-only features neutralized on mixed tiers (presence encoded the label tier);
+   **label integrity** — `price_at_horizon` was an UNBOUNDED first-change-after scan (a "day-60"
+   label could be a price from months later; OOS-at-horizon losers borrowed their next in-stock
+   price, inflating positives) — now LOCF-at-horizon with honest censoring.
+6. **Dealfeed breadth**: `priceTypes` [0]→[1] — the "brand-agnostic firehose" was sampling ONLY
+   products Amazon itself retails, excluding the 3P long tail outright; price bands now
+   single-sourced from the brain (the hardcoded copy silently excluded the declared $60-150
+   stratum); a dry filtered combo re-pulls unfiltered instead of zeroing the run; the
+   intrinsically-rare (50-100%) drop band removed pending live verification.
+7. **Serving/artifact safety + ops**: `ranker/current` (the serving slot) only advances when the
+   run's challenger actually won (a losing model could previously replace a reviewed one hourly);
+   full-timestamp versioned artifacts (was date-only — 24 runs/day overwrote one slot); artifact
+   meta stamps dataset hash/commit/brain-hash/lib versions; requirements-train + -collect ML libs
+   pinned IDENTICALLY (the collector deserializes the trainer's pickle); middleware 503s any
+   deployed instance holding privileged creds without basic auth (GITHUB_PAT alone previously
+   left /api/ops/dispatch internet-open); `MODEL_BLEND_WEIGHT` default 0.5→0.0 (the legacy blend
+   could affect threshold MEMBERSHIP, not just order); undelivered concentration alarms escalate
+   to system_health.
+8. **The skills themselves**: fba-ranker-architect / fba-ml-trainer / fba-ml-evaluator had
+   current-vs-target drift (the promotion sign-off skill prescribed NDCG/MAP — computed nowhere —
+   and asserted scores are ordinal when the current classifier outputs probabilities); fixed to
+   as-coded truth with lambdarank demoted to a dated target. Stale "today the corpus is skewed"
+   snapshots in fba-scout-strategist/fba-ml-lead recast as dated cautionary examples. **NEW skill
+   `fba-ml-ops`** (35th; plugin v0.3.1, registered in plugin.json/SKILLS_INDEX/guide): owner of
+   the unattended automation layer — GitHub Actions cron reality, cross-run Supabase Storage
+   state, token budgets, CI pins — where most of doctrine §7's cautionary tales actually live.
+
+Also found and fixed operationally: **trends-collect.yml had NEVER run** (created mid-week,
+weekly Monday cron — `trends_series` held 0 rows, which is exactly why every trend feature showed
+0.0 importance in every report). Dispatched manually: 6,786 rows backfilled in 32s.
+
+#### Files changed
+
+Modified: control-center/lib/supabase-server.ts, middleware.ts; scout/train_ranker.py,
+pipeline.py, collect_hourly.py, backtest.py, db.py, config.py, deals_firehose.py,
+requirements-train.txt, requirements-collect.txt; .github/workflows/train-ranker.yml;
+learning-hub/tracking/ranker-report.md (header honesty); 6 SKILL.md files + plugin.json +
+SKILLS_INDEX.md + CLAUDE.md + CLAUDE_CODE_GUIDE.md; tests: test_train_ranker.py,
+test_backtest.py, test_backtest_sampling.py, test_deals_firehose.py, test_pipeline_memory.py,
+test_collect_hourly.py. New: scout/db/migrations/015_ranker_gate_evidence.sql,
+amazon-fba-oa/skills/fba-ml-ops/SKILL.md.
+
+#### Verification
+
+**Implemented + tested**: full suite 928 passed / 0 failed (run this session), control-center
+typecheck clean, migrations 014/015 applied to the live project and column presence verified by
+probe. **fba-ml-guardian final safety review: SAFE TO SHIP** (hard gates confirmed outside ML,
+membership still rule-only, one-flip kill switch intact, no brain writes — read-mode opens only).
+**NOT yet verified live**: the shadow-scoring path, hardened gate, priceTypes/band changes, and
+dry-slot fallback have not yet been observed in a real collector/training run.
+
+#### Limitations / honest status
+
+- 5 of 12 audit lenses died on the subagent session limit (app-systems, docs-plans, ml-debugger,
+  feature-engineer, skills-auditor — the last partially covered by overlapping findings); a
+  re-run after the limit resets would be more complete.
+- Pending-backlog persistence for backtest sampling (each run re-samples ~600 candidates but
+  drains only ~20-130; the deferred list is discarded) remains UNFIXED — a known efficiency
+  finding, not a correctness bug.
+- deltaPercentRange's sign/scale and isRangeEnabled's real effect are still UNVERIFIED live —
+  the next runs' per-band yields are the test.
+- The gate's prior 6-run READY streak (time-split 0.841 vs 0.751) is deliberately RESET by the
+  hardening: pre-015 rows lack time-split/content-hash evidence, so the gate honestly reads
+  NOT-YET until ~3 distinct-dataset wins accumulate under the stricter standard. Guardian
+  endorsed the reset over grandfathering.
+- Still pending Mehmet: the learning.sampling brain proposal (brain-proposals.md) and the
+  category-list expansion toward ML_DEBIAS_PLAN's 16 seeds (both fba-brain-updater edits).
+
+#### Exact next safe step
+
+Watch the next 2-3 hourly keepa-collect + train-ranker runs and confirm: (a) new leads'
+`explanation` carries `challenger_proba` (shadow evidence accruing), (b) `ranking_model` appears
+in scan summaries, (c) dealfeed per-band yields are non-zero under priceTypes [1] with filters
+enabled, (d) the gate streak rebuilds with content_hash + time-split columns populating in
+ranker_runs. Revisit the promotion decision only when READY reappears under the new standard.
+
 ### 2026-07-09 — Claude Code Session 58 (continued yet again): secondary-axis sampling, a real promotion gate, and a live incident where the test suite was silently writing to production Supabase Storage
 
 Direct continuation of the entry below (same day, same body of work, resumed after a context

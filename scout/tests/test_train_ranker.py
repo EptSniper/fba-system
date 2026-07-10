@@ -292,9 +292,25 @@ class LoadChallengerTest(unittest.TestCase):
     def tearDown(self):
         tr.reset_challenger_cache()
 
-    def test_none_when_not_promoted(self):
-        with mock.patch.object(tr, "ranking_champion", return_value="rule"):
-            self.assertIsNone(tr.load_challenger())
+    def test_loads_even_when_not_promoted_for_shadow_scoring(self):
+        """ML audit fix (2026-07-09, doctrine §5 — BLOCKER): loading used to be gated on
+        rankingChampion=='challenger', so 'shadow mode' never actually shadowed — zero live
+        shadow evidence ever accrued, and the model would first be exercised in production,
+        post-promotion. The artifact must now load regardless of the brain key; promotion gates
+        only whether _rank_winners USES the score for real ordering."""
+        import tempfile, shutil, joblib
+        tmpdir = tempfile.mkdtemp()
+        try:
+            model_dir = os.path.join(tmpdir, "current")
+            os.makedirs(model_dir)
+            joblib.dump({"model": "fake_model", "scaler": "fake_scaler", "features": []},
+                       os.path.join(model_dir, "model.joblib"))
+            with mock.patch.object(tr, "ranking_champion", return_value="rule"), \
+                 mock.patch.object(tr, "MODELS_DIR", tmpdir):
+                loaded = tr.load_challenger()
+            self.assertEqual(loaded["model"], "fake_model")  # loads in SHADOW too
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     def test_loads_local_artifact_when_promoted(self):
         import tempfile, shutil, joblib
@@ -315,8 +331,7 @@ class LoadChallengerTest(unittest.TestCase):
         import tempfile, shutil
         tmpdir = tempfile.mkdtemp()
         try:
-            with mock.patch.object(tr, "ranking_champion", return_value="challenger"), \
-                 mock.patch.object(tr, "MODELS_DIR", tmpdir), \
+            with mock.patch.object(tr, "MODELS_DIR", tmpdir), \
                  mock.patch.object(tr, "fetch_current_model", return_value=None) as mock_fetch:
                 loaded = tr.load_challenger()
             self.assertIsNone(loaded)
@@ -331,24 +346,37 @@ class LoadChallengerTest(unittest.TestCase):
             model_dir = os.path.join(tmpdir, "current")
             os.makedirs(model_dir)
             joblib.dump("not_a_dict_at_all", os.path.join(model_dir, "model.joblib"))
-            with mock.patch.object(tr, "ranking_champion", return_value="challenger"), \
-                 mock.patch.object(tr, "MODELS_DIR", tmpdir):
+            with mock.patch.object(tr, "MODELS_DIR", tmpdir):
                 loaded = tr.load_challenger()
             self.assertIsNone(loaded)
         finally:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
     def test_cached_after_first_call(self):
-        with mock.patch.object(tr, "ranking_champion", return_value="rule") as mock_rc:
-            tr.load_challenger()
-            tr.load_challenger()
-        self.assertEqual(mock_rc.call_count, 1)
+        # fetch_current_model is only reached on a cache MISS (empty MODELS_DIR) — its call
+        # count is the observable proxy for "did load_challenger re-do the work".
+        import tempfile, shutil
+        tmpdir = tempfile.mkdtemp()
+        try:
+            with mock.patch.object(tr, "MODELS_DIR", tmpdir), \
+                 mock.patch.object(tr, "fetch_current_model", return_value=None) as mock_fetch:
+                tr.load_challenger()
+                tr.load_challenger()
+            self.assertEqual(mock_fetch.call_count, 1)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
     def test_force_bypasses_cache(self):
-        with mock.patch.object(tr, "ranking_champion", return_value="rule") as mock_rc:
-            tr.load_challenger()
-            tr.load_challenger(force=True)
-        self.assertEqual(mock_rc.call_count, 2)
+        import tempfile, shutil
+        tmpdir = tempfile.mkdtemp()
+        try:
+            with mock.patch.object(tr, "MODELS_DIR", tmpdir), \
+                 mock.patch.object(tr, "fetch_current_model", return_value=None) as mock_fetch:
+                tr.load_challenger()
+                tr.load_challenger(force=True)
+            self.assertEqual(mock_fetch.call_count, 2)
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 class ChallengerScoreTest(unittest.TestCase):

@@ -317,7 +317,19 @@ def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[
         if not hard_reject:
             survivors.append(p)
 
+    # ML audit fix (2026-07-09, doctrine §5 — BLOCKER): the hourly path (the ONLY production
+    # scanning path since run_daily went housekeeping-only) never called _rank_winners, so the
+    # trained ranker had no reader here: no shadow ordering was ever computed, and even a human
+    # promotion (scoring.rankingChampion=challenger) would have changed nothing observable on
+    # this path — the doctrine's dead-artifact cautionary tale reopened one hop downstream.
+    # Rank survivors exactly like pipeline.run_once does and record WHICH model ordered the
+    # queue this run — "rule" until a human promotes, per the brain key.
+    ranking_model = "rule"
     if survivors:
+        try:
+            survivors, ranking_model = pipeline._rank_winners(survivors)
+        except Exception as e:
+            log.warning("rank_winners failed (non-fatal, unranked order this run): %s", e)
         try:
             shadow_outcomes.enqueue_survivors(survivors, run_id)
         except Exception as e:
@@ -326,7 +338,8 @@ def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[
     after = keepa_client._tokens_consumed(api)
     spent = keepa_client._delta(before, after) or 0
     return {"status": "ok", "candidates": len(asins), "leads_logged": logged,
-            "survivors": len(survivors), "tokens_spent": spent}
+            "survivors": len(survivors), "tokens_spent": spent,
+            "ranking_model": ranking_model}
 
 
 def run_hourly_collect(api=None) -> Dict[str, Any]:

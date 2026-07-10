@@ -874,23 +874,32 @@ def ranking_champion() -> str:
 
 def load_challenger(force: bool = False) -> Optional[Dict[str, Any]]:
     """The cloud-trained ranker artifact (model.joblib: {model, scaler, features, meta}), for
-    LIVE scoring — NOT the training/evaluation path above. Returns None (never raises) whenever
-    rankingChampion isn't 'challenger', or the artifact can't be found/loaded/doesn't have the
-    expected shape — every failure mode degrades to "score with the rule/triage formula exactly
-    as if nothing were ever promoted," never a crash and never a silent wrong-shaped prediction.
-    Cached per-process (see reset_challenger_cache) so repeated calls within one run/burst don't
-    re-read the artifact per candidate."""
+    LIVE scoring — NOT the training/evaluation path above. Returns None (never raises) when the
+    artifact can't be found/loaded/doesn't have the expected shape — every failure mode degrades
+    to "score with the rule/triage formula exactly as if nothing were ever promoted," never a
+    crash and never a silent wrong-shaped prediction. Cached per-process (see
+    reset_challenger_cache) so repeated calls within one run/burst don't re-read the artifact
+    per candidate.
+
+    ML audit fix (2026-07-09, doctrine §5 shadow-by-default — BLOCKER): loading is NO LONGER
+    gated on scoring.rankingChampion. Before this fix, load_challenger() returned None unless
+    already promoted, so "shadow mode" never actually shadowed: the hourly production path never
+    deserialized the model, zero live shadow evidence ever accrued, and the first time the
+    model would EVER score a live candidate was in production, post-promotion — the doctrine's
+    dead-artifact cautionary tale reopened one hop downstream. Now the artifact is ALWAYS
+    best-effort loaded so the challenger scores every candidate in SHADOW (its score is logged
+    per lead via the explanation dict, never acted on); the brain key gates ONLY whether
+    pipeline._rank_winners uses that score for the real queue ordering — which is the promotion
+    decision, and stays human-only."""
     if _challenger_cache["loaded"] and not force:
         return _challenger_cache["model"]
     _challenger_cache["loaded"] = True
     _challenger_cache["model"] = None
-    if ranking_champion() != "challenger":
-        return None
     try:
         import joblib
     except Exception:
-        print("[train_ranker] joblib unavailable — can't load the promoted challenger, "
-             "falling back to the rule score")
+        print("[train_ranker] joblib unavailable — can't load the ranker artifact, "
+             "falling back to the rule score (no shadow scoring this run)")
         return None
     local_path = os.path.join(MODELS_DIR, "current", "model.joblib")
     if not os.path.exists(local_path):
@@ -901,8 +910,8 @@ def load_challenger(force: bool = False) -> Optional[Dict[str, Any]]:
         if fetched:
             local_path = fetched
     if not os.path.exists(local_path):
-        print("[train_ranker] scoring.rankingChampion=challenger but no model artifact is "
-             "available locally or in storage — falling back to the rule score")
+        print("[train_ranker] no ranker artifact available locally or in storage — "
+             "falling back to the rule score (no shadow scoring this run)")
         return None
     try:
         loaded = joblib.load(local_path)

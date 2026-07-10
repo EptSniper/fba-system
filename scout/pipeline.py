@@ -275,6 +275,17 @@ def _evaluate(enriched: List[Dict[str, Any]],
             "raw": {k: p.get(k) for k in
                     ("sales_rank", "drops30", "drops90", "brand", "oos_90")},
         })
+        # ML audit fix (2026-07-09, doctrine §5 shadow-by-default): persist the challenger's
+        # SHADOW score + the rule ordering key durably on the lead row (db.log_lead sends
+        # `explanation` as jsonb) so live shadow-vs-rule evidence accrues from every run BEFORE
+        # any promotion — previously the score was computed and then dropped unless already
+        # promoted. Lives in `explanation` (a human-review surface), NEVER features_snapshot:
+        # db.feature_snapshot reads only PRE_DECISION_FEATURES keys and labels.py's tier readers
+        # re-filter to that same list, so the model's own output can never leak back in as a
+        # training input (doctrine §4, self-confirmation).
+        if isinstance(p.get("explanation"), dict):
+            p["explanation"]["challenger_proba"] = challenger_proba
+            p["explanation"]["triage_score"] = p.get("triage_score")
         p["risks"] = scoring.risk_flags_oa(p) if oa else scoring.risk_flags(p)
         results.append(p)
     return results

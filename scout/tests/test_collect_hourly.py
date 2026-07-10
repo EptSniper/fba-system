@@ -371,6 +371,20 @@ class HintLedScanTest(unittest.TestCase):
         self.assertEqual(r["survivors"], 1)
         menqueue.assert_called_once()  # gate survivors get shadow-enqueued
 
+    def test_survivors_are_ranked_and_ranking_model_reported(self):
+        """ML audit fix (2026-07-09, doctrine §5 — BLOCKER): the hourly path never called
+        _rank_winners, so the trained ranker had NO reader on the only production scanning
+        path — no shadow ordering existed and a promotion would have changed nothing here.
+        hint_led_scan must now rank survivors through pipeline._rank_winners and report which
+        model ordered the queue."""
+        api = FakeApi()
+        with mock.patch.object(ch.discovery_hints, "hinted_brand_seeds", return_value=["Lego"]),              mock.patch.object(keepa_client, "find_candidates", return_value=["A1"]),              mock.patch.object(keepa_client, "enrich", return_value=[{"asin": "A1", "price": 20}]),              mock.patch.object(ch.model_mod, "load_model", return_value=None),              mock.patch.object(ch.pipeline, "_evaluate",
+                               return_value=[{"asin": "A1", "price": 20, "blended_score": 80}]),              mock.patch.object(ch.pipeline, "_rank_winners",
+                               side_effect=lambda w: (w, "rule")) as mrank,              mock.patch.object(ch.scoring, "oa_hard_reject", return_value=None),              mock.patch.object(db, "log_lead", return_value=101),              mock.patch.object(db, "upsert_keepa_snapshot"),              mock.patch.object(ch.predictions, "record_predictions_for"),              mock.patch.object(ch.shadow_outcomes, "enqueue_survivors"):
+            r = ch.hint_led_scan(api, 100, run_id="r1")
+        mrank.assert_called_once()
+        self.assertEqual(r["ranking_model"], "rule")
+
     def test_limit_reserves_for_the_finder_search_fallback_cost(self):
         """Review fix (2026-07-08, live incident): `limit` used to be sized ONLY off enrich's
         per-ASIN cost (token_budget // TOKENS_PER_CANDIDATE_ESTIMATE), reserving nothing for

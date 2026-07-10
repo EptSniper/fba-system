@@ -147,9 +147,26 @@ def test_rank_winners_per_candidate_fallback_when_challenger_partially_missing()
     assert {w["asin"] for w in ranked} == {"A", "B"}
 
 
-def test_evaluate_attaches_challenger_proba_none_in_shadow_mode():
-    """Default (no promotion): _evaluate must not even attempt to load a challenger — every
-    candidate's challenger_proba is None, byte-identical to pre-fix behavior."""
+def test_evaluate_scores_challenger_in_shadow_mode_but_ordering_stays_rule():
+    """ML audit fix (2026-07-09, doctrine §5 — BLOCKER): in shadow mode (rankingChampion=rule)
+    _evaluate must STILL load the artifact and attach a real challenger_proba — that is what
+    'shadow' means: scored and logged, never acted on. _rank_winners ignoring the score in rule
+    mode is proven separately by test_rank_winners_defaults_to_triage_score_in_shadow_mode."""
+    fake_champion = {"model": object(), "scaler": None, "features": []}
+    with patch.object(pipeline.train_ranker, "load_challenger", return_value=fake_champion) as mock_load, \
+            patch.object(pipeline.train_ranker, "challenger_score", return_value=0.42), \
+            patch.object(pipeline.train_ranker, "ranking_champion", return_value="rule"):
+        scored = pipeline._evaluate([_candidate(price=20.0, category="toys")])
+    mock_load.assert_called_once()
+    assert scored[0]["challenger_proba"] == 0.42  # shadow score attached even unpromoted
+    # ...and persisted durably for shadow-vs-rule evidence (the lead row's explanation jsonb):
+    assert scored[0]["explanation"]["challenger_proba"] == 0.42
+    assert "triage_score" in scored[0]["explanation"]
+
+
+def test_evaluate_survives_challenger_artifact_unavailable():
+    """No artifact anywhere (fresh machine, storage down): challenger_proba degrades to None
+    and nothing raises — the rule path stays byte-identical to before the ranker existed."""
     with patch.object(pipeline.train_ranker, "load_challenger", return_value=None) as mock_load:
         scored = pipeline._evaluate([_candidate(price=20.0, category="toys")])
     mock_load.assert_called_once()

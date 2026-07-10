@@ -576,6 +576,38 @@ def sampling_caps_config() -> Dict[str, float]:
     }
 
 
+# ML audit fix (2026-07-09): db.py documents these three as "LIVE-ONLY (not backfillable)" —
+# real values on live-captured (silver/gold) rows, structurally NaN on every backtest row.
+# train_and_evaluate neutralizes them whenever training mixes tiers so feature PRESENCE can't
+# encode the label tier (doctrine §4).
+EBAY_LIVE_ONLY_FEATURES = ("ebay_active_listing_count", "median_active_price_vs_amazon_ratio",
+                           "ebay_stale")
+
+# Per-tier sample weights (doctrine §2: "Weight/trust them accordingly; never treat a backtest
+# sim label as equal to a real gold outcome"). Brain-overridable via learning.tierWeights —
+# these defaults are deliberately conservative multipliers, and bronze stays EXCLUDED from
+# training entirely (it's an auxiliary agreement metric, never a label — see bronze_agreement).
+DEFAULT_TIER_WEIGHTS = {"backtest": 1.0, "silver": 2.0, "gold": 4.0}
+
+
+def tier_weights_config() -> Dict[str, float]:
+    try:
+        with open(BRAIN_PATH, encoding="utf-8") as f:
+            tw = ((json.load(f) or {}).get("learning") or {}).get("tierWeights") or {}
+    except Exception:
+        tw = {}
+    return {t: float(tw.get(t, d)) for t, d in DEFAULT_TIER_WEIGHTS.items()}
+
+
+def tier_sample_weights(rows: List[Dict[str, Any]]):
+    """One weight per row from its label_quality tier — passed as sample_weight to the fit,
+    composing multiplicatively with class_weight='balanced'. Unknown/missing tiers weigh 1.0
+    (the backtest baseline), never 0 (a silent row-drop)."""
+    import numpy as np
+    tw = tier_weights_config()
+    return np.array([tw.get(r.get("label_quality") or "backtest", 1.0) for r in rows])
+
+
 def _row_brand(r: Dict[str, Any]) -> str:
     return (r.get("features") or {}).get("brand") or "unknown"
 
@@ -648,7 +680,17 @@ def apply_corpus_caps(rows: List[Dict[str, Any]], max_brand_share: float,
             if len(group) <= max_n:
                 out.extend(group)
                 continue
-            group_sorted = sorted(group, key=lambda r: str(r.get("simulation_date") or ""), reverse=True)
+            # ML audit fix (2026-07-09, leakage-adjacent): this used to keep the MOST RECENT
+            # windows per over-represented group — which piled every capped group's survivors
+            # into the late end of the pooled timeline, so split_by_time's validation slice
+            # (the latest 30%) was DOMINATED by exactly the groups the cap de-emphasized: the
+            # gate's forward-generalization check ran on a distorted split. Deterministic
+            # hash-based subsampling keeps each group's original date distribution intact
+            # (stable across runs, no Math.random — same _stable_hash convention as
+            # split_by_asin).
+            import backtest as _bt
+            group_sorted = sorted(
+                group, key=lambda r: _bt._stable_hash(f"{r.get('asin')}|{r.get('simulation_date')}"))
             out.extend(group_sorted[:max_n])
         return out
 
@@ -684,6 +726,21 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
     rows, concentration = apply_corpus_caps(
         rows, max_brand_share=caps["max_brand_share"], max_category_share=caps["max_category_share"])
 
+    # ML audit fix (2026-07-09, label-tier encoding): the three eBay features are LIVE-ONLY —
+    # structurally absent (NaN) on every backtest row but real values/booleans on live-captured
+    # (silver/gold) rows, so their mere PRESENCE would encode the label tier the moment tiers
+    # mix in training (doctrine §4: the model must not infer tier from feature presence).
+    # Neutralize them to missing for ALL rows whenever the set mixes tiers; single-tier sets
+    # keep them (nothing to discriminate). Shallow-copies features — never mutates the caller's
+    # rows.
+    ebay_neutralized = False
+    tiers_present = {r.get("label_quality") or "backtest" for r in rows}
+    if len(tiers_present) > 1:
+        rows = [{**r, "features": {k: (None if k in EBAY_LIVE_ONLY_FEATURES else v)
+                                   for k, v in (r.get("features") or {}).items()}}
+               for r in rows]
+        ebay_neutralized = True
+
     train, val = backtest.split_by_asin(rows, val_fraction=0.3)
     if not train or not val:
         return {"refused": True, "reason": "by-ASIN split left an empty side",
@@ -694,8 +751,13 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         return {"refused": True, "reason": "training side has one class after the by-ASIN split",
                 "by_tier": assembled.get("by_tier", {}), "concentration": concentration}
 
+    # ML audit fix (2026-07-09, doctrine §2 "weight/trust tiers accordingly"): gold/silver/
+    # backtest rows used to fit at identical per-row weight, so 1455 simulated backtest labels
+    # fully drowned the ~70 real-signal silver rows. Per-tier sample weights now compose
+    # multiplicatively with class_weight="balanced" (LightGBM applies both).
+    w_tr = tier_sample_weights(train)
     clf = lgb.LGBMClassifier(class_weight="balanced", random_state=42, verbosity=-1,
-                             **_lightgbm_params(len(Xtr))).fit(Xtr, ytr)
+                             **_lightgbm_params(len(Xtr))).fit(Xtr, ytr, sample_weight=w_tr)
     proba = clf.predict_proba(Xva)[:, 1]
 
     proba_list = [float(p) for p in proba]
@@ -715,13 +777,22 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
     # too small/single-class for a meaningful chronological split.
     time_split = None
     try:
-        time_train, time_val = backtest.split_by_time(rows, val_fraction=0.3)
+        # ML audit fix (2026-07-09): silver/gold rows carry no simulation_date, and the sort
+        # used to place them as "" — BEFORE every ISO date — guaranteeing the corpus's NEWEST
+        # data (live-captured rows) landed in the time-split's TRAIN side: future-period
+        # information training the forward-generalization check. Dateless rows are now excluded
+        # from this evaluation entirely (they can't be placed on a timeline honestly) and the
+        # excluded count is reported, never hidden.
+        dated_rows = [r for r in rows if r.get("simulation_date")]
+        excluded_dateless = len(rows) - len(dated_rows)
+        time_train, time_val = backtest.split_by_time(dated_rows, val_fraction=0.3)
         if time_train and time_val:
             Xtt, ytt = build_matrix(time_train)
             Xtv, ytv = build_matrix(time_val)
             if len(set(ytt.tolist())) >= 2 and len(set(ytv.tolist())) >= 2:
                 time_clf = lgb.LGBMClassifier(class_weight="balanced", random_state=42,
-                                             verbosity=-1, **_lightgbm_params(len(Xtt))).fit(Xtt, ytt)
+                                             verbosity=-1, **_lightgbm_params(len(Xtt))).fit(
+                                                 Xtt, ytt, sample_weight=tier_sample_weights(time_train))
                 time_proba = time_clf.predict_proba(Xtv)[:, 1]
                 time_chall = rank_metrics([float(p) for p in time_proba], ytv.tolist())
                 time_champ = rank_metrics(champion_scores(time_val), ytv.tolist())
@@ -729,6 +800,7 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
                     "train_rows": len(time_train), "val_rows": len(time_val),
                     "champion_auc": time_champ.get("auc"), "challenger_auc": time_chall.get("auc"),
                     "verdict": verdict_line(time_champ, time_chall),
+                    "excluded_dateless": excluded_dateless,
                 }
     except Exception as e:
         print(f"[train_ranker] time-held-out split evaluation failed (non-fatal, primary result "
@@ -754,6 +826,8 @@ def train_and_evaluate(assembled: Dict[str, Any]) -> Dict[str, Any]:
         "by_category": slice_breakdown(val, proba_list, _row_category, max_groups=8, min_n=10),
         "by_brand": slice_breakdown(val, proba_list, _row_brand, max_groups=8, min_n=10),
         "auc_delta_ci": delta_ci,
+        "tier_weights": tier_weights_config(),
+        "ebay_live_only_neutralized": ebay_neutralized,
         "new_signal_importance": new_signal_importance(clf),
         "concentration": concentration,
         # ML_DEBIAS_PLAN.md's exact monitoring spec (raw pre-cap composition, so this reflects
@@ -811,12 +885,22 @@ def render_report(result: Dict[str, Any]) -> str:
         "Promotion is HUMAN-ONLY via the brain key scoring.rankingChampion — this job never "
         "touches ai-brain.json.", "",
     ]
+    tw = result.get("tier_weights")
+    if tw:
+        neut = (" · eBay live-only features neutralized this run (mixed tiers — presence would "
+               "encode the label tier)" if result.get("ebay_live_only_neutralized") else "")
+        lines.append(f"- Tier sample-weights (doctrine §2, brain key learning.tierWeights): "
+                     + ", ".join(f"{t}={w}" for t, w in sorted(tw.items())) + neut)
+        lines.append("")
     ts = result.get("time_split")
     if ts:
+        dateless = (f"; {ts['excluded_dateless']} dateless (silver/gold) row(s) excluded — "
+                   f"they can't be placed on a timeline honestly"
+                   if ts.get("excluded_dateless") else "")
         lines.append(
             f"- Time-held-out split (forward-generalization check — a DIFFERENT axis than the "
             f"by-ASIN group split above; train {ts['train_rows']} / val {ts['val_rows']} rows, "
-            f"chronologically split): CHAMPION AUC "
+            f"chronologically split{dateless}): CHAMPION AUC "
             f"{ts['champion_auc'] if ts['champion_auc'] is not None else 'n/a'} · CHALLENGER AUC "
             f"{ts['challenger_auc'] if ts['challenger_auc'] is not None else 'n/a'} — {ts['verdict']}")
         lines.append("")

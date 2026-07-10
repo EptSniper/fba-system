@@ -203,6 +203,44 @@ class WindowingAndLabelTest(unittest.TestCase):
         self.assertTrue(lbl["would_have_profited"])
         self.assertEqual(lbl["price_at_horizon"], 40.0)
 
+    def test_label_uses_price_in_effect_not_a_far_future_change(self):
+        """ML audit fix (2026-07-09): the label used to be the FIRST price change at ANY day
+        >= horizon, unbounded — a stable product whose next change lands months later got that
+        far-future price attributed to 'day 60'. Keepa series are change-point encoded, so the
+        correct day-60 value is the last observation carried forward."""
+        as_of = BASE + 120
+        # Price 20 until day+59, then NO point at the horizon; next change is +90 at 99.0 —
+        # under the old first-change-after logic the label price would be 99.0.
+        price = [(BASE + d, 20.0) for d in range(180)] + [(as_of + 90, 99.0)]
+        hist = {"price": sorted(price), "offers": [], "sales_rank": [], "amazon": []}
+        lbl = bt.label_at(hist, as_of, landed_cost=10.0, weight_lb=1.0, category="toys")
+        self.assertEqual(lbl["price_at_horizon"], 20.0)  # the value IN EFFECT at +60, not 99.0
+        self.assertFalse(lbl["censored"])
+
+    def test_label_censors_out_of_stock_at_horizon(self):
+        """OOS in effect AT the horizon = no sale price to label with — and OOS-at-horizon
+        products are disproportionately losers, so borrowing their next in-stock price inflated
+        the positive rate. Must censor (would=None), never fabricate."""
+        as_of = BASE + 120
+        price = ([(BASE + d, 20.0) for d in range(150)]
+                + [(as_of + 40, None), (as_of + 80, 35.0)])  # OOS from +40; back in stock +80
+        hist = {"price": sorted(price, key=lambda p: p[0]), "offers": [], "sales_rank": [], "amazon": []}
+        lbl = bt.label_at(hist, as_of, landed_cost=10.0, weight_lb=1.0, category="toys")
+        self.assertIsNone(lbl["would_have_profited"])
+        self.assertTrue(lbl["censored"])
+
+    def test_label_censors_when_tracking_stopped_before_horizon(self):
+        """Tracking that stops > LABEL_TRACKING_TOLERANCE_DAYS before the horizon (delisted /
+        untracked) means the carried-forward value is no longer evidence — censor honestly."""
+        as_of = BASE + 120
+        # Last point of any kind lands 45 days before the +60 horizon (tolerance is 30).
+        price = [(BASE + d, 20.0) for d in range(0, (as_of - BASE) + 15)]
+        hist = {"price": price, "offers": [], "sales_rank": [], "amazon": []}
+        lbl = bt.label_at(hist, as_of, landed_cost=10.0, weight_lb=1.0, category="toys")
+        self.assertTrue(lbl["censored"])
+        self.assertIsNone(lbl["would_have_profited"])
+
+
     def test_build_rows_tags_backtest_tier(self):
         hist = _constant_history(days=200, price=25.0)
         rows = bt.build_rows_for_asin("B01", hist, {"brand": "Lego", "category": "toys", "weight_lb": 1.0})
@@ -211,6 +249,54 @@ class WindowingAndLabelTest(unittest.TestCase):
         self.assertTrue(all("simulation_date" in r for r in rows))
         self.assertIn("features_snapshot", rows[0])
         self.assertNotIn("verdict", rows[0]["features_snapshot"])  # leakage-safe projection
+
+
+class SamplerBudgetPreCheckTest(unittest.TestCase):
+    """ML audit fix (2026-07-09): both samplers used to check `spent >= budget` AFTER the
+    ~10-token spend — a 1-9 token leftover budget still bought one full search term, silently
+    eating the history-loop reserve the SAMPLE_TOKEN_RESERVE_FRACTION guarantee exists for."""
+
+    def test_explore_attempts_zero_terms_when_budget_below_term_cost(self):
+        calls = []
+
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            calls.append(brand_seeds)
+            return ["A1"]
+
+        with mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=0), \
+             mock.patch.object(bt, "_upload_remote_explore_cursor", return_value=False):
+            out, spent = bt.sample_asins_explore(object(), budget_tokens=3,
+                                                categories=["toys", "pet"], find_fn=fake_find)
+        self.assertEqual(calls, [])   # a 3-token budget can't afford a 10-token term
+        self.assertEqual(spent, 0)
+        self.assertEqual(out, [])
+
+    def test_on_policy_attempts_zero_terms_when_budget_below_term_cost(self):
+        calls = []
+
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            calls.append(brand_seeds)
+            return ["A1"]
+
+        with mock.patch("brands.seed_brands", return_value=["Lego", "Yeti"]), \
+             mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]):
+            out, spent = bt.sample_asins_on_policy(object(), budget_tokens=9, find_fn=fake_find)
+        self.assertEqual(calls, [])
+        self.assertEqual(spent, 0)
+
+    def test_budget_exactly_one_term_attempts_exactly_one(self):
+        calls = []
+
+        def fake_find(api=None, brand_seeds=None, limit=None):
+            calls.append(list(brand_seeds))
+            return ["A1"]
+
+        with mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=0), \
+             mock.patch.object(bt, "_upload_remote_explore_cursor", return_value=False):
+            bt.sample_asins_explore(object(), budget_tokens=10,
+                                   categories=["toys", "pet"], find_fn=fake_find)
+        self.assertEqual(len(calls), 1)  # affords one 10-token term, not two
+
 
 
 class RunBacktestBudgetTest(unittest.TestCase):
@@ -323,14 +409,16 @@ class RunBacktestBudgetTest(unittest.TestCase):
             return [{"asin": a, "data": None} for a in asins]
 
         # dealfeed/explore stubbed to (0, 0) so this test isolates the cap-vs-lifetime-spend fix
-        # from an unrelated quirk in explore's own per-term budget sizing (not what's under test
-        # here) -- onpolicy (fake_find) should still get the run's full 15-token budget.
+        # from explore's own budget sizing (not what's under test here). token_cap=25: sampling
+        # gets 25 - int(25*0.5) = 13, which affords exactly one 10-token search term under the
+        # 2026-07-09 pre-check fix (spent + SEARCH_TOKENS_PER_TERM must FIT the budget BEFORE
+        # the call — the old 15-token fixture left sampling only 8, honestly unaffordable now).
         with mock.patch.object(bt.config, "have_keepa", return_value=True), \
              mock.patch.object(bt, "backtest_token_cap", return_value=200), \
              mock.patch.object(bt, "sample_asins_explore", return_value=([], 0)), \
              mock.patch("brands.seed_brands", return_value=["Lego"]), \
              mock.patch("discovery_hints.hinted_brand_seeds", return_value=[]):
-            r = bt.run_backtest(api=object(), token_cap=15, find_fn=fake_find,
+            r = bt.run_backtest(api=object(), token_cap=25, find_fn=fake_find,
                                history_fn=fake_history, persist=True)
 
         self.assertGreater(r["asins_sampled"], 0, "sampling must not be gated by lifetime spend")

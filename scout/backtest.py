@@ -128,12 +128,33 @@ def _rank_drops(series: Series, as_of: int, lookback: int) -> Optional[int]:
 
 
 def _value_at_or_after(series: Series, target: int) -> Optional[float]:
-    """The first non-None value at day >= target — used for the +horizon label (the observed
-    future is ALLOWED here; this is the label side, not the feature side)."""
+    """The first non-None value at day >= target — used only as windows_for()'s cheap
+    label-EXISTENCE pre-filter (the observed future is ALLOWED here; this is the label side,
+    not the feature side). label_at() itself no longer reads the label value this way — see
+    _point_in_effect()."""
     for day, v in series:
         if day >= target and v is not None:
             return v
     return None
+
+
+LABEL_TRACKING_TOLERANCE_DAYS = 30  # how far before the horizon Keepa tracking may have stopped
+
+
+def _point_in_effect(series: Series, at: int) -> Tuple[Optional[int], Optional[float]]:
+    """The LAST point (day, value — INCLUDING a None/out-of-stock marker) strictly before `at`.
+    Keepa csv series are change-point encoded: a point exists only when the value CHANGES, so
+    the last point before a day is the value genuinely in effect ON that day (last observation
+    carried forward). ML audit fix (2026-07-09): label_at() used to take the FIRST point at any
+    day >= horizon with NO upper bound — a slow-moving product's 'price at +60d' could really be
+    a price from months later, and an out-of-stock-at-horizon product silently borrowed its next
+    future in-stock price instead of being censored."""
+    day_at, val_at = None, None
+    for day, v in series:
+        if day >= at:
+            break
+        day_at, val_at = day, v
+    return day_at, val_at
 
 
 # --- feature reconstruction (reuses the live PRE_DECISION contract) ---------
@@ -190,11 +211,28 @@ def windows_for(hist: History, step_days: int = STEP_DAYS,
 def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb: Optional[float],
              category: Optional[str], horizon: int = LABEL_HORIZON_DAYS) -> Dict[str, Any]:
     """The observed label at as_of + horizon: would_have_profited at the ORIGINAL landed cost,
-    via the SAME fee math (scoring.net_proceeds) the shadow tracker and live pipeline use."""
+    via the SAME fee math (scoring.net_proceeds) the shadow tracker and live pipeline use.
+
+    ML audit fix (2026-07-09): the label price is now the value IN EFFECT at the horizon
+    (last-observation-carried-forward — correct for Keepa's change-point encoding), not the
+    first change at ANY day after it (unbounded — a 'day-60' label could really be a price from
+    months later). Two censoring rules, both honest skips (would_have_profited=None, the window
+    never becomes a row) rather than fabricated labels: (1) out-of-stock in effect AT the
+    horizon — there is no sale price to label with, and OOS-at-horizon products are
+    disproportionately the LOSERS, so borrowing their next future in-stock price systematically
+    inflated the positive rate; (2) Keepa tracking stopped more than
+    LABEL_TRACKING_TOLERANCE_DAYS before the horizon (delisted/untracked — the carried-forward
+    value is no longer evidence). `censored` is reported so run summaries can count what was
+    skipped instead of silently thinning."""
     price = hist.get("price", [])
     offers = hist.get("offers", [])
-    price_at_h = _value_at_or_after(price, as_of + horizon)
-    offers_at_h = _value_at_or_after(offers, as_of + horizon)
+    horizon_day = as_of + horizon
+    last_tracked_day = price[-1][0] if price else None
+    tracked_near_horizon = (last_tracked_day is not None
+                           and last_tracked_day >= horizon_day - LABEL_TRACKING_TOLERANCE_DAYS)
+    _, price_in_effect = _point_in_effect(price, horizon_day + 1)
+    price_at_h = price_in_effect if tracked_near_horizon else None
+    _, offers_in_effect = _point_in_effect(offers, horizon_day + 1)
     net = scoring.net_proceeds(price_at_h, weight_lb, category=category)
     est_profit = would = None
     if net is not None and landed_cost is not None:
@@ -202,9 +240,10 @@ def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb:
         would = est_profit > 0
     return {
         "price_at_horizon": price_at_h,
-        "offers_at_horizon": _int_or_none(offers_at_h),
+        "offers_at_horizon": _int_or_none(offers_in_effect),
         "est_profit": est_profit,
         "would_have_profited": would,
+        "censored": price_at_h is None,
     }
 
 
@@ -602,7 +641,11 @@ def sample_asins_on_policy(api, budget_tokens: int, target: int = TARGET_ASINS,
     spent = 0
     import keepa_client
     for brand in seeds:
-        if len(asins) >= target or spent >= budget_tokens:
+        # `spent + SEARCH_TOKENS_PER_TERM > budget`, not `spent >= budget` (fix 2026-07-09,
+        # noted live in Session 57: the old post-hoc check only stopped AFTER overspending —
+        # each term costs a flat ~SEARCH_TOKENS_PER_TERM on this Pro plan, so a 15-token budget
+        # spent 20. Pre-check the KNOWN per-call cost against what actually remains instead.
+        if len(asins) >= target or spent + keepa_client.SEARCH_TOKENS_PER_TERM > budget_tokens:
             break
         before = keepa_client._tokens_consumed(api)
         try:
@@ -652,7 +695,11 @@ def sample_asins_explore(api, budget_tokens: int, categories: Optional[List[str]
     attempted = 0
     import keepa_client
     for cat in rotation:
-        if spent >= budget_tokens:
+        # Pre-check the KNOWN flat per-term cost against what actually remains (fix 2026-07-09,
+        # same as sample_asins_on_policy): the old post-hoc `spent >= budget` only stopped AFTER
+        # overspending — a 1-9 token leftover still bought a full ~10-token term, silently
+        # eating the history-loop reserve SAMPLE_TOKEN_RESERVE_FRACTION exists to guarantee.
+        if spent + keepa_client.SEARCH_TOKENS_PER_TERM > budget_tokens:
             break
         attempted += 1
         before = keepa_client._tokens_consumed(api)

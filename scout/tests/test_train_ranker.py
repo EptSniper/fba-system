@@ -941,16 +941,27 @@ class CorpusConcentrationAndCapsTest(unittest.TestCase):
         self.assertEqual(conc["total"], 0)
         self.assertEqual(conc["top_brand_share"], 0.0)
 
-    def test_cap_reduces_overrepresented_category_keeping_most_recent_windows(self):
+    def test_cap_reduces_overrepresented_category_preserving_date_spread(self):
+        """ML audit fix (2026-07-09): the cap used to keep the MOST RECENT windows per capped
+        group, piling every capped group's survivors into the late end of the timeline — which
+        made split_by_time's validation slice (the latest 30%) disproportionately the capped
+        groups, distorting the promotion gate's forward-generalization check. Subsampling is now
+        deterministic-hash-based, so kept rows preserve the group's original date distribution."""
         # 27 toys rows (dates 2026-01-01..27) + 3 kitchen rows -> 30 total, cap at 30% = 9
         toys = [self._row(f"T{i}", "toys", f"Brand{i}", f"2026-01-{i+1:02d}") for i in range(27)]
         kitchen = [self._row(f"K{i}", "kitchen", f"BrandK{i}", "2026-02-01") for i in range(3)]
         capped, info = tr.apply_corpus_caps(toys + kitchen, max_brand_share=1.0, max_category_share=0.30)
         toys_kept = [r for r in capped if r["features"]["category"] == "toys"]
         self.assertEqual(len(toys_kept), 9)
-        # Most-recent-first: the 9 kept must be the LATEST dates (19..27), not the earliest
+        # NOT recency-greedy: the kept rows must NOT be exactly the latest 9 dates (the old
+        # policy this fix replaces) — hash-based keep spreads across the date range.
         kept_dates = sorted(r["simulation_date"] for r in toys_kept)
-        self.assertEqual(kept_dates, [f"2026-01-{i:02d}" for i in range(19, 28)])
+        self.assertNotEqual(kept_dates, [f"2026-01-{i:02d}" for i in range(19, 28)])
+        self.assertLess(kept_dates[0], "2026-01-15")  # early half represented too
+        # Deterministic across runs (no Math.random): identical input -> identical keep set.
+        capped2, _ = tr.apply_corpus_caps(toys + kitchen, max_brand_share=1.0, max_category_share=0.30)
+        self.assertEqual(sorted(r["asin"] for r in capped),
+                        sorted(r["asin"] for r in capped2))
         self.assertEqual(len(capped), 12)  # 9 toys + 3 kitchen, all kitchen kept (under its cap)
         self.assertEqual(info["dropped"], 18)
         # The cap is relative to the ORIGINAL total (30 * 0.30 = 9), not the post-cap total (12) —

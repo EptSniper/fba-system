@@ -29,7 +29,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import config
 import datalake
@@ -260,11 +260,34 @@ def resolve_category_ids(api, categories: List[str], lookup_fn: Optional[Callabl
 # to breadth-neutral rather than erroring (fetch_deal_page already handles an empty page fine);
 # flagged for confirmation once real per-band deal counts come back.
 RANK_SUB_BANDS = [(0, 30000), (30000, 90000), (90000, 200000)]
-PRICE_BANDS_DOLLARS = [(8, 20), (20, 40), (40, 60)]
-DROP_PERCENT_BANDS = [(50, 100), (20, 50), (5, 20)]  # biggest drops first; UNVERIFIED convention
+# ML audit fix (2026-07-09): dropped the intrinsically-rare (50,100) drop band — a 50-100% price
+# cut barely exists, and with the range filters now actually ENABLED a dry combo zeroes a whole
+# run's dealfeed yield while still paying 5 tokens/page. Re-add once deltaPercentRange's
+# convention is live-verified from per-band yields.
+DROP_PERCENT_BANDS = [(20, 100), (5, 20)]  # biggest drops first; scale still UNVERIFIED live
 
 _SECONDARY_CURSOR_STORAGE_PATH = "backtest/dealfeed_secondary_cursor.json"
-_SECONDARY_AXIS_SIZE = len(RANK_SUB_BANDS) * len(PRICE_BANDS_DOLLARS) * len(DROP_PERCENT_BANDS)
+
+
+def _price_bands_dollars() -> List[Tuple[float, float]]:
+    """Secondary-axis price bands, single-sourced from ai-brain.json learning.sampling.priceBands
+    (ML audit fix 2026-07-09: the old hardcoded copy capped at $60 while the brain declares
+    [60,150] as a stratum — with the range filters now actually enabled, dealfeed would NEVER
+    have sampled the $60-150 band at all, and a hardcoded second copy of a brain knob violates
+    the single-source rule outright). Falls back to the brain's own current values if the key is
+    unreadable."""
+    try:
+        bands = sampling_config().get("priceBands") or []
+        out = [(float(lo), float(hi)) for lo, hi in bands if lo is not None and hi is not None]
+        if out:
+            return out
+    except Exception as e:
+        log.warning("priceBands read failed (non-fatal, using fallback bands): %s", e)
+    return [(8.0, 25.0), (25.0, 60.0), (60.0, 150.0)]
+
+
+def _secondary_axis_size() -> int:
+    return len(RANK_SUB_BANDS) * len(_price_bands_dollars()) * len(DROP_PERCENT_BANDS)
 
 
 def _fetch_remote_secondary_cursor() -> int:
@@ -307,14 +330,17 @@ def _upload_remote_secondary_cursor(cursor: int) -> bool:
 def secondary_axis_filters(index: int) -> Dict[str, Any]:
     """Decomposes a combined cursor position into one (rank band, price band, drop% band) combo
     and returns the matching keepa.Keepa.deals() filter keys. Cycles through all
-    len(RANK_SUB_BANDS)*len(PRICE_BANDS_DOLLARS)*len(DROP_PERCENT_BANDS) combinations as `index`
-    advances — one full combo per dealfeed run (see harvest()), not per page, so a run explores
-    one specific slice broadly across whichever categories the category cursor lands on."""
-    index = index % _SECONDARY_AXIS_SIZE
-    rank_idx, rem = divmod(index, len(PRICE_BANDS_DOLLARS) * len(DROP_PERCENT_BANDS))
+    rank x price x drop combinations as `index` advances — one full combo per dealfeed run (see
+    harvest()), not per page, so a run explores one specific slice broadly across whichever
+    categories the category cursor lands on. Price bands come from the brain
+    (_price_bands_dollars), so the combo count can change when the brain does — index wraps by
+    the CURRENT size, which at worst re-orders the sweep after a config change, never crashes."""
+    price_bands = _price_bands_dollars()
+    index = index % (len(RANK_SUB_BANDS) * len(price_bands) * len(DROP_PERCENT_BANDS))
+    rank_idx, rem = divmod(index, len(price_bands) * len(DROP_PERCENT_BANDS))
     price_idx, drop_idx = divmod(rem, len(DROP_PERCENT_BANDS))
     rank_lo, rank_hi = RANK_SUB_BANDS[rank_idx]
-    price_lo, price_hi = PRICE_BANDS_DOLLARS[price_idx]
+    price_lo, price_hi = price_bands[price_idx]
     drop_lo, drop_hi = DROP_PERCENT_BANDS[drop_idx]
     return {
         "salesRankRange": [rank_lo, rank_hi],
@@ -350,7 +376,14 @@ def fetch_deal_page(api, category: Optional[str] = None, category_id: Optional[i
     if not ok:
         return {"status": "skipped", "reason": "insufficient bank", "asins": [],
                 "tokens_spent": 0, "category": category, "page": page}
-    deal_parms: Dict[str, Any] = {"page": page, "domainId": 1, "priceTypes": [0]}
+    # priceTypes [1] = NEW (marketplace new offers, csv index 1 — this repo's own
+    # keepa_client.py: IDX_AMAZON=0, IDX_NEW=1). ML audit fix (2026-07-09): [0] = AMAZON meant a
+    # product only entered the "brand-agnostic firehose" when AMAZON ITSELF stocked it and its
+    # Amazon price changed — systematically excluding the 3P-only long tail (a huge share of the
+    # OA universe) and skewing the feed toward the major brands Amazon retail carries, the exact
+    # opposite of ml-doctrine.md §3's breadth mandate and of ML_DEBIAS_PLAN.md's own recipe
+    # ("Amazon out-of-stock, New offer count 3-25").
+    deal_parms: Dict[str, Any] = {"page": page, "domainId": 1, "priceTypes": [1]}
     if category_id is not None:
         deal_parms["includeCategories"] = [category_id]
     if extra_filters:
@@ -443,6 +476,7 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     seen = set()
     by_category: Dict[str, int] = {}
     pulled = 0
+    dry_slots_refetched = 0
     for i in range(max(0, pages)):
         if rotation:
             cat = rotation[i % len(rotation)]
@@ -455,6 +489,17 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
         total_spent += page.get("tokens_spent") or 0
         if page.get("status") == "skipped":
             break  # bank ran dry mid-run — stop, don't keep attempting spends that can't land
+        if page.get("status") == "ok" and not page.get("asins"):
+            # ML audit fix (2026-07-09): category AND rank AND price AND drop% can legitimately
+            # AND down to an empty page for many combos — an empty page still bills its 5
+            # tokens, and one dry combo used to zero the WHOLE run's dealfeed yield. Re-pull the
+            # slot unfiltered (category-only) so a run never comes home empty because of one
+            # narrow slice; the guard inside fetch_deal_page still protects the bank.
+            page = fetch_deal_page(api, category=cat, category_id=cat_id, page=0, wait=wait)
+            total_spent += page.get("tokens_spent") or 0
+            dry_slots_refetched += 1
+            if page.get("status") == "skipped":
+                break
         for a in page.get("asins") or []:
             if a not in seen:
                 seen.add(a)
@@ -469,7 +514,7 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     # One full secondary-axis combination per RUN (not per page/category slot) -- advances
     # regardless of how many pages this run actually pulled, so a starved run doesn't repeat the
     # same rank/price/drop% slice next time either.
-    _upload_remote_secondary_cursor((secondary_cursor + 1) % _SECONDARY_AXIS_SIZE)
+    _upload_remote_secondary_cursor((secondary_cursor + 1) % _secondary_axis_size())
     # Review fix (2026-07-09, fba-code-reviewer SHOULD-FIX): 4 simultaneous filters (category +
     # rank + price + drop%) can legitimately AND down to zero-few real deals for many
     # combinations -- not a bug, but silent if nothing surfaces it. Logging the combo alongside
@@ -479,5 +524,6 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
         log.info("dealfeed secondary axis %s -> %d unique asin(s) across %d page(s)",
                  secondary_filters, len(out), pulled)
     return {"status": "ok", "asins": out, "pages_pulled": pulled, "tokens_spent": total_spent,
+            "dry_slots_refetched": dry_slots_refetched,
             "by_category": by_category, "categories_resolved": sorted(id_map.keys()),
             "secondary_axis_filters": secondary_filters}

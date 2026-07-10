@@ -229,17 +229,32 @@ class SecondaryAxisFiltersTest(unittest.TestCase):
         filters = df.secondary_axis_filters(0)
         self.assertEqual(filters["salesRankRange"], list(df.RANK_SUB_BANDS[0]))
         self.assertEqual(filters["deltaPercentRange"], list(df.DROP_PERCENT_BANDS[0]))
-        lo, hi = df.PRICE_BANDS_DOLLARS[0]
-        self.assertEqual(filters["currentRange"], [lo * 100, hi * 100])  # dollars -> cents
+        lo, hi = df._price_bands_dollars()[0]
+        self.assertEqual(filters["currentRange"], [int(lo * 100), int(hi * 100)])  # dollars -> cents
+
+    def test_price_bands_come_from_the_brain_not_a_hardcoded_copy(self):
+        """ML audit fix (2026-07-09): the old hardcoded bands capped at $60 while the brain
+        declares [60,150] as a stratum — with range filters enabled, dealfeed would never have
+        sampled $60-150 at all. Single-sourced from learning.sampling.priceBands now."""
+        with mock.patch.object(df, "sampling_config",
+                               return_value={"priceBands": [[10, 30], [30, 200]]}):
+            bands = df._price_bands_dollars()
+        self.assertEqual(bands, [(10.0, 30.0), (30.0, 200.0)])
+        # the top brain stratum must be reachable by some cursor index
+        with mock.patch.object(df, "sampling_config",
+                               return_value={"priceBands": [[10, 30], [30, 200]]}):
+            tops = {tuple(df.secondary_axis_filters(i)["currentRange"])
+                    for i in range(df._secondary_axis_size())}
+        self.assertIn((3000, 20000), tops)
 
     def test_index_cycles_through_every_combo_before_repeating(self):
         def _hashable(v):
             return tuple(v) if isinstance(v, list) else v
 
-        combos = [df.secondary_axis_filters(i) for i in range(df._SECONDARY_AXIS_SIZE)]
+        combos = [df.secondary_axis_filters(i) for i in range(df._secondary_axis_size())]
         seen = {tuple(sorted((k, _hashable(v)) for k, v in combo.items())) for combo in combos}
-        self.assertEqual(len(seen), df._SECONDARY_AXIS_SIZE)  # every combo is distinct
-        self.assertEqual(df.secondary_axis_filters(0), df.secondary_axis_filters(df._SECONDARY_AXIS_SIZE))
+        self.assertEqual(len(seen), df._secondary_axis_size())  # every combo is distinct
+        self.assertEqual(df.secondary_axis_filters(0), df.secondary_axis_filters(df._secondary_axis_size()))
 
     def test_enables_the_range_filters_keepa_requires(self):
         """Review fix (2026-07-09, fba-code-reviewer, BLOCKER): keepa.Keepa.deals() sends
@@ -252,7 +267,7 @@ class SecondaryAxisFiltersTest(unittest.TestCase):
     def test_negative_or_oversized_index_wraps_safely(self):
         # harvest() always mods by len(...) before storing, but the function itself degrades
         # gracefully on any index rather than trusting every caller got that right.
-        self.assertEqual(df.secondary_axis_filters(df._SECONDARY_AXIS_SIZE + 2),
+        self.assertEqual(df.secondary_axis_filters(df._secondary_axis_size() + 2),
                          df.secondary_axis_filters(2))
 
 
@@ -325,10 +340,37 @@ class HarvestTest(unittest.TestCase):
         mupload.assert_called_once_with(1)
 
     def test_stops_early_when_bank_runs_dry(self):
-        api = FakeApi(tokens_left=keepa_client.DEALS_PAGE_TOKENS)  # only 1 page affordable
+        # Give the filtered page real asins so the dry-slot unfiltered refetch (a separate
+        # behavior, tested below) doesn't trigger — this test is purely about the bank guard.
+        api = FakeApi(tokens_left=keepa_client.DEALS_PAGE_TOKENS,
+                      pages={((11,), 0): ["B001"]})  # only 1 page affordable
         result = df.harvest(api, pages=4, categories=["toys"],
                             resolve_fn=lambda api, cats, wait=True: {"toys": 11})
         self.assertEqual(result["pages_pulled"], 2)  # 1 successful + 1 that trips the skip
+
+    def test_dry_filtered_slot_refetches_unfiltered(self):
+        """ML audit fix (2026-07-09): one narrow rank/price/drop combo ANDing down to an empty
+        page used to zero the whole run's dealfeed yield (still billing 5 tokens/page). A dry
+        filtered slot now re-pulls unfiltered (category-only) so the run never comes home empty
+        because of one slice."""
+        seen_parms = []
+
+        class RecordingApi(FakeApi):
+            def deals(self, deal_parms, domain=None, wait=True):
+                seen_parms.append(dict(deal_parms))
+                result = super().deals(deal_parms, domain=domain, wait=wait)
+                if "salesRankRange" in deal_parms:
+                    return {"dr": []}  # the narrow slice is dry; unfiltered still has deals
+                return result
+
+        api = RecordingApi(tokens_left=60, pages={((11,), 0): ["B001"]})
+        result = df.harvest(api, pages=1, categories=["toys"],
+                            resolve_fn=lambda api, cats, wait=True: {"toys": 11})
+        self.assertEqual([a["asin"] for a in result["asins"]], ["B001"])
+        self.assertEqual(result["dry_slots_refetched"], 1)
+        self.assertEqual(len(seen_parms), 2)
+        self.assertIn("salesRankRange", seen_parms[0])      # first attempt: filtered
+        self.assertNotIn("salesRankRange", seen_parms[1])   # refetch: category-only
 
     def test_unfiltered_when_categories_unresolvable(self):
         api = FakeApi(tokens_left=60, pages={(None, 0): ["B009"]})

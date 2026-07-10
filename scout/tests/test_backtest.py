@@ -450,6 +450,78 @@ class RunBacktestBudgetTest(unittest.TestCase):
         self.assertLess(captured["budget_tokens"], 40, "sampling must not get the full run cap")
 
 
+class PendingBacklogTest(RunBacktestBudgetTest):
+    """fba-ml-data-engineer (2026-07-10): the sampled-but-deferred remainder used to be
+    DISCARDED every run — ~half of every tier-3 budget re-bought discovery of already-known
+    ASINs. It now persists as state["pending"], drains FIRST next run, and sampling is skipped
+    entirely while the backlog exceeds what the cap can pull."""
+
+    def _seed_state(self, pending):
+        import json
+        state_path = bt._state_path()
+        os.makedirs(os.path.dirname(state_path), exist_ok=True)
+        with open(state_path, "w", encoding="utf-8") as f:
+            json.dump({"processed_asins": [], "spent_tokens": 0, "rows_written": 0,
+                       "pending": pending}, f)
+
+    def test_backlog_skips_sampling_and_drains_first(self):
+        pending = [{"asin": f"P{i}", "sample_source": "dealfeed", "category": "pet"}
+                  for i in range(50)]  # 50 >> cap(10)//1 affordable pulls
+        self._seed_state(pending)
+        pulled = []
+
+        def fake_history(asins, api=None):
+            pulled.extend(asins)
+            return [{"asin": a, "data": None} for a in asins]
+
+        sampler = mock.Mock(side_effect=AssertionError("sampling must be SKIPPED on a full backlog"))
+        with mock.patch.object(bt.config, "have_keepa", return_value=True),              mock.patch.object(bt, "sample_asins_stratified", sampler):
+            r = bt.run_backtest(api=object(), token_cap=10, history_fn=fake_history, persist=True)
+        sampler.assert_not_called()
+        self.assertTrue(r["sampling_skipped"])
+        self.assertEqual(r["pending_drained"], 50)
+        self.assertTrue(pulled)                      # backlog items actually pulled
+        self.assertTrue(all(a.startswith("P") for a in pulled))
+        self.assertGreater(r["pending_remaining"], 0)  # cap couldn't drain all 50 — rest persists
+
+    def test_low_backlog_still_samples_and_appends(self):
+        self._seed_state([{"asin": "P1", "sample_source": "explore", "category": "pet"}])
+
+        def fake_stratified(api, budget_tokens, target=bt.TARGET_ASINS, find_fn=None, firehose_fn=None):
+            return ([{"asin": "S1", "category": "toys", "sample_source": "dealfeed"}], 5,
+                    {"dealfeed": 1, "explore": 0, "onpolicy": 0})
+
+        def fake_history(asins, api=None):
+            return [{"asin": a, "data": None} for a in asins]
+
+        with mock.patch.object(bt.config, "have_keepa", return_value=True),              mock.patch.object(bt, "sample_asins_stratified", side_effect=fake_stratified):
+            r = bt.run_backtest(api=object(), token_cap=200, history_fn=fake_history, persist=True)
+        self.assertFalse(r["sampling_skipped"])
+        self.assertEqual(r["pending_drained"], 1)
+        # both the drained backlog item and the fresh sample were processed
+        self.assertEqual(r["pending_remaining"], 0)
+
+    def test_remainder_persists_with_source_tags(self):
+        import json
+        self._seed_state([])
+
+        def fake_stratified(api, budget_tokens, target=bt.TARGET_ASINS, find_fn=None, firehose_fn=None):
+            return ([{"asin": f"S{i}", "category": "pet", "sample_source": "dealfeed"}
+                     for i in range(30)], 5, {"dealfeed": 30, "explore": 0, "onpolicy": 0})
+
+        def fake_history(asins, api=None):
+            return [{"asin": a, "data": None} for a in asins]
+
+        with mock.patch.object(bt.config, "have_keepa", return_value=True),              mock.patch.object(bt, "sample_asins_stratified", side_effect=fake_stratified):
+            r = bt.run_backtest(api=object(), token_cap=12, history_fn=fake_history, persist=True)
+        self.assertGreater(r["pending_remaining"], 0)
+        with open(bt._state_path(), encoding="utf-8") as f:
+            saved = json.load(f)
+        self.assertTrue(saved["pending"])
+        self.assertEqual(saved["pending"][0]["sample_source"], "dealfeed")
+        self.assertEqual(saved["pending"][0]["category"], "pet")
+
+
 class TrendPrefetchBatchTest(RunBacktestBudgetTest):
     """Review fix (2026-07-06): build_rows_for_asin()'s _fetch_trend_series() call used to have
     no cross-ASIN caching within a run — up to 2 sequential live db.trends_series_for() calls

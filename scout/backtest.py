@@ -835,18 +835,44 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
     rows_written = int(state.get("rows_written", 0))
     row_composition = dict(state.get("row_composition") or {})
 
+    # 0) drain the persisted PENDING backlog first (fba-ml-data-engineer, 2026-07-10 — the
+    #    audit's top efficiency finding): every run used to re-sample ~600 fresh candidates
+    #    while the cap only affords pulling ~20-130 histories, then THREW AWAY the deferred
+    #    remainder — roughly half of every tier-3 budget re-bought the discovery of
+    #    mostly-already-known ASINs. The un-pulled remainder now persists in the same state
+    #    blob; sampling is SKIPPED entirely whenever the backlog already exceeds what this
+    #    run's whole cap could pull, so on backlogged runs the full budget converts to rows.
+    pending = [p for p in (state.get("pending") or [])
+              if p.get("asin") and p["asin"] not in processed]
+    import keepa_client as _kc
+    affordable = max(1, cap // max(1, _kc.HISTORY_TOKENS_PER_ASIN))
+    sampling_skipped = len(pending) >= affordable
+
     # 1) stratified sample — dealfeed + explore (brand-agnostic) + onpolicy (unchanged, brand-
     #    seeded), budget-waterfalled (Session 55, learning.sampling). Product Finder/search/deal
     #    spend all count against the same cap. Reserved to at most SAMPLE_TOKEN_RESERVE_FRACTION
     #    of `cap` (see that constant's docstring) so sampling can never eat the ENTIRE run budget
     #    and leave nothing for step 2 below to actually convert into rows.
-    sample_budget = max(0, cap - int(cap * SAMPLE_TOKEN_RESERVE_FRACTION))
-    sample_rows, sample_spent, sample_composition = sample_asins_stratified(
-        api, budget_tokens=sample_budget, target=target, find_fn=find_fn,
-        firehose_fn=firehose_fn)
+    if sampling_skipped:
+        log.info("backtest: pending backlog (%d) >= this run's affordable pulls (%d) — "
+                "skipping sampling, full cap goes to history pulls", len(pending), affordable)
+        sample_rows, sample_spent = [], 0
+        sample_composition = {"dealfeed": 0, "explore": 0, "onpolicy": 0}
+    else:
+        sample_budget = max(0, cap - int(cap * SAMPLE_TOKEN_RESERVE_FRACTION))
+        sample_rows, sample_spent, sample_composition = sample_asins_stratified(
+            api, budget_tokens=sample_budget, target=target, find_fn=find_fn,
+            firehose_fn=firehose_fn)
     spent_this_run += sample_spent
-    asin_source = {r["asin"]: r["sample_source"] for r in sample_rows}
-    asins = [r["asin"] for r in sample_rows]
+    # Backlog items drain FIRST (they were already paid for), then fresh samples. asin_source
+    # carries each item's original sample_source tag either way.
+    asin_source = {p["asin"]: p.get("sample_source") or "onpolicy" for p in pending}
+    asin_category = {p["asin"]: p.get("category") for p in pending}
+    for r in sample_rows:
+        asin_source.setdefault(r["asin"], r["sample_source"])
+        asin_category.setdefault(r["asin"], r.get("category"))
+    asins = [p["asin"] for p in pending] + [r["asin"] for r in sample_rows
+                                            if r["asin"] not in {p["asin"] for p in pending}]
     todo = [a for a in asins if a not in processed]
 
     # 2) pull history + build rows, batched, until the cap bites (resumable — capped ASINs remain
@@ -946,11 +972,22 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
     rows_written += built
     lifetime_spent += spent_this_run
     datalake.flush("backtest")
+    # fba-ml-data-engineer (2026-07-10): persist the un-pulled remainder as the next run's
+    # backlog instead of discarding it — includes failed-upsert batches (deliberately not in
+    # `processed`, so they re-queue too). Capped so the blob can't grow unbounded; each entry
+    # keeps its original sample_source/category tag for honest row attribution when drained.
+    PENDING_BACKLOG_CAP = 3000
+    remainder = [{"asin": a, "sample_source": asin_source.get(a) or "onpolicy",
+                  "category": asin_category.get(a)}
+                 for a in todo if a not in processed][:PENDING_BACKLOG_CAP]
     if persist:
         _save_state({"processed_asins": sorted(processed), "spent_tokens": lifetime_spent,
-                     "rows_written": rows_written, "row_composition": row_composition})
+                     "rows_written": rows_written, "row_composition": row_composition,
+                     "pending": remainder})
 
     return {"status": "ok", "asins_sampled": len(asins), "asins_processed": len(processed),
+            "pending_drained": len(pending), "pending_remaining": len(remainder),
+            "sampling_skipped": sampling_skipped,
             "rows_written": built, "rows_total": rows_written, "tokens_spent": spent_this_run,
             "token_cap": cap, "deferred_asins": deferred,
             "sample_composition": sample_composition, "row_composition": row_composition,

@@ -1252,7 +1252,15 @@ def challenger_score(champion: Optional[Dict[str, Any]],
         proba = champion["model"].predict_proba(Xs)[:, 1]
         return float(proba[0])
     except Exception as e:
-        print(f"[train_ranker] challenger_score failed (non-fatal): {type(e).__name__}")
+        # fba-ml-debugger instrumentation (2026-07-10): a live cloud run showed a bare
+        # "TypeError" here with shadow scoring silently degrading to None on EVERY candidate —
+        # the type name alone can't locate the failing line. Message + innermost frame included
+        # (feature VALUES deliberately not printed — could contain nothing sensitive today, but
+        # the redaction habit is the rule).
+        import traceback as _tb
+        frame = _tb.extract_tb(e.__traceback__)[-1] if e.__traceback__ else None
+        where = f" at {frame.filename.split('/')[-1].split(chr(92))[-1]}:{frame.lineno} ({frame.line})" if frame else ""
+        print(f"[train_ranker] challenger_score failed (non-fatal): {type(e).__name__}: {e}{where}")
         return None
 
 

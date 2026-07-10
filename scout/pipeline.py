@@ -25,6 +25,7 @@ import config
 import datalake
 import db
 import shadow_outcomes
+from signals import attach as signals_attach
 import discovery_hints
 import discord_router
 import keepa_client
@@ -378,6 +379,16 @@ def run_once(criteria: Optional[Dict[str, Any]] = None,
             if p.get("asin") in hinted_asins:
                 store = brand_store.get(p.get("brand"))
                 p["found_via"] = f"deal-hint:{store}" if store else "deal-hint"
+        # fba-feature-engineer (2026-07-10, ML audit MAJOR): attach the SAME as-of-today
+        # calendar/Trends/eBay signal features the hourly path attaches — this path used to
+        # score the challenger with NaN for 18 of its 28 inputs (train/serve skew) and its
+        # shadow enqueues wrote silver rows missing every signal field, including day_of_week
+        # (a pure date function backtest rows always carry — a per-path label-tier fingerprint,
+        # doctrine §4). Best-effort: a signals failure never drops the batch.
+        try:
+            enriched = signals_attach.attach_signal_features(enriched)
+        except Exception as e:
+            log.warning("attach_signal_features failed (non-fatal, continuing without them): %s", e)
         # Token telemetry (System Blueprint Prompt G1/G2) — a drained key silently looks like
         # "no results" otherwise; surfaced in the summary and the runs row so it's never silent.
         summary["tokens"] = keepa_client.token_telemetry(api)

@@ -533,16 +533,29 @@ def new_signal_importance(clf) -> Dict[str, float]:
            if name in NEW_SIGNAL_FEATURES}
 
 
-def _lightgbm_params(n_train: int) -> Dict[str, int]:
-    """Small-data-aware LightGBM hyperparameters. The actual training corpus today is a few
-    hundred rows (not yet the ~50k target), and LightGBM's stock defaults (min_child_samples=20,
-    num_leaves=31) badly underfit anything under a few hundred rows — LIVE-VERIFIED: a cleanly
+def _lightgbm_params(n_train: int) -> Dict[str, Any]:
+    """Small-data-aware LightGBM hyperparameters. LightGBM's stock defaults
+    (min_child_samples=20, num_leaves=31) badly underfit tiny corpora — LIVE-VERIFIED: a cleanly
     separable 42-row synthetic fixture scores AUC=0.5 (learns nothing at all) with stock
-    defaults, AUC=1.0 with these scaled-down values. Scales back up toward LightGBM's own
-    defaults as the corpus grows toward the target, so nothing needs to change by hand later."""
+    defaults, AUC=1.0 with the scaled-down floor values. Scales back up toward LightGBM's own
+    defaults as the corpus grows toward the ~50k target, so nothing needs to change by hand.
+
+    fba-ranker-architect fix (2026-07-10): the old ramp saturated to FULL stock capacity at
+    n_train≈93 (num_leaves = n//3) with zero regularization — so at ~1.1k train rows the
+    challenger was a full-capacity default LightGBM (31 leaves × 100 trees, lr 0.1, nothing
+    regularized), contradicting the capacity-matches-data rule at exactly the corpus size where
+    overfitting a ~77%-positive backtest tier is easiest. Ramp slowed (full 31 leaves now needs
+    ~1.2k train rows) + fixed light regularization (feature_fraction, lambda_l2). Deliberately
+    NO early stopping on the reported val split — that would leak model selection into the
+    champion-comparison AUC. NOTE for the record: this changes the challenger's config
+    mid-streak; acceptable because the promotion gate's distinct-dataset consecutive-wins
+    requirement means every counted win re-proves itself under the CURRENT model — but the
+    2026-07-10 config-change date belongs in any promotion review."""
     return {
         "min_child_samples": max(1, min(20, n_train // 10)),
-        "num_leaves": max(3, min(31, n_train // 3)),
+        "num_leaves": max(3, min(31, n_train // 40)),
+        "feature_fraction": 0.8,
+        "lambda_l2": 1.0,
     }
 
 

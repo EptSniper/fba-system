@@ -115,6 +115,108 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-11 — Claude Code Session 61: applied all 3 approved brain proposals, after an adversarial re-verification workflow
+
+#### Request
+
+Mehmet: "I approved all proposals." At the time this arrived, `learning-hub/tracking/brain-proposals.md`
+had 3 pending entries: the `[compliance-driven]` LEGO/Under Armour brand-gate proposal from Session
+60 (this session's own earlier turn), plus a recurring `[data-driven]` token-budget entry and a
+`[knowledge-driven]` entry (2026-07-11 02:00 UTC run) that had been appearing unchanged since
+2026-07-08. Ultracode was flagged on for this turn, so before applying anything a Workflow
+dispatched 3 independent adversarial-verification agents (compliance cross-reference, token-budget
+judgment, knowledge-check bug diagnosis) rather than taking each proposal's text at face value.
+
+#### Verification findings (all 3 agents completed, ~275k tokens, 74 tool calls)
+
+- **Compliance**: confirmed the LEGO/Under Armour evidence is accurate (quoted the exact
+  research-insights.md lines), found the proposal's edit is safe, but caught two things the
+  proposal itself missed: (1) `brands.avoid` is a HARD, unconditional gate via
+  `scoring.oa_hard_reject`/`brands.is_avoided` (wired into both `pipeline.py` and
+  `collect_hourly.py`) — not merely removing a scoring bonus, so both brands stop surfacing as
+  picks entirely, not just losing a nudge; (2) LEGO also appears in `seasonality.q4.brands`
+  (currently dead code — no "seasonality" hits anywhere in `scout/*.py` — but a latent
+  contradiction the moment a seasonality feature ships), which the original proposal never
+  mentioned. Also flagged (not applied, out of scope) that OtterBox/Funko/Beats/Hasbro share
+  LEGO's "zero-tolerance" tier in the same source doc but were never in `brands.friendly` — a
+  separate defense-in-depth gap worth its own future proposal, not a blocker on this one.
+- **Token budget**: confirmed `scoring.assumedDailyTokens` (7500) has exactly one consumer
+  (`propose_updates.py`'s drift check) and gates nothing functional. Root-caused WHY the drift
+  alarm had false-fired identically since 2026-07-08: 7500 was budgeted (per SYSTEM_BLUEPRINT.md
+  §3) against the unpurchased €49/mo Keepa Product Finder tier, while the collector actually
+  deployed (`collect_hourly.py`) runs on the cheaper €19/mo trickle key (1 token/min ≈ 1,440/day,
+  confirmed independently in `keepa_client.py` and the user's own memory note). The old value's
+  low-band (7500×0.5=3750/day) was mathematically unreachable under the real deployed plan —
+  recommended 1500 (rounds up the real ceiling), not the raw noisy 44-80/day usage figure.
+- **Script bug**: reproduced the "knowledge-driven check unavailable" degradation LIVE (not just
+  theorized) by running the exact subprocess call from `propose_updates.py`. Root cause: a
+  corrupted local fastembed model cache (`%TEMP%\fastembed_cache\...`, blobs+metadata present,
+  snapshot dir empty — almost certainly from an earlier cold download interrupted mid-write by the
+  30s timeout) makes every `TextEmbedding()` construction fail in ~2-4s with a hidden
+  `ONNXRuntimeError: NO_SUCHFILE`, and `knowledge_driven_proposals()`'s `(result.stderr or "no
+  output")[:200]` truncation ate the ENTIRE budget on the noisy preamble (a progress print + a
+  fastembed WARNING line) before the real error, producing the literal truncated string `{"error`
+  seen in the tracker 4 days running. Also independently measured a clean cold download at ~47s
+  (exceeds the old 30s timeout) and a warm/healthy load at ~3.8s (ruling out "always slow" as the
+  steady-state explanation).
+
+#### Changes applied (all via direct edits, verified against the above findings)
+
+- `learning-hub/data/ai-brain.json`: moved `"LEGO"` and `"Under Armour"` from `brands.friendly` to
+  `brands.avoid`; removed `"LEGO"` from `seasonality.q4.brands` (companion fix, flagged above);
+  corrected `scoring.assumedDailyTokens` 7500→1500; dated provenance notes added to `brands.source`
+  and `scoring`'s `source` line explaining both changes and why.
+- `scout/propose_updates.py`: `knowledge_driven_proposals()`'s subprocess timeout raised 30s→90s;
+  the truncation fix now takes the LAST line of stderr (where `ask.py`'s own `{"error": ...}`
+  JSON always lands) before truncating to 500 chars, instead of blindly slicing the first 200
+  chars of noise. New regression test (`test_knowledge_driven_surfaces_the_real_error_not_the_noisy_preamble`)
+  locks this in with the exact multi-line stderr shape seen live.
+- `knowledge-rag/ask.py`: `embed()` now catches a `TextEmbedding()` construction failure once,
+  clears that model's cache folder, and retries — self-healing exactly the corruption class found
+  above instead of failing identically forever. 2 new regression tests
+  (`EmbedSelfHealTests` in `knowledge-rag/tests/test_answering.py`) cover the retry-once success
+  path and confirm a second real failure still raises (no infinite retry, no swallowed error).
+- One-time operational fix: deleted the actual corrupted
+  `%TEMP%\fastembed_cache\models--qdrant--bge-base-en-v1.5-onnx-q\` folder and live-verified
+  `propose_updates.knowledge_driven_proposals()` now succeeds end-to-end
+  (`confidence: "manual review suggested"` instead of `"unavailable"`).
+- `control-center/hub-data/ai-brain.json` re-synced; `learning-hub/tracking/brain-proposals.md` got
+  a "decisions applied" note (2026-07-11 08:35 UTC) covering all 3, since 2 of the 3 aren't
+  UI-draftable proposals the control-center's own decision log would ever record.
+
+#### Verification
+
+`python run_all_tests.py`: **974 passed, 0 failed** (up from 971) — scout 892, scout_pro 36,
+knowledge-rag 37, scripts 9. `deal-exam`: 100% (56/56; confirmed no golden case references LEGO or
+Under Armour, so the brand move couldn't be masking a miss there). `npm run typecheck`: clean.
+`ai-brain.json` re-validated as parseable JSON after every edit.
+
+#### Limitations / honesty notes
+
+- The LEGO/Under Armour change is a hard behavior change starting now: the scout will never
+  surface either brand as a pick again (regardless of ROI/BSR/profit), though both are still
+  collected pre-gate as training data — this is the intended, evidence-backed consequence, but
+  worth remembering if either brand's absence from future leads looks surprising.
+- The OtterBox/Funko/Beats/Hasbro gap the compliance re-check surfaced was NOT acted on this
+  session — it's a separate proposal-worthy finding, not something "I approved all proposals"
+  covered.
+- `learning-hub/playbooks/brands-and-sources.md` (prose) and `scout/brands.py`'s hardcoded
+  fallback lists (only used if `ai-brain.json` is ever absent) still mention LEGO/Under Armour as
+  friendly — harmless today since `ai-brain.json` is the live single source of truth, but will
+  look stale to a future reader; not fixed this session.
+
+#### Exact next safe step
+
+1. Consider a follow-up proposal for OtterBox/Funko/Beats/Hasbro (same "zero-tolerance" tier as
+   LEGO per research-insights.md, currently in neither `brands.friendly` nor `brands.avoid`).
+2. Optionally reconcile `brands-and-sources.md`'s prose and `scout/brands.py`'s hardcoded fallback
+   lists so they don't contradict the live `ai-brain.json` state for a future reader.
+3. Watch the next few daily `propose_updates.py` runs to confirm the token-budget drift alarm and
+   the knowledge-driven check both now behave sanely (no more permanent false alarms / no more
+   silent "unavailable" degradation).
+
+---
+
 ### 2026-07-11 — Claude Code Session 60: full-crew ML audit follow-through — 5 concrete fixes from the 7 completed experts, localhost re-verified clean
 
 #### Request

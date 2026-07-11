@@ -140,6 +140,30 @@ def test_knowledge_driven_honest_when_ask_py_missing():
     assert "not found" in proposals[0]["finding"]
 
 
+def test_knowledge_driven_surfaces_the_real_error_not_the_noisy_preamble():
+    """Full-crew audit, 2026-07-11: ask.py's stderr on a real failure looks like
+    "(loading MODEL once...)\\n<fastembed WARNING line>\\n{"error": "..."}\\n" — the real
+    diagnostic is the LAST line. The old `(result.stderr or "no output")[:200]` truncation ate
+    the whole budget on the noisy preamble, degrading to the literal string '{"error' on every
+    one of 4 straight days (2026-07-08 through 2026-07-11) live in brain-proposals.md. This
+    locks in that the finding text now contains the real error, not the preamble."""
+    noisy_stderr = (
+        "(loading BAAI/bge-base-en-v1.5 once...)\n"
+        "2026-07-10 22:00:43.885 | WARNING  | fastembed.common.model_management:"
+        "download_files_from_huggingface:225 - Local file sizes do not match the metadata.\n"
+        '{"error": "[ONNXRuntimeError] : 3 : NO_SUCHFILE : Load model from '
+        'C:\\\\fastembed_cache\\\\model_optimized.onnx failed"}'
+    )
+    fake_result = type("R", (), {"returncode": 1, "stdout": "", "stderr": noisy_stderr})()
+    with patch.object(propose_updates.os.path, "exists", return_value=True), \
+            patch.object(propose_updates.subprocess, "run", return_value=fake_result):
+        proposals = propose_updates.knowledge_driven_proposals()
+    assert proposals[0]["confidence"] == "unavailable"
+    assert "NO_SUCHFILE" in proposals[0]["finding"], (
+        f"expected the real ONNXRuntimeError to survive, got: {proposals[0]['finding']!r}")
+    assert "(loading" not in proposals[0]["finding"], "noisy preamble should not be in the finding"
+
+
 # ---------------------------------------------------------------------------
 # Report rendering + never touches ai-brain.json in practice, only REPORT_PATH
 # ---------------------------------------------------------------------------

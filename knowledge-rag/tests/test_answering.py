@@ -67,5 +67,58 @@ class AnsweringTests(unittest.TestCase):
         self.assertEqual(answer["evidence_strength"], "strong")
 
 
+class EmbedSelfHealTests(unittest.TestCase):
+    """Full-crew audit, 2026-07-11: a cold fastembed download interrupted mid-write leaves
+    blobs/metadata present but the per-revision snapshot dir empty, and fastembed's own
+    local-files-only fast path never detects or repairs this — every subsequent embed() call
+    failed identically forever (reproduced live; this is how scout/propose_updates.py's
+    knowledge-driven check degraded 4 days running). Locks in the one-time
+    clear-cache-and-retry self-heal in embed()."""
+
+    def setUp(self):
+        self._orig_model = MODULE._MODEL
+        MODULE._MODEL = None
+
+    def tearDown(self):
+        MODULE._MODEL = self._orig_model
+
+    def test_retries_once_after_clearing_a_corrupted_cache(self):
+        from unittest import mock
+
+        calls = {"n": 0}
+
+        class FakeModel:
+            def embed(self, texts):
+                return [[0.1, 0.2, 0.3]]
+
+        def fake_text_embedding(model_name):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("NO_SUCHFILE: model_optimized.onnx")
+            return FakeModel()
+
+        with mock.patch("fastembed.TextEmbedding", side_effect=fake_text_embedding), \
+                mock.patch("fastembed.common.utils.define_cache_dir",
+                          return_value=Path("/fake/cache")), \
+                mock.patch("shutil.rmtree") as rmtree:
+            vec = MODULE.embed("test query")
+        self.assertEqual(calls["n"], 2, "TextEmbedding should be retried exactly once after failure")
+        rmtree.assert_called_once()
+        self.assertAlmostEqual(sum(x * x for x in vec), 1.0, places=5)  # unit-normalized
+
+    def test_does_not_retry_or_mask_a_second_failure(self):
+        from unittest import mock
+
+        def always_fails(model_name):
+            raise RuntimeError("still broken")
+
+        with mock.patch("fastembed.TextEmbedding", side_effect=always_fails), \
+                mock.patch("fastembed.common.utils.define_cache_dir",
+                          return_value=Path("/fake/cache")), \
+                mock.patch("shutil.rmtree"):
+            with self.assertRaises(RuntimeError):
+                MODULE.embed("test query")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -159,10 +159,20 @@ def knowledge_driven_proposals() -> List[Dict[str, Any]]:
             [sys.executable, ASK_PY, "--json", "--limit", "3",
              "current BSR ROI profit threshold for online arbitrage"],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=30, cwd=os.path.dirname(ASK_PY),
+            timeout=90, cwd=os.path.dirname(ASK_PY),  # was 30 — a cold fastembed model
+            # download measures ~47s on this network, so 30s guaranteed a truncated child
+            # process (Full-crew audit, 2026-07-11: reproduced live, this is exactly how the
+            # local cache got corrupted in the first place — see knowledge-rag/ask.py's embed()).
         )
         if result.returncode != 0 or not result.stdout.strip():
-            raise RuntimeError((result.stderr or "no output")[:200])
+            raw = (result.stderr or "no output").strip()
+            # ask.py's own failure path always prints its {"error": ...} JSON as the LAST line
+            # of stderr; everything before it (the "(loading ...)" progress note + fastembed's
+            # WARNING line) is noise that used to eat the entire truncation budget and hide the
+            # real error on every single failure (Full-crew audit, 2026-07-11: this degraded to
+            # the literal string '{"error' 4 days running, 2026-07-08 through 2026-07-11).
+            detail = raw.splitlines()[-1] if raw else raw
+            raise RuntimeError(detail[:500])
         # Free-text answers are NOT auto-diffed against ai-brain.json — judged too unreliable to
         # propose a specific value change from without a human reading it.
         return [{

@@ -157,10 +157,10 @@
     "marginHealthThreshold": 0.2,
     "scoreThreshold": 70,
     "topN": 5,
-    "assumedDailyTokens": 7500,
+    "assumedDailyTokens": 1500,
     "rankingChampion": "rule",
     "rankingChampionSource": "Review fix (2026-07-06) — HUMAN-ONLY promotion switch for the cloud-trained ranker (scout/train_ranker.py). Every report/Discord post has always SAID promotion works this way, but until this fix nothing in the codebase ever actually read this key — training ran, evaluated, and uploaded a champion/challenger comparison every cadence with zero possible effect on anything. 'rule' (default, shadow-only): the deterministic triage formula (scoring.triage_score) orders the Review Queue/winners exactly as it always has; the trained challenger still trains and reports every cadence but has ZERO effect on what gets shown, gated, or bought. 'challenger': a human has read the challenger's win/lose verdict in learning-hub/tracking/ranker-report.md and explicitly promoted it here — the trained model's probability (train_ranker.challenger_score, via scout/pipeline.py's _evaluate/run_once) now orders the winners list, but it STILL NEVER touches the hard score>=threshold gate, hazmat/IP/eligibility checks, or any other compliance/safety rule — those stay rule-based always, and no purchase is ever automatic either way. Flip back to 'rule' any time to revert instantly, nothing destructive. Edit via fba-brain-updater only.",
-    "source": "scoreThreshold/topN mirror scout/config.py's SCORE_THRESHOLD/TOP_N .env defaults (only send picks >= this score, max picks per run). assumedDailyTokens is the System Blueprint's assumed daily Keepa token budget, used by propose_updates.py to flag real drift. Moved from scattered code constants (Code Review 2026-07-02, Finding S5) — scout/config.py falls back to these same values if this file is absent. marginHealthThreshold (added for Finding R3-nits) single-sources the control-center deal-analyzer's Margin-stat-tile health indicator (green above, neutral below) — it was independently hardcoded there alongside worstCaseLossBarUsd's own local literal copy; both now read this block instead of duplicating the numbers. (Restored 2026-07-11 — Full-crew ML audit found commit fee4f64 had silently dropped this line when it added rankingChampion/rankingChampionSource; recovered verbatim from git history, `git show fee4f64 -- learning-hub/data/ai-brain.json`.)"
+    "source": "scoreThreshold/topN mirror scout/config.py's SCORE_THRESHOLD/TOP_N .env defaults (only send picks >= this score, max picks per run). assumedDailyTokens is used by propose_updates.py to flag real drift (compares a 14-run average against assumedDailyTokens*0.5/1.5 — purely a monitoring figure, nothing in collect_hourly.py/backtest.py is gated off it). Moved from scattered code constants (Code Review 2026-07-02, Finding S5) — scout/config.py falls back to these same values if this file is absent. marginHealthThreshold (added for Finding R3-nits) single-sources the control-center deal-analyzer's Margin-stat-tile health indicator (green above, neutral below) — it was independently hardcoded there alongside worstCaseLossBarUsd's own local literal copy; both now read this block instead of duplicating the numbers. (Restored 2026-07-11 — Full-crew ML audit found commit fee4f64 had silently dropped this line when it added rankingChampion/rankingChampionSource; recovered verbatim from git history, `git show fee4f64 -- learning-hub/data/ai-brain.json`.) 2026-07-11: assumedDailyTokens corrected 7500->1500 (Mehmet-approved data-driven proposal, brain-proposals.md 2026-07-11 02:00 UTC) — the old 7500 was SYSTEM_BLUEPRINT.md §3's budget against the unpurchased €49/mo Keepa Product Finder tier (20 tokens/min); the collector actually deployed (scout/collect_hourly.py, keepa_client.py) runs on the cheaper €19/mo Data-subscription trickle, which refills at 1 token/min ≈ 1,440/day — 1500 rounds that up. The old value made the drift alarm's low-band (7500*0.5=3750/day) mathematically unreachable under the real deployed plan, so it had permanently false-alarmed every day since 2026-07-08 regardless of actual scout behavior."
   },
   "seasonality": {
     "backToSchool": {
@@ -186,7 +186,6 @@
       "brands": [
         "Stanley",
         "Yeti",
-        "LEGO",
         "Hot Wheels",
         "Pokemon",
         "Jellycat",
@@ -197,7 +196,7 @@
       6,
       8
     ],
-    "source": "Seasonal buy windows from learning-hub/playbooks/field-sops.md's seasonal calendar. buyLeadWeeks = how many weeks ahead of a brand's peak-demand window to buy so inventory lands in time for the seasonal BSR hump."
+    "source": "Seasonal buy windows from learning-hub/playbooks/field-sops.md's seasonal calendar. buyLeadWeeks = how many weeks ahead of a brand's peak-demand window to buy so inventory lands in time for the seasonal BSR hump. 2026-07-11: removed LEGO from q4.brands (full-crew audit companion edit to the brands.friendly->avoid move below — this key isn't read by any code yet, but would otherwise tell a future seasonality detector to plan LEGO purchases around Q4 while brands.avoid permanently hard-rejects every LEGO candidate year-round; Mehmet-approved alongside the brands fix)."
   },
   "discovery": {
     "productFinderStack": {
@@ -217,7 +216,6 @@
       "Crayola",
       "Elmer's",
       "Monster Jam",
-      "LEGO",
       "Hot Wheels",
       "Pokemon",
       "Sunny Angels",
@@ -225,7 +223,6 @@
       "Gap",
       "Nautica",
       "Carter's",
-      "Under Armour",
       "New Balance",
       "Hoka",
       "Mrs. Meyer's",
@@ -247,9 +244,11 @@
       "Yeezy",
       "Apple",
       "Sony",
-      "Disney"
+      "Disney",
+      "LEGO",
+      "Under Armour"
     ],
-    "source": "scout/brands.py (seeded from playbooks/brands-and-sources.md)"
+    "source": "scout/brands.py (seeded from playbooks/brands-and-sources.md). 2026-07-11: LEGO + Under Armour moved friendly->avoid — Mehmet-approved compliance-driven proposal (brain-proposals.md 2026-07-11 08:03 UTC), evidence: Jul-1-2026 750+-brand gated tracker 'Fully gated' tier + IP-complaint-playbook 'zero-tolerance' tier (research-inbox/research-insights.md), Under Armour empirically brand-gated in 19/30 recent leads. This is a hard, unconditional gate (scoring.oa_hard_reject via brands.is_avoided), not just a scoring-bonus removal — both brands stop surfacing as picks entirely, though candidates are still collected pre-gate as training data (scout/pipeline.py persists before the hard-reject filter runs)."
   },
   "tools": [
     "Amazon Seller Central",

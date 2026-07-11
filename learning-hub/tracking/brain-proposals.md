@@ -160,3 +160,39 @@ Decision records in brain-proposal-decisions.jsonl.
 
 ---
 
+## 2026-07-11 08:35 UTC — decisions applied
+
+All 3 pending proposals **APPROVED by Mehmet** ("I approved all proposals") and **APPLIED** to
+ai-brain.json via fba-brain-updater, after an adversarial re-verification workflow (3 independent
+lenses) confirmed each edit before it landed:
+
+- **[compliance-driven]** LEGO + Under Armour moved `brands.friendly` → `brands.avoid`
+  (`brands.friendly`/`brands.avoid`). Companion edit surfaced by the re-verification pass and
+  applied alongside it: removed LEGO from `seasonality.q4.brands` too (that key is unread by any
+  code today, but would otherwise tell a future seasonality feature to plan LEGO purchases around
+  Q4 while `brands.avoid` permanently hard-rejects every LEGO candidate — same latent contradiction
+  as the friendly-list one). Note this is a hard, unconditional gate via `scoring.oa_hard_reject`
+  (`brands.is_avoided`), not just a scoring-bonus removal — both brands stop surfacing as picks
+  entirely; candidates are still collected pre-gate as training data.
+- **[data-driven]** `scoring.assumedDailyTokens` corrected 7500 → 1500. Root cause: 7500 was
+  budgeted against the unpurchased €49/mo Keepa Product Finder tier; the collector actually
+  deployed (`scout/collect_hourly.py`) runs on the cheaper €19/mo trickle key (1 token/min ≈
+  1,440/day). The old value made the drift alarm's low-band (7500×0.5=3750/day) mathematically
+  unreachable under the real deployed plan — it had permanently false-alarmed every day since
+  2026-07-08 regardless of actual scout behavior, not a real anomaly.
+- **[knowledge-driven]** Not an ai-brain.json edit — this "proposal" was actually a 4-day-recurring
+  bug in `scout/propose_updates.py`'s knowledge-base check (a corrupted local fastembed model
+  cache from an earlier interrupted download, made invisible by a `[:200]` stderr truncation that
+  ate 100% of the real error every time). Fixed in code: `knowledge_driven_proposals()` now
+  surfaces the last stderr line (the real error) instead of the noisy preamble, and its subprocess
+  timeout raised 30s→90s (measured cold-download time ~47s); `knowledge-rag/ask.py`'s `embed()` now
+  self-heals a corrupted cache with one retry. The stale cache itself was cleared and the check
+  now succeeds live (`confidence: "manual review suggested"` instead of `"unavailable"`).
+
+JSON validated; `python run_all_tests.py` — 974 passed, 0 failed; `deal-exam` 100% (56/56);
+`control-center/hub-data/` re-synced. Decision records in `brain-proposal-decisions.jsonl` cover
+the 2026-07-11 02:00 UTC entry (control-center UI clicks); this note covers all 3 since the
+compliance-driven entry and the knowledge-check code fix aren't UI-draftable proposals.
+
+---
+

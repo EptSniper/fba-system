@@ -305,7 +305,22 @@ def embed(text):
     if _MODEL is None:
         from fastembed import TextEmbedding
         print(f"(loading {MODEL} once...)", file=sys.stderr)
-        _MODEL = TextEmbedding(model_name=MODEL)
+        try:
+            _MODEL = TextEmbedding(model_name=MODEL)
+        except Exception as e:
+            # A cold download interrupted mid-write (e.g. a caller's subprocess timeout firing
+            # before the ~217MB onnx file finishes downloading+linking) leaves blobs/metadata
+            # present but the per-revision snapshot dir empty. fastembed's own local-files-only
+            # fast path only logs a WARNING for this and returns the broken path anyway, so it
+            # fails identically forever without self-healing (Full-crew audit, 2026-07-11 —
+            # reproduced live, this is exactly how scout/propose_updates.py's knowledge-driven
+            # check degraded 4 days straight). Clear this model's cache folder and retry once.
+            print(f"(model load failed ({e}); clearing cache and retrying once)", file=sys.stderr)
+            from fastembed.common.utils import define_cache_dir
+            import shutil
+            stale = define_cache_dir(None) / f"models--{MODEL.replace('/', '--')}"
+            shutil.rmtree(stale, ignore_errors=True)
+            _MODEL = TextEmbedding(model_name=MODEL)
     vec = [float(x) for x in next(iter(_MODEL.embed([text])))]
     norm = math.sqrt(sum(x * x for x in vec)) or 1.0
     return [x / norm for x in vec]

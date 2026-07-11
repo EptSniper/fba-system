@@ -493,10 +493,15 @@ def _state_storage_headers() -> Dict[str, str]:
     return {"apikey": key, "Authorization": f"Bearer {key}"}
 
 
-def _fetch_remote_state() -> Dict[str, Any]:
+def _fetch_remote_state(strict: bool = False) -> Dict[str, Any]:
     """The resume state (processed ASINs, spend, rows written), persisted in Supabase Storage —
     see _load_state()'s docstring for why. {} on any failure/missing env — never raises, a
-    missing remote state just means 'start fresh', same as an empty local file always meant."""
+    missing remote state just means 'start fresh', same as an empty local file always meant.
+
+    ``strict=True`` is reserved for the hourly backlog preflight: an actual remote read failure
+    raises a generic error so telemetry can report an unknown count instead of a false zero.
+    Missing credentials or a genuinely absent object still mean there is no shared remote state.
+    """
     try:
         import requests
         supa = os.getenv("SUPABASE_URL", "").rstrip("/")
@@ -504,11 +509,18 @@ def _fetch_remote_state() -> Dict[str, Any]:
             return {}
         r = requests.get(f"{supa}/storage/v1/object/{_STATE_BUCKET}/{_STATE_STORAGE_PATH}",
                          headers=_state_storage_headers(), timeout=15)
-        if r.status_code != 200:
+        if r.status_code == 404:
             return {}
-        return r.json() or {}
+        if r.status_code != 200:
+            raise RuntimeError(f"backtest state HTTP {r.status_code}")
+        state = r.json() or {}
+        if not isinstance(state, dict):
+            raise ValueError("backtest state payload is not an object")
+        return state
     except Exception as e:
         log.warning("backtest remote state fetch failed (non-fatal): %s", e)
+        if strict:
+            raise RuntimeError("backtest remote state unavailable") from e
         return {}
 
 
@@ -532,7 +544,7 @@ def _upload_remote_state(st: Dict[str, Any]) -> bool:
         return False
 
 
-def _load_state() -> Dict[str, Any]:
+def _load_state(strict: bool = False) -> Dict[str, Any]:
     """Resume state (processed ASINs, spend, rows written so far). Review fix (2026-07-07, live
     incident): _state_path() is a LOCAL file — on GitHub Actions (no persistent disk between
     runs) it never actually survived, so every hourly burst silently started from empty state,
@@ -548,7 +560,25 @@ def _load_state() -> Dict[str, Any]:
             return local
     except Exception:
         pass
-    return _fetch_remote_state()
+    return _fetch_remote_state(strict=True) if strict else _fetch_remote_state()
+
+
+def pending_backlog_count() -> int:
+    """Count distinct, not-yet-processed ASINs already awaiting history pulls.
+
+    The hourly collector uses this cheap preflight before deciding whether live discovery should
+    spend any of the current Keepa bank. It shares run_backtest's persisted resume state and makes
+    no Keepa request.
+    """
+    state = _load_state(strict=True)
+    if not isinstance(state, dict):
+        return 0
+    processed = set(state.get("processed_asins") or [])
+    return len({
+        item.get("asin")
+        for item in (state.get("pending") or [])
+        if isinstance(item, dict) and item.get("asin") and item["asin"] not in processed
+    })
 
 
 def _save_state(st: Dict[str, Any]) -> None:
@@ -792,6 +822,33 @@ def sample_asins_stratified(api, budget_tokens: int, target: int = TARGET_ASINS,
     return out[:target], spent, counts
 
 
+def _interleave_by_category(pending: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Round-robin `pending` across its distinct `category` values (stable FIFO within each
+    category), so a run_backtest() budget that can only afford a fraction of the backlog spreads
+    across whatever categories are actually queued instead of fully draining whichever category
+    happens to sit first. A single dealfeed rotation slot can hand over 100-250+ ASINs of ONE
+    category at once (deals_firehose pulls a full page per slot); undoing that clustering here is
+    what actually fixes cross-category breadth, since the rotation upstream already rotates fine —
+    it's this backlog's drain ORDER that was re-concentrating it. No-op (returns as-is) for an
+    empty or single-category backlog."""
+    buckets: Dict[Any, List[Dict[str, Any]]] = {}
+    order: List[Any] = []
+    for p in pending:
+        key = p.get("category")
+        if key not in buckets:
+            buckets[key] = []
+            order.append(key)
+        buckets[key].append(p)
+    if len(order) <= 1:
+        return pending
+    interleaved: List[Dict[str, Any]] = []
+    while any(buckets[key] for key in order):
+        for key in order:
+            if buckets[key]:
+                interleaved.append(buckets[key].pop(0))
+    return interleaved
+
+
 def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET_ASINS,
                  history_fn: Optional[Callable] = None, find_fn: Optional[Callable] = None,
                  firehose_fn: Optional[Callable] = None, persist: bool = True) -> Dict[str, Any]:
@@ -842,8 +899,19 @@ def run_backtest(api=None, token_cap: Optional[int] = None, target: int = TARGET
     #    mostly-already-known ASINs. The un-pulled remainder now persists in the same state
     #    blob; sampling is SKIPPED entirely whenever the backlog already exceeds what this
     #    run's whole cap could pull, so on backlogged runs the full budget converts to rows.
-    pending = [p for p in (state.get("pending") or [])
-              if p.get("asin") and p["asin"] not in processed]
+    #
+    #    Full-crew audit, 2026-07-11 (fba-scout-strategist, live-confirmed): draining this
+    #    backlog in raw FIFO/insertion order let ONE dealfeed rotation slot's whole ASIN batch
+    #    (100-250+ ASINs, since deals_firehose hands over a full page per category) monopolize
+    #    every backtest run's small per-run pull budget (~20-130 histories) for MANY CONSECUTIVE
+    #    HOURS before the backlog even reached the next category — live Supabase query showed
+    #    4 straight hourly runs 100% "tools" (07-10 11:00-18:00), then a full switch to
+    #    "grocery"/"office"/"sports". The hourly dealfeed rotation itself was already rotating
+    #    correctly; this was a purely downstream throughput mismatch. _interleave_by_category
+    #    round-robins the backlog across whatever categories are actually queued so a fixed
+    #    per-run budget spreads across them immediately instead of fully draining one first.
+    pending = _interleave_by_category([p for p in (state.get("pending") or [])
+                                       if p.get("asin") and p["asin"] not in processed])
     import keepa_client as _kc
     affordable = max(1, cap // max(1, _kc.HISTORY_TOKENS_PER_ASIN))
     sampling_skipped = len(pending) >= affordable

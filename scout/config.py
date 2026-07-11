@@ -106,6 +106,13 @@ OA_COGS_FRACTION: float = _f("OA_COGS_FRACTION", 0.50)
 # must, so every OA buy now carries this cost. Subtracted from the profit/ROI estimate. Tune in .env.
 OA_PREP_COST: float = _f("OA_PREP_COST", 0.50)
 
+# Inbound shipping: getting the bought unit FROM the source (retail store/online) TO the Amazon
+# FBA warehouse. fba-selleramp-analyst's documented cost stack puts this at ~$0.60/lb (range
+# $0.50-0.80) — re-check after each real shipment. Was previously omitted from the profit/ROI
+# estimate and the backtest's would_have_profited labels entirely (Full-crew audit, 2026-07-11:
+# fba-selleramp-analyst finding — live-proven +$0.59-3.00/unit optimistic drift).
+OA_INBOUND_SHIP_PER_LB: float = _f("OA_INBOUND_SHIP_PER_LB", 0.60)
+
 CRITERIA_OA = {
     "price_min": _f("OA_PRICE_MIN", 8.0),            # include cheap grocery
     "price_max": _f("OA_PRICE_MAX", 60.0),
@@ -216,7 +223,7 @@ def _load_oa_criteria_from_brain() -> None:
     global OA_ADJ_NO_FEATURED_OFFER, OA_ADJ_GENERIC_BRAND
     global OA_IP_CLIFF_MIN_AVG_OFFERS, OA_IP_CLIFF_MAX_CURRENT_OFFERS, OA_WORST_CASE_LOSS_BAR
     global SCORE_THRESHOLD, TOP_N, ASSUMED_DAILY_TOKENS
-    global FUEL_SURCHARGE, OA_PREP_COST
+    global FUEL_SURCHARGE, OA_PREP_COST, OA_INBOUND_SHIP_PER_LB
     global BANDED_REFERRAL_RATES
     import json
     import os as _os
@@ -290,6 +297,8 @@ def _load_oa_criteria_from_brain() -> None:
             FUEL_SURCHARGE = float(fees["fuelSurcharge"])
         if isinstance(fees.get("prepCost"), (int, float)):
             OA_PREP_COST = float(fees["prepCost"])
+        if isinstance(fees.get("inboundShipPerLb"), (int, float)):
+            OA_INBOUND_SHIP_PER_LB = float(fees["inboundShipPerLb"])
         scoring_block = brain.get("scoring", {}) or {}
         # Preferred-offer-band bonus (scoring.preferredOffers).
         pref = scoring_block.get("preferredOffers", {}) or {}

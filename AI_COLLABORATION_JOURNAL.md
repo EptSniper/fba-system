@@ -115,6 +115,316 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-11 — Claude Code Session 60: full-crew ML audit follow-through — 5 concrete fixes from the 7 completed experts, localhost re-verified clean
+
+#### Request
+
+Continuation of Session 59's full-project ML audit. The prior turn had dispatched all 35 `fba-*`
+skills at once as a Workflow sweep; a hard per-session rate limit ("resets 1:50am America/New_York")
+killed 28 of 34 expert agents plus the synthesis step mid-run, leaving 7 completed expert reports
+(fba-compliance-checker, fba-selleramp-analyst, fba-chart-reader, fba-market-analyst,
+fba-deal-calculator, fba-listing-optimizer, fba-brain-updater) with no synthesized board. Mehmet
+separately flagged "theres an issue with local host, fix that too" mid-sweep, unspecified symptom.
+This session: (1) properly diagnose the localhost report instead of the prior shallow port/curl
+check, (2) act on the 7 completed experts' concrete findings since they didn't need the rate-limited
+agents, (3) leave the 28-expert re-run for later (needs the session limit to actually reset).
+
+#### Localhost — re-diagnosed, found clean
+
+The prior turn had only confirmed `netstat`/`curl` 200s. This time: read the live `next dev` log
+(`nextdev5.log`) — clean compile, zero errors, all routes 200. Then drove the app with a headless
+Playwright Chromium session (`python -m playwright`, already installed) across all 9 routes
+(`/`, `/brief`, `/intelligence`, `/brain`, `/money`, `/leads`, `/queue`, `/inventory`, `/find`),
+capturing full-page screenshots and every `console.error`/`pageerror`/`requestfailed` event. Result:
+zero real console/page errors on every route (the only `requestfailed` entries were benign Next.js
+RSC prefetch cancellations from fast navigation, not failures). Screenshots of `/intelligence` and
+`/money` (the two pages with heavy uncommitted edits from the prior "update the scout intelligence
+graphs" ask) show correct, honestly-labeled UI (READY/BLOCKED badges, "NOT CONNECTED", "No inventory
+yet" empty states) — no visual defects found. **Conclusion: could not reproduce a localhost issue.**
+Whatever Mehmet observed isn't currently reproducible from a fresh headless load; if it recurs, the
+next session needs the actual symptom (screenshot, error text, which page) rather than re-deriving
+this same clean result.
+
+#### Fix 1 — inbound shipping-to-FBA was never subtracted from profit/ROI or backtest labels
+
+fba-selleramp-analyst's finding: `scout/scoring.py`'s `estimate_oa_profit_roi()` (live triage/OA
+decision math) and `net_proceeds()` (feeds `would_have_profited` in every backtest_rows label — i.e.
+the ranker's training target) subtracted referral + fulfillment + prep + COGS but never inbound
+shipping to the FBA warehouse, despite `fba-selleramp-analyst/SKILL.md` documenting ~$0.60/lb
+(range $0.50-0.80) as part of the real cost stack. Verified live-proven drift: at 1 lb this
+overstated profit by $0.60/unit; the 30% ROI gate and the training labels were both systematically
+too optimistic. Added `config.OA_INBOUND_SHIP_PER_LB` (default 0.60, brain-overridable via
+`fees.inboundShipPerLb`) and `scoring.estimate_inbound_shipping(weight_lb)` (neutral 1.0 lb default,
+matching `estimate_fulfillment_fee`'s existing convention); wired into both cost-stack functions.
+4 new regression tests in `test_scoring.py` lock in the exact subtraction and the neutral-weight
+default. **Side effect surfaced by the golden-case eval**: this flipped 2 of the 56 `deal-exam`
+hand-computed cases (`hc-grocery-referral-banding-{above,at-or-below}-15`) from `expected_verdict:
+"review"` to `"pass"` — their real score dropped below `SCORE_THRESHOLD` (70.3→66.0, 75.4→66.0) once
+the extra $0.60/lb was correctly counted, meaning these marginal grocery candidates are correctly no
+longer worth a human review, not a regression. Updated both golden files with the corrected
+profit/ROI/verdict and a dated provenance note explaining the shift; verified the banding logic
+itself (8%/15% grocery transition) is still independently exercised and passing.
+
+#### Fix 2 — automotive/industrial referral rate was silently defaulting to 15% instead of Amazon's real 12%
+
+fba-deal-calculator's finding: the 5 categories added with the 18-category rotation expansion
+(commit `2260cb0`) had no entry in `ai-brain.json`'s `fees.referralRates`, so `config.referral_rate_for`
+silently fell back to the 15% `"default"`. Cross-checked against the project's own cited source
+(`knowledge-rag/sources/amazon/selling-fees.md`, collected from sell.amazon.com/pricing): Automotive
+& Powersports and Business/Industrial & Scientific are both really 12%; Lawn & Garden, Musical
+Instruments & AV are really 15% (already correct by luck); arts_crafts has no dedicated row so 15%
+("Everything Else") is right. Added explicit entries for all 5 to `fees.referralRates` (automotive:
+0.12, industrial: 0.12, garden/arts_crafts/musical_instruments: 0.15) so none of them can silently
+drift onto the wrong default again. New regression test asserts automotive/industrial profit is
+strictly higher than the flat-default profit at the same price/weight.
+
+#### Fix 3 — `scoring` block's provenance line had been silently deleted
+
+fba-brain-updater's independent finding: `ai-brain.json`'s `scoring` block had no top-level
+`source` key, breaking the pattern every other block (`fees`, `guards`, etc.) follows. `git log -p`
+on the file found the exact culprit: commit `fee4f64` ("Wire the cloud-trained ranker to a live
+consumer") replaced the block's `"source"` line with `rankingChampion`/`rankingChampionSource` in the
+same diff hunk, dropping the original line entirely rather than keeping both. Recovered the exact
+original text from `git show fee4f64` and restored it alongside the newer keys, with a dated note
+explaining the recovery so this doesn't read as a fabricated backfill.
+
+#### Fix 4 — `control-center/hub-data/` (the Vercel-deploy fallback snapshot) was stale
+
+Confirmed via `lib/data.ts` that this bundled folder is a real production fallback (serverless
+deploys have no sibling `learning-hub/`, so `getBrain()`/`getLeads()` silently serve these files
+instead) — not a dev fixture. Diff against the live source found `ai-brain.json` (5 days stale) and
+`leads.json` (6 days stale) out of sync; `finances.json`/`inventory.json`/`picks.json`/`deals.json`/
+the RAG manifest were already current. Re-copied both stale files per `DEPLOY.md`'s documented manual
+process (no automated sync script exists yet — flagged as a gap, not fixed, since building one is a
+separate scoped task); `npm run typecheck` still clean afterward.
+
+#### Fix 5 — dealfeed→backtest pending-backlog drained in FIFO order, re-concentrating the corpus by category
+
+fba-market-analyst's finding ("tools" 28.4% overall, 59% of last-24h inflow, several Q4-critical
+categories near zero with ~8 weeks to Q4) was verified live via a direct Supabase query
+(`db.all_backtest_rows_for_backfill`, bucketed by `created_at` hour): confirmed 56.7% of the last
+1,450 rows were "tools", but bucketing by hour revealed the real shape — 4 *consecutive* hourly runs
+(07-10 11:00-18:00) were 100% "tools", then a hard switch to 100% "grocery", then "office", then
+"sports" (currently the live pending-backlog is 100% sports, 112 items, confirmed via
+`backtest._fetch_remote_state()`). This is NOT the dealfeed rotation cursor from Session 59's fix —
+that's confirmed still advancing correctly (category cursor at 8, secondary axis at 9, both
+persisted). The actual mechanism: `deals_firehose.harvest()` hands a full deal-page's worth of ASINs
+(100-250+) to the SAME category in one rotation slot; `run_backtest()`'s per-run pull budget
+(~20-130 histories) can only afford a fraction, so the backlog persists and drains in raw FIFO/
+insertion order (`scout/backtest.py`'s `pending` list) — meaning one collection burst's whole
+category cluster gets fully processed across MANY subsequent hourly runs before the backlog even
+reaches the next category, even though collection itself is diversifying correctly. Fixed with
+`_interleave_by_category()`: round-robins the backlog across whatever categories are actually
+queued (stable FIFO within each category) before draining, so a fixed per-run budget spreads
+immediately instead of exhausting itself on one cluster. 5 new tests (`InterleaveByCategoryTest` +
+one `PendingBacklogTest` integration case proving a 40-item "tools" cluster no longer blocks a
+5-item "grocery" cluster from being reached).
+
+#### Fix 6 (proposal only, NOT applied) — Under Armour and LEGO are scored "friendly" while already brand-gated in practice
+
+fba-compliance-checker's finding: `brands.friendly` lists both `LEGO` and `Under Armour` (a +5
+scoring bonus), but the already-ingested Jul 1 2026 750+-brand gated-list tracker
+(`research-inbox/research-insights.md`) lists both under its "Fully gated" tier (same tier as Nike,
+already correctly in `brands.avoid`), and a separately-ingested IP-complaint playbook independently
+reconfirms LEGO as "zero-tolerance." Compliance-checker also found Under Armour is empirically the
+single most gate-affected brand in the live lead set (19 of the last 30 leads, only 1 surviving to
+review) — the live compliance gate already rejects it almost every time while scoring simultaneously
+rewards it. This is a business-rule change (which brands are worth sourcing), not a mechanical
+correctness fix like 1-5 above, so it was NOT applied — appended as a dated, fully-cited proposal to
+`learning-hub/tracking/brain-proposals.md` (`[compliance-driven]`, 2026-07-11 08:03 UTC) recommending
+the move to `brands.avoid`, awaiting Mehmet's explicit approval per the project's brand-list
+governance.
+
+#### Verification
+
+`python run_all_tests.py`: **971 passed, 0 failed** (up from 966 before this session's new tests) —
+scout 891, scout_pro 36, knowledge-rag 35, scripts 9. `python exam.py`: all 56 hand-crafted deal
+cases, **100% verdict accuracy** (the 2 flipped grocery-banding cases updated and re-verified, not
+just re-passed by coincidence). `npm run typecheck` in `control-center/`: clean. `ai-brain.json`
+re-validated as parseable JSON after every edit; `updated` bumped to 2026-07-11.
+
+#### Limitations / honesty notes
+
+- The localhost issue could not be reproduced — this is a negative result, not proof nothing was
+  ever wrong; the actual symptom Mehmet saw was never captured.
+- The 35-expert full-crew sweep is still incomplete: 28 of 34 experts and the synthesis step never
+  ran (session rate limit). Only the 7 completed reports' findings were actionable this session.
+- Fix 5 (interleaving) is a code-level structural improvement verified with synthetic unit/
+  integration tests and confirmed against the LIVE historical pattern it targets, but its effect on
+  the REAL live backlog going forward hasn't been observed yet (needs a few days of live hourly runs
+  + a repeat of the same `created_at`-bucketed query to confirm the multi-hour single-category
+  streaks stop recurring).
+- `control-center/hub-data/`'s staleness will recur every time `ai-brain.json`/`leads.json` change
+  and no deploy follows — there is still no automated sync script, only the manual `DEPLOY.md`
+  process this session followed by hand.
+- Fix 6 is deliberately unapplied pending human approval; do not treat `brands.friendly`'s current
+  LEGO/Under Armour entries as settled.
+
+#### Exact next safe step
+
+1. Ask Mehmet to approve or reject the LEGO/Under Armour brand-list proposal
+   (`learning-hub/tracking/brain-proposals.md`, 2026-07-11 08:03 UTC entry); apply via
+   `fba-brain-updater` only after an explicit answer.
+2. Once the session rate limit resets, re-run the remaining 28 experts (fba-ml-lead,
+   fba-scout-strategist, fba-ml-data-engineer, fba-feature-engineer, fba-ranker-architect,
+   fba-ml-trainer, fba-leakage-auditor, fba-ml-evaluator, fba-ml-guardian, fba-ml-debugger,
+   fba-ml-ops, and the remaining sourcing/engineering/ritual skills) plus the synthesis step, most
+   likely as a fresh smaller-batch Workflow run rather than all 34 at once, to avoid re-hitting the
+   same cap.
+3. After a few more days of live hourly collection, re-run the `created_at`-hour-bucketed category
+   query from Fix 5 above to confirm the interleaving fix actually broke up the multi-hour
+   single-category streaks in practice, not just in the unit tests.
+4. Build the missing `control-center/hub-data/` auto-sync (a small script or a `predeploy` npm
+   script step) so Fix 4's staleness can't silently recur.
+5. If the localhost issue recurs, capture the actual symptom (screenshot / exact error text / which
+   route) before starting a fresh diagnosis pass.
+
+---
+
+### 2026-07-10 — Codex: live product-versus-label count for the ML corpus
+
+#### Request
+
+Mehmet asked how the 2,900+ collected ML rows divide into individual products and labels. This
+was a read-only measurement request: no request was made to change collection, labels, model
+configuration, Amazon listings, purchases, or money movement.
+
+#### Evidence inspected
+
+- Project instructions and current handoff context: `CLAUDE.md`, this journal,
+  `learning-hub/tracking/session-archive.md`, and `SKILLS_INDEX.md`.
+- Required ML routing: `amazon-fba-oa/skills/fba-ml-lead/SKILL.md`,
+  `fba-ml-data-engineer/SKILL.md`, `fba-scout-strategist/SKILL.md`, plus
+  `amazon-fba-oa/references/ml-doctrine.md`, `stack-map.md`, and `sourcing-methods.md`.
+- Current executable data path: `scout/db.py` (`count_backtest_rows()` and the paginated
+  `all_backtest_rows()` reader) and `scout/labels.py` (`assemble_training_rows()`).
+- Live Supabase `backtest_rows`, read through the existing server-side Scout client from the
+  `scout/` working directory so its gitignored `.env` loaded without displaying any credential.
+
+#### Verified results and rationale
+
+- Exact live row count: **2,936**. The exact PostgREST count and the paginated full fetch agreed.
+- Unique products: **440 distinct ASINs**.
+- Labels: **2,936 total** — **2,502 positive/profitable** and **434
+  negative/not-profitable**, with **0 missing labels**. That is 85.22% positive and 14.78%
+  negative.
+- Every current row is `label_quality=backtest`; the combined training-row assembler found no
+  additional trainable silver or gold tier in this snapshot.
+- Each row is one ASIN × simulation-date example, not one new product. Products currently have
+  1–56 point-in-time labels each (mean 6.67, median 7). The natural
+  `(asin, simulation_date)` key had **0 duplicates** in the fetched dataset.
+- The live simulation-date range is **2020-11-07 through 2026-05-11**, across **467 distinct
+  simulation dates**. Coverage is heavily recent rather than uniform: 2 rows are dated 2020,
+  10 in 2021, 11 in 2022, 21 in 2023, 55 in 2024, 1,314 in 2025, and 1,523 in 2026. The code's
+  configured label horizon is 60 days, so the latest row's target date is 2026-07-10.
+- Coverage in the fetched rows spans 17 stored category values, including `unknown`; this was
+  checked only to confirm the product count came from the intended broad training corpus.
+
+#### Follow-up — increasing independent samples
+
+Mehmet clarified that he wants more statistically independent samples. The correct primary unit
+is a distinct ASIN group, not an ASIN × date row: repeated dates from one ASIN are correlated.
+The live breadth read found **326 brands / 440 unique ASINs / 17 stored category values**. Brand
+concentration is now healthy at the top (Crocs and Jellycat each have 18 ASINs, 4.1% apiece), but
+category concentration remains material: tools 125 ASINs, toys 103, and grocery 80 — together
+**308/440 = 70.0%** of distinct products and 2,056/2,936 = 70.0% of rows. Recent data is also
+source-concentrated: 359 ASINs / 2,386 rows are tagged `dealfeed`; the older 81 ASINs / 550 rows
+have an unknown pre-migration source, and no current row is tagged `explore` or `onpolicy`.
+
+The persisted backtest state currently has **281 unique pending ASINs** (131 office, 150 sports),
+which the implemented backlog-first path will drain before buying more discovery. It records 466
+processed ASINs versus 440 with valid stored backtest rows; this difference can occur when a
+processed product yields no valid simulation windows. Recent successful hourly runs spent 30–42
+tier-3 tokens and wrote 150–244 rows, confirming that corpus growth is active rather than starved.
+
+Recommended order, not implemented in this read-only session: (1) let the 281-ASIN backlog drain
+and measure distinct-ASIN growth, (2) make `new unique ASINs per Keepa history token` the collector
+KPI, (3) after the backlog drains reserve sampling budget for `explore` rather than allowing the
+dealfeed-first waterfall to consume nearly all small sampling budgets, (4) target configured but
+absent/low-coverage categories before adding more tools/toys/grocery, and (5) preserve ASIN-grouped
+evaluation while using per-ASIN weighting or a per-ASIN row cap so long-history products (currently
+up to 56 windows) cannot dominate training. The current 35-day simulation step is shorter than the
+60-day target horizon, so adjacent labels overlap; moving to non-overlapping ≥60-day windows would
+make within-ASIN observations less correlated but would reduce row count, not create more unique
+products. Stronger truly prospective independence comes from new shadow/gold outcomes on new ASINs.
+
+#### Follow-up — increase independent ASINs/day before paying for a higher Keepa plan
+
+Mehmet said the current independent-sample rate is too slow and asked whether a higher monthly
+Keepa plan is required. This remained a read-only capacity diagnosis; no subscription, workflow,
+collector allocation, external write, purchase, or money movement was authorized or performed.
+
+Live evidence at approximately 2026-07-10 21:46 UTC:
+
+- First-seen-ASIN cohorts from `backtest_rows.created_at`: 37 new ASINs on July 5, 44 on July 8,
+  152 on July 9, and 207 on July 10 through the snapshot. Each ASIN was assigned to its earliest
+  stored row; an upsert does not make it look newly collected again.
+- The official live Keepa `/token` response for this account reported `refillRate=1` token/minute
+  and `tokensLeft=60` at 21:44 UTC, without exposing the key. Keepa's official Java response
+  schema confirms `tokensLeft`, `refillIn`, `refillRate`, and `tokensConsumed`; current plan
+  choices/prices are client-rendered at `https://keepa.com/#!data`, so no third-party price table
+  was treated as authoritative.
+- The GitHub workflow requests an hourly `:07` run, but actual scheduled events numbered only 8
+  on July 9 and 7 on July 10 through the snapshot (manual dispatches raised total collector runs
+  to 13 and 12 respectively). Across the measured gaps the median was 91.97 minutes, the maximum
+  272.87 minutes, and 28 gaps exceeded 65 minutes. GitHub's own documentation states scheduled
+  workflows can be delayed and, under enough load, dropped.
+- July 9 used 662 total tokens / 441 tier-3 tokens for 152 new ASINs. July 10 through the snapshot
+  used 527 / 331 for 207. The latest six productive runs were more representative of the fixed
+  backlog path: **183 new ASINs from 240 tier-3 tokens** (1.311 tier-3 tokens/new ASIN), with
+  1,194 rows written and 6.525 rows/new ASIN.
+- Conservative gap reconstruction estimated approximately 815 tokens overflowed unused on July
+  9 and another 759 through the July 10 snapshot, assuming no unlogged Keepa consumer. These are
+  estimates, but the full 60-token live balance after a long collector gap independently confirms
+  that capacity was sitting unused at the measurement time.
+- At the latest six-run conversion rate, 24 reliable full-bank bursts with the current 42/60
+  tier-3 allocation project to roughly **769 new ASINs/day**. Temporarily sending all 60 tokens to
+  backlog/history projects roughly **1,098/day**. These are planning estimates, not guarantees;
+  invalid histories, discovery replenishment, category mix, and future yield can reduce them.
+- A separate last-24-hour collector audit found tier 2 spent 214 tokens on 21 candidate
+  evaluations but created only 2 new `hourly-collect` ASIN leads (107 tokens/new lead), versus one
+  token per ASIN history pull. This does not make live lead discovery valueless, but it makes
+  temporarily reducing its cadence the clearest corpus-acceleration tradeoff.
+- `hint_led_scan()` currently forces at least one candidate with `max(1, ...)`; on several
+  14-token runs it consumed all 14 and left tier 3 at zero despite the intended reserve. This is
+  a concrete small-bank allocation defect to fix before evaluating plan capacity.
+- Remote dealfeed-yield telemetry currently contains 18 secondary-filter combinations across 97
+  runs / 332 page slots: 17 combinations yielded zero ASINs and one yielded all 500. The dry-page
+  fallback preserves collection, but pruning/widening persistently dry combinations will avoid
+  purchasing an empty filtered page before the useful category-only fallback.
+
+Decision/recommendation: **do not upgrade Keepa yet**. The present bottleneck is failure to capture
+and direct the current refill, not an exhausted refill rate. First: (1) use a reliable 45–60 minute
+dispatcher or more redundant off-peak GitHub schedules, with the existing concurrency guard, (2)
+temporarily skip/cap tier-2 live scans while the 281-ASIN paid-for backlog drains, (3) run cheap
+dealfeed discovery only when the backlog falls below one run's capacity, (4) remove tier 2's
+forced-one-candidate reserve violation and prune persistently dry dealfeed combinations, and (5)
+report distinct ASINs/day, new-ASINs/tier-3-token, token utilization, and overflow. A higher Keepa
+refill rate is justified only after at least seven representative days with near-zero
+overflow/high utilization,
+the history queue is genuinely token-starved, and the required target still exceeds approximately
+770/day under balanced allocation (or about 1,100/day in temporary corpus-acceleration mode).
+An upgrade alone would not fix skipped scheduling and could overwhelm/waste the current ten-minute
+job unless collector throughput is scaled first.
+
+#### Files changed
+
+- `AI_COLLABORATION_JOURNAL.md` only: appended this required durable session record.
+- No source code, ML data, Supabase rows, model artifact, brain configuration, Amazon listing,
+  purchase, or financial record was changed.
+
+#### Verification, limitations, and exact next safe step
+
+- Verification was a live read at this session's query time; hourly collection can make these
+  totals increase after the snapshot.
+- “Positive” means the historical backtest's `would_have_profited=true`, not a realized sale or
+  human-approved purchase outcome. The 85.22/14.78 class split is materially imbalanced and must
+  not be presented as real-world win rate.
+- Exact next safe step: with Mehmet's approval, implement and test a no-cost seven-day corpus-
+  acceleration trial: reliable sub-hourly dispatch, backlog-first/no-tier-2 mode, and a dashboard
+  scorecard for distinct ASINs/day plus token capture. Reassess the Keepa plan only from that
+  saturated trial. No subscription change should be made from today's underutilized baseline.
+
 ### 2026-07-10 — Claude Code Session 59 (closure): the shadow-scoring TypeError root-caused and fixed — oos_90 was Keepa's raw per-price-type array
 
 The last open defect from the Session 59 audit chain, run to ground with the instrumentation

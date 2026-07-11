@@ -1,6 +1,6 @@
 {
   "$comment": "SINGLE SOURCE OF TRUTH for the AI's brain. Both the item finder/rater (scout/) and the control center read this. When Mehmet feeds new info and Claude distills it, this file is updated -> the scout and the dashboard both update. See ai-system/ingestion-pipeline.md.",
-  "updated": "2026-07-10",
+  "updated": "2026-07-11",
   "model": "online arbitrage (OA)",
   "criteria": {
     "bsrMax": 200000,
@@ -108,11 +108,17 @@
       "tools": 0.15,
       "baby": 0.15,
       "electronics_accessories": 0.15,
+      "automotive": 0.12,
+      "garden": 0.15,
+      "arts_crafts": 0.15,
+      "musical_instruments": 0.15,
+      "industrial": 0.12,
       "default": 0.15
     },
     "minReferralFee": 0.3,
     "fuelSurcharge": 0.035,
     "prepCost": 0.5,
+    "inboundShipPerLb": 0.6,
     "bandedRates": {
       "grocery": {
         "priceThreshold": 15,
@@ -121,7 +127,7 @@
         "source": "Code Review 2026-07-02, Finding CS6: referralRates.grocery (flat 0.08) overstated profit/ROI for anything above $15 — the real Amazon rule (see referralRates.source above) is 8% at or below $15, 15% above it, and most of the $8-$60 OA price band sits ABOVE $15. Used by scout/config.referral_rate_for(category, price) and the control-center deal-analyzer when both a category and a price are known; referralRates.grocery (0.08) remains the fallback for grocery when no price is available to band on."
       }
     },
-    "source": "Category referral rates simplified from Amazon's real fee table (knowledge-rag/sources/amazon/selling-fees.md, collected 2026-06-23 from sell.amazon.com/pricing). Several categories are tiered by price (clothing 5% <=$15 / 10% $15-20 / 17% >$20; grocery 8% <=$15 / 15% above; baby 8% <=$10 / 15% above; electronics accessories 15% <=$100 / 8% above) — the value stored here is the rate that applies across most of the $8-$60 OA price band (criteria.priceMin/priceMax). Consult the source doc before trusting an edge-case price point. 'default' (0.15) covers any category not listed; $0.30 minReferralFee applies to all categories per Amazon policy. fuelSurcharge (3.5%, effective 2026-04) applies to the FBA fulfillment fee only, per the 2026 fee-change research (research-inbox/research-insights.md). prepCost ($0.50/unit) reflects the seller now prepping/labeling FBA in the US as of 2026 (Amazon ended its own FBA prep). Moved from scout/config.py's + control-center's separately-hardcoded FUEL_RATE/PREP constants into this single source (Code Review 2026-07-02, Finding S6) — both now read this block, with matching code fallbacks if it's absent."
+    "source": "Category referral rates simplified from Amazon's real fee table (knowledge-rag/sources/amazon/selling-fees.md, collected 2026-06-23 from sell.amazon.com/pricing). Several categories are tiered by price (clothing 5% <=$15 / 10% $15-20 / 17% >$20; grocery 8% <=$15 / 15% above; baby 8% <=$10 / 15% above; electronics accessories 15% <=$100 / 8% above) — the value stored here is the rate that applies across most of the $8-$60 OA price band (criteria.priceMin/priceMax). Consult the source doc before trusting an edge-case price point. 'default' (0.15) covers any category not listed; $0.30 minReferralFee applies to all categories per Amazon policy. fuelSurcharge (3.5%, effective 2026-04) applies to the FBA fulfillment fee only, per the 2026 fee-change research (research-inbox/research-insights.md). prepCost ($0.50/unit) reflects the seller now prepping/labeling FBA in the US as of 2026 (Amazon ended its own FBA prep). Moved from scout/config.py's + control-center's separately-hardcoded FUEL_RATE/PREP constants into this single source (Code Review 2026-07-02, Finding S6) — both now read this block, with matching code fallbacks if it's absent. automotive/industrial added at 12% (selling-fees.md: 'Automotive & Powersports' and 'Business, Industrial & Scientific' rows) and garden/arts_crafts/musical_instruments added explicitly at 15% (selling-fees.md: 'Lawn & Garden', 'Musical Instruments & AV'; arts_crafts has no dedicated row so uses the 15% 'Everything Else' rate) — Full-crew ML audit, 2026-07-11: fba-deal-calculator found the 5 categories added with the 18-category rotation expansion (2260cb0) were silently taking the 15% default, overstating the assumed referral cost 3pp for the 2 that are really 12%. inboundShipPerLb ($0.60/lb, range $0.50-0.80 per fba-selleramp-analyst's documented cost stack) added the same day — the profit/ROI estimate and the backtest's would_have_profited labels previously omitted inbound-shipping-to-FBA entirely (live-proven +$0.59/unit at 1lb to +$3.00/unit at 5lb optimistic drift); now subtracted in scoring.estimate_oa_profit_roi and scoring.net_proceeds via scoring.estimate_inbound_shipping."
   },
   "scoring": {
     "preferredOffers": {
@@ -153,7 +159,8 @@
     "topN": 5,
     "assumedDailyTokens": 7500,
     "rankingChampion": "rule",
-    "rankingChampionSource": "Review fix (2026-07-06) — HUMAN-ONLY promotion switch for the cloud-trained ranker (scout/train_ranker.py). Every report/Discord post has always SAID promotion works this way, but until this fix nothing in the codebase ever actually read this key — training ran, evaluated, and uploaded a champion/challenger comparison every cadence with zero possible effect on anything. 'rule' (default, shadow-only): the deterministic triage formula (scoring.triage_score) orders the Review Queue/winners exactly as it always has; the trained challenger still trains and reports every cadence but has ZERO effect on what gets shown, gated, or bought. 'challenger': a human has read the challenger's win/lose verdict in learning-hub/tracking/ranker-report.md and explicitly promoted it here — the trained model's probability (train_ranker.challenger_score, via scout/pipeline.py's _evaluate/run_once) now orders the winners list, but it STILL NEVER touches the hard score>=threshold gate, hazmat/IP/eligibility checks, or any other compliance/safety rule — those stay rule-based always, and no purchase is ever automatic either way. Flip back to 'rule' any time to revert instantly, nothing destructive. Edit via fba-brain-updater only."
+    "rankingChampionSource": "Review fix (2026-07-06) — HUMAN-ONLY promotion switch for the cloud-trained ranker (scout/train_ranker.py). Every report/Discord post has always SAID promotion works this way, but until this fix nothing in the codebase ever actually read this key — training ran, evaluated, and uploaded a champion/challenger comparison every cadence with zero possible effect on anything. 'rule' (default, shadow-only): the deterministic triage formula (scoring.triage_score) orders the Review Queue/winners exactly as it always has; the trained challenger still trains and reports every cadence but has ZERO effect on what gets shown, gated, or bought. 'challenger': a human has read the challenger's win/lose verdict in learning-hub/tracking/ranker-report.md and explicitly promoted it here — the trained model's probability (train_ranker.challenger_score, via scout/pipeline.py's _evaluate/run_once) now orders the winners list, but it STILL NEVER touches the hard score>=threshold gate, hazmat/IP/eligibility checks, or any other compliance/safety rule — those stay rule-based always, and no purchase is ever automatic either way. Flip back to 'rule' any time to revert instantly, nothing destructive. Edit via fba-brain-updater only.",
+    "source": "scoreThreshold/topN mirror scout/config.py's SCORE_THRESHOLD/TOP_N .env defaults (only send picks >= this score, max picks per run). assumedDailyTokens is the System Blueprint's assumed daily Keepa token budget, used by propose_updates.py to flag real drift. Moved from scattered code constants (Code Review 2026-07-02, Finding S5) — scout/config.py falls back to these same values if this file is absent. marginHealthThreshold (added for Finding R3-nits) single-sources the control-center deal-analyzer's Margin-stat-tile health indicator (green above, neutral below) — it was independently hardcoded there alongside worstCaseLossBarUsd's own local literal copy; both now read this block instead of duplicating the numbers. (Restored 2026-07-11 — Full-crew ML audit found commit fee4f64 had silently dropped this line when it added rankingChampion/rankingChampionSource; recovered verbatim from git history, `git show fee4f64 -- learning-hub/data/ai-brain.json`.)"
   },
   "seasonality": {
     "backToSchool": {
@@ -272,7 +279,8 @@
       "dailyScanTokens": 600,
       "shadowRecheckTokens": 80,
       "backtestTokens": 700,
-      "source": "SUPERSEDED as an enforced split by Session 54's hourly burst collector (scout/collect_hourly.py, keepa-collect.yml, hourly at :07) - it no longer allocates a FIXED daily amount per tier; instead every hour it reads the ACTUAL currently-banked tokensLeft and spends it waterfall-style in strict priority order (1. shadow-outcome rechecks due today, 2. hint-led candidate scan, 3. backtest history fetches with whatever's left), never waiting for a refill. These three numbers remain as DEFAULT fallbacks for standalone/manual invocations of shadow_outcomes.run_rechecks()/backtest.run_backtest() outside the hourly collector (e.g. a local debug run). Original Pro-trickle sizing analysis: Session 46 (fixed daily split) + GL1 go-live Session 51, 2026-07-05 (the Pro plan refills 1 token/min, ~1440/day, 60-token bank). Live-confirmed 2026-07-05: Product Finder API is REQUEST_REJECTED on Pro (keepa_client falls back to the search API, 10 tokens/term); history pulls cost 1 token/ASIN; search 10 tokens/query."
+      "refillRatePerMinute": 1,
+      "source": "SUPERSEDED as an enforced split by Session 54's hourly burst collector (scout/collect_hourly.py, keepa-collect.yml) - it no longer allocates a FIXED daily amount per tier; instead every dispatch reads the ACTUAL currently-banked tokensLeft and spends it waterfall-style, never waiting for a refill. The three legacy allocation numbers remain DEFAULT fallbacks for standalone/manual invocations. refillRatePerMinute is non-secret current-plan telemetry for honest dashboard utilization math, live-verified from Keepa's official /token response on 2026-07-10; it is NOT a spending limit and must be updated after any plan change. Live-confirmed costs: Product Finder API is REQUEST_REJECTED on this plan (search fallback 10 tokens/term); history pulls cost 1 token/ASIN."
     },
     "source": "System Blueprint Prompt 3.1 — the label builder (scout/labels.py) refuses to assemble a training table below this many labeled rows (with both positive and negative outcomes represented). Below it, the scout runs on the transparent rule score alone; this is a floor for even ATTEMPTING calibration, not a promotion threshold — scout_pro's champion/challenger gate (PROMOTION_MIN_GAIN) is the separate, stricter bar for actually replacing the rule engine.",
     "harvesterSource": "DATA_ENGINE_PLAN.md V0 #4 — scout/harvest.py idle-token harvester. harvesterEnabled is FALSE on the Keepa Pro trickle (1 token/min, 60 bank: no idle surplus to bank; harvest.enabled() returns a blocked-on-upgrade status). Flip to true only after upgrading to the 20/min API tier. harvestTokenShare (0..1) is the fraction of the OBSERVED daily token generation the harvester may spend once enabled (harvest.observed_daily_generation reads the real refill rate; never an assumed tier).",
@@ -330,6 +338,14 @@
       "maxCategoryCorpusShare": 0.3,
       "top5BrandShareAlarm": 0.2,
       "breadthFirstBacktest": true,
+      "corpusAcceleration": {
+        "enabled": true,
+        "skipTier2WhilePending": true,
+        "minPendingAsins": 1,
+        "targetDispatchMinutes": 45,
+        "minimumDispatchGapMinutes": 40,
+        "source": "APPROVED by Mehmet 2026-07-10: no-cost independent-sample acceleration. Preserve tier 1 shadow rechecks, but while the persisted backtest backlog has at least minPendingAsins, skip tier 2 hint-led live scanning and direct the remaining observed Keepa bank to unique-ASIN history pulls. The switch is reversible, never changes hard gates/model promotion, and never buys anything. targetDispatchMinutes and minimumDispatchGapMinutes configure the local GitHub workflow dispatcher; GitHub cron remains a best-effort fallback."
+      },
       "capsSource": "APPROVED by Mehmet 2026-07-10 (brain-proposals.md, [ml-debias] 2026-07-09) — assembly-time training caps + concentration alarms, read by scout/train_ranker.py sampling_caps_config(); collection/sampling config, NOT buy gates. Values match the code defaults that were already live, so approval made them brain-sourced with zero behavior change on approval day.",
       "categoriesSource": "APPROVED by Mehmet 2026-07-10 (brain-proposals.md, [ml-breadth] 2026-07-10) — expanded from 10 toward ML_DEBIAS_PLAN.md's full seed rotation; keepa_client._CATEGORY_MAP carries roots for all entries; an unresolvable category degrades to an unfiltered pull with a logged warning, never a wrong filter."
     }

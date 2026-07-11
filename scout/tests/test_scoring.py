@@ -197,8 +197,44 @@ def test_category_fee_floor_applies():
     profit_floor, _ = scoring.estimate_oa_profit_roi(1.0, 0.5, category="grocery")
     profit_if_uncapped = (1.0 - referral_uncapped
                           - scoring.estimate_fulfillment_fee(0.5) * (1 + config.FUEL_SURCHARGE)
-                          - 0.5 - config.OA_PREP_COST)
+                          - 0.5 - config.OA_PREP_COST - scoring.estimate_inbound_shipping(0.5))
     assert profit_floor < profit_if_uncapped, "the $0.30 floor should cost MORE than the uncapped category rate would"
+
+
+def test_inbound_shipping_is_subtracted_from_profit_and_net_proceeds():
+    # Full-crew audit (2026-07-11): inbound shipping-to-FBA was omitted entirely, overstating
+    # profit/ROI and the backtest's would_have_profited labels. Locks in that both cost-stack
+    # functions now subtract exactly estimate_inbound_shipping(weight_lb).
+    price, weight = 30.0, 2.0
+    shipping = scoring.estimate_inbound_shipping(weight)
+    assert shipping == round(weight * config.OA_INBOUND_SHIP_PER_LB, 2)
+
+    profit, _ = scoring.estimate_oa_profit_roi(price, weight)
+    referral = price * config.REFERRAL_RATE
+    fulfillment = scoring.estimate_fulfillment_fee(weight) * (1 + config.FUEL_SURCHARGE)
+    cogs = price * config.OA_COGS_FRACTION
+    profit_without_shipping = price - referral - fulfillment - cogs - config.OA_PREP_COST
+    assert round(profit_without_shipping - profit, 2) == shipping
+
+    proceeds = scoring.net_proceeds(price, weight)
+    proceeds_without_shipping = price - referral - fulfillment - config.OA_PREP_COST
+    assert round(proceeds_without_shipping - proceeds, 2) == shipping
+
+
+def test_inbound_shipping_defaults_to_neutral_weight_when_missing():
+    # Missing weight assumes 1.0 lb, matching estimate_fulfillment_fee's own neutral default.
+    assert scoring.estimate_inbound_shipping(None) == round(1.0 * config.OA_INBOUND_SHIP_PER_LB, 2)
+
+
+def test_automotive_and_industrial_referral_rate_matches_amazons_real_12_percent():
+    # Full-crew audit, fba-deal-calculator finding: these 2 of the 5 categories added with the
+    # 18-category rotation (2260cb0) were silently taking the 15% default instead of Amazon's
+    # real 12% (selling-fees.md: Automotive & Powersports, Business, Industrial & Scientific).
+    assert config.REFERRAL_RATES.get("automotive") == 0.12
+    assert config.REFERRAL_RATES.get("industrial") == 0.12
+    profit_automotive, _ = scoring.estimate_oa_profit_roi(30.0, 1.0, category="automotive")
+    profit_default, _ = scoring.estimate_oa_profit_roi(30.0, 1.0)
+    assert profit_automotive > profit_default, "12% referral should leave MORE profit than the 15% default"
 
 
 def test_grocery_roi_exception_lowers_the_bar():

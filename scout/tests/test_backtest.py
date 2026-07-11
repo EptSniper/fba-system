@@ -456,13 +456,23 @@ class PendingBacklogTest(RunBacktestBudgetTest):
     ASINs. It now persists as state["pending"], drains FIRST next run, and sampling is skipped
     entirely while the backlog exceeds what the cap can pull."""
 
-    def _seed_state(self, pending):
+    def _seed_state(self, pending, processed=None):
         import json
         state_path = bt._state_path()
         os.makedirs(os.path.dirname(state_path), exist_ok=True)
         with open(state_path, "w", encoding="utf-8") as f:
-            json.dump({"processed_asins": [], "spent_tokens": 0, "rows_written": 0,
+            json.dump({"processed_asins": processed or [], "spent_tokens": 0, "rows_written": 0,
                        "pending": pending}, f)
+
+    def test_pending_backlog_count_is_distinct_and_excludes_processed(self):
+        self._seed_state([
+            {"asin": "P1", "sample_source": "dealfeed"},
+            {"asin": "P1", "sample_source": "dealfeed"},
+            {"asin": "P2", "sample_source": "explore"},
+            {"asin": "DONE", "sample_source": "onpolicy"},
+            {"sample_source": "dealfeed"},
+        ], processed=["DONE"])
+        self.assertEqual(bt.pending_backlog_count(), 2)
 
     def test_backlog_skips_sampling_and_drains_first(self):
         pending = [{"asin": f"P{i}", "sample_source": "dealfeed", "category": "pet"}
@@ -501,6 +511,27 @@ class PendingBacklogTest(RunBacktestBudgetTest):
         # both the drained backlog item and the fresh sample were processed
         self.assertEqual(r["pending_remaining"], 0)
 
+    def test_drain_order_interleaves_categories_not_fifo(self):
+        # 40 "tools" enqueued first, then 5 "grocery" -- raw FIFO would drain all 40 tools
+        # before touching grocery. A budget that can only afford ~10 pulls must still reach
+        # grocery immediately instead of exhausting itself on tools alone.
+        pending = ([{"asin": f"TOOL{i}", "sample_source": "dealfeed", "category": "tools"}
+                   for i in range(40)]
+                  + [{"asin": f"GROC{i}", "sample_source": "dealfeed", "category": "grocery"}
+                     for i in range(5)])
+        self._seed_state(pending)
+        pulled = []
+
+        def fake_history(asins, api=None):
+            pulled.extend(asins)
+            return [{"asin": a, "data": None} for a in asins]
+
+        sampler = mock.Mock(side_effect=AssertionError("sampling must be SKIPPED on a full backlog"))
+        with mock.patch.object(bt.config, "have_keepa", return_value=True),              mock.patch.object(bt, "sample_asins_stratified", sampler):
+            bt.run_backtest(api=object(), token_cap=10, history_fn=fake_history, persist=True)
+        self.assertTrue(any(a.startswith("GROC") for a in pulled),
+                        "grocery should be reached well before the 40-item tools cluster drains")
+
     def test_remainder_persists_with_source_tags(self):
         import json
         self._seed_state([])
@@ -520,6 +551,43 @@ class PendingBacklogTest(RunBacktestBudgetTest):
         self.assertTrue(saved["pending"])
         self.assertEqual(saved["pending"][0]["sample_source"], "dealfeed")
         self.assertEqual(saved["pending"][0]["category"], "pet")
+
+
+class InterleaveByCategoryTest(unittest.TestCase):
+    """Full-crew audit (2026-07-11): draining the pending backlog in raw FIFO order let one
+    dealfeed rotation slot's whole category batch (100-250+ ASINs) monopolize every backtest
+    run's small per-run pull budget for many consecutive hours — live-confirmed via Supabase
+    (4 straight hourly runs 100% 'tools', 07-10 11:00-18:00). _interleave_by_category fixes the
+    DRAIN ORDER so a fixed budget spreads across whatever categories are queued immediately."""
+
+    def test_round_robins_across_categories(self):
+        pending = ([{"asin": f"T{i}", "category": "tools"} for i in range(5)]
+                  + [{"asin": f"G{i}", "category": "grocery"} for i in range(2)])
+        out = bt._interleave_by_category(pending)
+        cats = [p["category"] for p in out]
+        # first two slots must cover BOTH categories, not five "tools" in a row
+        self.assertEqual(set(cats[:2]), {"tools", "grocery"})
+        self.assertEqual(len(out), len(pending))
+        self.assertEqual(sorted(p["asin"] for p in out), sorted(p["asin"] for p in pending))
+
+    def test_preserves_fifo_order_within_a_category(self):
+        pending = ([{"asin": f"T{i}", "category": "tools"} for i in range(3)]
+                  + [{"asin": f"G{i}", "category": "grocery"} for i in range(3)])
+        out = bt._interleave_by_category(pending)
+        tools_order = [p["asin"] for p in out if p["category"] == "tools"]
+        self.assertEqual(tools_order, ["T0", "T1", "T2"])
+
+    def test_noop_for_single_category_or_empty_backlog(self):
+        single = [{"asin": "A", "category": "tools"}, {"asin": "B", "category": "tools"}]
+        self.assertEqual(bt._interleave_by_category(single), single)
+        self.assertEqual(bt._interleave_by_category([]), [])
+
+    def test_handles_missing_category_as_its_own_bucket(self):
+        pending = ([{"asin": "N1"}, {"asin": "N2"}]
+                  + [{"asin": "T1", "category": "tools"}])
+        out = bt._interleave_by_category(pending)
+        self.assertEqual(len(out), 3)
+        self.assertEqual({p["asin"] for p in out}, {"N1", "N2", "T1"})
 
 
 class TrendPrefetchBatchTest(RunBacktestBudgetTest):
@@ -703,6 +771,13 @@ class RemoteStateFallbackTest(unittest.TestCase):
                                           "SUPABASE_SERVICE_KEY": "fake"}):
             st = bt._fetch_remote_state()
         self.assertEqual(st, {})
+
+    def test_strict_remote_fetch_failure_marks_backlog_preflight_unknown(self):
+        with mock.patch("requests.get", side_effect=ConnectionError("network down")), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            with self.assertRaisesRegex(RuntimeError, "remote state unavailable"):
+                bt._fetch_remote_state(strict=True)
 
     def test_remote_upload_failure_is_non_fatal(self):
         with mock.patch("requests.post", side_effect=ConnectionError("network down")), \

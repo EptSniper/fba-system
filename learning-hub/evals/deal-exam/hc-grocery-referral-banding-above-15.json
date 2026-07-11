@@ -15,7 +15,7 @@
     "avg_price_90": 16.0,
     "price_low_90": 16.0
   },
-  "expected_verdict": "review",
+  "expected_verdict": "pass",
   "expected_hard_reject": false,
   "expected_hard_reject_keyword": null,
   "expected_adjustment_names": [],
@@ -23,10 +23,10 @@
     "roi",
     "profit"
   ],
-  "expected_profit_approx": 0.29,
-  "expected_roi_approx": 0.036,
+  "expected_profit_approx": -0.31,
+  "expected_roi_approx": -0.039,
   "tolerance": 0.03,
   "trap_type": "grocery-referral-banding-above-threshold",
-  "source": "handcrafted, hand-computed from fees.bandedRates.grocery (aboveThreshold=15%) at $16 \u2014 paired with hc-grocery-referral-banding-at-or-below-15 to prove the banding transition (profit strictly lower above $15 despite a higher price, because the referral rate nearly doubles). NOTE: first draft wrongly expected verdict=pass (same mistake as the paired case) \u2014 real score is 70.3, just above the review threshold; fixed after re-deriving the full weighted score by hand.",
+  "source": "handcrafted, hand-computed from fees.bandedRates.grocery (aboveThreshold=15%) at $16 \u2014 paired with hc-grocery-referral-banding-at-or-below-15 to prove the banding transition (profit strictly lower above $15 despite a higher price, because the referral rate nearly doubles). NOTE: first draft wrongly expected verdict=pass (same mistake as the paired case) \u2014 real score is 70.3, just above the review threshold; fixed after re-deriving the full weighted score by hand. UPDATED 2026-07-11 (Full-crew audit): scoring.estimate_oa_profit_roi now subtracts inbound shipping-to-FBA (config.OA_INBOUND_SHIP_PER_LB, ~$0.60/lb \u2014 previously omitted entirely). At 1.0 lb that's -$0.60, flipping this candidate's profit negative (0.29 -> -0.31) and its score below SCORE_THRESHOLD (70.3 -> 66.0), so the correct verdict is now 'pass' (not worth a human review) rather than 'review'. The banding transition itself (8% vs 15% referral) is unchanged and still verified by the paired case.",
   "difficulty": "hard"
 }

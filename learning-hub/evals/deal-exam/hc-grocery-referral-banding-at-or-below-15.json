@@ -15,7 +15,7 @@
     "avg_price_90": 14.0,
     "price_low_90": 14.0
   },
-  "expected_verdict": "review",
+  "expected_verdict": "pass",
   "expected_hard_reject": false,
   "expected_hard_reject_keyword": null,
   "expected_adjustment_names": [],
@@ -23,10 +23,10 @@
     "roi",
     "profit"
   ],
-  "expected_profit_approx": 0.57,
-  "expected_roi_approx": 0.081,
+  "expected_profit_approx": -0.03,
+  "expected_roi_approx": -0.005,
   "tolerance": 0.03,
   "trap_type": "grocery-referral-banding-at-or-below-threshold",
-  "source": "handcrafted, hand-computed from fees.bandedRates.grocery (priceThreshold=$15, atOrBelowThreshold=8%) at $14. NOTE: first draft of this case wrongly expected verdict=pass, assuming failed roi/profit checks alone would sink it below the review threshold — the exam itself caught this: bsr/sales/offers/buybox still contribute 66/100 pts plus partial roi/profit credit, landing the real score at 75.4 (review). Fixed after independently re-deriving the full weighted score by hand.",
+  "source": "handcrafted, hand-computed from fees.bandedRates.grocery (priceThreshold=$15, atOrBelowThreshold=8%) at $14. NOTE: first draft of this case wrongly expected verdict=pass, assuming failed roi/profit checks alone would sink it below the review threshold — the exam itself caught this: bsr/sales/offers/buybox still contribute 66/100 pts plus partial roi/profit credit, landing the real score at 75.4 (review). Fixed after independently re-deriving the full weighted score by hand. UPDATED 2026-07-11 (Full-crew audit): scoring.estimate_oa_profit_roi now subtracts inbound shipping-to-FBA (config.OA_INBOUND_SHIP_PER_LB, ~$0.60/lb — previously omitted entirely). At 1.0 lb that's -$0.60, flipping this candidate's profit negative (0.57 -> -0.03) and its score below SCORE_THRESHOLD (75.4 -> 66.0), so the correct verdict is now 'pass' (not worth a human review) rather than 'review'. The banding transition itself (8% vs 15% referral) is unchanged and still verified by the paired case.",
   "difficulty": "hard"
 }

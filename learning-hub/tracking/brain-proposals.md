@@ -122,3 +122,41 @@ scout/config.py, train_ranker.sampling_caps_config(), and backtest.sampling_conf
 Decision records in brain-proposal-decisions.jsonl.
 
 ---
+## 2026-07-11 02:00 UTC — proposal run
+
+- **[data-driven]** Average Keepa token usage over 4 run(s) is 44/day, vs the System Blueprint's assumed ~7500/day. (sample size: 4, confidence: worth reviewing)
+- **[knowledge-driven]** Knowledge-base check unavailable this run: (loading BAAI/bge-base-en-v1.5 once...)
+2026-07-10 22:00:43.885 | WARNING  | fastembed.common.model_management:download_files_from_huggingface:225 - Local file sizes do not match the metadata.
+{"error (sample size: 0, confidence: unavailable)
+
+**2 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+
+## 2026-07-11 08:03 UTC — proposal run (fba-compliance-checker, full-crew audit)
+
+- **[compliance-driven]** `brands.friendly` currently lists **LEGO** and **Under Armour** (both give a
+  +5 scoring bonus via `scoring.adjustments.friendlyBrand`), but both are already documented in
+  already-ingested research as fully brand-gated / zero-tolerance on Amazon: the 750+ gated-brand
+  community tracker (`research-inbox/research-insights.md`, collected Jul 1 2026) lists **"Lego (US
+  only)"** and **"Under Armour"** under its "Fully gated" tier (same tier as Nike, Fitbit, Logitech,
+  Asics — Nike is already correctly in `brands.avoid`); a separate ingested IP-complaint playbook
+  independently reconfirms **LEGO** under "Zero-tolerance brands" alongside Nike, Apple, Disney,
+  OtterBox, Funko, Beats, Hasbro (all already `avoid` except LEGO). fba-compliance-checker separately
+  found Under Armour is already the project's single most brand-gate-affected candidate in practice:
+  19 of the last 30 leads, with only 1 surviving to a live human review — i.e. the live compliance gate
+  is already rejecting these almost every time, while the scoring layer is simultaneously handing them
+  a bonus for being "friendly." That's an internal contradiction, not a hypothetical risk.
+  **Proposed fix:** move `"LEGO"` and `"Under Armour"` from `brands.friendly` to `brands.avoid` (same
+  list Nike/Adidas/Jordan/Yeezy/Apple/Sony/Disney already sit in), so the scout stops scoring a bonus
+  for brands its own compliance gate already rejects almost every time. This is a business-rule change
+  (which brands the human considers worth sourcing) — NOT auto-applied; needs an explicit approve.
+  Guardrails unaffected: hard compliance/IP gates already sit outside ML and are untouched by this;
+  this only changes a scoring adjustment weight. (sample size: 30 recent leads for the Under Armour
+  gate-rate figure, 2 independently-sourced gated-brand trackers for LEGO; confidence: high — key:
+  `brands.friendly`, `brands.avoid`)
+
+**1 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+

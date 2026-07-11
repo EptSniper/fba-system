@@ -55,6 +55,14 @@ def estimate_fulfillment_fee(weight_lb: Optional[float]) -> float:
     return 6.75 + 0.16 * extra_half_lbs
 
 
+def estimate_inbound_shipping(weight_lb: Optional[float]) -> float:
+    """$ cost of getting the bought unit to the FBA warehouse (config.OA_INBOUND_SHIP_PER_LB
+    per lb, ~$0.60 default). Missing weight defaults to 1.0 lb, matching
+    estimate_fulfillment_fee's neutral assumption."""
+    w = 1.0 if weight_lb is None else float(weight_lb)
+    return round(w * config.OA_INBOUND_SHIP_PER_LB, 2)
+
+
 def estimate_margin(price: Optional[float], weight_lb: Optional[float]) -> Optional[float]:
     """
     Rough NET margin after Amazon's take + assumed COGS + assumed PPC.
@@ -223,6 +231,8 @@ def estimate_oa_profit_roi(price, weight_lb, cogs_fraction=None, category=None):
     Buy cost is ASSUMED = price * OA_COGS_FRACTION since Keepa has no real cost. Referral
     fee is CATEGORY-AWARE (config.referral_rate_for) with Amazon's $0.30 floor when a
     category is known/provided; otherwise falls back to the flat config.REFERRAL_RATE.
+    Also subtracts inbound shipping-to-FBA (estimate_inbound_shipping) — previously omitted,
+    which overstated profit/ROI by that amount (Full-crew audit, 2026-07-11).
     Returns (profit_per_unit, roi) or (None, None). Confirm in SellerAmp."""
     if not price or price <= 0:
         return None, None
@@ -234,16 +244,18 @@ def estimate_oa_profit_roi(price, weight_lb, cogs_fraction=None, category=None):
     fulfillment = estimate_fulfillment_fee(weight_lb) * (1 + config.FUEL_SURCHARGE)
     cogs = price * cf
     prep = config.OA_PREP_COST  # seller now preps/labels FBA in the US (2026) — real per-unit cost
-    profit = price - referral - fulfillment - cogs - prep
+    shipping = estimate_inbound_shipping(weight_lb)
+    profit = price - referral - fulfillment - cogs - prep - shipping
     roi = (profit / cogs) if cogs > 0 else None
     return round(profit, 2), (round(roi, 3) if roi is not None else None)
 
 
 def net_proceeds(price, weight_lb, category=None):
     """Seller's net $ from a sale BEFORE cost of goods — price minus referral (category-aware,
-    $0.30 floor), fulfillment (with fuel surcharge), and prep. Used by the shadow-outcome tracker
-    (V1) and the backtest (V2) to compute `would_have_profited` at an ORIGINAL landed cost:
-    profit = net_proceeds(price_now) - landed_cost. Returns None for a missing/zero price."""
+    $0.30 floor), fulfillment (with fuel surcharge), prep, and inbound shipping-to-FBA. Used by
+    the shadow-outcome tracker (V1) and the backtest (V2) to compute `would_have_profited` at an
+    ORIGINAL landed cost: profit = net_proceeds(price_now) - landed_cost. Returns None for a
+    missing/zero price."""
     if not price or price <= 0:
         return None
     if category:
@@ -252,7 +264,8 @@ def net_proceeds(price, weight_lb, category=None):
         referral = price * config.REFERRAL_RATE
     fulfillment = estimate_fulfillment_fee(weight_lb) * (1 + config.FUEL_SURCHARGE)
     prep = config.OA_PREP_COST
-    return round(price - referral - fulfillment - prep, 2)
+    shipping = estimate_inbound_shipping(weight_lb)
+    return round(price - referral - fulfillment - prep - shipping, 2)
 
 
 def assumed_landed_cost(price, cogs_fraction=None):

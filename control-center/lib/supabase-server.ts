@@ -183,8 +183,10 @@ export function getRankerRuns(limit = 60): Promise<SupabaseRankerRun[] | null> {
 // re-evaluate (a Postgres view or an RPC that aggregates server-side) if this ever approaches
 // DATA_ENGINE_PLAN's ~50k-row target, where even these 4 columns would be a multi-MB payload.
 export type SupabaseBacktestRowLite = {
+  asin: string | null;
   created_at: string;
   sample_source: string | null;
+  category: string | null;
   label_quality: string;
   would_have_profited: boolean | null;
 };
@@ -193,8 +195,77 @@ export function getBacktestRowsForChart(): Promise<SupabaseBacktestRowLite[] | n
   // supaGetAll (not supaGet): the corpus outgrew PostgREST's 1000-row page cap on 2026-07-09 —
   // a single-page read froze the growth chart at the oldest 1000 rows. Paginates to completion.
   return supaGetAll<SupabaseBacktestRowLite>(
-    `backtest_rows?select=created_at,sample_source,label_quality,would_have_profited&order=created_at.asc`,
+    `backtest_rows?select=asin,created_at,sample_source,category,label_quality,would_have_profited&order=created_at.asc`,
   );
+}
+
+export type BacktestCollectionStateSummary = {
+  pendingAsins: number;
+  pendingByCategory: { label: string; count: number }[];
+  unknownCategoryAsins: number;
+};
+
+// The paid-for sampler backlog does not live in a Postgres table. The hourly collector persists
+// it in Supabase Storage (`models/backtest/state.json`) so ephemeral GitHub runners can resume.
+// Read and aggregate it here on the server; the raw state (including thousands of ASIN strings)
+// never reaches the browser. `null` deliberately means unavailable/missing/old-shape, while an
+// existing `pending: []` is a real, measurable zero.
+export async function getBacktestCollectionStateSummary(): Promise<BacktestCollectionStateSummary | null> {
+  if (!supabaseConfigured()) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/models/backtest/state.json`, {
+      headers: headers(),
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      if (res.status !== 404) {
+        console.error(`[supabase-server] GET storage models/backtest/state.json -> HTTP ${res.status}`);
+      }
+      return null;
+    }
+    const state = (await res.json()) as { pending?: unknown };
+    if (!Array.isArray(state.pending)) return null;
+
+    const pending = new Map<string, string | null>();
+    for (const item of state.pending) {
+      const asin = typeof item === "string"
+        ? item
+        : item && typeof item === "object" && "asin" in item
+          ? (item as { asin?: unknown }).asin
+          : null;
+      if (typeof asin !== "string" || !asin.trim()) continue;
+      const category = item && typeof item === "object" && "category" in item
+        ? (item as { category?: unknown }).category
+        : null;
+      const normalizedCategory = typeof category === "string" && category.trim()
+        ? category.trim().toLowerCase()
+        : null;
+      // One ASIN is one backlog item. If a duplicate later carries a known category, use it.
+      const key = asin.trim().toUpperCase();
+      if (!pending.has(key) || (!pending.get(key) && normalizedCategory)) {
+        pending.set(key, normalizedCategory);
+      }
+    }
+    const categoryCounts = new Map<string, number>();
+    let unknownCategoryAsins = 0;
+    for (const category of pending.values()) {
+      if (!category || category === "unknown") unknownCategoryAsins += 1;
+      else categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+    }
+    return {
+      pendingAsins: pending.size,
+      pendingByCategory: [...categoryCounts.entries()]
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)),
+      unknownCategoryAsins,
+    };
+  } catch (err) {
+    console.error(
+      "[supabase-server] GET storage models/backtest/state.json failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return null;
+  }
 }
 
 export type SupabaseLead = {

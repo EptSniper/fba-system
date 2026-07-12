@@ -270,6 +270,41 @@ class SecondaryAxisFiltersTest(unittest.TestCase):
         self.assertEqual(df.secondary_axis_filters(df._secondary_axis_size() + 2),
                          df.secondary_axis_filters(2))
 
+    def test_dry_classification_requires_repeated_zero_yield_evidence(self):
+        filters = df.secondary_axis_filters(0)
+        key = df._combo_key(filters)
+        weak = {key: {"runs": df._PERSISTENT_DRY_MIN_RUNS - 1,
+                      "pages": df._PERSISTENT_DRY_MIN_PAGES, "asins": 0}}
+        productive = {key: {"runs": 20, "pages": 60, "asins": 1}}
+        persistent = {key: {"runs": df._PERSISTENT_DRY_MIN_RUNS,
+                            "pages": df._PERSISTENT_DRY_MIN_PAGES, "asins": 0}}
+        self.assertFalse(df._is_persistently_dry(filters, weak))
+        self.assertFalse(df._is_persistently_dry(filters, productive))
+        self.assertTrue(df._is_persistently_dry(filters, persistent))
+
+    def test_persistently_dry_combo_widens_in_place_instead_of_chasing_winner(self):
+        base = df.secondary_axis_filters(0)
+        winner = df.secondary_axis_filters(df._secondary_axis_size() - 1)
+        stats = {
+            df._combo_key(base): {"runs": 9, "pages": 27, "asins": 0},
+            df._combo_key(winner): {"runs": 9, "pages": 27, "asins": 500},
+        }
+        adapted, mode = df._adapt_secondary_filters(base, stats)
+        self.assertEqual(mode, "drop_percent_widened")
+        self.assertNotIn("deltaPercentRange", adapted)
+        self.assertEqual(adapted["salesRankRange"], base["salesRankRange"])
+        self.assertEqual(adapted["currentRange"], base["currentRange"])
+        self.assertNotEqual(adapted["salesRankRange"], winner["salesRankRange"])
+        self.assertIn("deltaPercentRange", base)  # caller-owned base filters were not mutated
+
+    def test_missing_or_malformed_stats_leave_normal_rotation_unchanged(self):
+        base = df.secondary_axis_filters(2)
+        for stats in ({}, {df._combo_key(base): "bad"},
+                      {df._combo_key(base): {"runs": "bad", "pages": 8, "asins": 0}}):
+            adapted, mode = df._adapt_secondary_filters(base, stats)
+            self.assertEqual(adapted, base)
+            self.assertEqual(mode, "none")
+
 
 class HarvestTest(unittest.TestCase):
     def setUp(self):
@@ -283,6 +318,7 @@ class HarvestTest(unittest.TestCase):
             mock.patch.object(df, "_upload_remote_cursor", return_value=False),
             mock.patch.object(df, "_fetch_remote_secondary_cursor", return_value=0),
             mock.patch.object(df, "_upload_remote_secondary_cursor", return_value=False),
+            mock.patch.object(df, "_fetch_remote_yield_stats", return_value={}),
             mock.patch.object(df, "_update_remote_yield_stats", return_value=False),
         ]
         for p in self._cursor_patchers:
@@ -372,6 +408,33 @@ class HarvestTest(unittest.TestCase):
         self.assertEqual(len(seen_parms), 2)
         self.assertIn("salesRankRange", seen_parms[0])      # first attempt: filtered
         self.assertNotIn("salesRankRange", seen_parms[1])   # refetch: category-only
+        self.assertEqual(result["secondary_axis_adaptation"], "none")
+        self.assertEqual(result["secondary_axis_filters"],
+                         result["secondary_axis_base_filters"])
+
+    def test_known_dry_combo_is_widened_before_the_first_paid_page(self):
+        seen_parms = []
+
+        class RecordingApi(FakeApi):
+            def deals(self, deal_parms, domain=None, wait=True):
+                seen_parms.append(dict(deal_parms))
+                return super().deals(deal_parms, domain=domain, wait=wait)
+
+        base = df.secondary_axis_filters(0)
+        stats = {df._combo_key(base): {"runs": 6, "pages": 18, "asins": 0}}
+        api = RecordingApi(tokens_left=60, pages={((11,), 0): ["B001"]})
+        with mock.patch.object(df, "_fetch_remote_yield_stats", return_value=stats):
+            result = df.harvest(
+                api, pages=1, categories=["toys"],
+                resolve_fn=lambda api, cats, wait=True: {"toys": 11})
+        self.assertEqual([a["asin"] for a in result["asins"]], ["B001"])
+        self.assertEqual(len(seen_parms), 1)  # no known-empty narrow page was purchased first
+        self.assertNotIn("deltaPercentRange", seen_parms[0])
+        self.assertEqual(seen_parms[0]["salesRankRange"], base["salesRankRange"])
+        self.assertEqual(seen_parms[0]["currentRange"], base["currentRange"])
+        self.assertEqual(result["dry_slots_refetched"], 0)
+        self.assertEqual(result["secondary_axis_adaptation"], "drop_percent_widened")
+        self.assertEqual(result["tokens_spent"], keepa_client.DEALS_PAGE_TOKENS)
 
     def test_unfiltered_when_categories_unresolvable(self):
         api = FakeApi(tokens_left=60, pages={(None, 0): ["B009"]})
@@ -422,6 +485,20 @@ class HarvestTest(unittest.TestCase):
                       resolve_fn=lambda api, cats, wait=True: {"toys": 1, "kitchen": 2})
         mupload.assert_called_once_with(4)  # +1 regardless of pages pulled this run
 
+    def test_adapted_secondary_cursor_wraps_after_the_last_combo(self):
+        last = df._secondary_axis_size() - 1
+        base = df.secondary_axis_filters(last)
+        stats = {df._combo_key(base): {"runs": 7, "pages": 21, "asins": 0}}
+        api = FakeApi(tokens_left=60, pages={((1,), 0): ["A1"]})
+        with mock.patch.object(df, "_fetch_remote_secondary_cursor", return_value=last), \
+             mock.patch.object(df, "_fetch_remote_yield_stats", return_value=stats), \
+             mock.patch.object(df, "_upload_remote_secondary_cursor") as mupload:
+            result = df.harvest(api, pages=1, categories=["toys"],
+                                resolve_fn=lambda api, cats, wait=True: {"toys": 1})
+        mupload.assert_called_once_with(0)
+        self.assertEqual(result["secondary_axis_base_filters"], base)
+        self.assertEqual(result["secondary_axis_adaptation"], "drop_percent_widened")
+
 
 class YieldStatsTest(unittest.TestCase):
     def test_combo_key_is_compact_and_stable(self):
@@ -432,8 +509,9 @@ class YieldStatsTest(unittest.TestCase):
     def test_harvest_records_yield_for_the_active_combo(self):
         api = FakeApi(tokens_left=60, pages={((11,), 0): ["B001", "B002"]})
         with mock.patch.object(df, "_fetch_remote_secondary_cursor", return_value=0),              mock.patch.object(df, "_upload_remote_secondary_cursor", return_value=False),              mock.patch.object(df, "_fetch_remote_cursor", return_value=0),              mock.patch.object(df, "_upload_remote_cursor", return_value=False),              mock.patch.object(df, "_update_remote_yield_stats", return_value=True) as mstats:
-            df.harvest(api, pages=1, categories=["toys"],
-                      resolve_fn=lambda api, cats, wait=True: {"toys": 11})
+            with mock.patch.object(df, "_fetch_remote_yield_stats", return_value={}):
+                df.harvest(api, pages=1, categories=["toys"],
+                          resolve_fn=lambda api, cats, wait=True: {"toys": 11})
         mstats.assert_called_once()
         key, asins, pages = mstats.call_args.args
         self.assertEqual(asins, 2)
@@ -444,6 +522,91 @@ class YieldStatsTest(unittest.TestCase):
         with mock.patch("requests.get", side_effect=ConnectionError("down")),              mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
                                           "SUPABASE_SERVICE_KEY": "fake"}):
             self.assertFalse(df._update_remote_yield_stats("rank0-1|c1-2|drop3-4", 5, 1))
+
+    def test_stats_fetch_failure_degrades_to_empty(self):
+        with mock.patch("requests.get", side_effect=ConnectionError("down")), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            self.assertEqual(df._fetch_remote_yield_stats(), {})
+
+    def test_stats_fetch_rejects_non_mapping_payload(self):
+        response = mock.Mock(status_code=200)
+        response.json.return_value = ["not", "a", "mapping"]
+        with mock.patch("requests.get", return_value=response), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            self.assertEqual(df._fetch_remote_yield_stats(), {})
+
+
+class SellerPoolTest(unittest.TestCase):
+    """Keepa throughput plan Action D (2026-07-11): the cross-run pool that
+    backtest.sample_asins_storefront() rotates through, grown opportunistically at zero
+    marginal token cost from collect_hourly.py's existing enrich() calls."""
+
+    def test_fetch_returns_empty_without_env(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(df._fetch_remote_seller_pool(), [])
+
+    def test_fetch_degrades_to_empty_on_network_failure(self):
+        with mock.patch("requests.get", side_effect=ConnectionError("down")), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            self.assertEqual(df._fetch_remote_seller_pool(), [])
+
+    def test_fetch_rejects_non_list_payload(self):
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"not": "a list"}
+        with mock.patch("requests.get", return_value=response), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            self.assertEqual(df._fetch_remote_seller_pool(), [])
+
+    def test_record_seen_sellers_is_a_noop_without_ids(self):
+        self.assertFalse(df.record_seen_sellers([]))
+        self.assertFalse(df.record_seen_sellers([None, ""]))
+
+    def test_record_seen_sellers_merges_dedupes_and_caps(self):
+        with mock.patch.object(df, "_fetch_remote_seller_pool", return_value=["S1", "S2"]), \
+             mock.patch("requests.post") as mpost:
+            mpost.return_value.raise_for_status = lambda: None
+            with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                              "SUPABASE_SERVICE_KEY": "fake"}):
+                ok = df.record_seen_sellers(["S2", "S3"])
+        self.assertTrue(ok)
+        posted = json.loads(mpost.call_args.kwargs["data"])
+        self.assertEqual(posted, ["S1", "S2", "S3"])  # deduped, insertion order preserved
+
+    def test_record_seen_sellers_caps_pool_size(self):
+        existing = [f"S{i}" for i in range(df.SELLER_POOL_CAP)]
+        with mock.patch.object(df, "_fetch_remote_seller_pool", return_value=existing), \
+             mock.patch("requests.post") as mpost:
+            mpost.return_value.raise_for_status = lambda: None
+            with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                              "SUPABASE_SERVICE_KEY": "fake"}):
+                df.record_seen_sellers(["NEW_SELLER"])
+        posted = json.loads(mpost.call_args.kwargs["data"])
+        self.assertEqual(len(posted), df.SELLER_POOL_CAP)
+        self.assertIn("NEW_SELLER", posted)
+        self.assertNotIn("S0", posted)  # oldest entry dropped to stay at the cap
+
+    def test_record_seen_sellers_update_failure_is_non_fatal(self):
+        with mock.patch.object(df, "_fetch_remote_seller_pool", return_value=[]), \
+             mock.patch("requests.post", side_effect=ConnectionError("down")), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            self.assertFalse(df.record_seen_sellers(["S1"]))
+
+    def test_seller_cursor_fetch_degrades_to_zero(self):
+        with mock.patch("requests.get", side_effect=ConnectionError("down")), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            self.assertEqual(df._fetch_remote_seller_cursor(), 0)
+
+    def test_seller_cursor_upload_failure_is_non_fatal(self):
+        with mock.patch("requests.post", side_effect=ConnectionError("down")), \
+             mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                          "SUPABASE_SERVICE_KEY": "fake"}):
+            self.assertFalse(df._upload_remote_seller_cursor(3))
 
 
 if __name__ == "__main__":

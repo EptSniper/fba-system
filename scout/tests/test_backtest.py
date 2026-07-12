@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import backtest as bt  # noqa: E402
 import db  # noqa: E402
+import deals_firehose  # noqa: E402
 import keepa_client  # noqa: E402
 
 BASE = dt.date(2026, 1, 1).toordinal()
@@ -318,6 +319,13 @@ class RunBacktestBudgetTest(unittest.TestCase):
             mock.patch.object(bt, "_upload_remote_state", return_value=False),
             mock.patch.object(bt, "_fetch_remote_explore_cursor", return_value=0),
             mock.patch.object(bt, "_upload_remote_explore_cursor", return_value=False),
+            # Keepa throughput plan Action D (2026-07-11): sample_asins_storefront() reads this
+            # module's seller pool/cursor via deals_firehose directly (not through `bt`) — same
+            # isolation rationale as the cursors above. Empty pool = safe no-op (storefront
+            # contributes nothing) unless a specific test overrides it.
+            mock.patch.object(deals_firehose, "_fetch_remote_seller_pool", return_value=[]),
+            mock.patch.object(deals_firehose, "_fetch_remote_seller_cursor", return_value=0),
+            mock.patch.object(deals_firehose, "_upload_remote_seller_cursor", return_value=False),
         ]
         for p in self._remote_patchers:
             p.start()
@@ -438,9 +446,9 @@ class RunBacktestBudgetTest(unittest.TestCase):
         captured = {}
 
         def fake_stratified(api, budget_tokens, target=bt.TARGET_ASINS, find_fn=None,
-                            firehose_fn=None):
+                            firehose_fn=None, seller_fn=None):
             captured["budget_tokens"] = budget_tokens
-            return [], 0, {"dealfeed": 0, "explore": 0, "onpolicy": 0}
+            return [], 0, {"dealfeed": 0, "storefront": 0, "explore": 0, "onpolicy": 0}
 
         with mock.patch.object(bt.config, "have_keepa", return_value=True), \
              mock.patch.object(bt, "sample_asins_stratified", side_effect=fake_stratified):
@@ -497,9 +505,10 @@ class PendingBacklogTest(RunBacktestBudgetTest):
     def test_low_backlog_still_samples_and_appends(self):
         self._seed_state([{"asin": "P1", "sample_source": "explore", "category": "pet"}])
 
-        def fake_stratified(api, budget_tokens, target=bt.TARGET_ASINS, find_fn=None, firehose_fn=None):
+        def fake_stratified(api, budget_tokens, target=bt.TARGET_ASINS, find_fn=None,
+                            firehose_fn=None, seller_fn=None):
             return ([{"asin": "S1", "category": "toys", "sample_source": "dealfeed"}], 5,
-                    {"dealfeed": 1, "explore": 0, "onpolicy": 0})
+                    {"dealfeed": 1, "storefront": 0, "explore": 0, "onpolicy": 0})
 
         def fake_history(asins, api=None):
             return [{"asin": a, "data": None} for a in asins]
@@ -536,9 +545,10 @@ class PendingBacklogTest(RunBacktestBudgetTest):
         import json
         self._seed_state([])
 
-        def fake_stratified(api, budget_tokens, target=bt.TARGET_ASINS, find_fn=None, firehose_fn=None):
+        def fake_stratified(api, budget_tokens, target=bt.TARGET_ASINS, find_fn=None,
+                            firehose_fn=None, seller_fn=None):
             return ([{"asin": f"S{i}", "category": "pet", "sample_source": "dealfeed"}
-                     for i in range(30)], 5, {"dealfeed": 30, "explore": 0, "onpolicy": 0})
+                     for i in range(30)], 5, {"dealfeed": 30, "storefront": 0, "explore": 0, "onpolicy": 0})
 
         def fake_history(asins, api=None):
             return [{"asin": a, "data": None} for a in asins]
@@ -829,6 +839,105 @@ class SampleAsinsExploreRotationTest(RunBacktestBudgetTest):
                 object(), budget_tokens=20, categories=["toys", "kitchen", "pet"], find_fn=fake_find)
         # cursor=2 ("pet") + 2 attempted wraps past the end of a 3-item list -> back to index 1
         mupload.assert_called_once_with(1)
+
+
+class SampleAsinsStorefrontTest(unittest.TestCase):
+    """Keepa throughput plan Action D (2026-07-11): a full 3P storefront's ASIN list (hundreds
+    of ASINs) for ~SELLER_QUERY_TOKENS_ESTIMATE tokens via keepa_client.seller_asins, rotating
+    through deals_firehose's opportunistically-grown seller pool via a persisted cursor — same
+    pattern as sample_asins_explore's category rotation."""
+
+    def test_empty_pool_is_a_safe_noop(self):
+        with mock.patch.object(deals_firehose, "_fetch_remote_seller_pool", return_value=[]):
+            out, spent = bt.sample_asins_storefront(object(), budget_tokens=100)
+        self.assertEqual((out, spent), ([], 0))
+
+    def test_rotation_starts_from_the_persisted_cursor_not_always_index_zero(self):
+        def fake_seller(seller_id, api=None):
+            return {"S2": ["B_S2"]}.get(seller_id, [])
+
+        with mock.patch.object(deals_firehose, "_fetch_remote_seller_pool",
+                               return_value=["S1", "S2", "S3"]), \
+             mock.patch.object(deals_firehose, "_fetch_remote_seller_cursor", return_value=1), \
+             mock.patch.object(deals_firehose, "_upload_remote_seller_cursor"):
+            out, spent = bt.sample_asins_storefront(object(), budget_tokens=10, seller_fn=fake_seller)
+        # cursor=1 -> rotation starts at "S2"; budget only affords one seller query (10 tokens)
+        self.assertEqual([d["asin"] for d in out], ["B_S2"])
+        self.assertIsNone(out[0]["category"])
+        self.assertEqual(spent, 10)
+
+    def test_cursor_advances_past_sellers_actually_attempted_and_wraps(self):
+        def fake_seller(seller_id, api=None):
+            return []
+
+        with mock.patch.object(deals_firehose, "_fetch_remote_seller_pool",
+                               return_value=["S1", "S2", "S3"]), \
+             mock.patch.object(deals_firehose, "_fetch_remote_seller_cursor", return_value=2), \
+             mock.patch.object(deals_firehose, "_upload_remote_seller_cursor") as mupload:
+            bt.sample_asins_storefront(object(), budget_tokens=20, seller_fn=fake_seller)
+        # cursor=2 ("S3") + 2 sellers attempted (20 budget / 10 each) wraps past the 3-item list
+        mupload.assert_called_once_with(1)
+
+    def test_budget_precheck_stops_before_overspending(self):
+        calls = []
+
+        def fake_seller(seller_id, api=None):
+            calls.append(seller_id)
+            return []
+
+        with mock.patch.object(deals_firehose, "_fetch_remote_seller_pool",
+                               return_value=["S1", "S2", "S3"]), \
+             mock.patch.object(deals_firehose, "_fetch_remote_seller_cursor", return_value=0), \
+             mock.patch.object(deals_firehose, "_upload_remote_seller_cursor"):
+            out, spent = bt.sample_asins_storefront(object(), budget_tokens=15, seller_fn=fake_seller)
+        # 15 tokens affords exactly one 10-token query, not two
+        self.assertEqual(calls, ["S1"])
+        self.assertEqual(spent, 10)
+
+    def test_seller_fn_failure_is_non_fatal(self):
+        def fake_seller(seller_id, api=None):
+            raise RuntimeError("boom")
+
+        with mock.patch.object(deals_firehose, "_fetch_remote_seller_pool", return_value=["S1"]), \
+             mock.patch.object(deals_firehose, "_fetch_remote_seller_cursor", return_value=0), \
+             mock.patch.object(deals_firehose, "_upload_remote_seller_cursor"):
+            out, spent = bt.sample_asins_storefront(object(), budget_tokens=100, seller_fn=fake_seller)
+        self.assertEqual(out, [])
+
+    def test_dedupes_asins_across_sellers(self):
+        def fake_seller(seller_id, api=None):
+            return {"S1": ["B1", "B2"], "S2": ["B2", "B3"]}.get(seller_id, [])
+
+        with mock.patch.object(deals_firehose, "_fetch_remote_seller_pool",
+                               return_value=["S1", "S2"]), \
+             mock.patch.object(deals_firehose, "_fetch_remote_seller_cursor", return_value=0), \
+             mock.patch.object(deals_firehose, "_upload_remote_seller_cursor"):
+            out, spent = bt.sample_asins_storefront(object(), budget_tokens=20, seller_fn=fake_seller)
+        self.assertEqual(sorted(d["asin"] for d in out), ["B1", "B2", "B3"])
+
+
+class StratifiedSamplingIncludesStorefrontTest(RunBacktestBudgetTest):
+    """sample_asins_stratified()'s waterfall order: dealfeed -> storefront -> explore ->
+    onpolicy. Storefront sits between dealfeed and explore per the Keepa throughput plan
+    (Action D) — the cheapest new breadth lever once dealfeed's day-to-day overlap grows."""
+
+    def test_storefront_asins_are_tagged_and_counted(self):
+        def fake_firehose(api, pages=None):
+            return {"asins": [], "tokens_spent": 0}
+
+        def fake_seller(seller_id, api=None):
+            return ["B_STORE"]
+
+        with mock.patch.object(deals_firehose, "_fetch_remote_seller_pool", return_value=["S1"]), \
+             mock.patch.object(deals_firehose, "_fetch_remote_seller_cursor", return_value=0), \
+             mock.patch.object(deals_firehose, "_upload_remote_seller_cursor"), \
+             mock.patch.object(bt, "sample_asins_explore", return_value=([], 0)), \
+             mock.patch.object(bt, "sample_asins_on_policy", return_value=([], 0)):
+            out, spent, counts = bt.sample_asins_stratified(
+                object(), budget_tokens=100, firehose_fn=fake_firehose, seller_fn=fake_seller)
+        self.assertEqual([d["asin"] for d in out], ["B_STORE"])
+        self.assertEqual(out[0]["sample_source"], "storefront")
+        self.assertEqual(counts["storefront"], 1)
 
 
 if __name__ == "__main__":

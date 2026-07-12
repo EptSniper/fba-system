@@ -196,3 +196,12 @@ compliance-driven entry and the knowledge-check code fix aren't UI-draftable pro
 
 ---
 
+## 2026-07-12 03:41 UTC — proposal run
+
+- **[data-driven]** Average Keepa token usage over 13 run(s) is 56/day, vs the System Blueprint's assumed ~1500/day. (sample size: 13, confidence: strong signal)
+- **[knowledge-driven]** Ran a knowledge-base check for current OA thresholds — read the RAG answer directly (`python knowledge-rag/ask.py "current BSR ROI profit threshold"`) and compare by eye against ai-brain.json. (sample size: 0, confidence: manual review suggested)
+
+**2 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+

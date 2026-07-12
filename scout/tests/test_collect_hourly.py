@@ -74,6 +74,40 @@ class ObservedTokensProbeTest(unittest.TestCase):
         self.assertEqual(ch._observed_tokens_left(api), 15)
 
 
+class EnrichNoWaitSellerRecordingTest(unittest.TestCase):
+    """Keepa throughput plan Action D (2026-07-11): every enrich() call already paid for
+    buybox_seller, whatever it was called for (shadow rechecks, hint-led-scan buy-discovery) —
+    _enrich_no_wait opportunistically feeds the seller pool at ZERO marginal token cost."""
+
+    def test_records_sellers_from_enrich_result(self):
+        import deals_firehose
+        enriched = [{"asin": "A1", "buybox_seller": "SELLER1"},
+                   {"asin": "A2", "buybox_seller": "SELLER2"},
+                   {"asin": "A3", "buybox_seller": None}]
+        with mock.patch.object(keepa_client, "enrich", return_value=enriched), \
+             mock.patch.object(deals_firehose, "record_seen_sellers") as mrecord:
+            out = ch._enrich_no_wait(["A1", "A2", "A3"])
+        self.assertEqual(out, enriched)
+        mrecord.assert_called_once_with(["SELLER1", "SELLER2"])
+
+    def test_no_sellers_in_result_is_a_noop(self):
+        import deals_firehose
+        with mock.patch.object(keepa_client, "enrich",
+                              return_value=[{"asin": "A1", "buybox_seller": None}]), \
+             mock.patch.object(deals_firehose, "record_seen_sellers") as mrecord:
+            ch._enrich_no_wait(["A1"])
+        mrecord.assert_not_called()
+
+    def test_seller_recording_failure_never_breaks_the_real_caller(self):
+        import deals_firehose
+        enriched = [{"asin": "A1", "buybox_seller": "SELLER1"}]
+        with mock.patch.object(keepa_client, "enrich", return_value=enriched), \
+             mock.patch.object(deals_firehose, "record_seen_sellers",
+                              side_effect=RuntimeError("storage down")):
+            out = ch._enrich_no_wait(["A1"])
+        self.assertEqual(out, enriched)  # the real (shadow/hint-scan) caller still gets its data
+
+
 class BudgetWaterfallTest(unittest.TestCase):
     """The core contract (revised 2026-07-08, live incident): tier 1 (shadow rechecks) is now
     capped to TIER1_RESERVE_FRACTION of the ORIGINAL available bank, not handed the whole thing —
@@ -96,6 +130,10 @@ class BudgetWaterfallTest(unittest.TestCase):
              mock.patch.object(ch.datalake, "digest_line", return_value=""), \
              mock.patch.object(ch.shadow_outcomes, "run_rechecks",
                                return_value={"status": "ok", "tokens_spent": shadow_spent}) as mrecheck, \
+             mock.patch.object(ch, "_corpus_acceleration_status",
+                               return_value={"active": False, "pending_asins": 0}), \
+             mock.patch.object(ch, "_tier1_reserve_fraction",
+                               return_value=ch.TIER1_RESERVE_FRACTION), \
              mock.patch.object(ch, "hint_led_scan",
                                return_value={"status": "ok", "tokens_spent": scan_spent,
                                             "candidates": 0, "leads_logged": 0, "survivors": 0}) as mscan, \
@@ -160,6 +198,10 @@ class BudgetWaterfallTest(unittest.TestCase):
              mock.patch.object(ch.datalake, "digest_line", return_value=""), \
              mock.patch.object(ch.shadow_outcomes, "run_rechecks",
                                return_value={"status": "ok", "tokens_spent": 0}) as mrecheck, \
+             mock.patch.object(ch, "_corpus_acceleration_status",
+                               return_value={"active": False, "pending_asins": 0}), \
+             mock.patch.object(ch, "_tier1_reserve_fraction",
+                               return_value=ch.TIER1_RESERVE_FRACTION), \
              mock.patch.object(ch, "hint_led_scan",
                                return_value={"status": "ok", "tokens_spent": 0,
                                             "candidates": 0, "leads_logged": 0, "survivors": 0}), \
@@ -167,6 +209,108 @@ class BudgetWaterfallTest(unittest.TestCase):
             ch.run_hourly_collect(api=api)
         self.assertLess(mrecheck.call_args.kwargs["token_cap"], api.tokens_left)
         self.assertEqual(mrecheck.call_args.kwargs["token_cap"], int(60 * ch.TIER1_RESERVE_FRACTION))
+
+
+class Tier1ReserveFractionTest(unittest.TestCase):
+    """Keepa throughput plan Action C (2026-07-11, Mehmet-approved): learning.sampling.
+    tier1ReserveFraction is a reversible brain override of the 0.25 code default, same
+    convention as corpusAcceleration."""
+
+    def test_uses_brain_value_when_present_and_valid(self):
+        with mock.patch.object(ch.backtest, "sampling_config",
+                               return_value={"tier1ReserveFraction": 0.15}):
+            self.assertEqual(ch._tier1_reserve_fraction(), 0.15)
+
+    def test_falls_back_to_constant_when_key_absent(self):
+        with mock.patch.object(ch.backtest, "sampling_config", return_value={}):
+            self.assertEqual(ch._tier1_reserve_fraction(), ch.TIER1_RESERVE_FRACTION)
+
+    def test_falls_back_to_constant_when_value_out_of_range(self):
+        with mock.patch.object(ch.backtest, "sampling_config",
+                               return_value={"tier1ReserveFraction": 1.5}):
+            self.assertEqual(ch._tier1_reserve_fraction(), ch.TIER1_RESERVE_FRACTION)
+
+    def test_falls_back_to_constant_when_brain_read_fails(self):
+        with mock.patch.object(ch.backtest, "sampling_config", side_effect=RuntimeError("boom")):
+            self.assertEqual(ch._tier1_reserve_fraction(), ch.TIER1_RESERVE_FRACTION)
+
+
+class CorpusAccelerationTest(unittest.TestCase):
+    """Backlog acceleration is brain-controlled, preserves Tier 1, and spends no Tier 2 tokens."""
+
+    def _run(self, *, pending, acceleration_config, shadow_spent=5, scan_spent=7):
+        api = FakeApi(tokens_left=60)
+        scan_result = {"status": "ok", "tokens_spent": scan_spent, "candidates": 1,
+                       "leads_logged": 1, "survivors": 0}
+        with mock.patch.object(ch.config, "have_keepa", return_value=True), \
+             mock.patch.object(db, "start_run", return_value=1), \
+             mock.patch.object(db, "finish_run"), \
+             mock.patch.object(ch.datalake, "set_run_context"), \
+             mock.patch.object(ch.datalake, "reset_stats"), \
+             mock.patch.object(ch.datalake, "flush", return_value={}), \
+             mock.patch.object(ch.datalake, "digest_line", return_value=""), \
+             mock.patch.object(ch.shadow_outcomes, "run_rechecks",
+                               return_value={"status": "ok", "tokens_spent": shadow_spent}) as mrecheck, \
+             mock.patch.object(ch.backtest, "sampling_config",
+                               return_value={"corpusAcceleration": acceleration_config}), \
+             mock.patch.object(ch.backtest, "pending_backlog_count", return_value=pending), \
+             mock.patch.object(ch, "hint_led_scan", return_value=scan_result) as mscan, \
+             mock.patch.object(ch.backtest, "run_backtest",
+                               return_value={"status": "ok", "tokens_spent": 0}) as mbacktest, \
+             mock.patch.object(ch, "_deadline_exceeded", return_value=False):
+            result = ch.run_hourly_collect(api=api)
+        return result, mrecheck, mscan, mbacktest
+
+    def test_pending_backlog_skips_tier2_after_preserving_tier1(self):
+        result, mrecheck, mscan, mbacktest = self._run(
+            pending=7, acceleration_config={})  # absent keys resolve to the documented safe defaults
+
+        mrecheck.assert_called_once()
+        self.assertEqual(mrecheck.call_args.kwargs["token_cap"], 15)
+        mscan.assert_not_called()
+        # 60 available - 5 actually spent by Tier 1; Tier 2 spent zero, so all 55 reach Tier 3.
+        self.assertEqual(mbacktest.call_args.kwargs["token_cap"], 55)
+        self.assertEqual(result["backtest_pending_before"], 7)
+        self.assertTrue(result["corpus_acceleration"]["active"])
+        self.assertEqual(result["corpus_acceleration"]["tier2_action"], "skip")
+        self.assertEqual(result["corpus_acceleration"]["config"], {
+            "enabled": True, "skipTier2WhilePending": True, "minPendingAsins": 1,
+        })
+        self.assertIn("7 pending backtest ASINs", result["scan"]["reason"])
+
+    def test_brain_switch_reversibly_retains_tier2(self):
+        result, _, mscan, mbacktest = self._run(
+            pending=7,
+            acceleration_config={"enabled": False, "skipTier2WhilePending": True,
+                                 "minPendingAsins": 1},
+        )
+
+        mscan.assert_called_once()
+        # Post-Tier-1 budget 55 - original-bank reserve 21 = Tier 2 cap 34.
+        self.assertEqual(mscan.call_args[0][1], 34)
+        self.assertEqual(mbacktest.call_args.kwargs["token_cap"], 48)
+        self.assertFalse(result["corpus_acceleration"]["active"])
+        self.assertIn("disabled by brain config", result["corpus_acceleration"]["reason"])
+
+    def test_backlog_below_configured_threshold_retains_tier2(self):
+        with mock.patch.object(ch.backtest, "sampling_config", return_value={
+                 "corpusAcceleration": {"enabled": True, "skipTier2WhilePending": True,
+                                        "minPendingAsins": 3}}), \
+             mock.patch.object(ch.backtest, "pending_backlog_count", return_value=2):
+            status = ch._corpus_acceleration_status()
+        self.assertFalse(status["active"])
+        self.assertEqual(status["pending_asins"], 2)
+        self.assertIn("2 < 3", status["reason"])
+
+    def test_unknown_backlog_retains_tier2_and_reports_unknown(self):
+        with mock.patch.object(ch.backtest, "sampling_config", return_value={}), \
+             mock.patch.object(ch.backtest, "pending_backlog_count",
+                               side_effect=RuntimeError("state unavailable")):
+            status = ch._corpus_acceleration_status()
+        self.assertFalse(status["active"])
+        self.assertIsNone(status["pending_asins"])
+        self.assertEqual(status["tier2_action"], "run")
+        self.assertIn("unavailable", status["reason"])
 
 
 class AttachSignalFeaturesTest(unittest.TestCase):
@@ -258,6 +402,8 @@ class SafetyDeadlineTest(unittest.TestCase):
              mock.patch.object(ch.datalake, "digest_line", return_value=""), \
              mock.patch.object(ch.shadow_outcomes, "run_rechecks",
                                return_value={"status": "ok", "tokens_spent": 0}), \
+             mock.patch.object(ch, "_corpus_acceleration_status",
+                               return_value={"active": False, "pending_asins": 0}), \
              mock.patch.object(ch, "hint_led_scan") as mscan, \
              mock.patch.object(ch.backtest, "run_backtest") as mbacktest, \
              mock.patch.object(ch, "_deadline_exceeded", return_value=deadline_exceeded):
@@ -288,6 +434,8 @@ class SafetyDeadlineTest(unittest.TestCase):
              mock.patch.object(ch.datalake, "digest_line", return_value=""), \
              mock.patch.object(ch.shadow_outcomes, "run_rechecks",
                                return_value={"status": "ok", "tokens_spent": 0}), \
+             mock.patch.object(ch, "_corpus_acceleration_status",
+                               return_value={"active": False, "pending_asins": 0}), \
              mock.patch.object(ch, "hint_led_scan", return_value=mscan_return) as mscan, \
              mock.patch.object(ch.backtest, "run_backtest",
                                return_value={"status": "ok", "tokens_spent": 0}) as mbacktest, \
@@ -315,6 +463,8 @@ class FinishRunTierBreakdownTest(unittest.TestCase):
              mock.patch.object(ch.datalake, "digest_line", return_value=""), \
              mock.patch.object(ch.shadow_outcomes, "run_rechecks",
                                return_value={"status": "ok", "tokens_spent": 3}), \
+             mock.patch.object(ch, "_corpus_acceleration_status",
+                               return_value={"active": False, "pending_asins": 0}), \
              mock.patch.object(ch, "hint_led_scan",
                                return_value={"status": "ok", "tokens_spent": 13, "candidates": 1,
                                             "leads_logged": 1, "survivors": 0}), \
@@ -349,6 +499,21 @@ class HintLedScanTest(unittest.TestCase):
             r = ch.hint_led_scan(FakeApi(), 100)
         self.assertEqual(r["status"], "ok")
         self.assertEqual(r["candidates"], 0)
+
+    def test_small_budget_never_forces_one_candidate_into_tier3_reserve(self):
+        """A 14-token bank gives Tier 2 only 10 after Tier 3's 4-token reserve. The old
+        max(1, ...) still bought one 4-token enrichment after the 10-token finder, consuming all
+        14. The scan must now make no Keepa call when its own 10-token cap cannot cover both."""
+        api = FakeApi(tokens_left=14)
+        with mock.patch.object(ch.discovery_hints, "hinted_brand_seeds", return_value=["Lego"]), \
+             mock.patch.object(keepa_client, "find_candidates") as mfind, \
+             mock.patch.object(keepa_client, "enrich") as menrich:
+            result = ch.hint_led_scan(api, token_budget=10)
+        mfind.assert_not_called()
+        menrich.assert_not_called()
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["tokens_spent"], 0)
+        self.assertIn("finder plus one candidate", result["reason"])
 
     def test_calls_keepa_client_with_wait_false(self):
         """The whole point of the burst collector: never block waiting on a token refill."""

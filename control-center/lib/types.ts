@@ -98,6 +98,17 @@ export type Brain = {
   updated: string;
   model: string;
   criteria: Record<string, unknown>;
+  // ML/collector configuration. Optional because older bundled snapshots can legitimately
+  // predate these fields; callers must render an unavailable state rather than inventing a
+  // Keepa plan rate. `refillRatePerMinute` is non-secret plan telemetry, not a spend limit.
+  learning?: {
+    tokenBudget?: {
+      refillRatePerMinute?: number;
+      [key: string]: unknown;
+    };
+    sampling?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
   guards?: Record<string, unknown> & { restrictionKeywords?: Record<string, string[]> };
   // Added Phase 1 (Scout + Deal-Finder Expert Upgrade Brief, Prompt 1.1) — category referral
   // rates + the 5-7 offer "goldilocks" bonus. Optional: older bundled snapshots won't have these.

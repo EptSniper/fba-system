@@ -568,6 +568,33 @@ per the project's source-of-truth order. Cite the source URL.
   and distorts cash-basis month boundaries); and the **1099-K reporting threshold reportedly reverts to
   $20,000 AND 200 transactions for tax-year 2026**. Do not treat as fact until confirmed.
 
+### 2026-07-10 (daily run)
+- **[policy]** *Amazon Reimbursement Policy — changes & updates* (SPS Commerce, updated Jun 15 2026;
+  vendor sells recovery software, but the policy facts are Amazon's). The reimbursement regime tightened
+  materially 2024–2026 and directly affects the **loss/returns buffer** in OA unit economics:
+  (1) **Cost-based model (eff. Mar 31 2025)** — lost/damaged FBA inventory is reimbursed on your
+  **manufacturing/sourcing cost, not the selling price**. This makes accurate per-unit **COGS/landed-cost
+  the reimbursement basis**, not just an accounting nicety (reinforces the honest-COGS rule; ties to
+  Nova 2026-07-08 + Plugbooks 2026-07-09). Submit/verify your own cost via the **IDR portal**
+  (Seller Central G66ZLS453YSE2Y4R) or Amazon lowballs the estimate. Shipping/labeling/packaging are
+  generally excluded from reimbursement. (2) **Claim windows shortened to ~60 days** for most manual
+  claims (FC-ops 60d; FBA customer returns US 60–120d; removals 15–75d) → returns/loss must be audited on
+  a tight cadence or the money is forfeited. (3) **Some claims are now automatic** (lost, damaged, customer
+  returns) but **removals + mishandled returns + misc still require a manual claim**. (4) **MCF caps**
+  (Aug 2024, unchanged 2026): UK £250, EU €275, CA $400, AU $450, MX $5000 — high-ASP items may exceed the
+  cap (insurance worth considering). (5) **Returnless resolutions**: refunded items are NOT returned to
+  inventory — seller eats refund + product cost; weight this in thin-margin, high-return categories.
+  (spscommerce.com/community/articles/amazon-reimbursement-policy)
+- **[practitioner / policy-cited]** *FBA New Selection Program (2026) launches July 30* (Nova Analytics,
+  reporting a Jun 18 2026 Seller Central announcement; Ecomcrew-corroborated). Bigger inbound-placement
+  fee credit, **90 days free storage on first 100 units** of a qualifying parent ASIN, and **reduced
+  referral on the first $25k/new branded ASIN for 365 days**; existing enrollees migrate automatically.
+  **Caveat for us: this is a private-label / brand-owner subsidy (needs Brand Registry + new branded
+  ASINs) — NOT a pure-OA tactic** on existing listings. Recorded for fee/market awareness only; if the
+  catalog strategy ever adds a PL/bundle SKU, time the launch after Jul 30 and keep the first inbound ≤100
+  units to bank the storage waiver. No ai-brain change.
+  (novadata.io/resources/news/amazon-fba-new-selection-program-expansion-july-30-2026)
+
 ## Building the system (AI, RAG, dashboard, control-center)
 
 ### 2026-06-30

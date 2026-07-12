@@ -261,6 +261,30 @@ schtasks /Create /TN "FBA Scout Daily" /TR "python C:\path\to\scout\run_daily.py
 Without "run when missed" enabled, a sleeping/off PC silently skips the whole day — the
 healthchecks heartbeat is your backstop for exactly that failure mode.
 
+**Keepa collector dispatch fallback** — GitHub's scheduled workflow is best-effort and has
+live-observed multi-hour gaps. The tracked dispatcher asks GitHub to run the existing
+`keepa-collect.yml` workflow every 45 minutes, but only when no run is active and the latest run
+is at least 40 minutes old. It embeds no credentials; `gh` uses the operator's existing login,
+and the workflow's `concurrency` group serializes local dispatches with cloud cron runs.
+
+```powershell
+# Run from the repository root. Validate without dispatching or registering anything.
+.\scripts\dispatch_keepa_collect.ps1 -MinimumGapMinutes 5 -DryRun
+.\scripts\install_keepa_dispatch_task.ps1 -WhatIf
+
+# Install/replace the real StartWhenAvailable task
+.\scripts\install_keepa_dispatch_task.ps1
+
+# Remove it cleanly
+.\scripts\install_keepa_dispatch_task.ps1 -Remove
+```
+
+The task is named `FBA Keepa Collector Dispatch`, repeats every 45 minutes while Windows is
+running, ignores overlapping local launches, and uses the GitHub cron as the always-on fallback
+when the PC is sleeping/off. Its cadence and quiet-gap guard come directly from
+`learning.sampling.corpusAcceleration.targetDispatchMinutes` and
+`minimumDispatchGapMinutes`; re-run the installer after changing either brain value.
+
 **Cron** (for a future ~$5/mo VPS, once the machine needs to stay always-on):
 
 ```

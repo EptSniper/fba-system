@@ -93,6 +93,29 @@ TIER3_RESERVE_FRACTION = 0.35         # Reserve this share of the ORIGINAL bank 
                                       # candidates when the bank is full, so tier 3 actually gets
                                       # a chance to grow the corpus that training depends on.
 
+_CORPUS_ACCELERATION_DEFAULTS = {
+    "enabled": True,
+    "skipTier2WhilePending": True,
+    "minPendingAsins": 1,
+}
+
+
+def _tier1_reserve_fraction() -> float:
+    """learning.sampling.tier1ReserveFraction overrides TIER1_RESERVE_FRACTION when present —
+    same reversible-brain-knob convention as corpusAcceleration above. Keepa throughput plan
+    Action C (2026-07-11, Mehmet-approved): temporarily lowered to 0.15 during the collection
+    sprint so shadow rechecks skim less of every hour's bank, leaving more for tier 3's history
+    pulls that actually grow the training corpus. Falls back to the module constant (0.25) if
+    the brain key is absent or invalid — never raises."""
+    try:
+        v = (backtest.sampling_config() or {}).get("tier1ReserveFraction")
+        if isinstance(v, (int, float)) and 0 < v <= 1:
+            return float(v)
+    except Exception as e:
+        log.warning("tier1ReserveFraction brain read failed; using default %.2f: %s",
+                    TIER1_RESERVE_FRACTION, redact.redact(str(e)))
+    return TIER1_RESERVE_FRACTION
+
 # Review fix (2026-07-06): a defense-in-depth wall-clock budget, independent of the Trends N+1
 # fix above. keepa-collect.yml's own job timeout is 10 minutes; a run that's still going at this
 # mark skips its remaining tiers so the function returns normally and finish_run() still records
@@ -117,12 +140,99 @@ def _observed_tokens_left(api) -> int:
     return v if isinstance(v, int) and v > 0 else 0
 
 
+def _corpus_acceleration_status() -> Dict[str, Any]:
+    """Resolve the reversible brain policy and persisted pending-ASIN backlog.
+
+    If backlog inspection fails, retain Tier 2 and report the count as unknown rather than
+    guessing that acceleration should be active.
+    """
+    try:
+        sampling = backtest.sampling_config()
+    except Exception as e:
+        log.warning("corpus acceleration config read failed; using safe defaults: %s",
+                    redact.redact(str(e)))
+        sampling = {}
+    raw = (sampling.get("corpusAcceleration") or {}) if isinstance(sampling, dict) else {}
+    if not isinstance(raw, dict):
+        raw = {}
+
+    def _bool_setting(name: str) -> bool:
+        value = raw.get(name)
+        return value if isinstance(value, bool) else _CORPUS_ACCELERATION_DEFAULTS[name]
+
+    configured_min = raw.get("minPendingAsins")
+    min_pending = (
+        int(configured_min)
+        if isinstance(configured_min, (int, float))
+        and not isinstance(configured_min, bool)
+        and configured_min >= 1
+        else _CORPUS_ACCELERATION_DEFAULTS["minPendingAsins"]
+    )
+    resolved = {
+        "enabled": _bool_setting("enabled"),
+        "skipTier2WhilePending": _bool_setting("skipTier2WhilePending"),
+        "minPendingAsins": min_pending,
+    }
+
+    try:
+        pending = backtest.pending_backlog_count()
+        if not isinstance(pending, int) or isinstance(pending, bool) or pending < 0:
+            raise ValueError("invalid pending backlog count")
+    except Exception as e:
+        log.warning("backtest backlog preflight failed (Tier 2 retained): %s", redact.redact(str(e)))
+        return {
+            "active": False,
+            "pending_asins": None,
+            "tier2_action": "run",
+            "reason": "pending backlog unavailable; Tier 2 retained",
+            "config": resolved,
+        }
+
+    if not resolved["enabled"]:
+        active = False
+        reason = "corpus acceleration disabled by brain config; Tier 2 retained"
+    elif not resolved["skipTier2WhilePending"]:
+        active = False
+        reason = "Tier 2 backlog suppression disabled by brain config; Tier 2 retained"
+    elif pending >= min_pending:
+        active = True
+        reason = (
+            f"corpus acceleration active: {pending} pending backtest ASINs "
+            f">= threshold {min_pending}; Tier 2 skipped"
+        )
+    else:
+        active = False
+        reason = (
+            f"pending backtest backlog below threshold ({pending} < {min_pending}); "
+            "Tier 2 retained"
+        )
+    return {
+        "active": active,
+        "pending_asins": pending,
+        "tier2_action": "skip" if active else "run",
+        "reason": reason,
+        "config": resolved,
+    }
+
+
 # --- non-blocking wrappers around keepa_client, for injection into shadow_outcomes/backtest ---
 # (both already accept an injectable enrich_fn/find_fn/history_fn for exactly this kind of reuse
 # — no need to touch either module; DATA_ENGINE_PLAN.md's "never wait" rule is enforced entirely
 # from the caller side via keepa_client's own wait= parameter, added for this purpose.)
 def _enrich_no_wait(asins, api=None):
-    return keepa_client.enrich(asins, api=api, wait=False)
+    enriched = keepa_client.enrich(asins, api=api, wait=False)
+    # Keepa throughput plan Action D (2026-07-11): opportunistically grow the seller pool that
+    # backtest.sample_asins_storefront() rotates through, at ZERO marginal token cost — this
+    # enrich() call already paid for buybox_seller, whatever it was called for. Best-effort,
+    # never lets a Storage hiccup affect the real (shadow-recheck/hint-scan) caller.
+    try:
+        import deals_firehose
+        sellers = [e.get("buybox_seller") for e in (enriched or []) if e.get("buybox_seller")]
+        if sellers:
+            deals_firehose.record_seen_sellers(sellers)
+    except Exception as e:
+        log.warning("opportunistic seller-pool recording failed (non-fatal): %s", e)
+    return enriched
 
 
 def _history_no_wait(asins, api=None):
@@ -172,8 +282,17 @@ def hint_led_scan(api, token_budget: int, run_id: Optional[Any] = None) -> Dict[
     # but real combined spend=45-46), eating into the tier-3 reserve that budget exists to
     # protect. Reserve the worst-case finder cost up front before sizing enrich's candidate count.
     finder_reserve = min(3, len(hints)) * keepa_client.SEARCH_TOKENS_PER_TERM
-    limit = max(1, min(DEFAULT_HINT_SCAN_LIMIT,
-                      max(0, token_budget - finder_reserve) // TOKENS_PER_CANDIDATE_ESTIMATE))
+    limit = min(DEFAULT_HINT_SCAN_LIMIT,
+                max(0, token_budget - finder_reserve) // TOKENS_PER_CANDIDATE_ESTIMATE)
+    if limit <= 0:
+        return {
+            "status": "skipped",
+            "reason": "budget cannot cover finder plus one candidate enrichment",
+            "tokens_spent": 0,
+            "candidates": 0,
+            "leads_logged": 0,
+            "survivors": 0,
+        }
     # Force a live refresh (not the passive _tokens_consumed) for the "before" probe too — the
     # search fallback below uses raw requests.get() directly against api.keepa.com, bypassing the
     # keepa.Keepa client object entirely, so it never updates api.tokens_left on its own; only an
@@ -306,7 +425,7 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         # separate fix, same date), so this cap was never actually exercised in practice; now
         # that tier 1 can do real work again, an uncapped backlog could otherwise reproduce the
         # exact "one tier eats everything" failure tier 2 used to cause.
-        tier1_cap = int(available * TIER1_RESERVE_FRACTION)
+        tier1_cap = int(available * _tier1_reserve_fraction())
         shadow_result = shadow_outcomes.run_rechecks(api=api, token_cap=tier1_cap, enrich_fn=_enrich_no_wait)
         summary["shadow"] = shadow_result
         summary["tier1_cap"] = tier1_cap
@@ -320,9 +439,21 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         tier3_reserve = int(available * TIER3_RESERVE_FRACTION)
         tier2_budget = max(0, budget - tier3_reserve)
         summary["tier3_reserve"] = tier3_reserve
+        acceleration = _corpus_acceleration_status()
+        summary["corpus_acceleration"] = acceleration
+        summary["backtest_pending_before"] = acceleration["pending_asins"]
         if _deadline_exceeded(t0):
             scan_result = {"status": "skipped", "reason": "wall-clock safety deadline reached",
                           "tokens_spent": 0}
+        elif acceleration["active"]:
+            scan_result = {
+                "status": "skipped",
+                "reason": acceleration["reason"],
+                "tokens_spent": 0,
+                "candidates": 0,
+                "leads_logged": 0,
+                "survivors": 0,
+            }
         else:
             scan_result = hint_led_scan(api, tier2_budget, run_id=run_id)
         summary["scan"] = scan_result

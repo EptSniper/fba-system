@@ -5,6 +5,23 @@ ingested, transcripts processed, and anything skipped (already known). No secret
 
 <!-- The scheduled task appends entries below this line, newest first. -->
 
+## 2026-07-10 (daily run)
+- **8 new items** (under cap; OA/Keepa/SellerAmp space saturated → leaned finance/policy + agentic-RAG).
+  **2 text sources** fetched + distilled → `research-insights.md`, staged in `corpus-staging.jsonl`
+  (72 → 74 lines): SPS Commerce **Amazon reimbursement policy** ([policy] — cost-based model eff Mar 31
+  2025 pays on manufacturing cost not sell price; ~60d claim windows; auto-vs-manual; MCF caps; returnless
+  no-restock → touches OA loss/returns buffer, makes landed-cost the reimbursement basis) and Nova **FBA
+  New Selection Program (2026), launches Jul 30** (flagged private-label/Brand-Registry lever, NOT pure-OA;
+  no ai-brain change).
+- **1 YouTube queued** → `queue/2026-07-10.json`: -Rv5hejVnVs (FASTEST way to find OA products 2026).
+  **4 fetch-pending** for Claude Code: Seller Central **G200213130** (authoritative reimbursement doc, JS
+  shell) + arXiv **2603.07379** (SoK Agentic RAG survey), **2606.04435** (CHARM cascading hallucination),
+  **2604.00865** (Doctor-RAG failure-aware repair). **1 skipped-thin:** cleartheshelf Keepa-101 (Chris
+  Grant, corpus already skewed there).
+- **Transcripts:** 0 unprocessed (only README in transcripts/); Claude Code already ingested the 3
+  07-09-queued videos earlier today. Manifest 87 → 95 items; digest written; `CLAUDE_CODE_HANDOFF.md`
+  refreshed. Pending now: **1 video queued (-Rv5hejVnVs)**, 0 unprocessed transcripts.
+
 ## 2026-07-09 (daily run)
 - **8 new items** (under cap; OA/bookkeeping search space saturated, so skewed to finance + system angles).
   **2 text sources** fetched + distilled → `research-insights.md`, staged in `corpus-staging.jsonl`

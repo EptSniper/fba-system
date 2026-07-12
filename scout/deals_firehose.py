@@ -335,6 +335,12 @@ def _upload_remote_secondary_cursor(cursor: int) -> bool:
 
 _YIELD_STATS_STORAGE_PATH = "backtest/dealfeed_yield_stats.json"
 
+# A single empty response can be normal for a narrow Keepa slice. Only adapt after the same
+# combination has failed across several independent runs/pages; this prevents a transient dry
+# feed from permanently changing the rotation.
+_PERSISTENT_DRY_MIN_RUNS = 3
+_PERSISTENT_DRY_MIN_PAGES = 3
+
 
 def _combo_key(filters: Dict[str, Any]) -> str:
     """A compact stable key for one secondary-axis combo, e.g. 'rank30000-90000|c2500-6000|drop20-100'."""
@@ -342,6 +348,61 @@ def _combo_key(filters: Dict[str, Any]) -> str:
     c = filters.get("currentRange") or ["?", "?"]
     d = filters.get("deltaPercentRange") or ["?", "?"]
     return f"rank{r[0]}-{r[1]}|c{c[0]}-{c[1]}|drop{d[0]}-{d[1]}"
+
+
+def _fetch_remote_yield_stats() -> Dict[str, Any]:
+    """Read the existing cross-run dealfeed yield history. {} on missing/invalid state or any
+    failure, so telemetry can never block collection or remove the original fallback path."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return {}
+        r = requests.get(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_YIELD_STATS_STORAGE_PATH}",
+            headers=_category_cache_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return {}
+        stats = r.json() or {}
+        return stats if isinstance(stats, dict) else {}
+    except Exception as e:
+        log.warning("dealfeed yield-stats fetch failed (non-fatal, using normal rotation): %s", e)
+        return {}
+
+
+def _is_persistently_dry(filters: Dict[str, Any], stats: Dict[str, Any]) -> bool:
+    """True only when a base secondary-axis combo has repeated zero-yield evidence."""
+    if not isinstance(stats, dict):
+        return False
+    entry = stats.get(_combo_key(filters))
+    if not isinstance(entry, dict):
+        return False
+    try:
+        runs = int(entry.get("runs", 0))
+        pages = int(entry.get("pages", 0))
+        asins = int(entry.get("asins", 0))
+    except (TypeError, ValueError):
+        return False
+    return (runs >= _PERSISTENT_DRY_MIN_RUNS
+            and pages >= _PERSISTENT_DRY_MIN_PAGES
+            and asins == 0)
+
+
+def _adapt_secondary_filters(filters: Dict[str, Any],
+                             stats: Dict[str, Any]) -> Tuple[Dict[str, Any], str]:
+    """Proactively widen a proven-dry combo before its paid Keepa page.
+
+    The drop-percent constraint is the narrowest and its Keepa scale is still unverified, so it
+    is removed first while rank and price bands remain in place. That preserves the full
+    rank/price breadth sweep instead of skipping every dry cursor position and concentrating all
+    collection on the one currently productive combo. Unknown or weak history leaves the
+    original filters untouched.
+    """
+    adapted = dict(filters)
+    if not _is_persistently_dry(filters, stats) or "deltaPercentRange" not in adapted:
+        return adapted, "none"
+    adapted.pop("deltaPercentRange")
+    return adapted, "drop_percent_widened"
 
 
 def _update_remote_yield_stats(combo_key: str, asins: int, pages: int) -> bool:
@@ -361,7 +422,8 @@ def _update_remote_yield_stats(combo_key: str, asins: int, pages: int) -> bool:
             f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_YIELD_STATS_STORAGE_PATH}",
             headers=_category_cache_storage_headers(), timeout=15)
         if r.status_code == 200:
-            stats = r.json() or {}
+            loaded = r.json() or {}
+            stats = loaded if isinstance(loaded, dict) else {}
         entry = stats.get(combo_key) or {"runs": 0, "pages": 0, "asins": 0}
         entry["runs"] += 1
         entry["pages"] += pages
@@ -376,6 +438,105 @@ def _update_remote_yield_stats(combo_key: str, asins: int, pages: int) -> bool:
         return True
     except Exception as e:
         log.warning("dealfeed yield-stats update failed (non-fatal): %s", e)
+        return False
+
+
+_SELLER_POOL_STORAGE_PATH = "backtest/seller_pool.json"
+SELLER_POOL_CAP = 500  # bounded so the blob can't grow unbounded across months of runs
+
+
+def _fetch_remote_seller_pool() -> List[str]:
+    """The cross-run pool of distinct 3P seller ids seen as a buybox holder anywhere in the live
+    pipeline (collect_hourly.py's enrich() calls, opportunistically recorded at ZERO marginal
+    token cost — enrich() already returns buybox_seller for whatever it was called for). []
+    on any failure/missing state — never raises."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return []
+        r = requests.get(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_SELLER_POOL_STORAGE_PATH}",
+            headers=_category_cache_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return []
+        pool = r.json() or []
+        return [s for s in pool if isinstance(s, str) and s] if isinstance(pool, list) else []
+    except Exception as e:
+        log.warning("seller-pool fetch failed (non-fatal): %s", e)
+        return []
+
+
+def record_seen_sellers(seller_ids: List[str]) -> bool:
+    """fba-scout-strategist (2026-07-11, Keepa throughput plan Action D): opportunistically grow
+    the seller pool that sample_asins_storefront() (scout/backtest.py) rotates through for
+    Keepa's seller_query — a full storefront's ASIN list (hundreds of ASINs) for ~10 tokens,
+    the cheapest and most diverse breadth source left on this Pro plan once dealfeed's
+    day-to-day deal overlap grows. NEVER a dedicated Keepa call of its own — every caller here
+    already paid for an enrich() batch for its OWN reason (shadow rechecks, hint-led-scan
+    buy-discovery); this just also keeps whatever buybox_seller ids that call already returned.
+    Deduped, capped at SELLER_POOL_CAP (oldest-dropped-first via insertion order), best-effort —
+    never raises, never blocks the caller's real work if Storage is unreachable."""
+    ids = [s for s in dict.fromkeys(seller_ids) if isinstance(s, str) and s]
+    if not ids:
+        return False
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        pool = _fetch_remote_seller_pool()
+        merged = list(dict.fromkeys(pool + ids))[-SELLER_POOL_CAP:]
+        up = requests.post(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_SELLER_POOL_STORAGE_PATH}",
+            headers={**_category_cache_storage_headers(), "x-upsert": "true",
+                    "Content-Type": "application/json"},
+            data=json.dumps(merged).encode("utf-8"), timeout=30)
+        up.raise_for_status()
+        return True
+    except Exception as e:
+        log.warning("seller-pool update failed (non-fatal): %s", e)
+        return False
+
+
+_SELLER_CURSOR_STORAGE_PATH = "backtest/seller_cursor.json"
+
+
+def _fetch_remote_seller_cursor() -> int:
+    """0 on any failure/missing state — a fresh cursor just restarts the seller-pool rotation
+    from index 0, never crashes. Same pattern as _fetch_remote_cursor() above."""
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return 0
+        r = requests.get(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_SELLER_CURSOR_STORAGE_PATH}",
+            headers=_category_cache_storage_headers(), timeout=15)
+        if r.status_code != 200:
+            return 0
+        data = r.json()
+        return int(data) if isinstance(data, (int, float)) else 0
+    except Exception as e:
+        log.warning("seller cursor fetch failed (non-fatal, restarting at 0): %s", e)
+        return 0
+
+
+def _upload_remote_seller_cursor(cursor: int) -> bool:
+    try:
+        import requests
+        supa = os.getenv("SUPABASE_URL", "").rstrip("/")
+        if not supa or not os.getenv("SUPABASE_SERVICE_KEY"):
+            return False
+        up = requests.post(
+            f"{supa}/storage/v1/object/{_CATEGORY_CACHE_BUCKET}/{_SELLER_CURSOR_STORAGE_PATH}",
+            headers={**_category_cache_storage_headers(), "x-upsert": "true",
+                    "Content-Type": "application/json"},
+            data=json.dumps(cursor).encode("utf-8"), timeout=30)
+        up.raise_for_status()
+        return True
+    except Exception as e:
+        log.warning("seller cursor upload failed (non-fatal): %s", e)
         return False
 
 
@@ -501,7 +662,13 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
         rotation = rotation[cursor:] + rotation[:cursor]
 
     secondary_cursor = _fetch_remote_secondary_cursor()
-    secondary_filters = secondary_axis_filters(secondary_cursor)
+    secondary_base_filters = secondary_axis_filters(secondary_cursor)
+    yield_stats = _fetch_remote_yield_stats()
+    secondary_filters, secondary_adaptation = _adapt_secondary_filters(
+        secondary_base_filters, yield_stats)
+    if secondary_adaptation != "none":
+        log.info("dealfeed secondary axis %s is persistently dry; widening before paid page: %s",
+                 secondary_base_filters, secondary_filters)
 
     id_map: Dict[str, int] = {}
     total_spent = 0
@@ -586,4 +753,6 @@ def harvest(api, pages: Optional[int] = None, categories: Optional[List[str]] = 
     return {"status": "ok", "asins": out, "pages_pulled": pulled, "tokens_spent": total_spent,
             "dry_slots_refetched": dry_slots_refetched,
             "by_category": by_category, "categories_resolved": sorted(id_map.keys()),
-            "secondary_axis_filters": secondary_filters}
+            "secondary_axis_filters": secondary_filters,
+            "secondary_axis_base_filters": secondary_base_filters,
+            "secondary_axis_adaptation": secondary_adaptation}

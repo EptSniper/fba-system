@@ -1,11 +1,15 @@
 # Hourly Keepa burst collector (DATA_ENGINE_PLAN.md hourly-collector era, Session 54).
 #
-# Runs scout/collect_hourly.py every hour at :07 (off the top-of-hour, same convention as
-# deal-watch.yml/train-ranker.yml). The Keepa Pro trickle refills 1 token/minute and caps its
+# Runs scout/collect_hourly.py every hour at :23 (farther from the top-of-hour congestion window).
+# A local Windows task calls scripts/dispatch_keepa_collect.ps1 every 45 minutes as the reliable
+# dispatcher; that script skips when a run is active or started within 40 minutes. This cron is
+# the always-on fallback for when the operator PC is sleeping/off. Both routes land in this SAME
+# workflow and therefore share the concurrency group below. The Keepa Pro trickle refills
+# 1 token/minute and caps its
 # bank at 60 — an overnight-only local run only captures roughly half of that daily generation;
 # an hourly burst instead captures ~100% of it. The collector NEVER waits for a token refill —
-# it spends only whatever is currently banked (shadow-outcome rechecks first, then a hint-led
-# scan, then backtest history fetches with whatever's left) and exits, typically well under a
+# it spends only whatever is currently banked (shadow-outcome rechecks first; a hint-led scan
+# when the reversible acceleration switch allows it; then backtest history fetches) and exits, typically well under a
 # minute. Raw Keepa responses go to the Supabase Storage raw-inbox/ bucket (this runner has no
 # persistent disk) — scout/drain_inbox.py, wired into the LOCAL daily housekeeping run, pulls
 # them into the real Parquet lake.
@@ -23,7 +27,7 @@ name: keepa-collect
 
 on:
   schedule:
-    - cron: "7 * * * *"   # hourly at :07
+    - cron: "23 * * * *"   # best-effort cloud fallback; local dispatcher targets 45-minute cadence
   workflow_dispatch: {}    # manual "Run workflow" button
 
 # Never let two bursts overlap — a slow run + the next hour's cron firing before the first
@@ -73,18 +77,36 @@ jobs:
       # Same failure-alert convention as deal-watch.yml/train-ranker.yml: a silent hourly
       # failure gets noticed. Never echoes an env value; redact.py + Actions' own secret
       # masking both apply.
-      - name: Alert on failure
-        if: failure()
+      #
+      # Keepa throughput plan Action A (2026-07-11, live-reproduced): `if: failure()` alone
+      # NEVER fires on a job-timeout cancellation — GitHub Actions reports a killed step as
+      # `cancelled`, not `failure`, and `failure()` evaluates false for it. This is exactly
+      # what happened on 2026-07-06/07-07: 11 runs were silently killed at the 10-minute job
+      # timeout (a slow-Trends-reads hang, since fixed — 7f46224's SAFE_DEADLINE_SECONDS wall
+      # clock now exits cleanly well before that point) and NOT ONE of them posted an alert,
+      # losing up to 60 banked tokens (~55 ASINs) per silent miss. `cancelled()` closes that
+      # gap so ANY future hang — for any reason — gets noticed instead of just losing tokens
+      # quietly.
+      - name: Alert on failure or cancellation
+        if: failure() || cancelled()
         env:
           DISCORD_WEBHOOK_SYSTEM_HEALTH: ${{ secrets.DISCORD_WEBHOOK_SYSTEM_HEALTH }}
+          RUN_OUTCOME: ${{ job.status }}
         run: |
           python3 - <<'PY'
           import os, json, urllib.request
           url = os.getenv("DISCORD_WEBHOOK_SYSTEM_HEALTH")
+          outcome = os.getenv("RUN_OUTCOME", "unknown")
           if url:
+              if outcome == "cancelled":
+                  desc = ("scout/collect_hourly.py was CANCELLED (likely the 10-minute job "
+                          "timeout) before it could exit cleanly — any banked tokens spent "
+                          "this run may be lost. Check the run log (secrets are masked).")
+              else:
+                  desc = ("scout/collect_hourly.py exited non-zero in GitHub Actions. Check "
+                          "the run log (secrets are masked).")
               body = {"embeds": [{"title": "⚠ Hourly Keepa collector failed",
-                                  "description": "scout/collect_hourly.py exited non-zero in GitHub Actions. Check the run log (secrets are masked).",
-                                  "color": 0xE24C4C}]}
+                                  "description": desc, "color": 0xE24C4C}]}
               req = urllib.request.Request(url, data=json.dumps(body).encode(),
                                           headers={"Content-Type": "application/json"})
               try:

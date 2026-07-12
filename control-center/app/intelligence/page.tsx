@@ -1,8 +1,31 @@
-import { Activity, BrainCircuit, CheckCircle2, Database, Gauge, GitCompareArrows, LineChart, ShieldCheck, TriangleAlert } from "lucide-react";
+import {
+  Activity,
+  BatteryCharging,
+  BrainCircuit,
+  CalendarDays,
+  CheckCircle2,
+  Database,
+  Gauge,
+  GitCompareArrows,
+  LineChart,
+  ListChecks,
+  PackageSearch,
+  ShieldCheck,
+  TriangleAlert,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { getBrain, getPicks, getMoney, getInventory, getEvents } from "@/lib/data";
 import { ActionLink, Badge, EmptyState, PageHeader, Panel } from "@/components/ui";
 import { buildIntelligenceData } from "@/lib/intelligence-server";
-import { BacktestGrowthChart, CompositionBar, RankerAccuracyChart, RunTokensChart } from "@/components/scout-charts";
+import {
+  BacktestGrowthChart,
+  CompositionBar,
+  IndependentSampleTrendChart,
+  RankerAccuracyChart,
+  RunTokensChart,
+} from "@/components/scout-charts";
+import type { DiversitySummary } from "@/lib/intelligence-server";
 import { num } from "@/lib/format";
 
 // Reads live sibling learning-hub/ files on every request (Code Review 2026-07-02, Finding
@@ -18,6 +41,85 @@ const LOOP = [
   ["Observe", "Realized margin, sell-through, returns, Buy Box share, and price movement"],
   ["Promote", "A challenger replaces the champion only after measurable offline improvement"],
 ];
+
+function decimal(value: number, digits = 1): string {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(value);
+}
+
+function dimensionLabel(value: string): string {
+  return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  state = "measured",
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  detail: string;
+  state?: "measured" | "unavailable";
+}) {
+  return (
+    <div className="surface min-w-0 rounded-xl p-4">
+      <div className="flex items-start justify-between gap-3">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-line bg-panel2 text-accent">
+          <Icon size={15} aria-hidden />
+        </span>
+        <Badge tone={state === "measured" ? "success" : "warn"}>
+          {state === "measured" ? "measured" : "unavailable"}
+        </Badge>
+      </div>
+      <div className="mt-4 text-[10px] font-semibold uppercase tracking-[0.15em] text-faint">{label}</div>
+      <div className="num mt-1 break-words text-2xl font-semibold text-ink">{value}</div>
+      <p className="mt-1.5 text-[11px] leading-relaxed text-muted">{detail}</p>
+    </div>
+  );
+}
+
+function DiversityList({ summary, noun }: { summary: DiversitySummary; noun: string }) {
+  const total = summary.knownAsins + summary.unknownAsins;
+  const shown = summary.buckets.slice(0, 6);
+  const shownCount = shown.reduce((sum, bucket) => sum + bucket.count, 0);
+  const otherKnown = Math.max(0, summary.knownAsins - shownCount);
+  return (
+    <div className="flex flex-col gap-3">
+      {shown.length ? (
+        <ol className="flex flex-col gap-2" aria-label={`Top ${noun} by unique ASIN count`}>
+          {shown.map((bucket) => (
+            <li key={bucket.label}>
+              <div className="mb-1 flex items-center justify-between gap-3 text-[11px]">
+                <span className="truncate text-muted">{dimensionLabel(bucket.label)}</span>
+                <span className="num shrink-0 text-ink">
+                  {num(bucket.count)} <span className="text-faint">({Math.round(bucket.share * 100)}%)</span>
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-sm bg-panel2" aria-hidden>
+                <div
+                  className="h-full bg-accent"
+                  style={{ width: `${Math.max(1, bucket.share * 100)}%` }}
+                />
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <EmptyState title={`No known ${noun} yet`} hint="Unknown values are not counted as diversity." />
+      )}
+      <p className="text-[11px] leading-relaxed text-faint">
+        {num(summary.distinctKnown)} known {noun} across {num(summary.knownAsins)} of {num(total)} unique ASINs
+        {otherKnown ? ` · ${num(otherKnown)} ASINs in ${num(summary.distinctKnown - shown.length)} other ${noun}` : ""}
+        {summary.unknownAsins ? ` · ${num(summary.unknownAsins)} unknown` : ""}.
+      </p>
+    </div>
+  );
+}
 
 export default async function IntelligencePage() {
   const brain = getBrain();
@@ -55,6 +157,25 @@ export default async function IntelligencePage() {
       icon: GitCompareArrows },
   ];
 
+  const sevenDayTrendDetail = intel.connected
+    ? intel.sevenDayTrend === null
+      ? "No prior complete seven-day baseline yet"
+      : `${intel.sevenDayTrend >= 0 ? "+" : ""}${Math.round(intel.sevenDayTrend * 100)}% vs the prior 7 complete UTC days`
+    : "";
+  const backlogCategoryDetail = intel.connected && intel.pendingBacklog.available
+    ? [
+        ...intel.pendingBacklog.byCategory.slice(0, 3).map(
+          (bucket) => `${dimensionLabel(bucket.label)} ${num(bucket.count)}`,
+        ),
+        intel.pendingBacklog.byCategory.length > 3
+          ? `+${num(intel.pendingBacklog.byCategory.length - 3)} more categories`
+          : null,
+        intel.pendingBacklog.unknownCategoryAsins
+          ? `Unknown ${num(intel.pendingBacklog.unknownCategoryAsins)}`
+          : null,
+      ].filter(Boolean).join(" · ") || "Persisted sampler queue is empty"
+    : "Backtest state blob could not be read; this is not treated as zero";
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -68,6 +189,75 @@ export default async function IntelligencePage() {
         <ActionLink href="/find" tone="primary">Run the deal analyzer</ActionLink>
         <ActionLink href="/ask">Question the knowledge brain</ActionLink>
       </div>
+
+      {intel.connected ? (
+        <Panel
+          title="Independent sample velocity"
+          icon={<PackageSearch size={16} />}
+          right="unique ASINs · UTC"
+        >
+          <p className="mb-4 max-w-4xl text-xs leading-relaxed text-muted">
+            One independent sample here means one distinct ASIN at its first observed collection time.
+            Repeated historical windows for that ASIN remain useful labels, but do not count as new products.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <MetricCard
+              icon={Database}
+              label="Unique ASINs"
+              value={num(intel.totalUniqueAsins)}
+              detail={`${num(intel.totalBacktestRows)} labeled rows · ${intel.averageRowsPerAsin === null ? "—" : decimal(intel.averageRowsPerAsin, 1)} rows per ASIN`}
+            />
+            <MetricCard
+              icon={CalendarDays}
+              label="New today"
+              value={num(intel.newAsinsToday)}
+              detail={`First seen since 00:00 UTC · ${num(intel.newAsinsLast24h)} in the rolling 24-hour window`}
+            />
+            <MetricCard
+              icon={Activity}
+              label="7-day average"
+              value={`${decimal(intel.newAsins7DayAverage, 1)}/day`}
+              detail={sevenDayTrendDetail}
+            />
+            <MetricCard
+              icon={Zap}
+              label="New ASINs / tier-3 token"
+              value={intel.tier3Efficiency24h.asinsPerToken === null
+                ? "Unavailable"
+                : decimal(intel.tier3Efficiency24h.asinsPerToken, 2)}
+              detail={intel.tier3Efficiency24h.asinsPerToken === null
+                ? (intel.tier3Efficiency24h.reason ?? "No measurable rolling-window efficiency")
+                : `${num(intel.tier3Efficiency24h.newAsins)} new ASINs / ${num(intel.tier3Efficiency24h.tier3Tokens)} history tokens · rolling 24h`}
+              state={intel.tier3Efficiency24h.asinsPerToken === null ? "unavailable" : "measured"}
+            />
+            <MetricCard
+              icon={BatteryCharging}
+              label="Collector token capture"
+              value={intel.tokenCapture24h.utilization === null
+                ? "Unavailable"
+                : `${Math.round(intel.tokenCapture24h.utilization * 100)}%`}
+              detail={intel.tokenCapture24h.utilization === null
+                ? (intel.tokenCapture24h.reason ?? "No measurable rolling-window utilization")
+                : `${num(intel.tokenCapture24h.spentTokens)} spent / ${num(intel.tokenCapture24h.generatedTokens)} generated at ${decimal(intel.tokenCapture24h.refillRatePerMinute ?? 0, 2)} token/min · ${num(intel.tokenCapture24h.completedRuns)} completed runs`}
+              state={intel.tokenCapture24h.utilization === null ? "unavailable" : "measured"}
+            />
+            <MetricCard
+              icon={ListChecks}
+              label="Pending sampler backlog"
+              value={intel.pendingBacklog.available ? num(intel.pendingBacklog.pendingAsins) : "Unavailable"}
+              detail={backlogCategoryDetail}
+              state={intel.pendingBacklog.available ? "measured" : "unavailable"}
+            />
+          </div>
+          <div className="mt-5 border-t border-line pt-4">
+            <IndependentSampleTrendChart data={intel.dailyAsinTrend} />
+            <p className="mt-1.5 text-[11px] text-faint">
+              Bars are first-seen unique ASINs by UTC day. Today is partial; the headline 7-day average uses
+              seven complete days and excludes today.
+            </p>
+          </div>
+        </Panel>
+      ) : null}
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {readiness.map(({ label, state, detail, icon: Icon }) => (
@@ -102,7 +292,7 @@ export default async function IntelligencePage() {
         <>
           <div className="grid gap-3 lg:grid-cols-2">
             <Panel
-              title="Backtest rows collected"
+              title="Labeled backtest rows"
               icon={<Database size={16} />}
               right={`${num(intel.totalBacktestRows)} total`}
             >
@@ -121,8 +311,28 @@ export default async function IntelligencePage() {
             <RunTokensChart data={intel.runHistory} tierBreakdownAvailableSince={intel.tierBreakdownAvailableSince} />
           </Panel>
 
-          <div className="grid gap-3 md:grid-cols-2">
-            <Panel title="Sampling composition" icon={<Database size={16} />} right="dealfeed / explore / onpolicy">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <Panel
+              title="Category diversity"
+              icon={<Database size={16} />}
+              right={`${num(intel.categoryDiversity.distinctKnown)} known`}
+            >
+              <DiversityList summary={intel.categoryDiversity} noun="categories" />
+            </Panel>
+            <Panel
+              title="Sampling-source diversity"
+              icon={<PackageSearch size={16} />}
+              right={`${num(intel.sourceDiversity.distinctKnown)} known`}
+            >
+              <DiversityList summary={intel.sourceDiversity} noun="sources" />
+              {intel.sourceDiversity.unknownAsins ? (
+                <p className="mt-2 text-[11px] text-faint">
+                  Unknown means no durable source tag exists for that ASIN, commonly because its rows predate
+                  sample_source tracking. It is not reassigned by guesswork.
+                </p>
+              ) : null}
+            </Panel>
+            <Panel title="Sampling composition · labeled rows" icon={<Database size={16} />} right="dealfeed / explore / onpolicy">
               <CompositionBar
                 emptyHint="Fills in once sample_source is populated (migration 011, 2026-07-09)."
                 segments={[

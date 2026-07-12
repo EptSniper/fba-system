@@ -259,7 +259,13 @@ def _evaluate(enriched: List[Dict[str, Any]],
             # Review-queue ranking (Scout Agent Build Plan sec 3.2) — a SORT key only, computed
             # alongside the score but never fed back into it or into any gate.
             p["triage_score"] = scoring.triage_score(p, category=category)
-            margin = scoring.estimate_margin(p.get("price"), p.get("weight_lb"))
+            # Full-crew audit (2026-07-11): estimate_margin() is the OLD flat-15%/no-shipping PL
+            # cost stack -- it was still being called here even in OA mode, so margin_est (an ML
+            # feature AND a Discord-posted number) silently disagreed with oa_profit/oa_roi
+            # (category-aware, shipping-aware) computed one line above from the SAME candidate.
+            # Derive margin from that already-correct profit instead of a second, stale formula.
+            price = p.get("price")
+            margin = (profit / price) if profit is not None and price else None
         else:
             rule_score, margin, reason = scoring.score_product(p)
         feats = model_mod.features_from(p, rule_score, margin)

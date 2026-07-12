@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-05T00:15:57.857421+00:00",
+  "updated": "2026-07-12T03:39:37.332670+00:00",
   "note": "Written by scout/deals/run_watch.py each run. verify_resolved = a VERIFY-flagged registry source produced >=1 row this run. broken_clr = NEW/active clr breakages (already-retired sd-rss-only URLs are skipped, not re-listed). rate_limited = 429'd this run (transient, retried tomorrow). sd_rss_only = clr URLs retired after 2 consecutive 403s \u2014 their Slickdeals per-store feed still covers the store, so zero coverage loss. Ephemeral on the cloud runner; the Discord digest carries the same signal.",
   "verify_resolved": [
     "Big Lots",

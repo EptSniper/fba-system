@@ -6,6 +6,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
@@ -16,7 +17,12 @@ import {
 } from "recharts";
 import { EmptyState } from "@/components/ui";
 import { num, pct } from "@/lib/format";
-import type { BacktestGrowthPoint, RankerHistoryPoint, RunHistoryPoint } from "@/lib/intelligence-server";
+import type {
+  BacktestGrowthPoint,
+  DailyAsinPoint,
+  RankerHistoryPoint,
+  RunHistoryPoint,
+} from "@/lib/intelligence-server";
 
 // Charts for the /intelligence page's "Training & collection" section (Session 57, 2026-07-09):
 // backtest_rows growth, per-run token/tier breakdown, ranker champion/challenger accuracy, and
@@ -80,6 +86,58 @@ export function BacktestGrowthChart({ data }: { data: BacktestGrowthPoint[] }) {
           />
           <Area type="monotone" dataKey="cumulative" name="cumulative" stroke="var(--accent)" strokeWidth={2} fill="url(#btg)" />
         </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+export function IndependentSampleTrendChart({ data }: { data: DailyAsinPoint[] }) {
+  if (!data.length) {
+    return (
+      <EmptyState
+        title="No independent samples yet"
+        hint="One independent sample appears when a previously unseen ASIN gets its first backtest row."
+      />
+    );
+  }
+  return (
+    <div
+      style={{ width: "100%", height: 190 }}
+      role="img"
+      aria-label="New unique ASINs by UTC day with a seven-day rolling average"
+    >
+      <ResponsiveContainer>
+        <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+          <CartesianGrid stroke="var(--border)" strokeDasharray="2 4" vertical={false} />
+          <XAxis
+            dataKey="date"
+            tickFormatter={formatDay}
+            tick={axisTick}
+            axisLine={{ stroke: "var(--border)" }}
+            tickLine={false}
+            interval="preserveStartEnd"
+            minTickGap={22}
+          />
+          <YAxis tick={axisTick} axisLine={false} tickLine={false} width={34} allowDecimals={false} />
+          <Tooltip
+            contentStyle={tooltipStyle}
+            labelFormatter={(v: string) => formatDay(v)}
+            formatter={(v: number, name: string) => [
+              name === "7-day rolling average" ? v.toFixed(1) : num(v),
+              name,
+            ]}
+          />
+          <Legend wrapperStyle={legendStyle} />
+          <Bar dataKey="newAsins" name="new unique ASINs" fill="var(--accent)" radius={[2, 2, 0, 0]} />
+          <Line
+            type="monotone"
+            dataKey="rolling7Average"
+            name="7-day rolling average"
+            stroke="var(--accent-2)"
+            strokeWidth={2}
+            dot={false}
+          />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

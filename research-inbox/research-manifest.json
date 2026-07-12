@@ -751,6 +751,77 @@
    "topic": "build_the_system",
    "status": "fetch-failed",
    "note": "WebFetch returned compressed/binary garbage (unreadable encoding) -- no usable text. On-stack pgvector production build guide; corroborated by staged BuildMVPFast (07-07). Re-fetch in Claude Code / browser."
+  },
+  {
+   "date": "2026-07-10",
+   "type": "text",
+   "title": "Key Amazon Reimbursement Policy Details, Changes, and Updates (SPS Commerce)",
+   "url_or_videoId": "https://www.spscommerce.com/community/articles/amazon-reimbursement-policy",
+   "topic": "fba_oa_mastery",
+   "status": "ingested-staged",
+   "note": "Cost-based reimbursement (eff Mar 31 2025, manufacturing cost not sell price), ~60d claim windows, automatic vs manual claim types, MCF caps, returnless resolutions. Affects OA loss/returns buffer + makes per-unit landed-cost the reimbursement basis."
+  },
+  {
+   "date": "2026-07-10",
+   "type": "text",
+   "title": "Amazon FBA New Selection Program 2026 launches July 30 (Nova Analytics)",
+   "url_or_videoId": "https://novadata.io/resources/news/amazon-fba-new-selection-program-expansion-july-30-2026",
+   "topic": "amazon_help_docs",
+   "status": "ingested-staged",
+   "note": "New-branded-ASIN subsidy (bigger inbound credit, 90d free storage on first 100 units, reduced referral on first $25k/ASIN 365d) launching Jul 30 2026. Flagged: private-label/Brand-Registry lever, NOT a pure-OA tactic. Fee/market awareness only; no ai-brain change."
+  },
+  {
+   "date": "2026-07-10",
+   "type": "text",
+   "title": "FBA inventory reimbursement policy (Amazon Seller Central help, G200213130)",
+   "url_or_videoId": "https://sellercentral.amazon.com/help/hub/reference/external/G200213130",
+   "topic": "amazon_help_docs",
+   "status": "fetch-pending",
+   "note": "Authoritative [policy] doc behind the cost-based reimbursement / claim-window changes (SPS summary staged this run). Seller Central pages are JS-rendered and return only the shell in this sandbox (same failure mode as G200140860/G201100890) - re-fetch from Claude Code/Chrome to confirm the exact windows and IDR-portal mechanics."
+  },
+  {
+   "date": "2026-07-10",
+   "type": "youtube",
+   "title": "The FASTEST Way Find Online Arbitrage Products for Amazon FBA (2026)",
+   "url_or_videoId": "-Rv5hejVnVs",
+   "topic": "fba_oa_mastery",
+   "status": "queued"
+  },
+  {
+   "date": "2026-07-10",
+   "type": "text",
+   "title": "SoK: Agentic Retrieval-Augmented Generation (RAG): Taxonomy, Architectures, Evaluation, and Research Directions (arXiv 2603.07379)",
+   "url_or_videoId": "https://arxiv.org/abs/2603.07379",
+   "topic": "build_the_system",
+   "status": "fetch-pending",
+   "note": "arXiv blocked by sandbox fetch-provenance rule. Systematization-of-knowledge survey of agentic RAG (taxonomy/architectures/evaluation) - directly on-thread for the scout/knowledge-rag agentic design. Snippet only; re-fetch + distill in Claude Code."
+  },
+  {
+   "date": "2026-07-10",
+   "type": "text",
+   "title": "Cascading Hallucination in Agentic RAG: The CHARM Framework for Detection and Mitigation (arXiv 2606.04435)",
+   "url_or_videoId": "https://arxiv.org/abs/2606.04435",
+   "topic": "build_the_system",
+   "status": "fetch-pending",
+   "note": "arXiv blocked by sandbox fetch-provenance rule. Detects/mitigates cascading hallucination in multi-step agentic RAG - relevant to Ask honesty + no-fabrication guardrail. Snippet only; re-fetch + distill in Claude Code."
+  },
+  {
+   "date": "2026-07-10",
+   "type": "text",
+   "title": "Doctor-RAG: A Failure-Aware Repair Framework for Agentic Retrieval-Augmented Generation (arXiv 2604.00865)",
+   "url_or_videoId": "https://arxiv.org/abs/2604.00865",
+   "topic": "build_the_system",
+   "status": "fetch-pending",
+   "note": "arXiv blocked by sandbox fetch-provenance rule. Failure-aware repair loop for agentic RAG - on-thread with self-improving-RAG line (FLAIR 2508.13390, ROZA 2604.07595). Snippet only; re-fetch + distill in Claude Code."
+  },
+  {
+   "date": "2026-07-10",
+   "type": "text",
+   "title": "How to Read a Keepa Chart - 2026 Update (Clear The Shelf / Chris Grant)",
+   "url_or_videoId": "https://cleartheshelf.com/how-to-read-a-keepa-chart/",
+   "topic": "fba_oa_mastery",
+   "status": "skipped-thin",
+   "note": "Fetched fine but content is evergreen Keepa-101 (sales rank/BB/offer-count/monthly-sold, the 'yellow line' is a 2024 feature) by Chris Grant/OA Challenge - the same author whose Keepa material is already heavily represented in the corpus (TBFh9vFBq7k, wwNw5vNAyeM, oachallenge 5-Keepa-Power-Moves). Not staged, to avoid Keepa/Chris-Grant skew per the ML no-bias rule."
   }
  ]
 }

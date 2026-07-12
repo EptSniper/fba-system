@@ -337,6 +337,8 @@
       "maxCategoryCorpusShare": 0.3,
       "top5BrandShareAlarm": 0.2,
       "breadthFirstBacktest": true,
+      "tier1ReserveFraction": 0.15,
+      "tier1ReserveFractionSource": "Keepa throughput plan Action C (Cowork, 2026-07-11) — Mehmet-approved ('I approved all of the proposals, do them'). Temporarily lowers scout/collect_hourly.py's TIER1_RESERVE_FRACTION from its 0.25 code default to 0.15 for the collection sprint targeting 10k unique ASINs: shadow-outcome rechecks (tier 1) skim less of every hour's bank, leaving more for tier 3's history pulls that actually grow backtest_rows. Deliberately NOT zeroed — shadow validation is how the ranker eventually earns promotion evidence, so tier 1 still runs, just capped tighter. Reversible: delete this key (or raise it back toward 0.25) to revert; collect_hourly._tier1_reserve_fraction() falls back to the 0.25 code constant if this key is ever absent/invalid. Revisit once new-ASINs/day sustains the plan's ~400+/day target for a few days.",
       "corpusAcceleration": {
         "enabled": true,
         "skipTier2WhilePending": true,

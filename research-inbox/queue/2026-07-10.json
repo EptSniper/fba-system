@@ -1,0 +1,16 @@
+{
+  "date": "2026-07-10",
+  "note": "The daily task writes one queue file per day. fetch_transcripts.py reads files matching YYYY-MM-DD.json, pulls transcripts via the API, and sets each item's status to 'done'.",
+  "videos": [
+    {
+      "videoId": "-Rv5hejVnVs",
+      "title": "The FASTEST Way Find Online Arbitrage Products for Amazon FBA (2026)",
+      "channel": "unknown (verify on fetch)",
+      "url": "https://www.youtube.com/watch?v=-Rv5hejVnVs",
+      "topic": "fba_oa_mastery",
+      "why": "Published Jun 7 2026; claims a fastest-path sourcing workflow. Check whether it adds a concrete technique beyond the storefront-stalking / Keepa-PF / reverse-sourcing playbook already deep in the corpus, or is another 101 rehash.",
+      "isLongCourse": false,
+      "status": "queued"
+    }
+  ]
+}

@@ -173,6 +173,19 @@ def test_evaluate_survives_challenger_artifact_unavailable():
     assert scored[0]["challenger_proba"] is None
 
 
+def test_evaluate_margin_est_matches_oa_profit_not_the_stale_pl_formula():
+    """Full-crew audit (2026-07-11): margin_est used to come from the OLD flat-15%/no-shipping
+    estimate_margin() even in OA mode, silently disagreeing with oa_profit/oa_roi (category-aware,
+    shipping-aware) computed one line above from the SAME candidate -- an ML feature AND a
+    Discord-posted number quietly drifting from the number right next to it. margin_est must now
+    be profit/price using the SAME profit oa_profit reports."""
+    with patch.object(pipeline.train_ranker, "load_challenger", return_value=None):
+        scored = pipeline._evaluate([_candidate(price=20.0, weight_lb=1.0, category="grocery")])
+    row = scored[0]
+    assert row["oa_profit"] is not None
+    assert row["margin_est"] == row["oa_profit"] / 20.0
+
+
 def test_evaluate_attaches_challenger_proba_when_promoted():
     fake_champion = {"model": object(), "scaler": object(), "features": []}
     with patch.object(pipeline.train_ranker, "load_challenger", return_value=fake_champion), \

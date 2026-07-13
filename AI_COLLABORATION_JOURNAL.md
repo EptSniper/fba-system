@@ -115,6 +115,45 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-13 — Claude Code Session 66: wire free SP-API catalog + eligibility into the matcher (`CLAUDE_CODE_SPAPI_DIRECTIVE.md`), then fix what the build workflow itself missed
+
+#### Request
+
+Cowork's directive: wire SP-API's free Catalog Items API as the discovery/eligibility layer ahead of Keepa in `scout/deals/matcher.py`, so per-deal matching cost drops from ~30 Keepa tokens (a paid title search + enrich) to ~1-5 (Keepa only prices an already-resolved, already-qualified ASIN). Sequenced before D3/bulk matching per the accompanying `TOKEN_FRUGAL_MODEL_STRATEGY.md` doctrine doc ("make Keepa the LAST step, on survivors only"). Given the size and financial/compliance sensitivity (eligibility gating, fee math), used a structured Workflow (implement → parallel test-writing + independent code review → adversarial verify → fix) rather than building solo — this is exactly the kind of task ultracode mode calls for.
+
+#### Investigation before building
+
+Read `scout/spapi.py`, `scout/deals/matcher.py`, and — critically — `scout/pipeline.py`'s existing `_check_eligibility` (already wired into the main Keepa-discovery pipeline, calling `spapi.get_listings_restrictions`/`get_fees_estimate` and recording `hard_reject`/`needs_ungating`/`fee_source`). This changed the plan: rather than refactoring that tested, live production function for reuse, `matcher.py` calls the same underlying `spapi` primitives directly at the two points that actually fit ITS flow — eligibility before spending a Keepa token, fees after a real price is known (fees can't be checked before enrich; eligibility can and should be). Lower blast radius than touching `pipeline.py`.
+
+#### What the workflow built
+
+`spapi.catalog_search_keywords()` (new, mirrors `catalog_lookup_upc`'s shape, shares its rate limiter). `matcher.py`: `_eligible_for_matching`/`_filter_eligible` (the free pre-filter), a shared `_resolve_candidates` scaffold for the SP-API-first/Keepa-fallback logic (the workflow's own code-review pass caught the two candidate-generation paths duplicating this scaffold and consolidated it), new discovery/eligibility telemetry in `run()`. `scoring.estimate_oa_profit_roi_real_fees()` (new) for when `apply_verified_matches()` has real SP-API fees available.
+
+#### What I caught after the workflow reported "done" — read the diff myself before trusting the report
+
+1. **A real compliance gap the workflow's own verify pass confirmed but its own fix pass silently skipped.** The independent code-review agent found (and a separate verify agent CONFIRMED with quoted line numbers): the eligibility pre-filter's `needs_ungating` flag only ever reached a deal_matches row as free text buried in `llm_reason` — `apply_verified_matches()` never read it, so an APPROVAL_REQUIRED match could get real buy_cost/source/profit/roi written onto a lead exactly as if it were a plain ALLOWED item, with nothing on the lead itself showing Amazon hasn't approved selling it yet. The workflow's fix-phase agent was handed all 3 confirmed findings but only addressed the other two (a duplicated scaffold, a redundant guard) — this, the most severe one, went unfixed in its final report. Caught by reading the workflow's actual returned JSON myself rather than trusting its "done" summary. Fixed: `apply_verified_matches()` now re-checks eligibility directly (reusing `get_listings_restrictions`' own 7-day cache — cheap) immediately before every write; a NOT_ELIGIBLE ASIN is skipped entirely (never backfilled), an APPROVAL_REQUIRED one still gets real numbers but is tagged via the previously-unused `leads.gated_status` column (`"approval_required"`). Extended `db.update_lead_source()` with an optional `gated_status` param. Added 4 new regression tests (2 in `test_deals_db.py`, 2 in `test_deals_matcher.py`) plus 2 more covering the skip-vs-tag branches.
+2. **A bug the workflow found, named clearly, and correctly declined to fix (out of its own stated scope) but I hadn't yet addressed.** `estimate_oa_profit_roi_real_fees(price, buy_cost=0, ...)` returned a real computed profit instead of `(None, None)` — the guard only checked `buy_cost < 0`, not `<= 0`, contradicting the function's own docstring. A zero buy_cost isn't physically plausible for a real retail deal and makes ROI mathematically undefined; tightened the guard to `<= 0`.
+3. **A test-hygiene regression the workflow introduced without noticing.** `spapi.configured()` turns out to return **True** in this real environment (it only checks that the three SP-API env vars are non-empty strings — and the placeholders are 9 non-empty characters). The workflow's implementer correctly noted this live-verified fact in its own summary, but neither it nor the qa-tester phase updated the PRE-EXISTING `apply_verified_matches` tests to account for it — those tests now silently attempted real network calls (a Supabase cache read, then a real LWA token POST to Amazon with fake credentials) every time they ran. Caught by timing (`ApplyVerifiedMatchesTest`'s 6 tests took 4.71s — should be milliseconds for mocked unit tests) rather than a failure, since the exception path degrades gracefully and every test still passed. Fixed with class-level `setUp` patches on both affected test classes (`_eligible_for_matching` and `spapi.get_fees_estimate`); re-confirmed at 1.33s for 53 tests after.
+
+#### Verification
+
+`python -m py_compile` on every changed file; full targeted run (`test_spapi.py`, `test_deals_matcher.py`, `test_scoring.py`, `test_deals_db.py`) — 153 passed. Full suite (`run_all_tests.py`) — **1108 passed, 0 failed** across scout/scout_pro/knowledge-rag/scripts; deal-exam 56/56 (100%) unchanged. `ai-brain.json`'s `dealFinder.status` rewritten (brain-proposals.md entry, applied under Mehmet's standing "full permission" authorization) to describe the real current state, including the honest "not live-verified, every real call will attempt and fail auth" caveat. Committed as `c540e28`, pushed to `origin/master` immediately.
+
+#### Token accounting (theoretical — SP-API credentials are still placeholders, so this cannot be measured live yet)
+
+Before: ~30 Keepa tokens/deal (a 10-token title search + up to 5×4-token enrich of the results). After, once real SP-API credentials exist: 0 tokens for discovery (SP-API is rate-limited, not token-metered) + eligibility filtering for free (7-day cached) + Keepa enrich ONLY on eligible survivors for pricing — roughly 4 tokens/deal for a UPC-resolved match (typically 1 exact candidate) up to ~20 for a title-resolved match with several candidates surviving the eligibility filter, still a 1.5x-30x reduction depending on path. Matches Cowork's own "~1-5 tokens/deal" estimate for the common UPC-resolved case; the title-search case is more variable. This is a ceiling calculation from the codebase's own documented per-call token costs (`SEARCH_TOKENS_PER_TERM=10`, `ENRICH_TOKENS_PER_ASIN=4`), not a measured result.
+
+#### Limitations / honest status
+
+- **Not live-verified.** `spapi.configured()` is true but the credentials behind it are fake — every real SP-API call this session's new code attempts will hit Amazon's LWA endpoint and fail on auth, degrading to the pre-existing Keepa-only/rule-based-fee behavior every time. The actual token savings and eligibility-filtering behavior cannot be confirmed until Mehmet provisions real SP-API credentials (Seller Central → Apps & Services → Develop Apps, per the directive's own prerequisite).
+- Prompt D3 (deal-first lead creation) remains explicitly out of scope, same reasoning as Session 64: building it now risks the one thing every hard-gate rule in this project exists to prevent.
+- Two new documents appeared in the repo this session that Cowork had already prepared as next steps (`CLAUDE_CODE_REALPRICES_DIRECTIVE.md`, `EXPERIMENT_WALKFORWARD_2026-07-13.md`) — committed for the record, NOT acted on, since neither was this turn's actual ask.
+- This session is a concrete example of why "trust but verify" applies to this session's own workflow tool, not just to Cowork's directives: the workflow's multi-agent pipeline (including its own adversarial verify step) still let the single most severe confirmed finding slip through its fix phase unaddressed. Reading the actual returned diff/findings before reporting "done" caught it.
+
+#### Exact next safe step
+
+Get real SP-API credentials from Mehmet (the directive's own prerequisite), then run a careful one-call-per-endpoint smoke test (`get_listings_restrictions`, `catalog_lookup_upc`, `catalog_search_keywords`) against the live API to confirm the response-shape assumptions in this code (all currently unverified against a real payload) before ever running the matcher live with SP-API in the loop.
+
 ### 2026-07-13 — Claude Code Session 65: Cowork's Session-64 review follow-up (`CLAUDE_CODE_NEXT.md`) — verified 2 claims, ran the matcher's first live smoke test, pushed back on the "gate leak" framing with evidence
 
 #### Request

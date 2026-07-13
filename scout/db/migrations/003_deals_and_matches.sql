@@ -5,12 +5,10 @@
 -- deal-sourcing-system.md's design). This migration adds the two tables the source
 -- connectors (scout/deals/sources/) and the future matcher (Prompt D2) need.
 --
--- NOT YET APPLIED — same status as migrations 001/002 (blocked by the session's safety guard;
--- a live schema change against the shared production Supabase project needs your explicit
--- review, not implied consent). Apply via the Supabase SQL Editor (dashboard -> your project
--- -> SQL Editor -> paste -> Run), or explicitly ask Claude Code to run it via the connected
--- Supabase MCP `apply_migration` tool pointed at project id `cakbzcvtqhdtxfjuxstd`. Apply all
--- three pending migrations (001, 002, 003) together while you're in there.
+-- APPLIED (confirmed live 2026-07-13 via Supabase MCP list_migrations/list_tables — `deals` has
+-- 9,798 rows from the Top-100 deal watch, `deal_matches` exists). This header previously said
+-- "NOT YET APPLIED" long after it actually landed — a stale-status bug in its own right (caught
+-- during the Sourcing & Review-Queue Plan Phase 2 work). Kept for history; do not re-run.
 --
 -- scout/db.py's upsert_deal() degrades gracefully (falls back to a plain, non-idempotent
 -- insert) if this hasn't landed yet — nothing breaks by waiting, you just don't get

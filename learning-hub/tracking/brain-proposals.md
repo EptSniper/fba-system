@@ -244,3 +244,25 @@ confirmed loading the 17-entry list cleanly.
 
 ---
 
+## 2026-07-13 -- Sourcing & Review-Queue Plan Phase 2.2 proposal (not from propose_updates.py)
+
+- **[manual, Claude Code]** `dealFinder.status` documents Prompt D2 (the matcher) as not built and migration 003
+  as "NOT YET APPLIED" -- both are stale. Live-verified via Supabase MCP: migration 003 is applied (`deals` has
+  9,798 rows, `deal_matches` exists), and `scout/deals/matcher.py` now exists (deal->ASIN matching: UPC path via
+  a new `keepa_client.upc_lookup()`, title path via a new `keepa_client.search_by_term()` + attribute-agreement/
+  string-similarity scoring, optional Claude Haiku pairwise verification gated on a real `ANTHROPIC_API_KEY`).
+  Propose updating `dealFinder.status` to reflect this, and to honestly disclose the two scoping simplifications
+  vs. the original Build Plan: (1) no bge-embedding/cosine ranking -- scout has no sentence-transformers/torch
+  dependency and adding one wasn't justified without live data to test it against; string-similarity (difflib)
+  substitutes, and no title-path match can reach confidenceBands.autoAccept without a live LLM confirmation
+  (composite_confidence() in matcher.py hard-caps it). (2) The LLM step is real code, not a stub, but the
+  ANTHROPIC_API_KEY currently in scout/.env is a placeholder, so it degrades honestly (one log line, no
+  fabricated verdict) until a real key is added. (sample size: n/a -- a documentation-accuracy fix, not a data
+  finding; confidence: high -- key: `dealFinder.status`)
+
+**APPROVED by Mehmet ("I give full permission for everything for this and the future of this work")** and
+applied via `fba-brain-updater` conventions: `dealFinder.status` rewritten; `updated` bumped to 2026-07-13.
+JSON validated; `control-center/hub-data/` re-synced.
+
+---
+

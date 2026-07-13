@@ -526,6 +526,159 @@ def upsert_deal(row: Dict[str, Any]) -> Optional[int]:
     return _post("deals", row, migration_only_fields=DEALS_MIGRATION_ONLY_FIELDS)
 
 
+def get_deals_by_status(status: str = "new", limit: int = 200) -> List[Dict[str, Any]]:
+    """Deals awaiting a match attempt (default status='new'), oldest first — the matcher's
+    (scout/deals/matcher.py) work queue. [] if unavailable; never raises."""
+    if not enabled():
+        return []
+    try:
+        r = requests.get(
+            f"{SUPA}/rest/v1/deals?select=*&status=eq.{_quote(status, safe='')}"
+            f"&order=first_seen.asc&limit={int(limit)}",
+            headers=_headers(), timeout=15,
+        )
+        r.raise_for_status()
+        return r.json() or []
+    except Exception as e:
+        print(f"[db] get_deals_by_status failed: {e}")
+        return []
+
+
+def update_deal_status(deal_id: int, status: str) -> bool:
+    """PATCH one deal's status ('new' | 'matched' | 'discarded') after the matcher has processed
+    it, so a re-run of matcher.run() doesn't re-attempt the same deal forever. Returns whether
+    the write succeeded — best-effort; a failure here doesn't lose the deal_matches row already
+    written, it just means this deal may be re-attempted next run (idempotent — upsert_deal_match
+    below dedupes on (deal_id, asin) at the application level)."""
+    if not enabled():
+        return False
+    try:
+        r = requests.patch(
+            f"{SUPA}/rest/v1/deals?id=eq.{int(deal_id)}",
+            headers=_headers({"Prefer": "return=minimal"}),
+            json={"status": status}, timeout=10,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"[db] update_deal_status failed (deal {deal_id}): {e}")
+        return False
+
+
+# ----------------------------------------------------------------------------
+# deal_matches — one row per candidate ASIN the matcher (scout/deals/matcher.py, Deal Finder
+# Build Plan Prompt D2) proposes for a deal. Migration 003 defines the table WITHOUT a unique
+# constraint on it (unlike deals/deal_hints), so idempotency here is APPLICATION-level: find_
+# deal_match() below is checked before every write rather than relying on an on_conflict upsert.
+# ----------------------------------------------------------------------------
+def find_deal_match(deal_id: int, asin: str) -> Optional[Dict[str, Any]]:
+    """The existing deal_matches row for this (deal_id, asin) pair, if the matcher already
+    proposed it on a prior run — None if not found or unavailable. Callers use this to avoid
+    writing duplicate candidate rows when matcher.run() re-processes (idempotency has no DB
+    constraint to lean on here, see the section note above)."""
+    if not enabled() or not asin:
+        return None
+    try:
+        r = requests.get(
+            f"{SUPA}/rest/v1/deal_matches?deal_id=eq.{int(deal_id)}"
+            f"&asin=eq.{_quote(asin, safe='')}&select=*&limit=1",
+            headers=_headers(), timeout=10,
+        )
+        r.raise_for_status()
+        rows = r.json() or []
+        return rows[0] if rows else None
+    except Exception as e:
+        print(f"[db] find_deal_match failed (deal {deal_id}, {asin}): {e}")
+        return None
+
+
+def upsert_deal_match(deal_id: int, asin: Optional[str], confidence: Optional[float],
+                      method: Optional[str], pack_match: Optional[bool] = None,
+                      llm_reason: Optional[str] = None) -> Optional[int]:
+    """Record one candidate ASIN for a deal. Checks find_deal_match() first and PATCHes the
+    existing row instead of inserting a duplicate when the matcher has already proposed this
+    exact (deal_id, asin) pair (e.g. a re-run after a new source signal). Returns the row id, or
+    None if unavailable/failed. human_verdict is intentionally never set here — that column is
+    written only by the control-center's human review action (recordDealMatchVerdict in
+    supabase-server.ts), never by the matcher itself."""
+    if not enabled() or not asin:
+        return None
+    existing = find_deal_match(deal_id, asin)
+    row = {
+        "deal_id": deal_id, "asin": asin, "confidence": confidence,
+        "method": method, "pack_match": pack_match, "llm_reason": llm_reason,
+    }
+    if existing:
+        try:
+            r = requests.patch(
+                f"{SUPA}/rest/v1/deal_matches?id=eq.{existing['id']}",
+                headers=_headers({"Prefer": "return=minimal"}),
+                json=row, timeout=10,
+            )
+            r.raise_for_status()
+            return existing["id"]
+        except Exception as e:
+            print(f"[db] upsert_deal_match update failed (deal {deal_id}, {asin}): {e}")
+            return None
+    return _post("deal_matches", row)
+
+
+def get_deal_matches_ready_to_apply(min_confidence: float, limit: int = 200) -> List[Dict[str, Any]]:
+    """deal_matches rows a human has approved, OR whose algorithmic confidence already cleared
+    the brain's auto-accept band, embedding the parent deal (retailer/price_current/url) — the
+    read side of Phase 2.3's "populate the lead's real fields" bridge
+    (scout/deals/matcher.apply_verified_matches()). Whether each one has ALREADY been applied to
+    its lead is decided by the caller (checking the target lead's own source_store), not here —
+    this function is I/O only. [] if unavailable."""
+    if not enabled():
+        return []
+    try:
+        r = requests.get(
+            f"{SUPA}/rest/v1/deal_matches"
+            f"?select=*,deals(*)"
+            f"&or=(human_verdict.eq.approve,confidence.gte.{min_confidence})"
+            f"&order=created_at.asc&limit={int(limit)}",
+            headers=_headers(), timeout=15,
+        )
+        r.raise_for_status()
+        return r.json() or []
+    except Exception as e:
+        print(f"[db] get_deal_matches_ready_to_apply failed: {e}")
+        return []
+
+
+def update_lead_source(asin: str, buy_cost: float, source_store: Optional[str],
+                       source_url: Optional[str], profit: Optional[float],
+                       roi: Optional[float]) -> bool:
+    """PATCH an existing lead with a REAL buy cost + source (Sourcing plan Phase 2.3) once the
+    deal-finder matcher has verified where to actually buy it, replacing the OA_COGS_FRACTION
+    50%-of-price assumption for this one lead. profit/roi must already be recomputed from the
+    real buy_cost by the caller (scoring.estimate_oa_profit_roi with an explicit cogs_fraction —
+    this function never computes fee math itself, matching the single-source-of-truth rule).
+    Returns whether the write succeeded. Only ever narrows toward truth: this never creates a
+    lead, only enriches one that already exists (found via scout's own normal Keepa discovery
+    and already gate-checked) — see matcher.apply_verified_matches()'s docstring for why
+    deal-first LEAD CREATION is out of scope here."""
+    if not enabled() or not asin:
+        return False
+    row = {"buy_cost": buy_cost, "source_store": source_store, "source_url": source_url}
+    if profit is not None:
+        row["profit"] = profit
+    if roi is not None:
+        row["roi"] = roi
+    try:
+        r = requests.patch(
+            f"{SUPA}/rest/v1/leads?asin=eq.{_quote(asin, safe='')}",
+            headers=_headers({"Prefer": "return=minimal"}),
+            json=row, timeout=10,
+        )
+        r.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"[db] update_lead_source failed ({asin}): {e}")
+        return False
+
+
 # ----------------------------------------------------------------------------
 # deal_hints + source_http_cache — the nightly deal watch's "look here first" signal and the
 # polite clearance-page fetcher's cross-run HTTP cache (migration 007, TOP100_DEAL_WATCH_PLAN).

@@ -140,6 +140,19 @@ def test_discount_stack_defaults_to_zero_when_unknown_or_null():
     assert stack == {"cashback_pct": 0.0, "giftcard_pct": 0.0}
 
 
+def test_discount_stack_matches_case_insensitively():
+    """Code review regression (2026-07-13): ai-brain.json's discountStack keys are hand-typed
+    ("Target") while a caller's retailer string (source-connector-derived, or
+    normalize.guess_retailer()) isn't guaranteed to match that exact casing — an exact-string
+    miss used to silently fall back to a fabricated 0% stack rather than the real configured one."""
+    with patch.object(brain_config, "_load_brain", return_value={
+        "dealFinder": {"discountStack": {"Target": {"cashbackPct": 0.05, "giftCardPct": 0.02}}}
+    }):
+        assert brain_config.discount_stack("target") == {"cashback_pct": 0.05, "giftcard_pct": 0.02}
+        assert brain_config.discount_stack("TARGET") == {"cashback_pct": 0.05, "giftcard_pct": 0.02}
+        assert brain_config.discount_stack(" Target ") == {"cashback_pct": 0.05, "giftcard_pct": 0.02}
+
+
 def test_deal_finder_block_degrades_to_empty_dict_on_bad_path():
     with patch.object(brain_config, "_BRAIN_PATH", "Z:/definitely/does/not/exist.json"):
         assert brain_config.deal_finder_block() == {}
@@ -248,6 +261,118 @@ def test_upsert_deal_strips_007_columns_on_pre_migration_insert():
     assert result == 9
     retried_body = mock_requests.post.call_args_list[-1][1]["json"]
     assert "source_signal" not in retried_body and "extraction_confidence" not in retried_body
+
+
+# ---------------------------------------------------------------------------
+# upsert_deal_match / find_deal_match / update_deal_status / get_deals_by_status /
+# get_deal_matches_ready_to_apply / update_lead_source (Sourcing & Review-Queue Plan Phase 2.2/
+# 2.3, 2026-07-13)
+# ---------------------------------------------------------------------------
+
+def test_get_deals_by_status_queries_the_given_status():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.return_value = _mock_response([{"id": 1, "status": "new"}])
+        result = db.get_deals_by_status("new", limit=50)
+    assert result == [{"id": 1, "status": "new"}]
+    url = mock_requests.get.call_args[0][0]
+    assert "status=eq.new" in url
+
+
+def test_update_deal_status_patches_status_only():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.patch.return_value = _mock_response({}, status=204)
+        ok = db.update_deal_status(7, "matched")
+    assert ok is True
+    url = mock_requests.patch.call_args[0][0]
+    assert "deals?id=eq.7" in url
+    assert mock_requests.patch.call_args[1]["json"] == {"status": "matched"}
+
+
+def test_find_deal_match_returns_none_when_no_existing_row():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.return_value = _mock_response([])
+        assert db.find_deal_match(1, "B000") is None
+
+
+def test_upsert_deal_match_inserts_when_no_existing_row():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.return_value = _mock_response([])  # find_deal_match: no existing row
+        mock_requests.post.return_value = _mock_response([{"id": 5}])
+        result = db.upsert_deal_match(1, "B000", 0.7, "title", pack_match=True, llm_reason="x")
+    assert result == 5
+    body = mock_requests.post.call_args[1]["json"]
+    assert body["deal_id"] == 1 and body["asin"] == "B000" and body["confidence"] == 0.7
+    assert "human_verdict" not in body  # never written by the matcher, only by human review
+
+
+def test_upsert_deal_match_patches_when_row_already_exists():
+    """Idempotency here is APPLICATION-level (no unique constraint on deal_matches) — a re-run
+    of matcher.run() on the same (deal_id, asin) pair must update, not duplicate."""
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.return_value = _mock_response([{"id": 42, "asin": "B000"}])
+        mock_requests.patch.return_value = _mock_response({}, status=204)
+        result = db.upsert_deal_match(1, "B000", 0.8, "title")
+    assert result == 42
+    mock_requests.post.assert_not_called()
+    url = mock_requests.patch.call_args[0][0]
+    assert "deal_matches?id=eq.42" in url
+
+
+def test_upsert_deal_match_without_asin_is_a_noop():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        result = db.upsert_deal_match(1, None, 0.5, "title")
+    assert result is None
+    mock_requests.get.assert_not_called()
+    mock_requests.post.assert_not_called()
+
+
+def test_get_deal_matches_ready_to_apply_filters_on_verdict_or_confidence():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.get.return_value = _mock_response([{"id": 1, "asin": "B000"}])
+        result = db.get_deal_matches_ready_to_apply(0.9, limit=10)
+    assert result == [{"id": 1, "asin": "B000"}]
+    url = mock_requests.get.call_args[0][0]
+    assert "human_verdict.eq.approve" in url and "confidence.gte.0.9" in url
+    assert "deals(*)" in url  # embeds the parent deal (price_current/retailer/url)
+
+
+def test_update_lead_source_patches_by_asin():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.patch.return_value = _mock_response({}, status=204)
+        ok = db.update_lead_source("B000", 10.0, "Target", "https://x", 5.0, 0.5)
+    assert ok is True
+    url = mock_requests.patch.call_args[0][0]
+    assert "leads?asin=eq.B000" in url
+    body = mock_requests.patch.call_args[1]["json"]
+    assert body == {"buy_cost": 10.0, "source_store": "Target", "source_url": "https://x",
+                    "profit": 5.0, "roi": 0.5}
+
+
+def test_update_lead_source_omits_profit_roi_when_none():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.patch.return_value = _mock_response({}, status=204)
+        db.update_lead_source("B000", 10.0, "Target", "https://x", None, None)
+    body = mock_requests.patch.call_args[1]["json"]
+    assert "profit" not in body and "roi" not in body
+
+
+def test_deal_match_functions_noop_when_supabase_disabled():
+    with patch.object(db, "SUPA", ""), patch.object(db, "KEY", ""):
+        assert db.get_deals_by_status() == []
+        assert db.update_deal_status(1, "matched") is False
+        assert db.find_deal_match(1, "B000") is None
+        assert db.upsert_deal_match(1, "B000", 0.5, "title") is None
+        assert db.get_deal_matches_ready_to_apply(0.9) == []
+        assert db.update_lead_source("B000", 1.0, "x", "y", 1.0, 1.0) is False
 
 
 if __name__ == "__main__":

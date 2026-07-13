@@ -53,8 +53,20 @@ def price_sanity_ratio() -> float:
 def discount_stack(retailer: str) -> Dict[str, float]:
     """Manually-maintained cashback/gift-card discount for a retailer (no API exists for
     these rates — see ai-brain.json dealFinder.discountStack's source note). A retailer with
-    no entry yet, or explicit nulls, means "no stack known" -> 0%, never a fabricated default."""
-    stack = deal_finder_block().get("discountStack", {}).get(retailer, {}) or {}
+    no entry yet, or explicit nulls, means "no stack known" -> 0%, never a fabricated default.
+
+    Matched case-insensitively (code review, 2026-07-13): the brain's discountStack keys are
+    hand-typed ("Walmart", "Best Buy", ...) while a `retailer` value at the call site can come
+    from a source connector or normalize.guess_retailer(), whose casing isn't guaranteed to
+    match exactly — an exact-string miss here silently returns "no stack known" (0%) rather
+    than erroring, which would understate a lead's real profit/ROI with no signal it happened."""
+    stack_block = deal_finder_block().get("discountStack", {}) or {}
+    retailer_key = (retailer or "").strip().lower()
+    stack = {}
+    for key, value in stack_block.items():
+        if isinstance(value, dict) and key.strip().lower() == retailer_key:
+            stack = value
+            break
     return {
         "cashback_pct": stack.get("cashbackPct") or 0.0,
         "giftcard_pct": stack.get("giftCardPct") or 0.0,

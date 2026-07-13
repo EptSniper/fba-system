@@ -188,6 +188,16 @@ CATEGORY_LOOKUP_TOKENS = 1     # category_lookup() — UNVERIFIED, conservative 
                                 # precedent as SELLER_QUERY_TOKENS_ESTIMATE above); this is a
                                 # one-time-per-cache-miss call, guarded anyway per this module's
                                 # single-choke-point philosophy (audit finding, 2026-07-08).
+UPC_LOOKUP_TOKENS_PER_CODE = 1  # Deal Finder Build Plan Prompt D2 sec 3 step 2's documented rate
+                                # ("Keepa code query (1 token, batch 100)") — UNVERIFIED live: as
+                                # of this writing zero collected `deals` rows carry a UPC (every
+                                # active source is UPC-less RSS/aggregate; only the not-yet-keyed
+                                # Best Buy connector and best-effort JSON-LD clearance parsing can
+                                # ever populate one), so this path has never been exercised
+                                # against a real Keepa response. Guarded anyway per this module's
+                                # single-choke-point philosophy — activates the moment a real UPC
+                                # shows up, same "build it correctly even though it's dormant"
+                                # precedent as SELLER_QUERY_TOKENS_ESTIMATE.
 
 _guard_lock = threading.Lock()
 _guard_stats = {"skips": 0, "caps": 0}
@@ -666,6 +676,84 @@ def _search_asins(terms: List[str], limit: int) -> List[str]:
         if len(out) >= limit:
             break
     return out[:limit]
+
+
+def search_by_term(term: str, limit: int = 10, api=None) -> List[str]:
+    """Public, single-term wrapper around the same product-SEARCH endpoint _search_asins() uses
+    for the brand-seed Product Finder fallback — generalized for the Deal Finder matcher
+    (scout/deals/matcher.py), which searches an arbitrary deal's normalized core_title+brand,
+    not a known-good brand seed. One term = one flat SEARCH_TOKENS_PER_TERM cost (not a batch),
+    so this is guarded with _guard_flat rather than _guard_batch. Returns [] (never raises) if
+    the term is empty, Keepa is unconfigured, or the bank can't cover the flat cost."""
+    term = (term or "").strip()
+    if not term or not _KEEPA or not config.KEEPA_KEY:
+        return []
+    api = api or get_client()
+    if not _guard_flat(api, SEARCH_TOKENS_PER_TERM, "deal-match title search"):
+        return []
+    return _search_asins([term], limit)
+
+
+def upc_lookup(codes: List[str], api=None) -> Dict[str, List[str]]:
+    """UPC/EAN -> candidate ASIN(s) via Keepa's `code` product-lookup parameter (Deal Finder
+    Build Plan Prompt D2 sec 3 step 2: "Keepa code query (1 token, batch 100) primary"). Returns
+    {code: [asin, ...]} for every code that resolved to at least one product; a code with no
+    match is simply absent from the returned dict (never a fabricated empty-list-vs-missing
+    distinction the caller would have to guess at).
+
+    A UPC hit is a CANDIDATE, not a verdict — Amazon documents UPC<->ASIN as NOT 1:1 (multipacks,
+    the parent-ASIN-returned case), so the matcher must still compare extracted pack/size
+    against each candidate's own attributes before treating it as a match.
+
+    UNVERIFIED LIVE (see UPC_LOOKUP_TOKENS_PER_CODE's comment above) — no collected deal has ever
+    carried a real UPC to exercise this against. Uses the raw REST endpoint (matching
+    _search_asins()'s already-established fallback pattern) rather than the `keepa` package's
+    api.query(), since batch UPC/code lookup support is not confirmed for the pinned package
+    version. Never raises — a failed batch degrades to {}."""
+    codes = [c for c in (codes or []) if c]
+    if not codes or not config.KEEPA_KEY:
+        return {}
+    api = api or (get_client() if _KEEPA else None)
+    # Keepa bills a code batch like any other product request — guard it the same way as every
+    # other request-making function in this file (the single choke point).
+    if api is not None:
+        capped_n, skip = _guard_batch(api, len(codes), UPC_LOOKUP_TOKENS_PER_CODE, "UPC lookup")
+        if skip:
+            return {}
+        codes = codes[:capped_n]
+    import requests as _rq
+    try:
+        r = _rq.get("https://api.keepa.com/product",
+                    params={"key": config.KEEPA_KEY, "domain": config.KEEPA_DOMAIN,
+                            "code": ",".join(codes)}, timeout=60)
+        data = r.json() or {}
+        products = data.get("products") or []
+        datalake.archive("keepa", f"upc:{','.join(codes)}", "product_by_code",
+                         [{k: p.get(k) for k in ("asin", "title", "brand")} for p in products],
+                         tokens_consumed=data.get("tokensConsumed"))
+    except Exception as e:
+        print(f"[keepa] UPC lookup failed for {len(codes)} code(s): {redact_err(e)}")
+        return {}
+    out: Dict[str, List[str]] = {}
+    single_code = codes[0] if len(codes) == 1 else None
+    for p in products:
+        asin = p.get("asin")
+        if not asin:
+            continue
+        # Keepa echoes back which identifier(s) matched this product; read defensively since the
+        # exact key is unconfirmed for this pinned version (see the docstring's UNVERIFIED note).
+        matched = p.get("upcList") or p.get("eanList") or []
+        hit_codes = [c for c in codes if c in matched]
+        if not hit_codes and single_code:
+            # The one-code-in-the-request case is unambiguous even if Keepa's response doesn't
+            # echo the identifier back. A multi-code batch with no echoed match is intentionally
+            # left unattributed rather than guessed at (a coincidental equal product/code count
+            # is not proof of a 1:1 order correspondence) — better an honest miss than a silent
+            # mismatch feeding a wrong ASIN into the matcher.
+            hit_codes = [single_code]
+        for code in hit_codes:
+            out.setdefault(code, []).append(asin)
+    return out
 
 
 def redact_err(e: Exception) -> str:

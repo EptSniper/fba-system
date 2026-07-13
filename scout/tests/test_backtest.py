@@ -297,6 +297,51 @@ class WindowingAndLabelTest(unittest.TestCase):
         self.assertNotIn("verdict", rows[0]["features_snapshot"])  # leakage-safe projection
 
 
+class ConsistentLabelTest(unittest.TestCase):
+    """ML rigor directive (2026-07-13, Codex's audit + Cowork's corrected walk-forward):
+    consistent_label() is the ONE place both label_at() (write time) and labels.py's
+    _from_backtest() (read time, recomputing a historical row's label from its stored
+    est_profit/landed_cost rather than trusting a possibly-stale-version would_have_profited
+    column) call this exact formula -- these tests exercise it directly, isolated from the full
+    windowing/history machinery label_at() also does."""
+
+    def test_the_exact_mixed_cohort_case_old_bar_cleared_new_bar_missed(self):
+        """The precise scenario that made the first walk-forward's AUC untrustworthy: a row
+        whose stored would_have_profited was computed under the OLD `est_profit > 0` definition
+        (True here) but fails the CURRENT profit>=$3 AND roi>=30% gate -- consistent_label() must
+        say False regardless of what the stale stored column says, since it never reads that
+        column at all."""
+        # est_profit=1.50, landed_cost=10.0 -> roi=0.15: positive $ (old bar) but < $3 profit
+        # AND < 30% ROI (new bar) -- would have stored would_have_profited=True under v1.
+        self.assertFalse(bt.consistent_label(1.50, 10.0, "toys"))
+
+    def test_clears_both_bars(self):
+        # est_profit=5.0, landed_cost=10.0 -> roi=0.50: clears $3 and 30%.
+        self.assertTrue(bt.consistent_label(5.0, 10.0, "toys"))
+
+    def test_grocery_exception_matches_label_at(self):
+        # est_profit=3.0, landed_cost=12.0 -> roi=0.25: clears grocery's 25% floor, misses 30%.
+        self.assertTrue(bt.consistent_label(3.0, 12.0, "grocery"))
+        self.assertFalse(bt.consistent_label(3.0, 12.0, "toys"))
+
+    def test_none_for_missing_or_invalid_inputs(self):
+        self.assertIsNone(bt.consistent_label(None, 10.0, "toys"))
+        self.assertIsNone(bt.consistent_label(5.0, None, "toys"))
+        self.assertIsNone(bt.consistent_label(5.0, 0.0, "toys"))
+        self.assertIsNone(bt.consistent_label(5.0, -10.0, "toys"))
+
+    def test_label_at_and_consistent_label_agree_on_the_same_window(self):
+        """label_at() must produce would_have_profited via the SAME call this test makes
+        directly -- a regression guard against the two ever computing the formula separately
+        again (the exact drift risk extracting a shared function exists to prevent)."""
+        as_of = BASE + 120
+        price = [(BASE + d, 20.0) for d in range(180)] + [(as_of + 60, 40.0)]
+        hist = {"price": sorted(price), "offers": [], "sales_rank": [], "amazon": []}
+        lbl = bt.label_at(hist, as_of, landed_cost=20.0, weight_lb=1.0, category="toys")
+        self.assertEqual(lbl["would_have_profited"],
+                         bt.consistent_label(lbl["est_profit"], 20.0, "toys"))
+
+
 class SamplerBudgetPreCheckTest(unittest.TestCase):
     """ML audit fix (2026-07-09): both samplers used to check `spent >= budget` AFTER the
     ~10-token spend — a 1-9 token leftover budget still bought one full search term, silently

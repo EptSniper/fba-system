@@ -23,6 +23,7 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
+import backtest
 import db
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -154,10 +155,21 @@ def _from_backtest() -> List[Dict[str, Any]]:
     2026-07-06 — a seam test caught these being silently dropped here even though the write side,
     scout/backtest.py's build_rows_for_asin, always sets them): without this,
     train_ranker.source_breakdown() would group every backtest row under 'n/a' and the Session
-    55 sampling overhaul's onpolicy-vs-explore-vs-dealfeed report section could never render."""
+    55 sampling overhaul's onpolicy-vs-explore-vs-dealfeed report section could never render.
+
+    ML rigor directive (2026-07-13): the label is now RECOMPUTED at read time via
+    backtest.consistent_label(est_profit, landed_cost, category) instead of trusting the row's
+    own stored would_have_profited column directly. Rows written before the 2026-07-13 label fix
+    (Session 64) carry a would_have_profited value computed under the OLD `est_profit > 0`
+    definition; reading them as-is would mix two label versions in the same training set — the
+    exact cohort-mixing artifact Codex's audit found had inflated the first walk-forward's AUC.
+    Recomputing from est_profit/landed_cost (both stored per row, present since backtest_rows'
+    original migration) gives every row the SAME, current definition without an in-place UPDATE
+    on the live table — a bulk production-data mutation that was considered and explicitly
+    declined in favor of this read-time approach."""
     rows = []
     for b in db.all_backtest_rows():
-        label = b.get("would_have_profited")
+        label = backtest.consistent_label(b.get("est_profit"), b.get("landed_cost"), b.get("category"))
         if label is None:
             continue
         snapshot = b.get("features_snapshot") or {}

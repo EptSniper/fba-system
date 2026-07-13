@@ -162,6 +162,66 @@ def test_bronze_without_feature_snapshot_excluded_from_bronze_rows():
 
 
 # ---------------------------------------------------------------------------
+# Backtest tier -- read-time consistent-label recompute (ML rigor directive, 2026-07-13)
+# ---------------------------------------------------------------------------
+
+def _backtest_row(asin, est_profit, landed_cost, would_have_profited_stored, category="toys"):
+    """A raw backtest_rows record as db.all_backtest_rows() would return it -- crucially
+    carrying a would_have_profited value that may have been computed under the OLD label
+    definition (the exact mixed-cohort scenario Codex's audit found)."""
+    return {
+        "asin": asin, "simulation_date": "2026-06-01",
+        "features_snapshot": {"asin": asin, "price": 20.0, "offers": 5},
+        "would_have_profited": would_have_profited_stored,
+        "est_profit": est_profit, "landed_cost": landed_cost,
+        "label_quality": "backtest", "sample_source": "dealfeed",
+        "category": category, "ip_risk": False,
+    }
+
+
+def test_backtest_tier_ignores_a_stale_v1_stored_label_and_recomputes():
+    """The core regression this fix exists for: a row whose STORED would_have_profited is True
+    (computed under the old est_profit>0 definition) but whose economics fail the CURRENT
+    profit>=$3-and-roi>=30% gate must be read back as label=False -- proving _from_backtest()
+    recomputes from est_profit/landed_cost rather than trusting the stored column, without any
+    UPDATE ever touching backtest_rows itself."""
+    row = _backtest_row("B0STALE", est_profit=1.50, landed_cost=10.0,
+                        would_have_profited_stored=True)  # roi=0.15, stale v1 label was True
+    with patch.object(db, "all_backtest_rows", return_value=[row]):
+        result = labels.assemble_training_rows(include_backtest=True)
+    backtest_rows = [r for r in result["rows"] if r["source"] == "backtest"]
+    assert len(backtest_rows) == 1
+    assert backtest_rows[0]["label"] is False  # NOT the stale stored True
+
+
+def test_backtest_tier_agrees_with_stored_label_when_it_was_already_v2():
+    row = _backtest_row("B0FRESH", est_profit=5.0, landed_cost=10.0,
+                        would_have_profited_stored=True)  # roi=0.50, genuinely clears the gate
+    with patch.object(db, "all_backtest_rows", return_value=[row]):
+        result = labels.assemble_training_rows(include_backtest=True)
+    backtest_rows = [r for r in result["rows"] if r["source"] == "backtest"]
+    assert backtest_rows[0]["label"] is True
+
+
+def test_backtest_tier_skips_rows_with_no_usable_economics():
+    row = _backtest_row("B0NOCOST", est_profit=None, landed_cost=None,
+                        would_have_profited_stored=None)
+    with patch.object(db, "all_backtest_rows", return_value=[row]):
+        result = labels.assemble_training_rows(include_backtest=True)
+    backtest_rows = [r for r in result["rows"] if r["source"] == "backtest"]
+    assert backtest_rows == []
+
+
+def test_backtest_tier_grocery_exception_applies_at_read_time_too():
+    row = _backtest_row("B0GROCERY", est_profit=3.0, landed_cost=12.0,
+                        would_have_profited_stored=None, category="grocery")  # roi=0.25
+    with patch.object(db, "all_backtest_rows", return_value=[row]):
+        result = labels.assemble_training_rows(include_backtest=True)
+    backtest_rows = [r for r in result["rows"] if r["source"] == "backtest"]
+    assert backtest_rows[0]["label"] is True  # clears grocery's 0.25 floor, would miss 0.30
+
+
+# ---------------------------------------------------------------------------
 # Linkage round-trip (local ledger, ASIN-matched lead -> outcome)
 # ---------------------------------------------------------------------------
 

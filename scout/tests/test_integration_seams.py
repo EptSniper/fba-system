@@ -108,6 +108,14 @@ class BackfillFingerprintSeamTest(unittest.TestCase):
 
         raw_row_before = {
             "asin": "B0SEAM02", "simulation_date": as_of.isoformat(), "would_have_profited": True,
+            # ML rigor directive (2026-07-13): labels.py's _from_backtest() now derives the label
+            # at READ time from est_profit/landed_cost (backtest.consistent_label()) instead of
+            # trusting the stored would_have_profited column directly -- these two fields (clearly
+            # a real, positive case: roi=10/15=0.667, well past both the $3 and 30% bars) are what
+            # actually drive the label now; would_have_profited above is kept only as the OLD
+            # stored value this row would have carried, to prove the read-time recompute doesn't
+            # even look at it.
+            "est_profit": 10.0, "landed_cost": 15.0,
             "sample_source": "onpolicy", "category": "toys", "ip_risk": False,
             "features_snapshot": {"asin": "B0SEAM02", "price": 25.0, "brand": "Acme", "category": "toys"},
         }

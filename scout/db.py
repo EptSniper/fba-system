@@ -1076,9 +1076,9 @@ def upsert_backtest_rows(rows: List[Dict[str, Any]]) -> int:
 
 
 _BACKTEST_ROWS_SELECT_NEW = ("asin,simulation_date,features_snapshot,would_have_profited,"
-                             "est_profit,label_quality,sample_source,category,ip_risk")
+                             "est_profit,landed_cost,label_quality,sample_source,category,ip_risk")
 _BACKTEST_ROWS_SELECT_OLD = ("asin,simulation_date,features_snapshot,would_have_profited,"
-                             "est_profit,label_quality")
+                             "est_profit,landed_cost,label_quality")
 
 
 def all_backtest_rows(limit: int = 60000) -> List[Dict[str, Any]]:

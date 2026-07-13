@@ -252,10 +252,7 @@ def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb:
     if net is not None and landed_cost is not None:
         est_profit = round(net - landed_cost, 2)
         roi = round(est_profit / landed_cost, 4) if landed_cost > 0 else None
-        is_grocery = (category or "").strip().lower() == "grocery"
-        min_roi = config.OA_GROCERY_MIN_ROI if is_grocery else config.CRITERIA_OA["min_roi"]
-        min_profit = config.CRITERIA_OA["min_profit_per_unit"]
-        would = est_profit >= min_profit and roi is not None and roi >= min_roi
+        would = consistent_label(est_profit, landed_cost, category)
     return {
         "price_at_horizon": price_at_h,
         "offers_at_horizon": _int_or_none(offers_in_effect),
@@ -264,6 +261,32 @@ def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb:
         "would_have_profited": would,
         "censored": price_at_h is None,
     }
+
+
+def consistent_label(est_profit: Optional[float], landed_cost: Optional[float],
+                     category: Optional[str]) -> Optional[bool]:
+    """The CURRENT would_have_profited definition (profit >= CRITERIA_OA['min_profit_per_unit']
+    AND roi >= min_roi, 0.25 for grocery), derived from already-known economics rather than
+    re-simulating a window. The ONE place both label_at() (write time, above) and any reader
+    recomputing a historical row's label from its stored est_profit/landed_cost (read time —
+    labels.py's backtest tier) call this exact formula, so the two can never drift apart.
+
+    ML rigor directive (2026-07-13, per Codex's audit + Cowork's corrected walk-forward): rows
+    written before the 2026-07-13 label fix (Session 64) have a would_have_profited column that
+    may still reflect the OLD `est_profit > 0` definition — mixing that with rows written after
+    the fix, in the same training set, is exactly the label-cohort-mixing artifact that made the
+    first walk-forward's AUC untrustworthy. Rather than an in-place UPDATE on the live
+    backtest_rows table (a bulk production-data mutation Mehmet explicitly declined), a reader
+    can always get the CURRENT, consistent definition by calling this function on the row's own
+    stored est_profit/landed_cost/category — never touching the stored would_have_profited value
+    itself. Returns None (not a guess) when profit/cost aren't both known."""
+    if est_profit is None or landed_cost is None or landed_cost <= 0:
+        return None
+    roi = est_profit / landed_cost
+    is_grocery = (category or "").strip().lower() == "grocery"
+    min_roi = config.OA_GROCERY_MIN_ROI if is_grocery else config.CRITERIA_OA["min_roi"]
+    min_profit = config.CRITERIA_OA["min_profit_per_unit"]
+    return est_profit >= min_profit and roi >= min_roi
 
 
 def _fetch_trend_series(brand: Optional[str], category: Optional[str],

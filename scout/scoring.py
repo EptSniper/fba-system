@@ -525,6 +525,26 @@ def _score_oa_impl(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = None,
         score = max(0.0, round(score + adj_pts, 1))    # brand-generic listing (Masterclass: avoid)
         brand_tag += " · ⚠generic-brand"
         _adj("generic-brand", adj_pts, "Brand-generic / no real brand — avoid (Masterclass)")
+    # SOURCING_AND_QUEUE_PLAN.md Phase 1.4 (2026-07-13): price band was documented as a pass
+    # gate (ai-brain.json criteria.priceMin/priceMax) but never scored or flagged anywhere in
+    # this OA path — live-reproduced leads at $80-$191 scored 72-91 with zero price signal.
+    # Soft (matches deal-analyzer.tsx's own already-fixed design, Finding CS7): demotes the
+    # score, never a hard reject. GRADUATED, not flat (deal-exam regression, 2026-07-13): a flat
+    # penalty punished a $7 item (just $1 under the $8 floor, 257% ROI) exactly as hard as a
+    # $190 item (3x over the $60 ceiling) — the same graceful-decay shape _band_score already
+    # uses elsewhere in this file, scaled to full penalty at OA_PRICE_BAND_PENALTY_SPAN_MULT
+    # band-widths outside (see that constant's docstring for the calibration).
+    if price is not None and not (c["price_min"] <= price <= c["price_max"]):
+        band_span = (c["price_max"] - c["price_min"]) or 1
+        ref_span = band_span * max(config.OA_PRICE_BAND_PENALTY_SPAN_MULT, 0.01)
+        miss = ((c["price_min"] - price) if price < c["price_min"] else (price - c["price_max"])) / ref_span
+        severity = min(1.0, miss)
+        adj_pts = round(config.OA_ADJ_PRICE_OUT_OF_BAND * severity, 1)
+        score = max(0.0, round(score + adj_pts, 1))
+        brand_tag += f" · ⚠price-out-of-band(${price:.0f})"
+        _adj("price-out-of-band", adj_pts,
+             f"${price:.2f} is outside the ${c['price_min']:.0f}-${c['price_max']:.0f} target band "
+             f"({severity*100:.0f}% of a full band-width out)")
 
     def ok(cond): return "✓" if cond else "✗"
     # NOTE: these are SCORED checks (each contributes points to `score` above) — none of them
@@ -617,6 +637,9 @@ def risk_flags_oa(p: Dict[str, Any], criteria: Optional[Dict[str, Any]] = None) 
         flags.append("Few sellers → may be private-label/wholesale, not OA")
     if offers is not None and offers > c["max_offers"]:
         flags.append("Crowded Buy Box → price-war risk")
+    price = p.get("price")
+    if price is not None and not (c["price_min"] <= price <= c["price_max"]):
+        flags.append(f"${price:.2f} outside the ${c['price_min']:.0f}-${c['price_max']:.0f} target price band")
     if bsr is not None and bsr > c["bsr_max"]:
         flags.append("High BSR → sells slowly")
     if sales is not None and sales < c["min_monthly_sales"]:

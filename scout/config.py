@@ -196,6 +196,21 @@ OA_ADJ_IP_CLIFF: float = _f("OA_ADJ_IP_CLIFF", -20.0)
 OA_ADJ_WORST_CASE_LOSS: float = _f("OA_ADJ_WORST_CASE_LOSS", -10.0)
 OA_ADJ_NO_FEATURED_OFFER: float = _f("OA_ADJ_NO_FEATURED_OFFER", -8.0)
 OA_ADJ_GENERIC_BRAND: float = _f("OA_ADJ_GENERIC_BRAND", -8.0)
+# SOURCING_AND_QUEUE_PLAN.md Phase 1.4 (2026-07-13, Mehmet-approved): ai-brain.json's
+# criteria.priceMin/priceMax ($8-$60) is documented as "one of the 7 pass gates" but scoring.py's
+# OA path (OA_WEIGHTS/oa_hard_reject) never referenced it at all -- live-reproduced leads at
+# $80-$191/57-64 offers scored 72-91 and sat in the review queue with zero price signal. Soft,
+# matching control-center/components/deal-analyzer.tsx's own already-fixed design (Finding CS7):
+# an out-of-band price is a scored penalty + risk flag, never a hard reject -- scoring.py still
+# doesn't hard-gate on price, only now it isn't silently blind to it either.
+OA_ADJ_PRICE_OUT_OF_BAND: float = _f("OA_ADJ_PRICE_OUT_OF_BAND", -8.0)
+# The reference span for the graduated decay below is this many band-widths beyond the
+# boundary before the penalty reaches full magnitude — deal-exam-calibrated (2026-07-13):
+# span_mult=1 punished a $7 item (just $1 under the $8 floor, 257% ROI, narrator-endorsed) and
+# an $84/$96.50 item (narrator: "healthy"/"good listing") as hard as a genuinely bad $190
+# outlier. 3 band-widths ($156 beyond either boundary) keeps real, moderately-over-band deals
+# in human review while a truly extreme outlier ($190+) still draws a real ~-7pt penalty.
+OA_PRICE_BAND_PENALTY_SPAN_MULT: float = _f("OA_PRICE_BAND_PENALTY_SPAN_MULT", 3.0)
 
 # IP-cliff shape: a listing is "cliffed" when its 90-day avg offer count was once >= this
 # (a real crowd existed) and its CURRENT offer count has collapsed to <= this.
@@ -220,7 +235,7 @@ def _load_oa_criteria_from_brain() -> None:
     global TRIAGE_STRESSED_PRICE_FACTOR
     global OA_ADJ_FRIENDLY_BRAND, OA_ADJ_PRICE_SPIKE, OA_ADJ_PRICE_CAUTION, OA_ADJ_OFFERS_RISING
     global OA_ADJ_AMAZON_SHARES_BUYBOX, OA_ADJ_IP_CLIFF, OA_ADJ_WORST_CASE_LOSS
-    global OA_ADJ_NO_FEATURED_OFFER, OA_ADJ_GENERIC_BRAND
+    global OA_ADJ_NO_FEATURED_OFFER, OA_ADJ_GENERIC_BRAND, OA_ADJ_PRICE_OUT_OF_BAND
     global OA_IP_CLIFF_MIN_AVG_OFFERS, OA_IP_CLIFF_MAX_CURRENT_OFFERS, OA_WORST_CASE_LOSS_BAR
     global SCORE_THRESHOLD, TOP_N, ASSUMED_DAILY_TOKENS
     global FUEL_SURCHARGE, OA_PREP_COST, OA_INBOUND_SHIP_PER_LB
@@ -316,7 +331,7 @@ def _load_oa_criteria_from_brain() -> None:
             "priceCaution": "OA_ADJ_PRICE_CAUTION", "offersRising": "OA_ADJ_OFFERS_RISING",
             "amazonSharesBuybox": "OA_ADJ_AMAZON_SHARES_BUYBOX", "ipCliff": "OA_ADJ_IP_CLIFF",
             "worstCaseLoss": "OA_ADJ_WORST_CASE_LOSS", "noFeaturedOffer": "OA_ADJ_NO_FEATURED_OFFER",
-            "genericBrand": "OA_ADJ_GENERIC_BRAND",
+            "genericBrand": "OA_ADJ_GENERIC_BRAND", "priceOutOfBand": "OA_ADJ_PRICE_OUT_OF_BAND",
         }
         if isinstance(adj, dict):
             for bk, var_name in _adj_map.items():

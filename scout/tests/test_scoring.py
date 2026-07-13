@@ -161,6 +161,50 @@ def test_no_featured_offer_penalized():
     assert any("buy box" in f.lower() or "featured offer" in f.lower() for f in scoring.risk_flags_oa(nb))
 
 
+def test_price_out_of_band_penalized_and_flagged():
+    # SOURCING_AND_QUEUE_PLAN.md Phase 1.4: CRITERIA_OA['price_min']/['price_max'] ($8-$60) was
+    # documented as a pass gate but scoring.py's OA path never checked it at all -- live-
+    # reproduced leads at $80-$191 scored 72-91 with zero price signal.
+    over = _base(price=190.0)
+    assert scoring.score_product_oa(over)[0] < scoring.score_product_oa(_base())[0]
+    assert any("price" in f.lower() and "band" in f.lower() for f in scoring.risk_flags_oa(over))
+    ex = scoring.explain_oa(over)
+    assert any(a["name"] == "price-out-of-band" for a in ex["adjustments"])
+
+
+def test_price_out_of_band_is_soft_never_a_hard_reject():
+    # Matches deal-analyzer.tsx's own design (Finding CS7): out-of-band price demotes score,
+    # it must never appear in oa_hard_reject's unconditional 5 reasons.
+    over = _base(price=190.0)
+    assert scoring.oa_hard_reject(over) is None
+
+
+def _price_adj_points(price):
+    adjustments = scoring.explain_oa(_base(price=price))["adjustments"]
+    match = [a["points"] for a in adjustments if a["name"] == "price-out-of-band"]
+    return match[0] if match else 0.0
+
+
+def test_price_out_of_band_penalty_is_graduated_not_flat():
+    # A narrow miss ($1 under the $8 floor) must cost far less than a wild outlier ($190) --
+    # deal-exam regression, 2026-07-13: a flat penalty crushed real narrator-endorsed deals
+    # (a $7/257%-ROI item, an $84 item, a $96.50 item all called "healthy"/"good" in the
+    # sourced transcripts) exactly as hard as a genuinely bad $190 candidate. Isolates the
+    # price-out-of-band adjustment itself (not the total score, which also swings with price
+    # via the derived profit/roi components).
+    narrow_miss = _price_adj_points(7.0)
+    wild_outlier = _price_adj_points(190.0)
+    assert narrow_miss > wild_outlier  # both negative-or-zero; narrow miss is the smaller penalty
+    assert narrow_miss > -1.0  # a $1 miss should barely register
+    assert wild_outlier < -5.0  # a genuinely extreme outlier should still draw a real penalty
+
+
+def test_price_in_band_gets_no_penalty():
+    ex = scoring.explain_oa(_base(price=20.0))
+    assert not any(a["name"] == "price-out-of-band" for a in ex["adjustments"])
+    assert not any("target price band" in f.lower() for f in scoring.risk_flags_oa(_base(price=20.0)))
+
+
 # --- Phase 1, Prompt 1.2: category fees, grocery ROI exception, offer-band bonus, explain-why ---
 
 def test_category_fee_selection():

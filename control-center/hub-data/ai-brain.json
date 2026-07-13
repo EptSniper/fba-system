@@ -146,7 +146,8 @@
       "worstCaseLoss": -10,
       "noFeaturedOffer": -8,
       "genericBrand": -8,
-      "source": "Point deltas applied on top of the 0-100 base score (scout/scoring.py's OA_WEIGHTS) — none of these are gates; a candidate can trigger several and still clear the review threshold. Values are the scout's original hardcoded magnitudes, moved here so tuning is a brain edit, not a code edit (Code Review 2026-07-02, Finding S5). scout/config.py reads this block with code fallbacks matching these exact numbers."
+      "priceOutOfBand": -8,
+      "source": "Point deltas applied on top of the 0-100 base score (scout/scoring.py's OA_WEIGHTS) — none of these are gates; a candidate can trigger several and still clear the review threshold. Values are the scout's original hardcoded magnitudes, moved here so tuning is a brain edit, not a code edit (Code Review 2026-07-02, Finding S5). scout/config.py reads this block with code fallbacks matching these exact numbers. priceOutOfBand added 2026-07-13 (SOURCING_AND_QUEUE_PLAN.md Phase 1.4, Mehmet-approved 'I give full permission for everything'): criteria.priceMin/priceMax ($8-$60) was documented as a pass gate but scoring.py's OA path never checked it — live-reproduced leads at $80-$191 scored 72-91 with zero price signal. GRADUATED, not flat (deal-exam-calibrated, scout/config.py's OA_PRICE_BAND_PENALTY_SPAN_MULT=3): a flat -8 crushed real narrator-endorsed deals ($7/257%-ROI, $84, $96.50, all called 'healthy'/'good' in sourced transcripts) as hard as a genuinely bad $190 outlier — full magnitude only applies 3 band-widths ($156) beyond either boundary."
     },
     "ipCliffShape": {
       "minAvgOffers": 8,

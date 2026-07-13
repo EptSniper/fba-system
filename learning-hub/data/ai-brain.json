@@ -1,6 +1,6 @@
 {
   "$comment": "SINGLE SOURCE OF TRUTH for the AI's brain. Both the item finder/rater (scout/) and the control center read this. When Mehmet feeds new info and Claude distills it, this file is updated -> the scout and the dashboard both update. See ai-system/ingestion-pipeline.md.",
-  "updated": "2026-07-11",
+  "updated": "2026-07-13",
   "model": "online arbitrage (OA)",
   "criteria": {
     "bsrMax": 200000,
@@ -288,7 +288,6 @@
       "strategy": "category-stratified",
       "categories": [
         "toys",
-        "kitchen",
         "pet",
         "beauty",
         "tools",
@@ -348,7 +347,7 @@
         "source": "APPROVED by Mehmet 2026-07-10: no-cost independent-sample acceleration. Preserve tier 1 shadow rechecks, but while the persisted backtest backlog has at least minPendingAsins, skip tier 2 hint-led live scanning and direct the remaining observed Keepa bank to unique-ASIN history pulls. The switch is reversible, never changes hard gates/model promotion, and never buys anything. targetDispatchMinutes and minimumDispatchGapMinutes configure the local GitHub workflow dispatcher; GitHub cron remains a best-effort fallback."
       },
       "capsSource": "APPROVED by Mehmet 2026-07-10 (brain-proposals.md, [ml-debias] 2026-07-09) — assembly-time training caps + concentration alarms, read by scout/train_ranker.py sampling_caps_config(); collection/sampling config, NOT buy gates. Values match the code defaults that were already live, so approval made them brain-sourced with zero behavior change on approval day.",
-      "categoriesSource": "APPROVED by Mehmet 2026-07-10 (brain-proposals.md, [ml-breadth] 2026-07-10) — expanded from 10 toward ML_DEBIAS_PLAN.md's full seed rotation; keepa_client._CATEGORY_MAP carries roots for all entries; an unresolvable category degrades to an unfiltered pull with a logged warning, never a wrong filter."
+      "categoriesSource": "APPROVED by Mehmet 2026-07-10 (brain-proposals.md, [ml-breadth] 2026-07-10) — expanded from 10 toward ML_DEBIAS_PLAN.md's full seed rotation; keepa_client._CATEGORY_MAP carries roots for all entries; an unresolvable category degrades to an unfiltered pull with a logged warning, never a wrong filter. 2026-07-13 (Keepa throughput plan ML-crew review, fba-scout-strategist; Mehmet-approved 'I APPROVE EVERYTHING'): removed 'kitchen' — live-verified 17/18 categories resolve to a real Keepa root; 'kitchen' never has and never will as mapped. keepa_client._CATEGORY_MAP's 'kitchen & dining' -> 'kitchen' entry names a Keepa browse-node that is not one of Amazon's TOP-LEVEL roots (resolve_category_ids only ever calls api.category_lookup(0), which returns roots only) — 'Kitchen & Dining' lives under 'Home & Kitchen', which the existing 'home' entry already resolves and covers. This closed a permanent per-run token-retry tax (the cache-completeness check could never be satisfied while an unresolvable category stayed configured, so harvest() re-attempted the guarded category_lookup every call). No coverage lost."
     }
   },
   "dealSourcing": {

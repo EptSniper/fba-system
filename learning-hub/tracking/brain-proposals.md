@@ -226,9 +226,21 @@ compliance-driven entry and the knowledge-check code fix aren't UI-draftable pro
   unfiltered pulls, same as before. Alternative considered and rejected: keep `kitchen` configured but this
   wastes tokens every single run forever, with no offsetting benefit, since it can never resolve as mapped.
   (sample size: 17/18 categories checked live via `deals_firehose._fetch_remote_category_cache()`,
-  confidence: high — key: `learning.sampling.categories`)
+  confidence: high — key: `learning.sampling.categories`) — **APPLIED 2026-07-13**
 
-**1 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+**APPROVED by Mehmet ("I APPROVE EVERYTHING") and applied** via `fba-brain-updater`: `learning.sampling.categories`
+now 17 entries (kitchen removed), `categoriesSource` note updated with the removal rationale, `updated` bumped
+to 2026-07-13. JSON validated; `control-center/hub-data/` re-synced; `scout/deals_firehose.sampling_config()`
+confirmed loading the 17-entry list cleanly.
+
+---
+
+## 2026-07-13 02:00 UTC — proposal run
+
+- **[data-driven]** Average Keepa token usage over 7 run(s) is 60/day, vs the System Blueprint's assumed ~1500/day. (sample size: 7, confidence: worth reviewing)
+- **[knowledge-driven]** Ran a knowledge-base check for current OA thresholds — read the RAG answer directly (`python knowledge-rag/ask.py "current BSR ROI profit threshold"`) and compare by eye against ai-brain.json. (sample size: 0, confidence: manual review suggested)
+
+**2 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
 
 ---
 

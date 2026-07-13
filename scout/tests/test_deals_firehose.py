@@ -565,6 +565,20 @@ class SellerPoolTest(unittest.TestCase):
         self.assertFalse(df.record_seen_sellers([]))
         self.assertFalse(df.record_seen_sellers([None, ""]))
 
+    def test_record_seen_sellers_excludes_amazons_own_seller_id(self):
+        # fba-scout-strategist / fba-code-reviewer (2026-07-13): Amazon itself is a frequent
+        # buybox_seller on enrich()-scanned candidates but is not a real 3P storefront -- must
+        # never enter the pool sample_asins_storefront() later calls seller_asins() against.
+        self.assertFalse(df.record_seen_sellers([df.config.AMAZON_SELLER_ID]))
+        with mock.patch.object(df, "_fetch_remote_seller_pool", return_value=[]), \
+             mock.patch("requests.post") as mpost:
+            mpost.return_value.raise_for_status = lambda: None
+            with mock.patch.dict(os.environ, {"SUPABASE_URL": "https://example.test",
+                                              "SUPABASE_SERVICE_KEY": "fake"}):
+                df.record_seen_sellers([df.config.AMAZON_SELLER_ID, "REAL_SELLER"])
+        posted = json.loads(mpost.call_args.kwargs["data"])
+        self.assertEqual(posted, ["REAL_SELLER"])
+
     def test_record_seen_sellers_merges_dedupes_and_caps(self):
         with mock.patch.object(df, "_fetch_remote_seller_pool", return_value=["S1", "S2"]), \
              mock.patch("requests.post") as mpost:

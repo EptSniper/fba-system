@@ -109,7 +109,11 @@ def _tier1_reserve_fraction() -> float:
     the brain key is absent or invalid — never raises."""
     try:
         v = (backtest.sampling_config() or {}).get("tier1ReserveFraction")
-        if isinstance(v, (int, float)) and 0 < v <= 1:
+        # fba-code-reviewer (2026-07-13): bool is a subclass of int in Python, so an accidental
+        # `true` in the brain would otherwise pass this check as 1.0 -- reserving the ENTIRE bank
+        # for tier 1 and starving tiers 2/3. Same guard already applied to minPendingAsins in
+        # _corpus_acceleration_status() above; applying it here too for consistency.
+        if isinstance(v, (int, float)) and not isinstance(v, bool) and 0 < v <= 1:
             return float(v)
     except Exception as e:
         log.warning("tier1ReserveFraction brain read failed; using default %.2f: %s",
@@ -246,6 +250,18 @@ def _find_no_wait(api=None, brand_seeds=None, limit=None):
 def _firehose_no_wait(api, pages=None):
     import deals_firehose
     return deals_firehose.harvest(api, pages=pages, wait=False)
+
+
+def _seller_no_wait(seller_id, api=None):
+    # fba-code-reviewer (2026-07-13, live-hang BLOCKER): sample_asins_storefront() (backtest.py)
+    # calls seller_fn(seller_id, api=api) with no wait= override, so an un-wrapped call resolves
+    # to keepa_client.seller_asins's own wait=True default -- picking the LONG 600s deadline
+    # (keepa_client._with_deadline), which exactly equals keepa-collect.yml's own 10-minute job
+    # timeout. Every other Keepa-calling arm this burst collector wires in gets an explicit
+    # no-wait wrapper (_enrich_no_wait/_history_no_wait/_find_no_wait/_firehose_no_wait, all
+    # above); this closes the same gap for the new storefront arm before the seller pool (still
+    # empty when this was found) gets its first real entry and exposes it on a live hourly run.
+    return keepa_client.seller_asins(seller_id, api=api, wait=False)
 
 
 # fba-feature-engineer (2026-07-10): moved to signals/attach.py so pipeline.run_once shares
@@ -469,7 +485,8 @@ def run_hourly_collect(api=None) -> Dict[str, Any]:
         elif budget > 0:
             bt_result = backtest.run_backtest(api=api, token_cap=budget,
                                               find_fn=_find_no_wait, history_fn=_history_no_wait,
-                                              firehose_fn=_firehose_no_wait)
+                                              firehose_fn=_firehose_no_wait,
+                                              seller_fn=_seller_no_wait)
         else:
             bt_result = {"status": "skipped", "reason": "no budget remaining", "tokens_spent": 0}
         summary["backtest"] = bt_result

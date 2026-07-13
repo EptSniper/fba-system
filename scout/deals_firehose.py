@@ -476,8 +476,16 @@ def record_seen_sellers(seller_ids: List[str]) -> bool:
     already paid for an enrich() batch for its OWN reason (shadow rechecks, hint-led-scan
     buy-discovery); this just also keeps whatever buybox_seller ids that call already returned.
     Deduped, capped at SELLER_POOL_CAP (oldest-dropped-first via insertion order), best-effort —
-    never raises, never blocks the caller's real work if Storage is unreachable."""
-    ids = [s for s in dict.fromkeys(seller_ids) if isinstance(s, str) and s]
+    never raises, never blocks the caller's real work if Storage is unreachable.
+
+    fba-scout-strategist / fba-code-reviewer (2026-07-13): excludes config.AMAZON_SELLER_ID —
+    Amazon itself is a common buybox_seller on enrich()-scanned candidates (it's the exact signal
+    scoring.oa_hard_reject already treats as disqualifying elsewhere), but it is not a real 3P
+    storefront. seller_asins() on Amazon's own id is not a bounded "one seller's catalog" query
+    the way a genuine 3P storefront is, and SELLER_QUERY_TOKENS_ESTIMATE (10) is an unverified
+    placeholder — recording this id risked an unknown-cost live Keepa call on a thin token bank."""
+    ids = [s for s in dict.fromkeys(seller_ids)
+          if isinstance(s, str) and s and s != config.AMAZON_SELLER_ID]
     if not ids:
         return False
     try:

@@ -205,3 +205,30 @@ compliance-driven entry and the knowledge-check code fix aren't UI-draftable pro
 
 ---
 
+## 2026-07-13 — proposal (Keepa throughput plan ML-crew review, fba-scout-strategist)
+
+- **[data-driven]** Drop `"kitchen"` from `learning.sampling.categories` (18 entries -> 17). Live-verified
+  (direct read of the persisted Supabase Storage category-id cache, `backtest/category_ids.json`): 17 of 18
+  configured categories resolve to a real Keepa root browse-node id; `kitchen` alone has never resolved and
+  never will as currently mapped. Root cause: `keepa_client._CATEGORY_MAP`'s `"kitchen & dining" -> "kitchen"`
+  entry names a Keepa browse-node that is not one of Amazon's TOP-LEVEL roots — `resolve_category_ids()` only
+  ever calls `api.category_lookup(0)`, which returns roots only, and "Kitchen & Dining" lives as a
+  *subcategory* under "Home & Kitchen" (the root the existing `"home"` entry already resolves and covers —
+  confirmed `home` -> catId 1055398 live). Because the code's own cache-completeness check
+  (`cached and all(c in cached for c in categories)`) can never be satisfied while an unresolvable category
+  stays configured, every dealfeed `harvest()` call re-attempts the guarded live `category_lookup` (1 token
+  when the bank allows it) and re-uploads an unchanged 17-entry cache — a small but *permanent* per-run token
+  tax (up to ~24 tokens/day) on an account that has recently ended hourly runs with single-digit token
+  balances. This degrades safely today (an unresolvable category falls back to an unfiltered pull, per the
+  code's own "never guess" design — not a wrong filter, just no filter for kitchen specifically) so it is not
+  a correctness bug, only a coverage gap + a recurring waste. No coverage is lost by dropping it: kitchen
+  products already flow in via `home`'s existing resolved filter (the real shared Keepa root) and via
+  unfiltered pulls, same as before. Alternative considered and rejected: keep `kitchen` configured but this
+  wastes tokens every single run forever, with no offsetting benefit, since it can never resolve as mapped.
+  (sample size: 17/18 categories checked live via `deals_firehose._fetch_remote_category_cache()`,
+  confidence: high — key: `learning.sampling.categories`)
+
+**1 proposal(s) pending human review.** ai-brain.json was NOT changed by this script.
+
+---
+

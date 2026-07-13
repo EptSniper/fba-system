@@ -234,6 +234,54 @@ class Tier1ReserveFractionTest(unittest.TestCase):
         with mock.patch.object(ch.backtest, "sampling_config", side_effect=RuntimeError("boom")):
             self.assertEqual(ch._tier1_reserve_fraction(), ch.TIER1_RESERVE_FRACTION)
 
+    def test_falls_back_to_constant_when_value_is_a_bool(self):
+        # fba-code-reviewer (2026-07-13): bool is a subclass of int -- a brain value of `true`
+        # must NOT be accepted as 1.0 (that would reserve the entire bank for tier 1).
+        with mock.patch.object(ch.backtest, "sampling_config",
+                               return_value={"tier1ReserveFraction": True}):
+            self.assertEqual(ch._tier1_reserve_fraction(), ch.TIER1_RESERVE_FRACTION)
+
+
+class RunBacktestNoWaitWrappersTest(unittest.TestCase):
+    """fba-code-reviewer BLOCKER (2026-07-13): every Keepa-calling arm collect_hourly.py wires
+    into run_backtest must get an explicit no-wait wrapper, or it resolves to that function's own
+    wait=True default -- picking the LONG 600s deadline, which exactly matches keepa-collect.yml's
+    10-minute job timeout, reproducing the 2026-07-06/07-07 hang class. No test previously asserted
+    this wiring for ANY of the four arms, which is how the missing seller_fn= wrapper (Action D,
+    dd6f144) slipped past 1003 passing tests undetected."""
+
+    def test_run_backtest_receives_all_four_no_wait_wrappers(self):
+        api = FakeApi(tokens_left=60)
+        with mock.patch.object(ch.config, "have_keepa", return_value=True), \
+             mock.patch.object(db, "start_run", return_value=1), \
+             mock.patch.object(db, "finish_run"), \
+             mock.patch.object(ch.datalake, "set_run_context"), \
+             mock.patch.object(ch.datalake, "reset_stats"), \
+             mock.patch.object(ch.datalake, "flush", return_value={}), \
+             mock.patch.object(ch.datalake, "digest_line", return_value=""), \
+             mock.patch.object(ch.shadow_outcomes, "run_rechecks",
+                               return_value={"status": "ok", "tokens_spent": 0}), \
+             mock.patch.object(ch, "_corpus_acceleration_status",
+                               return_value={"active": False, "pending_asins": 0}), \
+             mock.patch.object(ch, "hint_led_scan",
+                               return_value={"status": "ok", "tokens_spent": 0,
+                                            "candidates": 0, "leads_logged": 0, "survivors": 0}), \
+             mock.patch.object(ch.backtest, "run_backtest",
+                               return_value={"status": "ok", "tokens_spent": 0}) as mbacktest:
+            ch.run_hourly_collect(api=api)
+        mbacktest.assert_called_once()
+        kwargs = mbacktest.call_args.kwargs
+        self.assertIs(kwargs.get("find_fn"), ch._find_no_wait)
+        self.assertIs(kwargs.get("history_fn"), ch._history_no_wait)
+        self.assertIs(kwargs.get("firehose_fn"), ch._firehose_no_wait)
+        self.assertIs(kwargs.get("seller_fn"), ch._seller_no_wait)
+
+    def test_seller_no_wait_calls_seller_asins_with_wait_false(self):
+        with mock.patch.object(keepa_client, "seller_asins", return_value=["A1"]) as mcall:
+            out = ch._seller_no_wait("SELLER1", api="fake-api")
+        self.assertEqual(out, ["A1"])
+        mcall.assert_called_once_with("SELLER1", api="fake-api", wait=False)
+
 
 class CorpusAccelerationTest(unittest.TestCase):
     """Backlog acceleration is brain-controlled, preserves Tier 1, and spends no Tier 2 tokens."""

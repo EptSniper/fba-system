@@ -23,6 +23,8 @@ export type QueueLeadItem = {
   roi: number | null;
   monthlySales: number | null;
   bsr: number | null;
+  offerCount: number | null;
+  amazonPresent: boolean | null;
   score: number | null;
   reason: string | null;
   explanation: LeadExplanation;
@@ -90,6 +92,8 @@ export async function buildQueue(): Promise<{ connected: boolean; items: QueueIt
     roi: l.roi,
     monthlySales: l.monthly_sales,
     bsr: l.bsr,
+    offerCount: l.offer_count,
+    amazonPresent: l.amazon_present,
     score: l.score,
     reason: l.reason,
     explanation: l.explanation,

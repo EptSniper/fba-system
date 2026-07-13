@@ -223,7 +223,21 @@ def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb:
     inflated the positive rate; (2) Keepa tracking stopped more than
     LABEL_TRACKING_TOLERANCE_DAYS before the horizon (delisted/untracked — the carried-forward
     value is no longer evidence). `censored` is reported so run summaries can count what was
-    skipped instead of silently thinning."""
+    skipped instead of silently thinning.
+
+    Cowork leakage/labeling audit fix (2026-07-13, Mehmet-approved): would_have_profited used to
+    be a bare `est_profit > 0` — with landed_cost fixed at OA_COGS_FRACTION (50%) of price_then,
+    net proceeds ~70% of price, a product could fall ~28% and STILL label "profitable" (any
+    positive $ at all). Live-measured: 91% positive, near-constant within several categories
+    (95-97%), carrying almost no learnable signal — the label mostly encoded "did the price not
+    crash" plus a generous fixed COGS assumption, not real sourcing edge. Now mirrors the SAME
+    gate the live buy pipeline actually uses (scoring.py's oa_hard_reject/score_product_oa):
+    profit >= CRITERIA_OA['min_profit_per_unit'] (default $3) AND roi >= min_roi (0.30, or the
+    grocery exception 0.25) — a window only labels "would have profited" if it would have
+    actually cleared the real buy bar, not merely broken even. `roi` is now also returned
+    (est_profit / landed_cost) for visibility. NOTE: this only affects windows built going
+    forward — existing backtest_rows keep their prior label until a deliberate backfill runs;
+    see AI_COLLABORATION_JOURNAL.md Session 64 for the scope of what was and wasn't relabeled."""
     price = hist.get("price", [])
     offers = hist.get("offers", [])
     horizon_day = as_of + horizon
@@ -234,14 +248,19 @@ def label_at(hist: History, as_of: int, landed_cost: Optional[float], weight_lb:
     price_at_h = price_in_effect if tracked_near_horizon else None
     _, offers_in_effect = _point_in_effect(offers, horizon_day + 1)
     net = scoring.net_proceeds(price_at_h, weight_lb, category=category)
-    est_profit = would = None
+    est_profit = would = roi = None
     if net is not None and landed_cost is not None:
         est_profit = round(net - landed_cost, 2)
-        would = est_profit > 0
+        roi = round(est_profit / landed_cost, 4) if landed_cost > 0 else None
+        is_grocery = (category or "").strip().lower() == "grocery"
+        min_roi = config.OA_GROCERY_MIN_ROI if is_grocery else config.CRITERIA_OA["min_roi"]
+        min_profit = config.CRITERIA_OA["min_profit_per_unit"]
+        would = est_profit >= min_profit and roi is not None and roi >= min_roi
     return {
         "price_at_horizon": price_at_h,
         "offers_at_horizon": _int_or_none(offers_in_effect),
         "est_profit": est_profit,
+        "roi": roi,
         "would_have_profited": would,
         "censored": price_at_h is None,
     }

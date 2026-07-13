@@ -117,20 +117,33 @@ def enqueue_survivors(survivors: List[Dict[str, Any]], run_id: Optional[Any],
 # --- weekly recheck ---------------------------------------------------------
 def compute_label(row: Dict[str, Any], now_snapshot: Dict[str, Any]) -> Dict[str, Any]:
     """Given a due shadow row and a fresh Keepa snapshot for its ASIN, compute the 'now' fields +
-    would_have_profited at the ORIGINAL landed cost. Pure — unit-tested without Keepa/Supabase."""
+    would_have_profited at the ORIGINAL landed cost. Pure — unit-tested without Keepa/Supabase.
+
+    Cowork leakage/labeling audit fix (2026-07-13, Mehmet-approved), same fix as backtest.py's
+    label_at() sibling: `est_profit > 0` alone means merely breaking even counted as "profitable"
+    — now mirrors the real buy gate (scoring.oa_hard_reject/score_product_oa): profit >=
+    CRITERIA_OA['min_profit_per_unit'] AND roi >= min_roi (the grocery exception applies here
+    too). `roi_now` is also now returned."""
     price_now = now_snapshot.get("price")
     landed_cost = row.get("landed_cost")
     net_now = scoring.net_proceeds(price_now, row.get("weight_lb"), category=row.get("category"))
     would = None
     est_profit = None
+    roi = None
     if net_now is not None and landed_cost is not None:
         est_profit = round(net_now - landed_cost, 2)
-        would = est_profit > 0
+        roi = round(est_profit / landed_cost, 4) if landed_cost > 0 else None
+        category = row.get("category")
+        is_grocery = (category or "").strip().lower() == "grocery"
+        min_roi = config.OA_GROCERY_MIN_ROI if is_grocery else config.CRITERIA_OA["min_roi"]
+        min_profit = config.CRITERIA_OA["min_profit_per_unit"]
+        would = est_profit >= min_profit and roi is not None and roi >= min_roi
     return {
         "price_now": price_now,
         "offers_now": now_snapshot.get("offers"),
         "sales_rank_now": now_snapshot.get("sales_rank"),
         "est_profit_now": est_profit,
+        "roi_now": roi,
         "would_have_profited": would,
         "status": "done" if would is not None else "error",
         "computed_at": _now().isoformat(),
@@ -192,7 +205,10 @@ def run_rechecks(api=None, now: Optional[_dt.datetime] = None,
         if asin not in fresh:
             continue  # deferred (over budget) or Keepa returned nothing — stays pending
         fields = compute_label(r, fresh[asin])
-        db.complete_shadow_checkpoint(r.get("id"), fields)
+        # roi_now has no shadow_outcomes column (migration 009 predates the 2026-07-13 labeling
+        # fix) -- strip it before the PATCH so it can't reject the whole write for an unknown
+        # column; compute_label()'s callers/tests still get it in the return value.
+        db.complete_shadow_checkpoint(r.get("id"), {k: v for k, v in fields.items() if k != "roi_now"})
         checked += 1
         if fields["would_have_profited"] is not None:
             labeled += 1

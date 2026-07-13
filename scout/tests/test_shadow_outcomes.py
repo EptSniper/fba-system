@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import shadow_outcomes as so  # noqa: E402
 import labels  # noqa: E402
+import config  # noqa: E402
 import db  # noqa: E402
 import scoring  # noqa: E402
 
@@ -64,6 +65,35 @@ class ComputeLabelTest(unittest.TestCase):
         out = so.compute_label(row, {"price": None})
         self.assertIsNone(out["would_have_profited"])
         self.assertEqual(out["status"], "error")
+
+    def test_requires_the_real_buy_gate_not_just_breaking_even(self):
+        """Cowork leakage/labeling audit fix (2026-07-13), same fix as backtest.py's label_at()
+        sibling: est_profit > 0 alone used to count as 'profitable'. This case clears the OLD bar
+        (positive profit ~1.09) but must fail the NEW one (profit < $3)."""
+        row = {"landed_cost": 10.0, "weight_lb": 1.0, "category": "toys"}
+        out = so.compute_label(row, {"price": 20.0, "offers": 3, "sales_rank": 8000})
+        self.assertLess(out["est_profit_now"], config.CRITERIA_OA["min_profit_per_unit"])
+        self.assertGreater(out["est_profit_now"], 0)
+        self.assertFalse(out["would_have_profited"])
+
+    def test_requires_roi_gate_not_just_a_dollar_profit(self):
+        """Isolates the ROI dimension: enough $ profit to clear min_profit_per_unit, but too low
+        relative to landed cost to clear min_roi -- must still fail."""
+        row = {"landed_cost": 50.0, "weight_lb": 1.0, "category": "toys"}
+        out = so.compute_label(row, {"price": 70.0, "offers": 3, "sales_rank": 8000})
+        self.assertGreaterEqual(out["est_profit_now"], config.CRITERIA_OA["min_profit_per_unit"])
+        self.assertLess(out["roi_now"], config.CRITERIA_OA["min_roi"])
+        self.assertFalse(out["would_have_profited"])
+
+    def test_grocery_uses_the_lower_roi_exception(self):
+        row_grocery = {"landed_cost": 12.0, "weight_lb": 1.0, "category": "grocery"}
+        row_toys = {"landed_cost": 12.0, "weight_lb": 1.0, "category": "toys"}
+        out_grocery = so.compute_label(row_grocery, {"price": 25.0, "offers": 3, "sales_rank": 8000})
+        out_toys = so.compute_label(row_toys, {"price": 25.0, "offers": 3, "sales_rank": 8000})
+        self.assertGreaterEqual(out_grocery["roi_now"], config.OA_GROCERY_MIN_ROI)
+        self.assertLess(out_grocery["roi_now"], config.CRITERIA_OA["min_roi"])
+        self.assertTrue(out_grocery["would_have_profited"])
+        self.assertFalse(out_toys["would_have_profited"])
 
 
 class EnqueueSurvivorsTest(unittest.TestCase):
@@ -126,6 +156,9 @@ class RunRechecksTest(unittest.TestCase):
         self.assertIn(1, completed)
         self.assertNotIn(2, completed)
         self.assertTrue(completed[1]["would_have_profited"])
+        # roi_now has no shadow_outcomes DB column (migration 009 predates the 2026-07-13 fix) --
+        # must be stripped before the write so it can't reject the whole PATCH.
+        self.assertNotIn("roi_now", completed[1])
 
 
 class LabelsTierTest(unittest.TestCase):

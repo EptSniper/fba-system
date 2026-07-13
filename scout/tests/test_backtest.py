@@ -202,7 +202,52 @@ class WindowingAndLabelTest(unittest.TestCase):
         landed = bt.scoring.assumed_landed_cost(20.0)
         lbl = bt.label_at(hi, as_of, landed, weight_lb=1.0, category="toys")
         self.assertTrue(lbl["would_have_profited"])
+        self.assertGreaterEqual(lbl["roi"], bt.config.CRITERIA_OA["min_roi"])
         self.assertEqual(lbl["price_at_horizon"], 40.0)
+
+    def test_label_requires_the_real_buy_gate_not_just_breaking_even(self):
+        """Cowork leakage/labeling audit fix (2026-07-13): would_have_profited used to be a bare
+        est_profit > 0 -- with a fixed 50% COGS assumption, a product could fall ~28% and still
+        label 'profitable'. Now mirrors the live buy gate (profit >= $3 AND roi >= 30%). This
+        marginal case clears the OLD bar (positive profit) but must fail the NEW one (profit < $3,
+        even though price technically rose from the buy-in)."""
+        as_of = BASE + 120
+        price = [(BASE + d, 12.0) for d in range(180)] + [(as_of + 60, 20.0)]
+        hist = {"price": sorted(price), "offers": [], "sales_rank": [], "amazon": []}
+        lbl = bt.label_at(hist, as_of, landed_cost=10.0, weight_lb=1.0, category="toys")
+        # net_proceeds(20, 1.0, "toys") ~= 11.09; est_profit ~= 1.09 -- positive but < $3.
+        self.assertLess(lbl["est_profit"], bt.config.CRITERIA_OA["min_profit_per_unit"])
+        self.assertGreater(lbl["est_profit"], 0)  # the OLD bar this case would have cleared
+        self.assertFalse(lbl["would_have_profited"])
+
+    def test_label_requires_roi_gate_not_just_a_dollar_profit(self):
+        """Same fix, isolating the ROI dimension: enough $ profit to clear min_profit_per_unit,
+        but too low relative to the landed cost to clear min_roi (30%) -- must still fail."""
+        as_of = BASE + 120
+        price = [(BASE + d, 50.0) for d in range(180)] + [(as_of + 60, 70.0)]
+        hist = {"price": sorted(price), "offers": [], "sales_rank": [], "amazon": []}
+        lbl = bt.label_at(hist, as_of, landed_cost=50.0, weight_lb=1.0, category="toys")
+        # net_proceeds(70, 1.0, "toys") ~= 53.59; est_profit ~= 3.59 (clears $3) but
+        # roi = 3.59/50 ~= 0.072 (7.2%, well below the 30% bar).
+        self.assertGreaterEqual(lbl["est_profit"], bt.config.CRITERIA_OA["min_profit_per_unit"])
+        self.assertLess(lbl["roi"], bt.config.CRITERIA_OA["min_roi"])
+        self.assertFalse(lbl["would_have_profited"])
+
+    def test_label_grocery_uses_the_lower_roi_exception(self):
+        """The grocery ROI exception (25% instead of 30%) must apply to the label too, matching
+        the live buy gate's own grocery carve-out: price=25/landed=12 lands roi~=27.8%, which
+        clears grocery's 25% bar but misses the default 30% bar -- same $ numbers, different
+        category, different verdict proves the exception is actually wired into label_at()."""
+        as_of = BASE + 120
+        price = [(BASE + d, 12.0) for d in range(180)] + [(as_of + 60, 25.0)]
+        hist = {"price": sorted(price), "offers": [], "sales_rank": [], "amazon": []}
+        landed_cost = 12.0
+        lbl_grocery = bt.label_at(hist, as_of, landed_cost, weight_lb=1.0, category="grocery")
+        lbl_toys = bt.label_at(hist, as_of, landed_cost, weight_lb=1.0, category="toys")
+        self.assertGreaterEqual(lbl_grocery["roi"], bt.config.OA_GROCERY_MIN_ROI)
+        self.assertLess(lbl_grocery["roi"], bt.config.CRITERIA_OA["min_roi"])
+        self.assertTrue(lbl_grocery["would_have_profited"])
+        self.assertFalse(lbl_toys["would_have_profited"])
 
     def test_label_uses_price_in_effect_not_a_far_future_change(self):
         """ML audit fix (2026-07-09): the label used to be the FIRST price change at ANY day

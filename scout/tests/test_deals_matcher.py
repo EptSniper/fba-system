@@ -12,6 +12,7 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import config  # noqa: E402
 import db  # noqa: E402
 import keepa_client  # noqa: E402
 import scoring  # noqa: E402
@@ -680,6 +681,417 @@ class ApplyVerifiedMatchesRealFeesTest(unittest.TestCase):
         self.assertEqual(counts["fee_source_spapi"], 0)
         self.assertEqual(counts["fee_source_estimate"], 1)
         m_update.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# _real_buy_cost — shared real-cost helper extracted for D3 (2026-07-13)
+# ---------------------------------------------------------------------------
+class RealBuyCostHelperTest(unittest.TestCase):
+    def test_returns_none_for_missing_price(self):
+        self.assertIsNone(matcher._real_buy_cost({"retailer": "Target"}))
+
+    def test_returns_none_for_zero_price(self):
+        self.assertIsNone(matcher._real_buy_cost({"price_current": 0, "retailer": "Target"}))
+
+    def test_returns_none_for_negative_price(self):
+        self.assertIsNone(matcher._real_buy_cost({"price_current": -5.0, "retailer": "Target"}))
+
+    def test_no_stack_leaves_price_unchanged(self):
+        with patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}):
+            cost = matcher._real_buy_cost({"price_current": 20.0, "retailer": "Unknown Store"})
+        self.assertEqual(cost, 20.0)
+
+    def test_applies_combined_cashback_and_giftcard_stack(self):
+        with patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.05, "giftcard_pct": 0.10}):
+            cost = matcher._real_buy_cost({"price_current": 20.0, "retailer": "Target"})
+        self.assertEqual(cost, round(20.0 * (1 - 0.15), 2))
+
+    def test_clamps_stack_over_100_percent_to_95_percent_never_negative(self):
+        """Same regression this module's own docstring names: a bad ai-brain.json entry summing
+        past 100% must never drive buy_cost negative."""
+        with patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.6, "giftcard_pct": 0.6}):
+            cost = matcher._real_buy_cost({"price_current": 10.0, "retailer": "Target"})
+        self.assertEqual(cost, round(10.0 * 0.05, 2))
+        self.assertGreaterEqual(cost, 0.0)
+
+
+# ---------------------------------------------------------------------------
+# _real_profit_roi — shared real-fees-then-estimate helper extracted for D3 (2026-07-13)
+# ---------------------------------------------------------------------------
+class RealProfitRoiHelperTest(unittest.TestCase):
+    def test_none_for_missing_sell_price(self):
+        result = matcher._real_profit_roi(None, 10.0, 1.0, "toys", "A1")
+        self.assertEqual(result, (None, None, "estimate"))
+
+    def test_none_for_zero_sell_price(self):
+        result = matcher._real_profit_roi(0.0, 10.0, 1.0, "toys", "A1")
+        self.assertEqual(result, (None, None, "estimate"))
+
+    def test_none_for_missing_buy_cost(self):
+        result = matcher._real_profit_roi(30.0, None, 1.0, "toys", "A1")
+        self.assertEqual(result, (None, None, "estimate"))
+
+    def test_none_for_zero_or_negative_buy_cost(self):
+        self.assertEqual(matcher._real_profit_roi(30.0, 0.0, 1.0, "toys", "A1"),
+                        (None, None, "estimate"))
+        self.assertEqual(matcher._real_profit_roi(30.0, -1.0, 1.0, "toys", "A1"),
+                        (None, None, "estimate"))
+
+    def test_uses_rule_based_estimate_when_spapi_unconfigured(self):
+        with patch.object(spapi, "configured", return_value=False), \
+             patch.object(spapi, "get_fees_estimate") as m_fees:
+            profit, roi, fee_source = matcher._real_profit_roi(30.0, 10.0, 1.0, "toys", "A1")
+        m_fees.assert_not_called()  # never even attempted when SP-API is unconfigured
+        expected_profit, expected_roi = scoring.estimate_oa_profit_roi(
+            30.0, 1.0, cogs_fraction=10.0 / 30.0, category="toys")
+        self.assertEqual((profit, roi, fee_source), (expected_profit, expected_roi, "estimate"))
+
+    def test_uses_real_spapi_fees_when_available(self):
+        fees = {"available": True, "referral_fee": 3.0, "fba_fee": 5.5}
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_fees_estimate", return_value=fees):
+            profit, roi, fee_source = matcher._real_profit_roi(30.0, 10.0, 1.0, "toys", "A1")
+        expected_profit, expected_roi = scoring.estimate_oa_profit_roi_real_fees(
+            30.0, 10.0, 3.0, 5.5, weight_lb=1.0)
+        self.assertEqual((profit, roi, fee_source), (expected_profit, expected_roi, "spapi"))
+
+    def test_falls_back_when_spapi_fees_unavailable(self):
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_fees_estimate", return_value={"available": False}):
+            profit, roi, fee_source = matcher._real_profit_roi(30.0, 10.0, 1.0, "toys", "A1")
+        expected_profit, expected_roi = scoring.estimate_oa_profit_roi(
+            30.0, 1.0, cogs_fraction=10.0 / 30.0, category="toys")
+        self.assertEqual((profit, roi, fee_source), (expected_profit, expected_roi, "estimate"))
+
+    def test_spapi_exception_falls_back_never_raises(self):
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_fees_estimate", side_effect=Exception("network blip")):
+            profit, roi, fee_source = matcher._real_profit_roi(  # must not raise
+                30.0, 10.0, 1.0, "toys", "A1")
+        expected_profit, expected_roi = scoring.estimate_oa_profit_roi(
+            30.0, 1.0, cogs_fraction=10.0 / 30.0, category="toys")
+        self.assertEqual((profit, roi, fee_source), (expected_profit, expected_roi, "estimate"))
+
+
+# ---------------------------------------------------------------------------
+# _create_deal_first_lead — Prompt D3, deal-first gate-checked lead creation (2026-07-13)
+# ---------------------------------------------------------------------------
+class CreateDealFirstLeadTest(unittest.TestCase):
+    def setUp(self):
+        # Same test-hygiene convention as ApplyVerifiedMatchesTest.setUp — avoid a real network
+        # call: default to eligible/no-ungating and unavailable SP-API fees; individual tests
+        # override either patch to exercise a specific path.
+        self._elig_patch = patch.object(matcher, "_eligible_for_matching", return_value=(True, False))
+        self._elig_patch.start()
+        self.addCleanup(self._elig_patch.stop)
+        self._fees_patch = patch.object(spapi, "get_fees_estimate", return_value={"available": False})
+        self._fees_patch.start()
+        self.addCleanup(self._fees_patch.stop)
+
+    # -- 1. d3Enabled=False: the single most important test — a true, total no-op. --
+    def test_d3_disabled_is_a_true_noop(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=False), \
+             patch.object(keepa_client, "enrich") as m_enrich, \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertIsNone(result)
+        m_enrich.assert_not_called()
+        m_log.assert_not_called()
+        m_update.assert_not_called()
+
+    def test_missing_asin_returns_none_without_any_calls(self):
+        dm = {}  # no asin at all
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(keepa_client, "enrich") as m_enrich, \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertIsNone(result)
+        m_enrich.assert_not_called()
+        m_log.assert_not_called()
+        m_update.assert_not_called()
+
+    # -- 2. d3Enabled=True + NOT_ELIGIBLE ASIN: no lead created, no Keepa spend. --
+    def test_not_eligible_asin_creates_no_lead(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher, "_eligible_for_matching", return_value=(False, False)), \
+             patch.object(keepa_client, "enrich") as m_enrich, \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertIsNone(result)
+        m_enrich.assert_not_called()  # dropped before ever spending a Keepa token
+        m_log.assert_not_called()
+        m_update.assert_not_called()
+
+    def test_no_live_keepa_product_returns_none(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(keepa_client, "enrich", return_value=[]), \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertIsNone(result)
+        m_log.assert_not_called()
+        m_update.assert_not_called()
+
+    def test_no_usable_buy_cost_returns_none(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": None, "retailer": "Target", "url": "https://x"}
+        product = {"asin": "A1", "price": 30.0, "brand": "Jellycat"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(keepa_client, "enrich", return_value=[product]), \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertIsNone(result)
+        m_log.assert_not_called()
+        m_update.assert_not_called()
+
+    # -- 3. d3Enabled=True + a hard-rejected candidate (Amazon holds the Buy Box). --
+    def test_hard_rejected_candidate_logs_audit_lead_but_never_updates_source(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        product = {"asin": "A1", "price": 30.0, "weight_lb": 1.0, "sales_rank": 25000,
+                  "est_sales": 200, "offers": 6, "buybox_seller": config.AMAZON_SELLER_ID,
+                  "brand": "Jellycat", "category": "toys"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}), \
+             patch.object(keepa_client, "enrich", return_value=[product]), \
+             patch.object(db, "log_lead", return_value=123) as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertEqual(result["asin"], "A1")
+        self.assertTrue(result["hard_rejected"])
+        self.assertIn("Amazon holds the Buy Box", result["reason"])
+        m_log.assert_called_once()
+        log_args, log_kwargs = m_log.call_args
+        self.assertEqual(log_args[2], "pass")  # verdict
+        self.assertTrue(log_args[3].startswith("Hard reject:"))  # reason string
+        self.assertEqual(log_kwargs.get("found_via"), "deal-first")
+        m_update.assert_not_called()  # a hard-rejected candidate must never look actionable
+
+    def test_hard_rejected_candidate_in_dry_run_does_not_even_log_the_audit_lead(self):
+        """dry_run's contract (this module's other dry_run paths): reads happen, writes don't —
+        even the audit-trail log_lead() call for a hard-rejected candidate is a write."""
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        product = {"asin": "A1", "price": 30.0, "weight_lb": 1.0, "sales_rank": 25000,
+                  "est_sales": 200, "offers": 6, "buybox_seller": config.AMAZON_SELLER_ID,
+                  "brand": "Jellycat", "category": "toys"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}), \
+             patch.object(keepa_client, "enrich", return_value=[product]), \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal, dry_run=True)
+        self.assertTrue(result["hard_rejected"])
+        m_log.assert_not_called()
+        m_update.assert_not_called()
+
+    # -- 4. d3Enabled=True + a real successful candidate. --
+    def test_successful_candidate_logs_lead_with_real_buy_cost_and_updates_source(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        product = {"asin": "A1", "price": 30.0, "weight_lb": 1.0, "sales_rank": 25000,
+                  "est_sales": 200, "offers": 6, "buybox_seller": "A1SELLER",
+                  "brand": "Jellycat", "category": "toys"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}), \
+             patch.object(keepa_client, "enrich", return_value=[product]), \
+             patch.object(db, "log_lead", return_value=555) as m_log, \
+             patch.object(db, "update_lead_source", return_value=True) as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertEqual(result, {"asin": "A1", "hard_rejected": False, "lead_id": 555,
+                                  "needs_ungating": False})
+        m_log.assert_called_once()
+        log_args, log_kwargs = m_log.call_args
+        self.assertEqual(log_kwargs.get("found_via"), "deal-first")
+        # the candidate handed to log_lead must carry the REAL buy_cost, not a 50%-of-price guess
+        self.assertEqual(log_args[0]["buy_cost"], 10.0)
+        m_update.assert_called_once()
+        update_args, update_kwargs = m_update.call_args
+        self.assertEqual(update_args[0], "A1")
+        self.assertEqual(update_args[1], 10.0)  # real buy_cost == deal price_current
+        self.assertEqual(update_args[2], "Target")
+        self.assertEqual(update_args[3], "https://x")
+        expected_profit, expected_roi = scoring.estimate_oa_profit_roi(
+            30.0, 1.0, cogs_fraction=10.0 / 30.0, category="toys")
+        self.assertEqual(update_args[4], expected_profit)
+        self.assertEqual(update_args[5], expected_roi)
+        self.assertIsNone(update_kwargs.get("gated_status"))
+
+    def test_needs_ungating_flows_to_gated_status_approval_required(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        product = {"asin": "A1", "price": 30.0, "weight_lb": 1.0, "sales_rank": 25000,
+                  "est_sales": 200, "offers": 6, "buybox_seller": "A1SELLER",
+                  "brand": "Jellycat", "category": "toys"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher, "_eligible_for_matching", return_value=(True, True)), \
+             patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}), \
+             patch.object(keepa_client, "enrich", return_value=[product]), \
+             patch.object(db, "log_lead", return_value=777), \
+             patch.object(db, "update_lead_source", return_value=True) as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertTrue(result["needs_ungating"])
+        self.assertEqual(m_update.call_args[1].get("gated_status"), "approval_required")
+
+    def test_log_lead_returning_none_short_circuits_before_update_lead_source(self):
+        """A failed/unavailable log_lead() write (Supabase down, migration not applied) must
+        never be followed by an update_lead_source() call with no lead row to attach to."""
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        product = {"asin": "A1", "price": 30.0, "weight_lb": 1.0, "sales_rank": 25000,
+                  "est_sales": 200, "offers": 6, "buybox_seller": "A1SELLER",
+                  "brand": "Jellycat", "category": "toys"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}), \
+             patch.object(keepa_client, "enrich", return_value=[product]), \
+             patch.object(db, "log_lead", return_value=None), \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal)
+        self.assertIsNone(result)
+        m_update.assert_not_called()
+
+    # -- 6. dry_run=True with d3Enabled=True (successful/non-hard-rejected candidate): the real
+    # Keepa read still happens (real telemetry), but no Supabase write does. --
+    def test_dry_run_computes_real_telemetry_but_writes_nothing(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        product = {"asin": "A1", "price": 30.0, "weight_lb": 1.0, "sales_rank": 25000,
+                  "est_sales": 200, "offers": 6, "buybox_seller": "A1SELLER",
+                  "brand": "Jellycat", "category": "toys"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher, "_eligible_for_matching", return_value=(True, True)), \
+             patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}), \
+             patch.object(keepa_client, "enrich", return_value=[product]) as m_enrich, \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            result = matcher._create_deal_first_lead(dm, deal, dry_run=True)
+        m_enrich.assert_called_once()  # the real Keepa read still happens in a dry run
+        m_log.assert_not_called()
+        m_update.assert_not_called()
+        self.assertEqual(result, {"asin": "A1", "hard_rejected": False, "lead_id": None,
+                                  "needs_ungating": True})
+
+    # -- 5. Exception safety: a raise anywhere inside must degrade to None, never propagate. --
+    def test_exception_in_enrich_returns_none_not_raise(self):
+        dm = {"asin": "A1"}
+        deal = {"price_current": 10.0, "retailer": "Target", "url": "https://x"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(keepa_client, "enrich", side_effect=Exception("keepa blew up")):
+            result = matcher._create_deal_first_lead(dm, deal)  # must not raise
+        self.assertIsNone(result)
+
+
+# ---------------------------------------------------------------------------
+# apply_verified_matches — D3 wiring (2026-07-13): routes a no-existing-lead verified match
+# through _create_deal_first_lead() only when brain_config.d3_enabled() is True.
+# ---------------------------------------------------------------------------
+class ApplyVerifiedMatchesD3WiringTest(unittest.TestCase):
+    def setUp(self):
+        # Same test-hygiene convention as ApplyVerifiedMatchesTest.setUp — avoid a real network
+        # call from either the outer eligibility re-check or the SP-API fee lookup.
+        self._elig_patch = patch.object(matcher, "_eligible_for_matching", return_value=(True, False))
+        self._elig_patch.start()
+        self.addCleanup(self._elig_patch.stop)
+        self._fees_patch = patch.object(spapi, "get_fees_estimate", return_value={"available": False})
+        self._fees_patch.start()
+        self.addCleanup(self._fees_patch.stop)
+
+    def test_d3_disabled_is_byte_for_byte_the_pre_d3_skipped_no_lead_behavior(self):
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=False), \
+             patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=None), \
+             patch.object(keepa_client, "enrich") as m_enrich, \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)
+        m_enrich.assert_not_called()
+        m_log.assert_not_called()
+        m_update.assert_not_called()
+        self.assertEqual(counts["skipped_no_lead"], 1)
+        self.assertEqual(counts["created_new_lead"], 0)
+        self.assertEqual(counts["created_new_lead_hard_rejected"], 0)
+
+    def test_d3_enabled_creates_new_lead_and_tallies_created_new_lead(self):
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        product = {"asin": "A1", "price": 30.0, "weight_lb": 1.0, "sales_rank": 25000,
+                  "est_sales": 200, "offers": 6, "buybox_seller": "A1SELLER",
+                  "brand": "Jellycat", "category": "toys"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}), \
+             patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=None), \
+             patch.object(keepa_client, "enrich", return_value=[product]), \
+             patch.object(db, "log_lead", return_value=555), \
+             patch.object(db, "update_lead_source", return_value=True) as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)
+        self.assertEqual(counts["created_new_lead"], 1)
+        self.assertEqual(counts["created_new_lead_hard_rejected"], 0)
+        self.assertEqual(counts["skipped_no_lead"], 0)
+        m_update.assert_called_once()
+
+    def test_d3_enabled_hard_rejected_candidate_tallies_hard_rejected_not_created(self):
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        product = {"asin": "A1", "price": 30.0, "weight_lb": 1.0, "sales_rank": 25000,
+                  "est_sales": 200, "offers": 6, "buybox_seller": config.AMAZON_SELLER_ID,
+                  "brand": "Jellycat", "category": "toys"}
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(matcher.brain_config, "discount_stack",
+                          return_value={"cashback_pct": 0.0, "giftcard_pct": 0.0}), \
+             patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=None), \
+             patch.object(keepa_client, "enrich", return_value=[product]), \
+             patch.object(db, "log_lead", return_value=123) as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)
+        self.assertEqual(counts["created_new_lead_hard_rejected"], 1)
+        self.assertEqual(counts["created_new_lead"], 0)
+        m_log.assert_called_once()
+        m_update.assert_not_called()
+
+    def test_exception_in_enrich_does_not_crash_apply_verified_matches(self):
+        """The exact regression this task named: a raise deep inside D3's Keepa enrich() call
+        must degrade to the ordinary skipped_no_lead tally, never propagate out of
+        apply_verified_matches()."""
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        with patch.object(matcher.brain_config, "d3_enabled", return_value=True), \
+             patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=None), \
+             patch.object(keepa_client, "enrich", side_effect=Exception("keepa blew up")), \
+             patch.object(db, "log_lead") as m_log, \
+             patch.object(db, "update_lead_source") as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)  # must not raise
+        self.assertEqual(counts["checked"], 1)
+        self.assertEqual(counts["skipped_no_lead"], 1)
+        self.assertEqual(counts["created_new_lead"], 0)
+        self.assertEqual(counts["created_new_lead_hard_rejected"], 0)
+        m_log.assert_not_called()
+        m_update.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -71,13 +71,29 @@ fail — every call site here catches that and degrades to the pre-existing Keep
 rule-based-fee behavior, exactly the same honesty convention this file already uses for the
 UPC/LLM paths above.
 
+PROMPT D3 — deal-first, gate-checked lead creation (BUILT 2026-07-13, per
+CLAUDE_CODE_REALPRICES_DIRECTIVE.md + CLAUDE_CODE_MASTER_BUILD.md sec 3a): a verified
+deal_matches row whose ASIN has NO pre-existing lead can now become a brand-new lead —
+`_create_deal_first_lead()` below — but ONLY after it is routed through the EXACT SAME hard
+gates and eligibility pre-filter every Keepa-first candidate already passes before it can ever
+reach `leads` (scoring.oa_hard_reject, scoring.explain_oa, _eligible_for_matching). This is the
+first real call site for brain_config.d3_enabled() — see that function's docstring for the
+history of why it was dead code before this change. Gated behind ai-brain.json
+`dealFinder.d3Enabled` (still `false` by default, an inert no-op, until Mehmet reviews this code
+and flips it) — see _create_deal_first_lead()'s own docstring for exactly how the guard makes
+`d3Enabled=false` byte-for-byte identical to the pre-D3 "skipped_no_lead" behavior. The one
+thing this build deliberately does NOT do: it never treats a deal_matches row's own confidence
+score, method, or human_verdict as a substitute for the hard gates — a "verified match" only
+means "this ASIN is probably the same sellable unit as the deal," never "this ASIN is safe or
+profitable to sell," which is exactly what oa_hard_reject/explain_oa/_eligible_for_matching
+still decide, independently, every single time.
+
 OUT OF SCOPE this session (named, not silently skipped):
-  - Prompt D3's runner integration — wiring deal-first candidates into scout/run_daily.py so a
-    verified match with NO pre-existing lead can become a brand-new gate-checked lead. Building
-    that now, in a rush, risks the one thing every hard-gate rule in this project exists to
-    prevent: a candidate reaching `leads` without passing eligibility/compliance/AVOID-brand
-    checks. apply_verified_matches() below only ever enriches a lead that ALREADY exists (found
-    via scout's normal Keepa discovery, already gate-checked) — never creates one.
+  - Wiring scout/run_daily.py to actually invoke apply_verified_matches() (and therefore D3) on
+    a schedule, and the priority-subset/token-budget batching from
+    CLAUDE_CODE_REALPRICES_DIRECTIVE.md step 2 — this change only builds the gate-checked
+    lead-creation function and its call site inside apply_verified_matches(); running it at
+    scale in small, token-budgeted batches is a separate, named follow-up.
   - A genuine 30-pair hand-verified gold set (the Build Plan's own Prompt D2 step 7 explicitly
     frames this as Mehmet's task, alongside the other "no code" actions in sec 5) — goldset.py
     ships with a small SYNTHETIC fixture for exercising the scoring math in tests, honestly
@@ -88,7 +104,7 @@ from __future__ import annotations
 import difflib
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import config
 import db
@@ -97,6 +113,7 @@ import keepa_client
 import redact
 import scoring
 import spapi
+from signals import attach as signals_attach
 
 from . import brain_config, normalize
 
@@ -580,9 +597,209 @@ def _notify_run(counts: Dict[str, Any]) -> None:
 
 
 # ----------------------------------------------------------------------------
+# Shared real-cost helpers (D3 build, 2026-07-13) — extracted verbatim from
+# apply_verified_matches()'s own pre-existing inline math (Phase 2.3) so that function AND the
+# new _create_deal_first_lead() below call the EXACT SAME buy_cost/fee logic exactly once, never
+# two independently-maintained copies that could quietly drift apart.
+# ----------------------------------------------------------------------------
+def _real_buy_cost(deal: Dict[str, Any]) -> Optional[float]:
+    """The real buy cost for a deal after its retailer's cashback/gift-card discount stack
+    (brain_config.discount_stack), clamped to a combined [0, 0.95] fraction — never a fabricated
+    100%-or-more "discount" (see brain_config.discount_stack's own docstring: it's a
+    manually-maintained table with no upstream validation, so a data-entry slip like 0.6 typed
+    instead of 0.06 must never be allowed to drive buy_cost negative, which would inflate profit
+    and blank out ROI via scoring.estimate_oa_profit_roi's own cogs>0 guard — the exact
+    regression a 2026-07-13 code review caught live). Returns None when the deal has no usable
+    price_current (nothing to compute from) — never a fabricated cost."""
+    price_current = deal.get("price_current")
+    if not price_current or price_current <= 0:
+        return None
+    stack = brain_config.discount_stack(deal.get("retailer") or "")
+    stack_fraction = max(0.0, min(stack["cashback_pct"] + stack["giftcard_pct"], 0.95))
+    return round(price_current * (1 - stack_fraction), 2)
+
+
+def _real_profit_roi(sell_price: Optional[float], buy_cost: Optional[float],
+                     weight_lb: Optional[float], category: Optional[str],
+                     asin: Optional[str]) -> Tuple[Optional[float], Optional[float], str]:
+    """Real per-unit profit/ROI from a REAL buy_cost (never the OA_COGS_FRACTION 50%-of-price
+    guess) — tries a real spapi.get_fees_estimate() (real referral+FBA fees) first, degrading to
+    the rule-based scoring.estimate_oa_profit_roi (with cogs_fraction = buy_cost/sell_price, so
+    it's still driven by the REAL cost, only the fee math is rule-based) whenever SP-API is
+    unconfigured, errors, or returns partial data. Returns (profit, roi, fee_source) where
+    fee_source is the literal string "spapi" or "estimate" — callers tally their own
+    fee_source_spapi/fee_source_estimate counters from it, so there is exactly one place this
+    fee-selection logic lives (both apply_verified_matches() and _create_deal_first_lead() call
+    this, never duplicating the try/except-and-fallback). Returns (None, None, "estimate") for a
+    missing/invalid sell_price or buy_cost — never raises; an SP-API hiccup always degrades to
+    the rule-based estimate rather than propagating."""
+    if not sell_price or sell_price <= 0 or not buy_cost or buy_cost <= 0:
+        return None, None, "estimate"
+
+    fees = None
+    if spapi.configured():
+        try:
+            fees = spapi.get_fees_estimate(asin, sell_price)
+        except Exception as e:
+            print(f"[deals.matcher] SP-API fee estimate failed for {asin} "
+                 f"({redact.redact(str(e))}) — falling back to the rule-based estimate")
+            fees = None
+
+    if (fees and fees.get("available") and fees.get("referral_fee") is not None
+            and fees.get("fba_fee") is not None):
+        profit, roi = scoring.estimate_oa_profit_roi_real_fees(
+            sell_price, buy_cost, fees["referral_fee"], fees["fba_fee"], weight_lb=weight_lb)
+        return profit, roi, "spapi"
+
+    cogs_fraction = buy_cost / sell_price
+    profit, roi = scoring.estimate_oa_profit_roi(sell_price, weight_lb,
+                                                  cogs_fraction=cogs_fraction, category=category)
+    return profit, roi, "estimate"
+
+
+# ----------------------------------------------------------------------------
+# Prompt D3 — deal-first, gate-checked lead creation (see the module docstring above).
+# ----------------------------------------------------------------------------
+def _create_deal_first_lead(dm: Dict[str, Any], deal: Dict[str, Any], api=None,
+                            dry_run: bool = False) -> Optional[Dict[str, Any]]:
+    """For a deal_matches row `dm` whose ASIN has NO existing lead, create a brand-new lead from
+    the REAL deal economics — but ONLY after passing the SAME hard gates and eligibility check
+    every Keepa-first candidate already passes before it can ever reach `leads`. Never raises
+    (wrapped in try/except) — a bad deal-first candidate must never crash the whole
+    apply_verified_matches() batch, exactly like every other defensive function in this module.
+
+    dry_run mirrors this module's OWN existing convention (see apply_verified_matches, run()):
+    reads and even paid external lookups (Keepa enrich, SP-API) still happen so the returned
+    telemetry is real, but the two Supabase WRITES (db.log_lead, db.update_lead_source) are
+    skipped — a dry run must never create a real lead row.
+
+    Returns None for: d3Enabled=false (a true no-op — no Keepa call, no Supabase write), a
+    NOT_ELIGIBLE ASIN, no live Keepa product, no usable real buy_cost, or any exception — all of
+    these fall back to the caller's existing "skipped_no_lead" tally, same as before D3 existed.
+    Returns {"asin", "hard_rejected": True, "reason"} when the candidate fails
+    scoring.oa_hard_reject — logged as an audit-trail lead (verdict="pass", found_via=
+    "deal-first") but NEVER given real source_store/source_url/profit/roi via
+    update_lead_source(), so a hard-rejected candidate can never look like an actionable buy tip.
+    Returns {"asin", "hard_rejected": False, "lead_id", "needs_ungating"} on a real, gate-checked
+    new lead.
+
+    Guard order (never reordered, never short-circuited by a shortcut path):
+      1. brain_config.d3_enabled() — checked again here even though the caller
+         (apply_verified_matches) already checks it before calling this function at all, so this
+         function stays a safe no-op even if it ever gets a second call site later.
+      2. _eligible_for_matching(asin) — the SAME free SP-API eligibility pre-filter used
+         everywhere else in this module (cheap: get_listings_restrictions has its own 7-day
+         cache). NOT_ELIGIBLE means this ASIN can never be sold — it is never even enriched.
+      3. keepa_client.enrich([asin], api=api) — a REAL, intentional Keepa token spend. A
+         buy-recommendation lead needs CURRENT data, not the stale snapshot from match time.
+         enrich() already token-guards itself internally (no second guard added here).
+      4. scoring.oa_hard_reject(candidate) — the exact function scout's normal Keepa-first
+         pipeline (pipeline.py) calls on every candidate, called here on the merged
+         enrich()-product + real buy_cost dict, never re-derived or approximated.
+      5. scoring.explain_oa(candidate) — for a hard-gate survivor, the real verdict/score
+         (price-band, offers-band, ROI/profit-vs-target, etc. all apply here, computed from the
+         REAL oa_profit/oa_roi set on the candidate below — never the 50%-of-price default
+         estimate_oa_profit_roi would otherwise silently substitute if oa_profit/oa_roi were
+         left unset)."""
+    try:
+        if not brain_config.d3_enabled():
+            return None
+
+        asin = dm.get("asin")
+        if not asin:
+            return None
+
+        is_eligible, needs_ungating = _eligible_for_matching(asin)
+        if not is_eligible:
+            return None
+
+        products = keepa_client.enrich([asin], api=api)
+        if not products:
+            return None
+        # Code review finding (2026-07-13): without this, every deal-first lead's
+        # features_snapshot would have day_of_week/days_to_prime_day/brand_trend_*/
+        # category_trend_*/ebay_* all null — not from genuine unavailability (day_of_week is a
+        # pure function of today's date, never legitimately missing) but purely because this
+        # code path skipped the attachment step every OTHER live scoring path runs, making
+        # found_via="deal-first" a disguised proxy for "these features are always NaN" — exactly
+        # the per-path label-tier fingerprint pipeline.py's own version of this same call warns
+        # about. Mirrors pipeline.py's attach_signal_features call precisely: best-effort, a
+        # signals failure never drops the candidate.
+        try:
+            products = signals_attach.attach_signal_features(products)
+        except Exception as e:
+            print(f"[deals.matcher] attach_signal_features failed (non-fatal): "
+                 f"{redact.redact(str(e))}")
+        product = products[0]
+
+        buy_cost = _real_buy_cost(deal)
+        if buy_cost is None:
+            return None
+
+        sell_price = product.get("price")
+        profit, roi, fee_source = _real_profit_roi(
+            sell_price, buy_cost, product.get("weight_lb"), product.get("category"), asin)
+
+        # Merge the enrich() product with the real buy_cost/profit/roi. Setting oa_profit/oa_roi
+        # here (not just buy_cost) matters: scoring._score_oa_impl (used by both
+        # score_product_oa and explain_oa) only recomputes profit/roi from
+        # estimate_oa_profit_roi's 50%-of-price default when p['oa_profit']/p['oa_roi'] are
+        # absent — leaving them unset would silently score this deal-first candidate against
+        # the fake COGS assumption this whole build exists to replace.
+        candidate: Dict[str, Any] = dict(product)
+        candidate["buy_cost"] = buy_cost
+        candidate["oa_profit"] = profit
+        candidate["oa_roi"] = roi
+
+        category = candidate.get("category")
+        hard_reject = scoring.oa_hard_reject(candidate)
+        # score_product_oa and explain_oa share the same underlying _score_oa_impl computation
+        # (see scoring.py) — calling both here mirrors pipeline.py's own _evaluate(), which
+        # already calls score_product_oa (for rule_score/reason) AND explain_oa (for the
+        # structured explanation) on the same candidate; not a second, independently-maintained
+        # scoring formula.
+        rule_score, _pr, rule_reason = scoring.score_product_oa(candidate, category=category)
+
+        if hard_reject:
+            reason_string = f"Hard reject: {hard_reject}. {rule_reason}".strip()
+            if not dry_run:
+                db.log_lead(candidate, rule_score, "pass", reason_string,
+                            found_via="deal-first", explanation=None)
+            return {"asin": asin, "hard_rejected": True, "reason": hard_reject}
+
+        explanation = scoring.explain_oa(candidate, category=category)
+        candidate["explanation"] = explanation
+        if dry_run:
+            # Compute everything (real telemetry) but never write — same contract as every other
+            # dry_run path in this module (apply_verified_matches, run()): no Supabase write.
+            return {"asin": asin, "hard_rejected": False, "lead_id": None,
+                   "needs_ungating": needs_ungating}
+
+        lead_id = db.log_lead(candidate, explanation["score"], explanation["verdict"],
+                              rule_reason, found_via="deal-first", explanation=explanation)
+        if lead_id is None:
+            return None
+
+        gated_status = "approval_required" if needs_ungating else None
+        # Code review finding (2026-07-13): scope the PATCH to found_via="deal-first" — leads'
+        # only unique key is (asin, found_via), and an unscoped PATCH would overwrite any OTHER
+        # found_via row for this same asin (scout/hourly-collect/deal-hint) if one gets created
+        # in the narrow window between this function's own get_lead()-found-nothing check and
+        # this write. See update_lead_source()'s own docstring for the full explanation.
+        db.update_lead_source(asin, buy_cost, deal.get("retailer"), deal.get("url"),
+                              profit, roi, gated_status=gated_status, found_via="deal-first")
+        return {"asin": asin, "hard_rejected": False, "lead_id": lead_id,
+               "needs_ungating": needs_ungating}
+    except Exception as e:
+        print(f"[deals.matcher] _create_deal_first_lead failed for {dm.get('asin')} "
+             f"({redact.redact(str(e))}) — skipped, no lead written")
+        return None
+
+
+# ----------------------------------------------------------------------------
 # Phase 2.3 — apply a verified match to its lead's real cost fields.
 # ----------------------------------------------------------------------------
-def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, Any]:
+def apply_verified_matches(limit: int = 50, dry_run: bool = False, api=None) -> Dict[str, Any]:
     """For every deal_matches row a human approved OR whose algorithmic confidence already
     cleared the brain's auto-accept band (currently unreachable via the title-only path with no
     live LLM — see composite_confidence's docstring; reachable once a real UPC + full attribute
@@ -590,10 +807,14 @@ def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, 
     profit/roi with the real deal economics, replacing the OA_COGS_FRACTION 50%-of-price
     assumption for that one lead.
 
-    Only ever enriches a lead that ALREADY EXISTS (found via scout's own normal Keepa discovery,
-    which already ran the hard gates) — never creates one. A verified match with no matching
-    lead is skipped, not fabricated into a new ungated one (see the module docstring for why
-    deal-first lead creation is Prompt D3 scope, not this).
+    For a lead that ALREADY EXISTS (found via scout's own normal Keepa discovery, which already
+    ran the hard gates), this only ever enriches it — never re-runs the gates, since they
+    already ran. For a verified match with NO existing lead: as of the D3 build (2026-07-13),
+    when ai-brain.json `dealFinder.d3Enabled` is true, it is routed through
+    _create_deal_first_lead() — which DOES re-run the hard gates + eligibility check on fresh
+    Keepa data before ever writing a lead — instead of being silently skipped. When d3Enabled is
+    false (the default until Mehmet reviews and flips it), the behavior is exactly what it was
+    before D3 existed: skipped, not fabricated into a new ungated lead.
 
     'First verified source wins' in v1: a lead that already has a source_store is skipped rather
     than re-evaluated against a second candidate source — a documented simplification (choosing
@@ -626,7 +847,11 @@ def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, 
     counts = {"checked": 0, "applied": 0, "skipped_rejected": 0, "skipped_no_lead": 0,
              "skipped_already_sourced": 0, "skipped_incomplete_data": 0,
              "skipped_not_eligible": 0, "applied_needs_ungating": 0,
-             "fee_source_spapi": 0, "fee_source_estimate": 0}
+             "fee_source_spapi": 0, "fee_source_estimate": 0,
+             # D3 (2026-07-13) — deal-first, gate-checked lead creation. Both stay 0 whenever
+             # dealFinder.d3Enabled is false (the pre-D3 "skipped_no_lead" tally is used
+             # instead, unchanged) — see _create_deal_first_lead()'s docstring.
+             "created_new_lead": 0, "created_new_lead_hard_rejected": 0}
 
     for dm in ready:
         counts["checked"] += 1
@@ -651,7 +876,23 @@ def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, 
 
         lead = db.get_lead(asin)
         if not lead:
-            counts["skipped_no_lead"] += 1
+            # D3 (2026-07-13): a verified match with no pre-existing lead used to always be
+            # skipped here (Prompt D3 was out of scope). Now, ONLY when a human has explicitly
+            # flipped ai-brain.json dealFinder.d3Enabled, route it through
+            # _create_deal_first_lead() — which re-runs the identical hard gates + eligibility
+            # check below, never a shortcut. d3Enabled=false takes this exact same branch as
+            # before D3 existed: counts["skipped_no_lead"] += 1, continue, no Keepa call, no
+            # Supabase write — byte-for-byte the pre-D3 behavior.
+            if brain_config.d3_enabled():
+                result = _create_deal_first_lead(dm, deal, api=api, dry_run=dry_run)
+                if result is None:
+                    counts["skipped_no_lead"] += 1
+                elif result.get("hard_rejected"):
+                    counts["created_new_lead_hard_rejected"] += 1
+                else:
+                    counts["created_new_lead"] += 1
+            else:
+                counts["skipped_no_lead"] += 1
             continue
         if lead.get("source_store"):
             counts["skipped_already_sourced"] += 1
@@ -661,49 +902,27 @@ def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, 
             counts["skipped_incomplete_data"] += 1
             continue
 
-        stack = brain_config.discount_stack(deal.get("retailer") or "")
-        # Code review finding (2026-07-13): discount_stack() is a MANUALLY-maintained brain
-        # table with no upstream validation (its own docstring: "no API exists for these
-        # rates"). Nothing enforced cashback_pct + giftcard_pct <= 1.0 before this — a
-        # data-entry slip (e.g. 0.6 typed instead of 0.06) would drive buy_cost negative,
-        # which then makes cogs_fraction negative and scoring.estimate_oa_profit_roi silently
-        # returns roi=None (its cogs>0 guard) while profit gets INFLATED (subtracting a
-        # negative cogs) — a fabricated, artificially-high profit written straight to a real
-        # lead. Clamp the combined stack to [0, 0.95] (never a 100%-or-more "discount").
-        stack_fraction = max(0.0, min(stack["cashback_pct"] + stack["giftcard_pct"], 0.95))
-        buy_cost = round(price_current * (1 - stack_fraction), 2)
+        # buy_cost/profit/roi math extracted to _real_buy_cost/_real_profit_roi (D3 build,
+        # 2026-07-13) so this backfill path and _create_deal_first_lead() share EXACTLY one
+        # formula each, never two copies that could drift — see those functions' docstrings for
+        # the clamp/fallback reasoning previously inlined here.
+        buy_cost = _real_buy_cost(deal)
         weight_lb = (lead.get("features_snapshot") or {}).get("weight_lb")
-
-        # Real SP-API fees when available (spapi.get_fees_estimate) instead of the rule-based
-        # estimate — never raises: an SP-API hiccup must never break this backfill, it just
-        # falls back to the existing v1 estimate path exactly as before.
-        fees = None
-        if spapi.configured():
-            try:
-                fees = spapi.get_fees_estimate(asin, sell_price)
-            except Exception as e:
-                print(f"[deals.matcher] SP-API fee estimate failed for {asin} "
-                     f"({redact.redact(str(e))}) — falling back to the rule-based estimate")
-                fees = None
-
-        if (fees and fees.get("available") and fees.get("referral_fee") is not None
-                and fees.get("fba_fee") is not None):
-            profit, roi = scoring.estimate_oa_profit_roi_real_fees(
-                sell_price, buy_cost, fees["referral_fee"], fees["fba_fee"], weight_lb=weight_lb)
-            counts["fee_source_spapi"] += 1
-        else:
-            cogs_fraction = buy_cost / sell_price
-            profit, roi = scoring.estimate_oa_profit_roi(sell_price, weight_lb,
-                                                          cogs_fraction=cogs_fraction,
-                                                          category=lead.get("category"))
-            counts["fee_source_estimate"] += 1
+        profit, roi, fee_source = _real_profit_roi(sell_price, buy_cost, weight_lb,
+                                                    lead.get("category"), asin)
+        counts[f"fee_source_{fee_source}"] += 1
         counts["applied"] += 1
         gated_status = "approval_required" if needs_ungating else None
         if needs_ungating:
             counts["applied_needs_ungating"] += 1
         if not dry_run:
+            # Code review finding (2026-07-13): scope to the SAME found_via db.get_lead() actually
+            # returned this lead under — an unscoped PATCH would overwrite every leads row for
+            # this asin, including one under a DIFFERENT found_via (scout/hourly-collect/
+            # deal-hint/deal-first) if more than one exists. See update_lead_source()'s docstring.
             db.update_lead_source(asin, buy_cost, deal.get("retailer"), deal.get("url"),
-                                  profit, roi, gated_status=gated_status)
+                                  profit, roi, gated_status=gated_status,
+                                  found_via=lead.get("found_via"))
 
     return counts
 
@@ -717,8 +936,24 @@ if __name__ == "__main__":
                         help="skip matching; only apply already-verified matches to leads")
     parser.add_argument("--no-notify", action="store_true")
     args = parser.parse_args()
+
+    # Code review finding (2026-07-13, D3 build): build ONE shared Keepa client for the WHOLE
+    # CLI invocation (both run() and apply_verified_matches()/_create_deal_first_lead() below)
+    # instead of letting apply_verified_matches default to api=None, which would make each
+    # deal-first ASIN construct its own client via keepa_client.enrich()'s own api=api or
+    # get_client() fallback — the exact per-call-site client-construction waste run()'s own
+    # 2026-07-13 fix already eliminated on its own loop, reintroduced here on a different one.
+    shared_api = None
+    if keepa_client._KEEPA and config.KEEPA_KEY:
+        try:
+            shared_api = keepa_client.get_client()
+        except Exception as e:
+            print(f"[deals.matcher] Keepa client unavailable ({redact.redact(str(e))}) — "
+                 "candidate generation/lead creation will be skipped this run")
+
     if not args.apply_only:
-        result = run(limit=args.limit, dry_run=args.dry_run, notify=not args.no_notify)
+        result = run(limit=args.limit, dry_run=args.dry_run, notify=not args.no_notify,
+                    api=shared_api)
         print(json.dumps(result, indent=2))
-    applied = apply_verified_matches(limit=args.limit, dry_run=args.dry_run)
+    applied = apply_verified_matches(limit=args.limit, dry_run=args.dry_run, api=shared_api)
     print(json.dumps(applied, indent=2))

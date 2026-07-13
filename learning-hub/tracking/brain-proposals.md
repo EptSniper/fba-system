@@ -290,3 +290,29 @@ re-synced; JSON validated.
 
 ---
 
+## 2026-07-13 -- Completed follow-through on the "2026-07-13 02:00 UTC" batch (Mehmet approved via /proposals)
+
+- **[knowledge-driven, completed]** Ran `python knowledge-rag/ask.py "current BSR ROI profit threshold"` as the
+  proposal asked. Top match (0.705, Sourcing Playbook): "Min profit: $3/unit... Min ROI: 30%... ~25% OK for
+  non-returnable grocery... Inbound shipping ~$0.60/lb." Compared against live `scout/config.py` CRITERIA_OA:
+  `min_profit_per_unit=3.0`, `min_roi=0.3`, `OA_GROCERY_MIN_ROI=0.25`, `OA_INBOUND_SHIP_PER_LB=0.6` -- all match
+  exactly. BSR is framed differently (playbook: top-2%-of-category percentile; codebase: absolute `bsr_max=200000`)
+  but this is a known, pre-existing design choice (Keepa doesn't expose category percentile), not a new
+  divergence. **Conclusion: no ai-brain.json update warranted** -- current criteria already match the corpus.
+
+- **[data-driven, investigated further]** The "~60 tokens/day vs ~1500 assumed" finding prompted a check of
+  whether the Keepa dispatcher (installed earlier today, DISPATCHER_APPROVAL_NOTE.md) is actually preventing
+  the >90-min gaps it was built for. Live `gh run list` for `keepa-collect.yml` shows it working correctly via
+  `workflow_dispatch` catch-ups from ~01:42-08:53 UTC today, then NOTHING but `event: schedule` since --
+  despite real gaps of 101/131/173/198 minutes occurring after 08:53 UTC, all well past its 40-minute threshold.
+  Ran the dispatcher script directly (as Task Scheduler would invoke it) and its logic is correct when tested
+  live just now. Found `WakeToRun: False` on the scheduled task via introspection -- a plausible contributor
+  (a sleeping machine simply never fires an Interactive-logon task) but not confirmed as the sole cause.
+  **Did NOT change WakeToRun** -- correctly blocked by the permission system as an unrequested machine-sleep-
+  behavior change; flagged to Mehmet for his own decision rather than applied unilaterally.
+
+Neither check required an ai-brain.json edit -- both are investigation/verification results, not brain proposals
+in their own right.
+
+---
+

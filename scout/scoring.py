@@ -250,6 +250,33 @@ def estimate_oa_profit_roi(price, weight_lb, cogs_fraction=None, category=None):
     return round(profit, 2), (round(roi, 3) if roi is not None else None)
 
 
+def estimate_oa_profit_roi_real_fees(price, buy_cost, referral_fee, fba_fee, weight_lb=None):
+    """Same profit/ROI formula as estimate_oa_profit_roi, but with REAL SP-API referral/FBA fees
+    (spapi.get_fees_estimate) substituted for the rule-based estimates — prep cost and inbound
+    shipping still come from this module's own constant/helper (config.OA_PREP_COST,
+    estimate_inbound_shipping) since SP-API's fee estimate doesn't include either. This is the
+    ONLY other place fee-math constants may be read from, so there is exactly one source of
+    truth for prep/shipping regardless of which fee source (rule-based vs SP-API-real) is used.
+    Returns (profit_per_unit, roi) or (None, None) for a missing/invalid price, buy_cost, or fee.
+    """
+    if not price or price <= 0:
+        return None, None
+    # Code review finding (2026-07-13): a zero buy_cost is as invalid as a negative one — no
+    # real retail deal is free, so this almost certainly signals upstream bad data (a discount
+    # stack that clamped everything away, a parsing bug), and ROI is undefined at cogs=0 anyway.
+    # The docstring already promised (None, None) for an "invalid" buy_cost; `< 0` alone let a
+    # zero silently compute a real-looking profit with a blank ROI instead.
+    if buy_cost is None or buy_cost <= 0:
+        return None, None
+    if referral_fee is None or fba_fee is None:
+        return None, None
+    prep = config.OA_PREP_COST
+    shipping = estimate_inbound_shipping(weight_lb)
+    profit = price - referral_fee - fba_fee - buy_cost - prep - shipping
+    roi = profit / buy_cost
+    return round(profit, 2), round(roi, 3)
+
+
 def net_proceeds(price, weight_lb, category=None):
     """Seller's net $ from a sale BEFORE cost of goods — price minus referral (category-aware,
     $0.30 floor), fulfillment (with fuel surcharge), prep, and inbound shipping-to-FBA. Used by

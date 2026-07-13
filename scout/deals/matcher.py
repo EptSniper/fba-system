@@ -42,6 +42,35 @@ confidence estimates from the Build Plan's own research, not values that track a
 autoAccept is ever tuned below 0.85 via fba-brain-updater, an LLM-confirmed match could legitimately
 clear it. That would be the config behaving as configured, not a bug.
 
+SP-API WIRING (added this change, 2026-07-13): candidate generation now tries the FREE SP-API
+Catalog Items API first (spapi.catalog_lookup_upc for the UPC path, the new
+spapi.catalog_search_keywords for the title path) whenever spapi.configured() is true, with the
+existing Keepa paths (upc_lookup / search_by_term) kept as the fallback when SP-API is
+unconfigured, unavailable, or resolves zero ASINs. Whichever path finds candidate ASINs, they are
+run through a new free eligibility pre-filter (_eligible_for_matching /
+spapi.get_listings_restrictions) BEFORE any Keepa token is spent enriching them — a NOT_ELIGIBLE
+ASIN is dropped before it ever reaches keepa_client.enrich(), and an APPROVAL_REQUIRED one is kept
+but flagged ("needs-ungating" in the match's reason string), mirroring pipeline.py's own
+"keep but tag" convention for that status. apply_verified_matches() re-checks eligibility
+directly (via _eligible_for_matching, which reuses get_listings_restrictions' own 7-day cache,
+so this is cheap) immediately before writing anything — rather than trusting the free-text
+"needs-ungating" flag from match time, which could be stale by the time a human approves the
+match — and skips a NOT_ELIGIBLE ASIN entirely (never backfills real-looking economics for
+something that can't be sold at all), while an APPROVAL_REQUIRED one still gets its real
+numbers backfilled but is tagged via leads.gated_status="approval_required" so it isn't
+indistinguishable from a plain ALLOWED lead. apply_verified_matches() also now tries a real
+spapi.get_fees_estimate() before falling back to the rule-based scoring.estimate_oa_profit_roi,
+recording which source won via the fee_source_spapi/fee_source_estimate counters.
+
+HONEST STATUS of that wiring: implemented and unit-tested with mocked spapi responses, but NOT
+yet live-verified — spapi.configured() reflects only whether SP_API_LWA_CLIENT_ID/SECRET/
+REFRESH_TOKEN are non-empty strings, and as of this writing scout/.env's copies of all three are
+still short placeholder values (confirmed by length, never by printing the actual values), so any
+real call made through this path today would hit Amazon's LWA endpoint with fake credentials and
+fail — every call site here catches that and degrades to the pre-existing Keepa-only /
+rule-based-fee behavior, exactly the same honesty convention this file already uses for the
+UPC/LLM paths above.
+
 OUT OF SCOPE this session (named, not silently skipped):
   - Prompt D3's runner integration — wiring deal-first candidates into scout/run_daily.py so a
     verified match with NO pre-existing lead can become a brand-new gate-checked lead. Building
@@ -67,6 +96,7 @@ import discord_router
 import keepa_client
 import redact
 import scoring
+import spapi
 
 from . import brain_config, normalize
 
@@ -115,6 +145,11 @@ MATCH_TOOL = {
 _llm_warned = False
 _llm_calls_this_run = 0
 
+# Discovery telemetry (free SP-API vs paid Keepa candidate generation, + how many candidates the
+# free eligibility pre-filter dropped before a Keepa token was ever spent on them) — reset at the
+# top of each run() call, same module-global convention as _llm_calls_this_run above.
+_discovery_stats_this_run = {"spapi": 0, "keepa": 0, "dropped_ineligible": 0}
+
 
 def _llm_configured() -> bool:
     """Same real-vs-placeholder gate every other keyed module in this project uses (analyst.py,
@@ -161,32 +196,163 @@ def _llm_verify(deal: Dict[str, Any], candidate: Dict[str, Any],
     return None
 
 
-def _upc_candidates(deal: Dict[str, Any], api=None) -> List[Dict[str, Any]]:
-    upc = deal.get("upc")
-    if not upc:
-        return []
-    hits = keepa_client.upc_lookup([upc], api=api)
-    asins = (hits.get(upc) or [])[:CANDIDATES_PER_DEAL]
-    if not asins:
-        return []
-    products = keepa_client.enrich(asins, api=api)
+def _eligible_for_matching(asin: str) -> "tuple":
+    """(is_eligible, needs_ungating). True/False unless spapi is unconfigured, in which case
+    always (True, False) — an unconfigured SP-API must never block matching (honest no-op, not
+    a false rejection). NOT_ELIGIBLE -> (False, False), meaning drop this ASIN before spending a
+    Keepa token on it (the free pre-filter the token-economy directive asks for).
+    APPROVAL_REQUIRED -> (True, True) — still worth matching/pricing, just flagged for a human;
+    matches pipeline.py's own "keep but tag" philosophy for this exact status. Never raises —
+    an SP-API hiccup must never break candidate generation, matching pipeline._check_eligibility's
+    own try/except-and-continue convention."""
+    if not spapi.configured():
+        return True, False
+    try:
+        elig = spapi.get_listings_restrictions(asin)
+    except Exception as e:
+        print(f"[deals.matcher] SP-API eligibility check failed for {asin} "
+             f"({redact.redact(str(e))}) — treating as eligible (never block matching on an "
+             "SP-API hiccup)")
+        return True, False
+    status = elig.get("status")
+    if status == "NOT_ELIGIBLE":
+        return False, False
+    if status == "APPROVAL_REQUIRED":
+        return True, True
+    return True, False
+
+
+def _filter_eligible(asins: List[str]) -> "tuple[List[str], Dict[str, bool]]":
+    """Runs _eligible_for_matching over every ASIN, dropping NOT_ELIGIBLE ones BEFORE any Keepa
+    token is spent enriching them (the free pre-filter the token-economy directive asks for) and
+    tallying the drops into this module's discovery telemetry so run() can report them. Applies
+    regardless of which path (SP-API catalog search or Keepa fallback) found the ASINs in the
+    first place — eligibility is an independent capability, gated only on spapi.configured().
+    Returns (surviving_asins, needs_ungating_by_asin)."""
+    survivors: List[str] = []
+    needs_ungating: Dict[str, bool] = {}
+    for asin in asins:
+        ok, ungating = _eligible_for_matching(asin)
+        if not ok:
+            _discovery_stats_this_run["dropped_ineligible"] += 1
+            continue
+        survivors.append(asin)
+        if ungating:
+            needs_ungating[asin] = True
+    return survivors, needs_ungating
+
+
+def _tag_and_count(products: List[Dict[str, Any]], method: str, discovery_source: str,
+                   needs_ungating: Dict[str, bool]) -> List[Dict[str, Any]]:
+    """Shared tagging step for both candidate paths below: stamps `_method` (as before),
+    `_discovery_source` ("spapi"/"keepa", for run()'s free-vs-paid telemetry), and
+    `_needs_ungating` (from the eligibility pre-filter) onto each enriched product, and tallies
+    the discovery-source count."""
     for p in products:
-        p["_method"] = "upc"
+        p["_method"] = method
+        p["_discovery_source"] = discovery_source
+        if needs_ungating.get(p.get("asin")):
+            p["_needs_ungating"] = True
+        _discovery_stats_this_run[discovery_source] = _discovery_stats_this_run.get(discovery_source, 0) + 1
     return products
 
 
+def _resolve_candidates(method: str, spapi_call, spapi_parse, keepa_fn,
+                        api=None) -> List[Dict[str, Any]]:
+    """Shared try-SP-API/fallback-to-Keepa/filter-eligible/enrich/tag scaffold for
+    _upc_candidates and _title_candidates below. Code review finding (2026-07-13): the two
+    functions used to duplicate this five-step shape almost verbatim, differing only in which
+    lookup functions and result-shape parsing (`asins` list for the UPC path vs `results` list of
+    dicts for the title path) they used — exactly the two things this helper now takes as
+    arguments instead of re-deriving.
+
+    spapi_call() -> the raw SP-API result dict, or raises (only this call is wrapped in
+    try/except, same as before: an SP-API network/auth failure falls back to Keepa, but a bug in
+    parsing that result is a real bug, not something to silently swallow).
+    spapi_parse(raw) -> List[str] of ASINs extracted from a successful (`available`) raw result.
+    keepa_fn() -> List[str] of ASINs from the Keepa fallback path.
+
+    The eligibility pre-filter below is now unconditional (previously wrapped in its own
+    `if spapi.configured():` guard at each call site) — that outer guard was redundant with the
+    check _eligible_for_matching already performs per ASIN (returns (True, False), an honest
+    no-op, for every ASIN when SP-API is unconfigured), a second 2026-07-13 code review finding.
+    Removing it changes nothing observable: unconfigured, _filter_eligible now degrades to a
+    same-list pass-through instead of being skipped outright."""
+    asins: List[str] = []
+    discovery_source = "keepa"
+    if spapi.configured():
+        try:
+            raw = spapi_call()
+        except Exception as e:
+            print(f"[deals.matcher] SP-API {method} discovery failed ({redact.redact(str(e))}) — "
+                 "falling back to Keepa")
+            raw = {"available": False}
+        if raw.get("available"):
+            parsed = spapi_parse(raw)
+            if parsed:
+                asins = parsed
+                discovery_source = "spapi"
+
+    if not asins:
+        asins = keepa_fn()
+        discovery_source = "keepa"
+
+    if not asins:
+        return []
+
+    asins, needs_ungating = _filter_eligible(asins)
+    if not asins:
+        return []
+
+    products = keepa_client.enrich(asins, api=api)
+    return _tag_and_count(products, method, discovery_source, needs_ungating)
+
+
+def _upc_candidates(deal: Dict[str, Any], api=None) -> List[Dict[str, Any]]:
+    """UPC -> candidate ASIN(s). Tries the free SP-API Catalog Items lookup
+    (spapi.catalog_lookup_upc) first when spapi.configured() is true; falls back to Keepa's paid
+    code lookup (keepa_client.upc_lookup) when SP-API is unconfigured, unavailable, or resolves
+    zero ASINs. Either way, candidate ASINs pass through the eligibility pre-filter before
+    keepa_client.enrich() is ever called — Keepa's job here is pricing only, never discovery,
+    once a candidate ASIN exists. See _resolve_candidates for the shared scaffold."""
+    upc = deal.get("upc")
+    if not upc:
+        return []
+
+    def _parse(raw: Dict[str, Any]) -> List[str]:
+        return [a for a in (raw.get("asins") or []) if a][:CANDIDATES_PER_DEAL]
+
+    return _resolve_candidates(
+        "upc",
+        spapi_call=lambda: spapi.catalog_lookup_upc(upc),
+        spapi_parse=_parse,
+        keepa_fn=lambda: (keepa_client.upc_lookup([upc], api=api).get(upc) or [])[:CANDIDATES_PER_DEAL],
+        api=api,
+    )
+
+
 def _title_candidates(deal: Dict[str, Any], attrs: Dict[str, Any], api=None) -> List[Dict[str, Any]]:
+    """Title/brand -> candidate ASIN(s). Tries the free SP-API Catalog Items keyword search
+    (spapi.catalog_search_keywords) first when spapi.configured() is true; falls back to Keepa's
+    paid product-search (keepa_client.search_by_term, 10 tokens/term) when SP-API is unconfigured,
+    unavailable, or resolves zero ASINs. Same eligibility pre-filter + enrich()-for-pricing-only
+    flow as _upc_candidates above. See _resolve_candidates for the shared scaffold."""
     term = " ".join(x for x in (attrs.get("brand"), attrs.get("core_title")) if x).strip()
     term = term or (deal.get("title_raw") or "").strip()
     if not term:
         return []
-    asins = keepa_client.search_by_term(term, limit=CANDIDATES_PER_DEAL, api=api)
-    if not asins:
-        return []
-    products = keepa_client.enrich(asins, api=api)
-    for p in products:
-        p["_method"] = "title"
-    return products
+
+    def _parse(raw: Dict[str, Any]) -> List[str]:
+        return [r.get("asin") for r in (raw.get("results") or []) if r.get("asin")]
+
+    return _resolve_candidates(
+        "title",
+        spapi_call=lambda: spapi.catalog_search_keywords(term, brand=attrs.get("brand"),
+                                                         limit=CANDIDATES_PER_DEAL),
+        spapi_parse=_parse,
+        keepa_fn=lambda: keepa_client.search_by_term(term, limit=CANDIDATES_PER_DEAL, api=api),
+        api=api,
+    )
 
 
 def _attr_agreement(deal_attrs: Dict[str, Any], cand_attrs: Dict[str, Any]) -> "tuple":
@@ -311,6 +477,8 @@ def match_deal(deal: Dict[str, Any], api=None) -> List[Dict[str, Any]]:
                       f"brand={'y' if brand_match else 'n'}", f"pack={'y' if pack_match else 'n'}"]
         if not price_sane:
             reason_bits.append("price-sanity flag")
+        if cand.get("_needs_ungating"):
+            reason_bits.append("needs-ungating")
         if llm_result:
             reason_bits.append(f"llm={llm_result.get('match')}: {llm_result.get('reason', '')}")
         scored.append({
@@ -337,9 +505,12 @@ def run(limit: int = 50, dry_run: bool = False, notify: bool = True, api=None) -
     forever — see db.update_deal_status()."""
     global _llm_calls_this_run
     _llm_calls_this_run = 0
+    for k in _discovery_stats_this_run:
+        _discovery_stats_this_run[k] = 0
     deals_to_match = db.get_deals_by_status("new", limit=limit)
     counts = {"processed": 0, "auto": 0, "review": 0, "discard": 0, "no_candidates": 0,
-             "matches_written": 0, "llm_calls": 0}
+             "matches_written": 0, "llm_calls": 0,
+             "discovery_spapi": 0, "discovery_keepa": 0, "dropped_ineligible": 0}
 
     # Code review finding (2026-07-13): build ONE Keepa client for the whole batch instead of
     # letting each candidate lookup construct its own via keepa_client.get_client() (which
@@ -380,6 +551,9 @@ def run(limit: int = 50, dry_run: bool = False, notify: bool = True, api=None) -
             db.update_deal_status(deal["id"], "matched" if wrote_any else "discarded")
 
     counts["llm_calls"] = _llm_calls_this_run
+    counts["discovery_spapi"] = _discovery_stats_this_run["spapi"]
+    counts["discovery_keepa"] = _discovery_stats_this_run["keepa"]
+    counts["dropped_ineligible"] = _discovery_stats_this_run["dropped_ineligible"]
     if notify and not dry_run:
         try:
             _notify_run(counts)
@@ -425,6 +599,19 @@ def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, 
     than re-evaluated against a second candidate source — a documented simplification (choosing
     the BEST of several sources is a real future improvement, not built here).
 
+    FIXED (code review, 2026-07-13 — the finding survived an independent verify pass): the
+    eligibility pre-filter's `_needs_ungating` flag used to only ever surface as free text
+    buried inside a deal_matches row's llm_reason column, which this function never read —
+    an APPROVAL_REQUIRED match could get its real buy_cost/source/profit/roi written onto a
+    lead exactly as if it were a plain ALLOWED item, with nothing on the lead itself
+    distinguishing "sourced and ready to buy" from "sourced, but Amazon hasn't approved you to
+    list it yet." Now re-checks eligibility directly (via _eligible_for_matching, which uses
+    get_listings_restrictions' own 7-day cache, so this is cheap) before ANY write: a
+    NOT_ELIGIBLE ASIN is skipped entirely (never fabricates real-looking economics for
+    something that can't be sold at all), and an APPROVAL_REQUIRED one still gets its real
+    numbers backfilled — they ARE real — but tagged via leads.gated_status="approval_required"
+    so a human sees it isn't immediately buyable.
+
     KNOWN GAP (code review, 2026-07-13): an auto-accept-band match is applied here WITHOUT
     waiting for a human — that is the Build Plan's own intended meaning of "auto-accept" (sec 3
     step 5: ">=0.90 -> straight to the scout's rater"), not an oversight. But the row still isn't
@@ -437,7 +624,9 @@ def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, 
     bands = brain_config.confidence_bands()
     ready = db.get_deal_matches_ready_to_apply(bands["auto_accept"], limit=limit)
     counts = {"checked": 0, "applied": 0, "skipped_rejected": 0, "skipped_no_lead": 0,
-             "skipped_already_sourced": 0, "skipped_incomplete_data": 0}
+             "skipped_already_sourced": 0, "skipped_incomplete_data": 0,
+             "skipped_not_eligible": 0, "applied_needs_ungating": 0,
+             "fee_source_spapi": 0, "fee_source_estimate": 0}
 
     for dm in ready:
         counts["checked"] += 1
@@ -449,6 +638,15 @@ def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, 
         price_current = deal.get("price_current")
         if not asin or not price_current or price_current <= 0:
             counts["skipped_incomplete_data"] += 1
+            continue
+
+        # Re-check eligibility right before writing (cheap — get_listings_restrictions has its
+        # own 7-day cache) rather than trusting a stale _needs_ungating flag buried in this
+        # deal_matches row's llm_reason text, which this function never parsed. NOT_ELIGIBLE
+        # means never write real-looking economics for something that can't be sold at all.
+        is_eligible, needs_ungating = _eligible_for_matching(asin)
+        if not is_eligible:
+            counts["skipped_not_eligible"] += 1
             continue
 
         lead = db.get_lead(asin)
@@ -475,14 +673,37 @@ def apply_verified_matches(limit: int = 50, dry_run: bool = False) -> Dict[str, 
         stack_fraction = max(0.0, min(stack["cashback_pct"] + stack["giftcard_pct"], 0.95))
         buy_cost = round(price_current * (1 - stack_fraction), 2)
         weight_lb = (lead.get("features_snapshot") or {}).get("weight_lb")
-        cogs_fraction = buy_cost / sell_price
-        profit, roi = scoring.estimate_oa_profit_roi(sell_price, weight_lb,
-                                                      cogs_fraction=cogs_fraction,
-                                                      category=lead.get("category"))
+
+        # Real SP-API fees when available (spapi.get_fees_estimate) instead of the rule-based
+        # estimate — never raises: an SP-API hiccup must never break this backfill, it just
+        # falls back to the existing v1 estimate path exactly as before.
+        fees = None
+        if spapi.configured():
+            try:
+                fees = spapi.get_fees_estimate(asin, sell_price)
+            except Exception as e:
+                print(f"[deals.matcher] SP-API fee estimate failed for {asin} "
+                     f"({redact.redact(str(e))}) — falling back to the rule-based estimate")
+                fees = None
+
+        if (fees and fees.get("available") and fees.get("referral_fee") is not None
+                and fees.get("fba_fee") is not None):
+            profit, roi = scoring.estimate_oa_profit_roi_real_fees(
+                sell_price, buy_cost, fees["referral_fee"], fees["fba_fee"], weight_lb=weight_lb)
+            counts["fee_source_spapi"] += 1
+        else:
+            cogs_fraction = buy_cost / sell_price
+            profit, roi = scoring.estimate_oa_profit_roi(sell_price, weight_lb,
+                                                          cogs_fraction=cogs_fraction,
+                                                          category=lead.get("category"))
+            counts["fee_source_estimate"] += 1
         counts["applied"] += 1
+        gated_status = "approval_required" if needs_ungating else None
+        if needs_ungating:
+            counts["applied_needs_ungating"] += 1
         if not dry_run:
             db.update_lead_source(asin, buy_cost, deal.get("retailer"), deal.get("url"),
-                                  profit, roi)
+                                  profit, roi, gated_status=gated_status)
 
     return counts
 

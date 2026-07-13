@@ -34,6 +34,65 @@ def test_profit_roi_none_without_price():
     assert scoring.estimate_oa_profit_roi(None, 1.0) == (None, None)
 
 
+# --- estimate_oa_profit_roi_real_fees: real SP-API fee substitution (2026-07-13 wiring) ---
+
+def test_real_fees_known_combination_matches_hand_calculation():
+    # Hand-verified: price=$25.00, buy_cost=$8.00, referral=$3.75, fba_fee=$5.50, weight=1.5lb.
+    # profit = price - referral - fba_fee - buy_cost - prep - shipping(1.5lb)
+    price, buy_cost, referral_fee, fba_fee, weight_lb = 25.0, 8.0, 3.75, 5.50, 1.5
+    prep = config.OA_PREP_COST
+    shipping = round(weight_lb * config.OA_INBOUND_SHIP_PER_LB, 2)
+    expected_profit = round(price - referral_fee - fba_fee - buy_cost - prep - shipping, 2)
+    expected_roi = round(expected_profit / buy_cost, 3)
+    # At today's defaults (prep=$0.50, $0.60/lb shipping) that is a hand-checkable
+    # 25.00 - 3.75 - 5.50 - 8.00 - 0.50 - 0.90 = $6.35 profit, 6.35/8.00 = 0.794 ROI.
+    if prep == 0.50 and config.OA_INBOUND_SHIP_PER_LB == 0.60:
+        assert expected_profit == 6.35
+        assert expected_roi == 0.794
+
+    profit, roi = scoring.estimate_oa_profit_roi_real_fees(
+        price, buy_cost, referral_fee, fba_fee, weight_lb=weight_lb)
+    assert profit == expected_profit
+    assert roi == expected_roi
+
+
+def test_real_fees_none_for_zero_buy_cost():
+    profit, roi = scoring.estimate_oa_profit_roi_real_fees(25.0, 0.0, 3.75, 5.50, weight_lb=1.5)
+    assert (profit, roi) == (None, None)
+
+
+def test_real_fees_none_for_negative_buy_cost():
+    profit, roi = scoring.estimate_oa_profit_roi_real_fees(25.0, -1.0, 3.75, 5.50, weight_lb=1.5)
+    assert (profit, roi) == (None, None)
+
+
+def test_real_fees_none_for_missing_price():
+    profit, roi = scoring.estimate_oa_profit_roi_real_fees(None, 8.0, 3.75, 5.50, weight_lb=1.5)
+    assert (profit, roi) == (None, None)
+
+
+def test_real_fees_none_for_zero_price():
+    profit, roi = scoring.estimate_oa_profit_roi_real_fees(0.0, 8.0, 3.75, 5.50, weight_lb=1.5)
+    assert (profit, roi) == (None, None)
+
+
+def test_real_fees_none_for_missing_referral_fee():
+    profit, roi = scoring.estimate_oa_profit_roi_real_fees(25.0, 8.0, None, 5.50, weight_lb=1.5)
+    assert (profit, roi) == (None, None)
+
+
+def test_real_fees_none_for_missing_fba_fee():
+    profit, roi = scoring.estimate_oa_profit_roi_real_fees(25.0, 8.0, 3.75, None, weight_lb=1.5)
+    assert (profit, roi) == (None, None)
+
+
+def test_real_fees_missing_weight_defaults_to_neutral_1lb():
+    profit, _ = scoring.estimate_oa_profit_roi_real_fees(25.0, 8.0, 3.75, 5.50, weight_lb=None)
+    shipping_1lb = scoring.estimate_inbound_shipping(None)
+    expected = round(25.0 - 3.75 - 5.50 - 8.0 - config.OA_PREP_COST - shipping_1lb, 2)
+    assert profit == expected
+
+
 def test_good_product_scores_high():
     score, _, _ = scoring.score_product_oa(_base())
     assert score >= 90

@@ -365,6 +365,27 @@ def test_update_lead_source_omits_profit_roi_when_none():
     assert "profit" not in body and "roi" not in body
 
 
+def test_update_lead_source_writes_gated_status_when_given():
+    """Code review regression (2026-07-13): an APPROVAL_REQUIRED match's real economics used to
+    get written onto a lead with nothing distinguishing it from a plain ALLOWED item."""
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.patch.return_value = _mock_response({}, status=204)
+        db.update_lead_source("B000", 10.0, "Target", "https://x", 5.0, 0.5,
+                              gated_status="approval_required")
+    body = mock_requests.patch.call_args[1]["json"]
+    assert body["gated_status"] == "approval_required"
+
+
+def test_update_lead_source_omits_gated_status_when_none():
+    supa_p, key_p = _enabled_db()
+    with supa_p, key_p, patch.object(db, "requests") as mock_requests:
+        mock_requests.patch.return_value = _mock_response({}, status=204)
+        db.update_lead_source("B000", 10.0, "Target", "https://x", 5.0, 0.5)
+    body = mock_requests.patch.call_args[1]["json"]
+    assert "gated_status" not in body
+
+
 def test_deal_match_functions_noop_when_supabase_disabled():
     with patch.object(db, "SUPA", ""), patch.object(db, "KEY", ""):
         assert db.get_deals_by_status() == []

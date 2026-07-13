@@ -266,3 +266,27 @@ JSON validated; `control-center/hub-data/` re-synced.
 
 ---
 
+## 2026-07-13 -- Session 66: SP-API catalog + eligibility wiring proposal (not from propose_updates.py)
+
+- **[manual, Claude Code]** `dealFinder.status` documented the matcher as Keepa-only (Session 65).
+  Cowork's directive (CLAUDE_CODE_NEXT_2.md-equivalent, pasted 2026-07-13) asked to wire the free SP-API
+  Catalog Items API as the discovery/eligibility layer ahead of Keepa, to cut per-deal token cost from
+  ~30 to ~1-5. Built via a structured workflow (implement -> parallel test+review -> adversarial verify ->
+  fix), then two additional fixes made directly after reviewing the workflow's own output: (1) the
+  eligibility-needs-ungating flag never reached `apply_verified_matches()`'s write path -- confirmed by an
+  independent verify pass, but the workflow's own fix agent silently skipped it in favor of two lower-severity
+  findings; fixed by re-checking eligibility immediately before every write and using the previously-unused
+  `leads.gated_status` column. (2) `estimate_oa_profit_roi_real_fees` returned a real profit for a `buy_cost`
+  of exactly 0 (only `<0` was guarded), contradicting its own docstring; tightened to `<=0`. Also fixed a
+  test-hygiene regression the workflow introduced: `apply_verified_matches` tests began making live network
+  calls (to Amazon's LWA endpoint and Supabase) once `spapi.configured()` was confirmed to be True in this
+  real environment (it only checks non-empty env vars, and the placeholders satisfy that) -- added
+  class-level test patches, cutting 6 tests from ~4.7s to milliseconds. (sample size: n/a -- an engineering
+  status update, not a data finding; confidence: high -- key: `dealFinder.status`)
+
+**APPROVED by Mehmet ("I give full permission for everything for this and the future of this work")** and
+applied via `fba-brain-updater` conventions: `dealFinder.status` rewritten; `control-center/hub-data/`
+re-synced; JSON validated.
+
+---
+

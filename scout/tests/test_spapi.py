@@ -152,6 +152,84 @@ def test_fees_estimate_parses_referral_and_fba():
 
 
 # ---------------------------------------------------------------------------
+# catalog_search_keywords — free title/keyword -> candidate ASIN(s)
+# ---------------------------------------------------------------------------
+
+def test_catalog_search_keywords_not_configured_returns_available_false():
+    with patch.object(spapi, "CLIENT_ID", None):
+        result = spapi.catalog_search_keywords("acme widget")
+    assert result["available"] is False
+    assert result["query"] == "acme widget"
+
+
+def test_catalog_search_keywords_parses_items_into_results():
+    id_p, secret_p, refresh_p = _configured()
+    body = {"items": [
+        {"asin": "B0KW0001", "summaries": [{"itemName": "Acme Widget", "brand": "Acme"}]},
+    ]}
+    with id_p, secret_p, refresh_p, \
+            patch.object(spapi, "requests") as mock_requests, \
+            patch.object(spapi, "_refresh_access_token", return_value="tok"):
+        mock_requests.get.return_value = _mock_ok(body)
+        result = spapi.catalog_search_keywords("acme widget")
+    assert result["available"] is True
+    assert result["results"] == [{"asin": "B0KW0001", "title": "Acme Widget", "brand": "Acme"}]
+
+
+def test_catalog_search_keywords_empty_response_degrades_to_available_true_empty_results():
+    id_p, secret_p, refresh_p = _configured()
+    with id_p, secret_p, refresh_p, \
+            patch.object(spapi, "requests") as mock_requests, \
+            patch.object(spapi, "_refresh_access_token", return_value="tok"):
+        mock_requests.get.return_value = _mock_ok({})  # no "items" key at all
+        result = spapi.catalog_search_keywords("acme widget")
+    assert result["available"] is True
+    assert result["results"] == []
+
+
+def test_catalog_search_keywords_malformed_items_degrade_to_blank_fields_never_crash():
+    id_p, secret_p, refresh_p = _configured()
+    body = {"items": [
+        {"asin": None, "summaries": [{"itemName": "No ASIN"}]},  # missing asin -> dropped
+        {"asin": "B0OK", "summaries": "not-a-list"},              # malformed summaries -> blank fields
+        "not-a-dict",                                              # malformed item -> skipped
+        {"asin": "B0EMPTYSUM", "summaries": []},                  # empty summaries -> blank fields
+    ]}
+    with id_p, secret_p, refresh_p, \
+            patch.object(spapi, "requests") as mock_requests, \
+            patch.object(spapi, "_refresh_access_token", return_value="tok"):
+        mock_requests.get.return_value = _mock_ok(body)
+        result = spapi.catalog_search_keywords("acme widget")
+    assert result["available"] is True
+    assert result["results"] == [
+        {"asin": "B0OK", "title": None, "brand": None},
+        {"asin": "B0EMPTYSUM", "title": None, "brand": None},
+    ]
+
+
+def test_catalog_search_keywords_brand_param_passed_through_when_given():
+    id_p, secret_p, refresh_p = _configured()
+    with id_p, secret_p, refresh_p, \
+            patch.object(spapi, "requests") as mock_requests, \
+            patch.object(spapi, "_refresh_access_token", return_value="tok"):
+        mock_requests.get.return_value = _mock_ok({"items": []})
+        spapi.catalog_search_keywords("widget", brand="Acme")
+    params = mock_requests.get.call_args.kwargs["params"]
+    assert params["brand"] == "Acme"
+
+
+def test_catalog_search_keywords_no_brand_param_when_not_given():
+    id_p, secret_p, refresh_p = _configured()
+    with id_p, secret_p, refresh_p, \
+            patch.object(spapi, "requests") as mock_requests, \
+            patch.object(spapi, "_refresh_access_token", return_value="tok"):
+        mock_requests.get.return_value = _mock_ok({"items": []})
+        spapi.catalog_search_keywords("widget")
+    params = mock_requests.get.call_args.kwargs["params"]
+    assert "brand" not in params
+
+
+# ---------------------------------------------------------------------------
 # Rate limiter — sleeps to stay under the configured rate
 # ---------------------------------------------------------------------------
 

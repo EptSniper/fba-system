@@ -13,7 +13,9 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import db  # noqa: E402
+import keepa_client  # noqa: E402
 import scoring  # noqa: E402
+import spapi  # noqa: E402
 from deals import matcher  # noqa: E402
 
 
@@ -154,6 +156,162 @@ class LlmConfiguredTest(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# _eligible_for_matching — free SP-API eligibility pre-filter (2026-07-13 wiring)
+# ---------------------------------------------------------------------------
+class EligibleForMatchingTest(unittest.TestCase):
+    def test_unconfigured_spapi_always_eligible_no_ungating(self):
+        """An unconfigured SP-API must never block matching (honest no-op)."""
+        with patch.object(spapi, "configured", return_value=False), \
+             patch.object(spapi, "get_listings_restrictions") as m_restrict:
+            result = matcher._eligible_for_matching("B0TEST")
+        self.assertEqual(result, (True, False))
+        m_restrict.assert_not_called()
+
+    def test_not_eligible_status_drops_the_candidate(self):
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_listings_restrictions",
+                          return_value={"status": "NOT_ELIGIBLE", "reasons": [], "links": []}):
+            result = matcher._eligible_for_matching("B0TEST")
+        self.assertEqual(result, (False, False))
+
+    def test_approval_required_status_keeps_and_flags_needs_ungating(self):
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_listings_restrictions",
+                          return_value={"status": "APPROVAL_REQUIRED", "reasons": [], "links": ["u"]}):
+            result = matcher._eligible_for_matching("B0TEST")
+        self.assertEqual(result, (True, True))
+
+    def test_allowed_status_keeps_unflagged(self):
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_listings_restrictions",
+                          return_value={"status": "ALLOWED", "reasons": [], "links": []}):
+            result = matcher._eligible_for_matching("B0TEST")
+        self.assertEqual(result, (True, False))
+
+    def test_spapi_exception_degrades_to_eligible_never_raises(self):
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_listings_restrictions",
+                          side_effect=Exception("network blip")):
+            result = matcher._eligible_for_matching("B0TEST")  # must not raise
+        self.assertEqual(result, (True, False))
+
+
+# ---------------------------------------------------------------------------
+# _upc_candidates / _title_candidates — SP-API preferred, Keepa fallback
+# (2026-07-13 wiring: free discovery first, eligibility pre-filter BEFORE enrich())
+# ---------------------------------------------------------------------------
+class UpcCandidatesSpapiWiringTest(unittest.TestCase):
+    def test_prefers_spapi_when_configured_and_it_resolves_asins(self):
+        deal = {"upc": "012345678905"}
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "catalog_lookup_upc",
+                          return_value={"available": True, "asins": ["B0SPAPI1"]}) as m_spapi, \
+             patch.object(keepa_client, "upc_lookup") as m_keepa_lookup, \
+             patch.object(matcher, "_filter_eligible", return_value=(["B0SPAPI1"], {})), \
+             patch.object(keepa_client, "enrich", return_value=[{"asin": "B0SPAPI1"}]):
+            result = matcher._upc_candidates(deal)
+        m_spapi.assert_called_once_with("012345678905")
+        m_keepa_lookup.assert_not_called()
+        self.assertEqual(result[0]["_discovery_source"], "spapi")
+        self.assertEqual(result[0]["_method"], "upc")
+
+    def test_falls_back_to_keepa_when_spapi_unconfigured(self):
+        deal = {"upc": "012345678905"}
+        with patch.object(spapi, "configured", return_value=False), \
+             patch.object(spapi, "catalog_lookup_upc") as m_spapi, \
+             patch.object(keepa_client, "upc_lookup",
+                          return_value={"012345678905": ["B0KEEPA1"]}) as m_keepa_lookup, \
+             patch.object(keepa_client, "enrich", return_value=[{"asin": "B0KEEPA1"}]):
+            result = matcher._upc_candidates(deal)
+        m_spapi.assert_not_called()
+        m_keepa_lookup.assert_called_once()
+        self.assertEqual(result[0]["_discovery_source"], "keepa")
+
+    def test_falls_back_to_keepa_when_spapi_configured_but_resolves_nothing(self):
+        deal = {"upc": "012345678905"}
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "catalog_lookup_upc",
+                          return_value={"available": True, "asins": []}), \
+             patch.object(keepa_client, "upc_lookup",
+                          return_value={"012345678905": ["B0KEEPA1"]}) as m_keepa_lookup, \
+             patch.object(matcher, "_filter_eligible", return_value=(["B0KEEPA1"], {})), \
+             patch.object(keepa_client, "enrich", return_value=[{"asin": "B0KEEPA1"}]):
+            result = matcher._upc_candidates(deal)
+        m_keepa_lookup.assert_called_once()
+        self.assertEqual(result[0]["_discovery_source"], "keepa")
+
+    def test_eligibility_filter_runs_before_enrich_when_spapi_resolved_candidates(self):
+        deal = {"upc": "012345678905"}
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "catalog_lookup_upc",
+                          return_value={"available": True, "asins": ["B0KEEP", "B0DROP"]}), \
+             patch.object(matcher, "_filter_eligible", return_value=(["B0KEEP"], {})) as m_filter, \
+             patch.object(keepa_client, "enrich", return_value=[{"asin": "B0KEEP"}]) as m_enrich:
+            matcher._upc_candidates(deal)
+        # The filter must see the RAW SP-API candidates, and enrich() must only ever see the
+        # SURVIVORS -- proof the eligibility pre-filter ran before any Keepa token was spent.
+        m_filter.assert_called_once_with(["B0KEEP", "B0DROP"])
+        m_enrich.assert_called_once_with(["B0KEEP"], api=None)
+
+
+class TitleCandidatesSpapiWiringTest(unittest.TestCase):
+    def test_prefers_spapi_when_configured_and_it_resolves_asins(self):
+        deal = {"title_raw": "Acme Widget"}
+        attrs = {"brand": "Acme", "core_title": "Widget"}
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "catalog_search_keywords",
+                          return_value={"available": True,
+                                       "results": [{"asin": "B0SPAPI1", "title": "Acme Widget",
+                                                   "brand": "Acme"}]}) as m_spapi, \
+             patch.object(keepa_client, "search_by_term") as m_keepa_search, \
+             patch.object(matcher, "_filter_eligible", return_value=(["B0SPAPI1"], {})), \
+             patch.object(keepa_client, "enrich", return_value=[{"asin": "B0SPAPI1"}]):
+            result = matcher._title_candidates(deal, attrs)
+        m_spapi.assert_called_once_with("Acme Widget", brand="Acme", limit=matcher.CANDIDATES_PER_DEAL)
+        m_keepa_search.assert_not_called()
+        self.assertEqual(result[0]["_discovery_source"], "spapi")
+        self.assertEqual(result[0]["_method"], "title")
+
+    def test_falls_back_to_keepa_when_spapi_unconfigured(self):
+        deal = {"title_raw": "Acme Widget"}
+        attrs = {"brand": "Acme", "core_title": "Widget"}
+        with patch.object(spapi, "configured", return_value=False), \
+             patch.object(spapi, "catalog_search_keywords") as m_spapi, \
+             patch.object(keepa_client, "search_by_term", return_value=["B0KEEPA1"]) as m_keepa_search, \
+             patch.object(keepa_client, "enrich", return_value=[{"asin": "B0KEEPA1"}]):
+            result = matcher._title_candidates(deal, attrs)
+        m_spapi.assert_not_called()
+        m_keepa_search.assert_called_once()
+        self.assertEqual(result[0]["_discovery_source"], "keepa")
+
+    def test_falls_back_to_keepa_when_spapi_configured_but_resolves_nothing(self):
+        deal = {"title_raw": "Acme Widget"}
+        attrs = {"brand": "Acme", "core_title": "Widget"}
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "catalog_search_keywords",
+                          return_value={"available": True, "results": []}), \
+             patch.object(keepa_client, "search_by_term", return_value=["B0KEEPA1"]) as m_keepa_search, \
+             patch.object(matcher, "_filter_eligible", return_value=(["B0KEEPA1"], {})), \
+             patch.object(keepa_client, "enrich", return_value=[{"asin": "B0KEEPA1"}]):
+            result = matcher._title_candidates(deal, attrs)
+        m_keepa_search.assert_called_once()
+        self.assertEqual(result[0]["_discovery_source"], "keepa")
+
+    def test_eligibility_filter_runs_before_enrich_when_spapi_resolved_candidates(self):
+        deal = {"title_raw": "Acme Widget"}
+        attrs = {"brand": "Acme", "core_title": "Widget"}
+        with patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "catalog_search_keywords",
+                          return_value={"available": True,
+                                       "results": [{"asin": "B0KEEP"}, {"asin": "B0DROP"}]}), \
+             patch.object(matcher, "_filter_eligible", return_value=(["B0KEEP"], {})) as m_filter, \
+             patch.object(keepa_client, "enrich", return_value=[{"asin": "B0KEEP"}]) as m_enrich:
+            matcher._title_candidates(deal, attrs)
+        m_filter.assert_called_once_with(["B0KEEP", "B0DROP"])
+        m_enrich.assert_called_once_with(["B0KEEP"], api=None)
+
+
+# ---------------------------------------------------------------------------
 # match_deal — mocked Keepa candidate generation
 # ---------------------------------------------------------------------------
 class MatchDealTest(unittest.TestCase):
@@ -253,11 +411,71 @@ class RunTest(unittest.TestCase):
         m_status.assert_called_once_with(1, "discarded")
         self.assertEqual(counts["no_candidates"], 1)
 
+    def test_discovery_and_dropped_ineligible_telemetry_surfaces_in_run_counts(self):
+        """run()'s new discovery_spapi/discovery_keepa/dropped_ineligible counters (2026-07-13)
+        must reflect whatever match_deal's candidate generation tallied into the module-global
+        _discovery_stats_this_run while producing this deal's matches."""
+        deals = [{"id": 1, "title_raw": "Acme Widget", "brand": "Acme", "price_current": 10.0}]
+
+        def fake_match_deal(deal, api=None):
+            # Simulates what a real match_deal -> _upc_candidates/_title_candidates call does:
+            # tally discovery source + a dropped-ineligible candidate before returning matches.
+            matcher._discovery_stats_this_run["spapi"] += 2
+            matcher._discovery_stats_this_run["keepa"] += 1
+            matcher._discovery_stats_this_run["dropped_ineligible"] += 3
+            return [{"asin": "A1", "confidence": 0.7, "route": "review", "method": "title",
+                     "pack_match": True, "llm_reason": "x"}]
+
+        with patch.object(db, "get_deals_by_status", return_value=deals), \
+             patch.object(matcher, "match_deal", side_effect=fake_match_deal), \
+             patch.object(db, "upsert_deal_match", return_value=99), \
+             patch.object(db, "update_deal_status"):
+            counts = matcher.run(dry_run=False, notify=False)
+        self.assertEqual(counts["discovery_spapi"], 2)
+        self.assertEqual(counts["discovery_keepa"], 1)
+        self.assertEqual(counts["dropped_ineligible"], 3)
+
+    def test_discovery_telemetry_resets_between_run_calls(self):
+        """A stale count from a PRIOR run() call must never leak into the next run's reported
+        counts -- the module-global _discovery_stats_this_run is zeroed at the top of run()."""
+        deals = [{"id": 1, "title_raw": "x", "brand": "y", "price_current": 1.0}]
+        matcher._discovery_stats_this_run["spapi"] = 99  # stale from a hypothetical prior run
+        with patch.object(db, "get_deals_by_status", return_value=deals), \
+             patch.object(matcher, "match_deal", return_value=[]), \
+             patch.object(db, "update_deal_status"):
+            counts = matcher.run(dry_run=False, notify=False)
+        self.assertEqual(counts["discovery_spapi"], 0)
+
 
 # ---------------------------------------------------------------------------
 # apply_verified_matches — mocked db + real scoring math
 # ---------------------------------------------------------------------------
 class ApplyVerifiedMatchesTest(unittest.TestCase):
+    def setUp(self):
+        # Test-hygiene regression (2026-07-13): apply_verified_matches() now calls
+        # _eligible_for_matching(asin) unconditionally before every write (see the
+        # skipped_not_eligible/applied_needs_ungating tests below). spapi.configured() is
+        # actually True in this real environment (it only checks non-empty env vars — the
+        # placeholders in scout/.env satisfy that), so an unpatched test here would attempt a
+        # REAL network call (a Supabase cache read, then a real LWA token POST to Amazon with
+        # fake credentials) instead of degrading purely in-process — confirmed live: this class's
+        # 6 tests took ~4.7s unpatched vs milliseconds expected for mocked unit tests. Default to
+        # the neutral (eligible, no ungating) case; individual tests override this patch to
+        # exercise the NOT_ELIGIBLE/APPROVAL_REQUIRED paths specifically.
+        self._elig_patch = patch.object(matcher, "_eligible_for_matching", return_value=(True, False))
+        self._elig_patch.start()
+        self.addCleanup(self._elig_patch.stop)
+        # Same issue, second call site: apply_verified_matches() also calls
+        # spapi.get_fees_estimate(asin, sell_price) unconditionally when spapi.configured() is
+        # True (which it is here) — an unpatched test would attempt a second real network call
+        # (this one straight to spapi.py's own _get(), no cache) before falling back to the
+        # rule-based estimate. Default to unavailable (the pre-SP-API v1 behavior every existing
+        # test here already expects); ApplyVerifiedMatchesRealFeesTest below overrides this to
+        # exercise the real-fees path specifically.
+        self._fees_patch = patch.object(spapi, "get_fees_estimate", return_value={"available": False})
+        self._fees_patch.start()
+        self.addCleanup(self._fees_patch.stop)
+
     def test_a_discount_stack_summing_past_100_percent_never_produces_negative_buy_cost(self):
         """Code review regression (2026-07-13): a bad ai-brain.json discountStack entry (e.g.
         cashbackPct + giftCardPct > 1.0, a plausible manual-data-entry slip since no API
@@ -328,6 +546,51 @@ class ApplyVerifiedMatchesTest(unittest.TestCase):
         self.assertEqual(args[4], expected_profit)
         self.assertEqual(args[5], expected_roi)
 
+    def test_not_eligible_asin_is_skipped_never_backfilled(self):
+        """Code review regression (2026-07-13, confirmed by an independent verify pass): a
+        NOT_ELIGIBLE ASIN must never get real-looking buy_cost/profit/roi written onto its
+        lead — it can't be sold at all, so backfilling economics for it would be misleading."""
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        with patch.object(matcher, "_eligible_for_matching", return_value=(False, False)), \
+             patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead") as m_get_lead, \
+             patch.object(db, "update_lead_source") as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)
+        m_get_lead.assert_not_called()  # never even looks up the lead for a NOT_ELIGIBLE ASIN
+        m_update.assert_not_called()
+        self.assertEqual(counts["skipped_not_eligible"], 1)
+        self.assertEqual(counts["applied"], 0)
+
+    def test_approval_required_match_still_backfills_but_tags_gated_status(self):
+        """The economics ARE real for an APPROVAL_REQUIRED match — it still gets backfilled —
+        but leads.gated_status must be set so a human sees it isn't immediately buyable."""
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        lead = {"asin": "A1", "source_store": None, "sell_price": 30.0, "category": "toys",
+               "features_snapshot": {"weight_lb": 1.0}}
+        with patch.object(matcher, "_eligible_for_matching", return_value=(True, True)), \
+             patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=lead), \
+             patch.object(db, "update_lead_source", return_value=True) as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)
+        self.assertEqual(counts["applied"], 1)
+        self.assertEqual(counts["applied_needs_ungating"], 1)
+        m_update.assert_called_once()
+        self.assertEqual(m_update.call_args[1].get("gated_status"), "approval_required")
+
+    def test_eligible_match_writes_no_gated_status(self):
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        lead = {"asin": "A1", "source_store": None, "sell_price": 30.0, "category": "toys",
+               "features_snapshot": {"weight_lb": 1.0}}
+        with patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=lead), \
+             patch.object(db, "update_lead_source", return_value=True) as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)
+        self.assertEqual(counts["applied_needs_ungating"], 0)
+        self.assertIsNone(m_update.call_args[1].get("gated_status"))
+
     def test_dry_run_computes_but_does_not_write(self):
         ready = [{"asin": "A1", "human_verdict": "approve",
                  "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
@@ -339,6 +602,84 @@ class ApplyVerifiedMatchesTest(unittest.TestCase):
             counts = matcher.apply_verified_matches(dry_run=True)
         m_update.assert_not_called()
         self.assertEqual(counts["applied"], 1)
+
+
+# ---------------------------------------------------------------------------
+# apply_verified_matches — real SP-API fees preferred over the rule-based estimate
+# (2026-07-13 wiring)
+# ---------------------------------------------------------------------------
+class ApplyVerifiedMatchesRealFeesTest(unittest.TestCase):
+    def setUp(self):
+        # Same test-hygiene fix as ApplyVerifiedMatchesTest.setUp: these tests patch
+        # spapi.configured() to True to exercise the real-fees path, which also means an
+        # unpatched _eligible_for_matching would make a real spapi.get_listings_restrictions
+        # network call. Every test here cares about the FEE path, not eligibility, so default
+        # to the neutral (eligible, no ungating) case throughout.
+        self._elig_patch = patch.object(matcher, "_eligible_for_matching", return_value=(True, False))
+        self._elig_patch.start()
+        self.addCleanup(self._elig_patch.stop)
+
+    def test_uses_real_spapi_fees_when_available_and_tallies_fee_source_spapi(self):
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        lead = {"asin": "A1", "source_store": None, "sell_price": 30.0, "category": "toys",
+               "features_snapshot": {"weight_lb": 1.0}}
+        fees = {"available": True, "referral_fee": 3.0, "fba_fee": 5.5}
+        with patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=lead), \
+             patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_fees_estimate", return_value=fees) as m_fees, \
+             patch.object(scoring, "estimate_oa_profit_roi_real_fees",
+                          return_value=(11.11, 1.111)) as m_real, \
+             patch.object(scoring, "estimate_oa_profit_roi") as m_estimate, \
+             patch.object(db, "update_lead_source", return_value=True) as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)
+        m_fees.assert_called_once_with("A1", 30.0)
+        m_real.assert_called_once_with(30.0, 10.0, 3.0, 5.5, weight_lb=1.0)
+        m_estimate.assert_not_called()
+        self.assertEqual(counts["fee_source_spapi"], 1)
+        self.assertEqual(counts["fee_source_estimate"], 0)
+        args = m_update.call_args[0]
+        self.assertEqual(args[4], 11.11)
+        self.assertEqual(args[5], 1.111)
+
+    def test_falls_back_to_rule_based_estimate_when_spapi_fees_unavailable(self):
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        lead = {"asin": "A1", "source_store": None, "sell_price": 30.0, "category": "toys",
+               "features_snapshot": {"weight_lb": 1.0}}
+        with patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=lead), \
+             patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_fees_estimate",
+                          return_value={"available": False, "reason": "x"}) as m_fees, \
+             patch.object(scoring, "estimate_oa_profit_roi_real_fees") as m_real, \
+             patch.object(db, "update_lead_source", return_value=True) as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)
+        m_fees.assert_called_once()
+        m_real.assert_not_called()
+        self.assertEqual(counts["fee_source_spapi"], 0)
+        self.assertEqual(counts["fee_source_estimate"], 1)
+        expected_profit, expected_roi = scoring.estimate_oa_profit_roi(
+            30.0, 1.0, cogs_fraction=10.0 / 30.0, category="toys")
+        args = m_update.call_args[0]
+        self.assertEqual(args[4], expected_profit)
+        self.assertEqual(args[5], expected_roi)
+
+    def test_spapi_exception_falls_back_to_estimate_never_raises(self):
+        ready = [{"asin": "A1", "human_verdict": "approve",
+                 "deals": {"price_current": 10.0, "retailer": "Target", "url": "https://x"}}]
+        lead = {"asin": "A1", "source_store": None, "sell_price": 30.0, "category": "toys",
+               "features_snapshot": {"weight_lb": 1.0}}
+        with patch.object(db, "get_deal_matches_ready_to_apply", return_value=ready), \
+             patch.object(db, "get_lead", return_value=lead), \
+             patch.object(spapi, "configured", return_value=True), \
+             patch.object(spapi, "get_fees_estimate", side_effect=Exception("network blip")), \
+             patch.object(db, "update_lead_source", return_value=True) as m_update:
+            counts = matcher.apply_verified_matches(dry_run=False)  # must not raise
+        self.assertEqual(counts["fee_source_spapi"], 0)
+        self.assertEqual(counts["fee_source_estimate"], 1)
+        m_update.assert_called_once()
 
 
 if __name__ == "__main__":

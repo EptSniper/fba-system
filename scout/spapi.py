@@ -185,3 +185,49 @@ def catalog_lookup_upc(upc: str) -> Dict[str, Any]:
     }, "catalog")
     items = data.get("items") or []
     return {"available": True, "upc": upc, "asins": [i.get("asin") for i in items if i.get("asin")]}
+
+
+def catalog_search_keywords(query: str, brand: Optional[str] = None, limit: int = 10) -> Dict[str, Any]:
+    """Free title/keyword -> candidate ASIN(s) via the Catalog Items API, the SP-API replacement
+    for Keepa's paid 10-token product-search fallback (keepa_client.search_by_term) — or
+    `available: False` with a reason.
+
+    HONEST STATUS (same caveat as every other function in this file): the Catalog Items API
+    v2022-04-01's `summaries` array shape for a KEYWORD search (as opposed to the identifier
+    lookup catalog_lookup_upc above already exercises in this codebase) has never been observed
+    against a real response here — every SP_API_* credential is still a placeholder. Parsed
+    defensively (`.get()` chains only, never an index/key that could raise) so a real-world shape
+    surprise degrades to a dropped/blank field, never a crash.
+
+    Shares the SAME "catalog" rate limiter as catalog_lookup_upc — this is the identical Catalog
+    Items API endpoint, just a keyword search instead of an identifier lookup, so it must draw
+    from the same token bucket, not get its own.
+    """
+    if not configured():
+        return {"available": False, "query": query, "reason": "SP-API not configured"}
+    params: Dict[str, Any] = {
+        "marketplaceIds": MARKETPLACE_ID,
+        "keywords": query,
+        "includedData": "summaries,identifiers",
+    }
+    if brand:
+        params["brand"] = brand
+    data = _get("/catalog/2022-04-01/items", params, "catalog")
+    items = data.get("items") or []
+    results = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        asin = item.get("asin")
+        if not asin:
+            continue
+        summaries = item.get("summaries") or []
+        summary = summaries[0] if isinstance(summaries, list) and summaries else {}
+        if not isinstance(summary, dict):
+            summary = {}
+        results.append({
+            "asin": asin,
+            "title": summary.get("itemName"),
+            "brand": summary.get("brand"),
+        })
+    return {"available": True, "query": query, "results": results[:limit]}

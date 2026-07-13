@@ -649,7 +649,7 @@ def get_deal_matches_ready_to_apply(min_confidence: float, limit: int = 200) -> 
 
 def update_lead_source(asin: str, buy_cost: float, source_store: Optional[str],
                        source_url: Optional[str], profit: Optional[float],
-                       roi: Optional[float]) -> bool:
+                       roi: Optional[float], gated_status: Optional[str] = None) -> bool:
     """PATCH an existing lead with a REAL buy cost + source (Sourcing plan Phase 2.3) once the
     deal-finder matcher has verified where to actually buy it, replacing the OA_COGS_FRACTION
     50%-of-price assumption for this one lead. profit/roi must already be recomputed from the
@@ -658,7 +658,14 @@ def update_lead_source(asin: str, buy_cost: float, source_store: Optional[str],
     Returns whether the write succeeded. Only ever narrows toward truth: this never creates a
     lead, only enriches one that already exists (found via scout's own normal Keepa discovery
     and already gate-checked) — see matcher.apply_verified_matches()'s docstring for why
-    deal-first LEAD CREATION is out of scope here."""
+    deal-first LEAD CREATION is out of scope here.
+
+    gated_status: code review finding (2026-07-13) — a match whose ASIN needs Amazon's ungating
+    approval (spapi.get_listings_restrictions status APPROVAL_REQUIRED) was having its real
+    buy_cost/profit/roi written with nothing on the lead itself to show it isn't freely
+    sellable yet, indistinguishable from a plain ALLOWED item. Pass "approval_required" (or
+    leave None for a normal/unconfigured-SP-API case) to populate the leads.gated_status column
+    (present in the schema, unused until now) so a human reviewing the lead sees it."""
     if not enabled() or not asin:
         return False
     row = {"buy_cost": buy_cost, "source_store": source_store, "source_url": source_url}
@@ -666,6 +673,8 @@ def update_lead_source(asin: str, buy_cost: float, source_store: Optional[str],
         row["profit"] = profit
     if roi is not None:
         row["roi"] = roi
+    if gated_status is not None:
+        row["gated_status"] = gated_status
     try:
         r = requests.patch(
             f"{SUPA}/rest/v1/leads?asin=eq.{_quote(asin, safe='')}",

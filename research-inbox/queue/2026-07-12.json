@@ -1,0 +1,36 @@
+{
+  "date": "2026-07-12",
+  "note": "The daily task writes one queue file per day. fetch_transcripts.py reads files matching YYYY-MM-DD.json, pulls transcripts via the API, and sets each item's status to 'done'.",
+  "videos": [
+    {
+      "videoId": "a4A9YGu71Eg",
+      "title": "Revealing Winning Amazon Online Arbitrage Product Examples (FULL BREAKDOWN)",
+      "channel": "unknown (verify on fetch)",
+      "url": "https://www.youtube.com/watch?v=a4A9YGu71Eg",
+      "topic": "fba_oa_mastery",
+      "why": "Under-represented angle in the corpus: concrete worked examples of winning products (the 'what to look for' axis) rather than another sourcing-method walkthrough. Capture the specific gate values / Keepa reads they use to call a product a winner.",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "6sUYXwY7RNw",
+      "title": "The New FASTEST Online Arbitrage Product Sourcing Method | SellerAmp QVS",
+      "channel": "unknown (verify on fetch)",
+      "url": "https://www.youtube.com/watch?v=6sUYXwY7RNw",
+      "topic": "fba_oa_mastery",
+      "why": "SellerAmp QVS (Quick View Source) deep-dive - a specific tool workflow only lightly covered so far. Check whether it adds concrete QVS settings/thresholds beyond the SAS material already staged (rHCB-vSCWcI, SAS masterguide).",
+      "isLongCourse": false,
+      "status": "done"
+    },
+    {
+      "videoId": "MWyq0J18-sM",
+      "title": "The BEST Online Arbitrage Sourcing Method For Beginners (2026)",
+      "channel": "unknown (verify on fetch)",
+      "url": "https://www.youtube.com/watch?v=MWyq0J18-sM",
+      "topic": "fba_oa_mastery",
+      "why": "Published Mar 19 2026. Beginner-focused sourcing method; verify on ingest whether it adds a concrete technique vs the storefront-stalking / Keepa-PF / reverse-sourcing playbook already deep in the corpus, or is a 101 rehash (drop if duplicative).",
+      "isLongCourse": false,
+      "status": "done"
+    }
+  ]
+}

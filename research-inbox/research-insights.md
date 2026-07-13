@@ -595,6 +595,61 @@ per the project's source-of-truth order. Cite the source URL.
   units to bank the storage waiver. No ai-brain change.
   (novadata.io/resources/news/amazon-fba-new-selection-program-expansion-july-30-2026)
 
+### 2026-07-12 (daily run)
+- **[policy-grounded practitioner]** *Amazon FBA Fees, Mid-2026: The Real Cost Math* (Digital Applied,
+  Jul 6 2026; every figure recomputed from Amazon's live rate pages). Separates the three fee events that
+  seller blogs keep merging into a fake "July overhaul": (1) **The only genuine Jul 1 2026 change** — Amazon
+  **ended prep + item-labelling in the Canada store** (sequel to the US ending it Jan 1 2026). Shipments
+  *created* before Jul 1 still get prep; created after without proper prep still ship but **lose
+  reimbursement eligibility** if damaged/untraceable. (2) **MYTHBUST** — the viral "$0.87/cu ft + 180-day
+  storage overhaul on Jul 1" is false: standard storage is **$0.78/cu ft (Jan–Sep), $2.40 (Oct–Dec)**, and
+  the **181-day aged tier is the pre-existing baseline** (predates 2026). Budgeting $0.87 overstates storage
+  ~12%. (3) **The real H2 driver is January's overhaul (eff. Jan 15–16)** — avg ~$0.08/unit; small
+  standard +$0.25; new **consolidated $0.60/unit inbound-defect fee**; aged-inventory 366+ min doubled to
+  $0.30 + new **456+ day tier**; low-inventory fee now at **FNSKU level**. (4) **April's 3.5% fuel surcharge
+  (eff. Apr 17)** is a % of the already-raised fee → **apply it LAST** in landed-cost math. **Q4 triple-stack:**
+  base + utilization ($1.88) + aged surcharge can push one over-stocked cu ft from $0.78 to **$11.18/mo**;
+  the **271–300-day aged cliff is $5.45/cu ft (11× the entry tier)**, snapshotted on the 15th, FIFO across the
+  network. Defense: order to sell-through so units never hit the 271+ tier.
+  (digitalapplied.com/blog/amazon-fba-fees-2026-mid-year-seller-cost-math)
+- **[policy]** *Featured Offer Overhaul: Rank-Only Buy Box Rules* (Digital Applied, Jul 10 2026, on Amazon's
+  Jul 6 Seller Forums announcement). **Directly on the "can it profit" axis for OA** (winning the Buy Box on a
+  listing you don't control). Amazon is **removing seller performance as a standalone pass/fail eligibility
+  gate** for the Featured Offer; the gate signals — **chargeback rate, Order Defect Rate (<1% ceiling), Voice
+  of the Customer complaints** — become **weighted inputs inside one ranking score** alongside price, free
+  shipping, delivery promise. **"Structure changed, criteria didn't"**: a weak account now *competes and
+  loses* rather than being excluded (account health scores **continuously**, not once). **Rollout is phased:
+  EU/UK reported Jul 20 2026; global by end of 2026; US on an unannounced date** — no action required, offers
+  auto-included. **Weights are undisclosed → treat any % you see as invented.** Knock-on nobody covers: per
+  Amazon Ads docs, **without the Featured Offer, Sponsored Products/Brands/Display serve ZERO impressions**
+  "regardless of campaign status" (a campaign can read *Delivering* at 0 impressions); eligibility is
+  **SKU-specific**. Unchanged: reviews/stars not a selection factor; Prime/FBA-vs-FBM excluded as tie-breaker;
+  Featured Offer still per-variation and can rotate. **No ai-brain threshold change**, but reinforces that
+  low ODR/chargebacks now move Buy Box rank continuously — a signal worth surfacing if the control-center ever
+  models account health. (digitalapplied.com/blog/amazon-featured-offer-unified-ranking-buy-box-2026)
+- **[practitioner]** *FBA Cash Flow Management: Inventory Is Where the Cash Gets Quiet* (The FBA Guys,
+  n≈8,503-valuation DB). The cash-discipline case behind the ai-brain capital rules. Core: **inventory asks
+  for cash before the sale** (deposit + freight/duty/prep leave before Amazon pays after the sale), and
+  **growth widens the gap** — bigger POs arrive before the extra profit accumulates ("you can grow yourself
+  into a cash crunch"). Benchmarks: avg business holds **~17% of annual sales in inventory (~70% of SDE)**;
+  **inventory-to-sales rises sharply as turn speed falls** (few weeks 10.6% → months 24.7% → year+ 75.8%) and
+  **as sales decline** (the denominator drops even if units don't). Operator's reorder test: **"if this order
+  goes wrong, what else has to wait?"** — markdown / hold price / borrow / cut ads are all cash-flow decisions,
+  not separate ones. **Credit lines bridge timing but hide weak margin/stale demand** if abused ("the borrowed
+  dollar needs a return date"). Minimum system: a **13-week cash forecast** + weekly track of cash, Amazon
+  receivables/payout dates, inventory on-hand/inbound/on-order, supplier balances, ad spend, taxes/debt/draws,
+  reorder points + lead times. For a tiny OA bankroll: **inventory-to-sales + turn speed are the cash-survival
+  signals**; every reorder passes "what does this prevent?" before "can I afford it?". (thefbaguys.com/blog/amazon-fba-cash-flow-management)
+- **[practitioner]** *Amazon Fee Increases 2026: How to Protect Profit* (Seller Labs; product pitch ignored).
+  Durable reframe: the **+$0.08/unit** avg increase "<0.5% of price" comes **out of profit, not sale price** —
+  on a 10% net margin that's roughly a **5% hit to take-home profit**, compounding across SKUs. Measure
+  exposure via **Fee Preview CSV** (Reports → Payments), flag SKUs that go red after adding the fee. Five
+  tactics: trim SKUs under a **~20% profit buffer**; **shrink packaging ~0.2" to drop a size tier** (biggest
+  offset, but N/A for OA on existing listings); 2–3% price lift on bestsellers; reorder-volume negotiation;
+  automated margin alerts. Also: **file FBA reimbursement claims monthly** (ties to the cost-based
+  reimbursement finding, 07-10). **OA use:** fold the fee add-on into Max-Cost math and drop ASINs whose buffer
+  falls under ~20% post-January-fee + April-fuel-surcharge. (sellerlabs.com/blog/amazon-fba-fee-increase-2026)
+
 ## Building the system (AI, RAG, dashboard, control-center)
 
 ### 2026-06-30
@@ -898,3 +953,45 @@ per the project's source-of-truth order. Cite the source URL.
   replenishment finder for past products now rising in price. [ML note: the historical-rank-divergence
   signal (Dec-rank vs now-rank) is a legitimate seasonal-demand feature idea for the backtest side —
   flagged for fba-feature-engineer as an idea, no threshold change proposed.]
+
+### 2026-07-12 (Claude Code -- transcript ingestion, 1 queued video)
+- **[practitioner]** *The FASTEST Way Find Online Arbitrage Products for Amazon FBA (2026)* (-Rv5hejVnVs,
+  Chris Grant) -- one genuinely new tactic not yet in the corpus: **mine your own SellerAmp lookup
+  history, not just live storefronts.** SellerAmp's History section keeps every product ever run through
+  the profit calculator, even ones rejected as unprofitable at the time (Grant's own example: ~10,000
+  products since May 1). Re-walk it periodically -- the market is dynamic on both sides (source-site sale
+  prices, coupon/gift-card availability, and Amazon's own price/competition all shift), so a past reject
+  can turn profitable later with zero new discovery cost, and each hit doubles as a fresh storefront-
+  stalking seed (open the seller who's still on that listing). Live worked example distinguishes this
+  from a live catalog re-check: one item priced at $19.99 on May 1 had moved to $23 on Amazon with the
+  source price flat -- still dead; the ones that DID clear the bar needed the full cashback+gift-card+
+  coupon stack already documented from FRK7JY7_EJY (2026-07-10) to close the gap, so no new stacking
+  mechanic here. One caution worth keeping: an item that started as an ORPHAN ASIN (thin/no sales) and
+  got MERGED into a parent listing showed continued weak velocity post-merge in Keepa's new-offer-count
+  trend -- a reminder that a parent-ASIN merge doesn't retroactively grant the parent's demand to a
+  previously-orphaned variation; check the merged child's own post-merge trend, not just the parent's
+  aggregate history. Storefront stalking itself (the video's closing point) and the discount-stack
+  mechanics are already well covered (see FRK7JY7_EJY above, the 07-08/07-09 entries); not re-summarized
+  here to avoid Chris-Grant/storefront-stalking corpus skew -- this entry adds only the History-section
+  tactic and the orphan-merge caution, the two things this video contributed that weren't already
+  captured. (youtube.com/watch?v=-Rv5hejVnVs)
+- **[practitioner]** *Revealing Winning Amazon Online Arbitrage Product Examples (FULL BREAKDOWN)*
+  (a4A9YGu71Eg) -- six worked examples restate stacking mechanics already deep in the corpus
+  (CardBear/discounted gift cards, tax-exempt reseller certs, cashback/coupon extensions --
+  Capital One Shopping/Rakuten/TopCashback, subscribe-and-save auto-ship discounts, the "Prime bump"
+  5-10% delivery-speed premium, holiday-sale + signup-coupon combos -- see the 07-08/07-09/07-10
+  entries); one new tactic: set up a **catchall email domain via Namecheap** so every inbox alias at
+  that domain auto-delivers, letting you re-trigger a retailer's one-time-per-email signup/welcome
+  coupon code repeatedly under fresh-looking addresses instead of it working only once per real inbox.
+  (youtube.com/watch?v=a4A9YGu71Eg)
+- Two more 2026-07-12-queued videos reviewed and **not staged** (thin/duplicate, matching the
+  established skipped-thin convention): *The New FASTEST Online Arbitrage Product Sourcing Method |
+  SellerAmp QVS* (6sUYXwY7RNw) -- a live "leaf sourcing" demo already staged verbatim from
+  PydYmi56Sso, plus already-documented storefront stalking / auto-ungate brands / CardBear / Keepa
+  Variations-tab checks; only scrap was 3 new Kohl's-affiliated auto-ungate brand names (Cuddle Duds,
+  Stafford, 32 Degrees), too thin on its own. *The BEST Online Arbitrage Sourcing Method For Beginners
+  (2026)* (MWyq0J18-sM) -- beginner SellerAmp/storefront-stalking rehash on Jellycat storefronts
+  (already-documented winning-product bar, Prime-bump pricing, reverse-sourcing-by-Google, CardBear
+  stacking, SAS Sheets export); worked examples add no new mechanic and would worsen the corpus's
+  existing Jellycat/storefront-stalking concentration. See `research-manifest.json` for the
+  `skipped-thin` records.

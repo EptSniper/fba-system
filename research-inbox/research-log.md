@@ -5,6 +5,29 @@ ingested, transcripts processed, and anything skipped (already known). No secret
 
 <!-- The scheduled task appends entries below this line, newest first. -->
 
+## 2026-07-12 (daily run)
+- **10 new items** (at cap). **4 text sources** fetched + distilled → `research-insights.md`, staged in
+  `corpus-staging.jsonl` (74 → 78 lines): Digital Applied **fees mid-2026 mythbust** ([policy] — only real
+  Jul 1 change is Canada prep ending; NO $0.87/180-day storage overhaul, real rate $0.78/cu ft; real driver
+  is Jan-15/16 overhaul + Apr-17 3.5% fuel surcharge; Q4 triple-stack to $11.18/cu ft), Digital Applied
+  **Featured Offer rank-only Buy Box** ([policy] — Amazon Jul 6 removes the standalone perf gate, ODR/
+  chargebacks/VOC now weight one rank score; EU/UK Jul 20, US unannounced; no-Featured-Offer = zero ad
+  impressions), The FBA Guys **cash-flow** ([practitioner], n=8,503 — inventory-to-sales + turn speed as
+  cash-survival signals, 13-week forecast), Seller Labs **fee-protect** ([practitioner] — $0.08 hits profit
+  not price; trim <20%-buffer SKUs).
+- **3 YouTube queued** → `queue/2026-07-12.json`: a4A9YGu71Eg (winning product examples), 6sUYXwY7RNw
+  (SellerAmp QVS), MWyq0J18-sM (best beginner method). **3 fetch-pending** for Claude Code: Seller Central
+  **G201411300** (2026 fee-changes summary, JS shell) + arXiv **2511.04502** (RAGalyst agentic eval),
+  **2604.18509** (MASS-RAG). **Skipped:** rJvyH94ydDc / QVkuql9NDY0 (dup 101/beginner content); Keepa PF
+  text guides (Keepa-skew discipline).
+- **Transcripts:** started with 0 unprocessed, but a **concurrent `fetch_transcripts.py` (user's machine)
+  pulled today's 3 newly-queued videos mid-run** (synced in via OneDrive) → **3 unprocessed transcripts now
+  waiting** (6sUYXwY7RNw, a4A9YGu71Eg, MWyq0J18-sM); left for Claude Code to ingest (STANDING ACTION 2) rather
+  than distilling during active file-sync churn. `-Rv5hejVnVs` marked `done` but no transcript file found, and
+  `queue/2026-07-10.json` showed a mid-sync truncation — both flagged for Claude Code to verify. Manifest
+  95 → 105 items; digest written; `CLAUDE_CODE_HANDOFF.md` refreshed. Pending now: **0 videos queued,
+  3 unprocessed transcripts**.
+
 ## 2026-07-10 (daily run)
 - **8 new items** (under cap; OA/Keepa/SellerAmp space saturated → leaned finance/policy + agentic-RAG).
   **2 text sources** fetched + distilled → `research-insights.md`, staged in `corpus-staging.jsonl`

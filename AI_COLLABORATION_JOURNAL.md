@@ -115,6 +115,51 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
+### 2026-07-13 — Claude Code Session 65: Cowork's Session-64 review follow-up (`CLAUDE_CODE_NEXT.md`) — verified 2 claims, ran the matcher's first live smoke test, pushed back on the "gate leak" framing with evidence
+
+#### Request
+
+Cowork reviewed Session 64's output and left `CLAUDE_CODE_NEXT.md` (6 items, priority-ordered) for this session to work through: (1) record a predictions-RLS fix Cowork claims to have applied live; (2) dry-run the matcher with a small limit; (3) verify the price-band/offer-count "gate leak" is closed on the live path and clean the existing bad leads; (4) fix a queued auto-accept revert gap (explicitly not urgent); (5) the dispatcher install + an Action-B efficiency lever (both gated on Mehmet); (6) optional low-priority cleanup. Did not execute any item blindly — verified the two factual claims (item 1, item 5's "already installed?" premise) against live state before acting on them, per this project's own "verify live, not just tested" standing rule.
+
+#### 1. Verified, then recorded: predictions RLS
+
+Independently confirmed via a fresh Supabase `get_advisors(security)` call (not just trusting the pasted claim): `public.predictions` no longer appears in the critical `rls_disabled` finding — it now shows the same `rls_enabled_no_policy` INFO-level entry every sibling business table shows (RLS on, no policy, service-role-only). Cowork's claim checks out. Root cause identified: migration `006_predictions.sql`'s original SQL simply never included the `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` line every other migration in this project has (001-005, 007-015 all do) — an omission at write time, not a skipped apply step. Wrote `scout/db/migrations/016_predictions_rls.sql` recording the already-live fix for posterity (mirrors migration 003's earlier "correct a stale/wrong header after the fact" pattern from Session 64). **Configured** (live in Supabase, by Cowork, this session); **documented** (this session, in the repo).
+
+#### 2. Matcher's first live smoke test
+
+Checked the Keepa bank first (48 tokens) before spending anything. Ran `python -m deals.matcher --dry-run --limit 3 --no-notify` against real Keepa/Supabase — completed cleanly, no crash. The token guard behaved exactly as designed: fully candidate-generated deal 1, capped deal 2's enrich batch from 5→2 candidates when the bank thinned (`bank=9, ~4 tokens/unit`), and cleanly skipped deal 3 entirely once the bank hit 1 token (below the 10-token flat search cost) rather than overdrawing. Result: `{"processed": 3, "auto": 0, "review": 0, "discard": 5, "no_candidates": 1, "matches_written": 0}` — every candidate this tiny, token-starved sample produced was correctly discarded (no false positives to eyeball, but also no review-band matches to inspect — an inconclusive sample, not a clean bill of health). Bank is now at 1 token; did NOT run a larger sample — would need to wait for the collector's own refill cycle rather than compete with it for tokens. **Tested** (real live run, dry-run only — zero DB writes, confirmed by `apply_verified_matches` finding 0 rows to check).
+
+#### 3. Pushed back on the "gate leak" framing, with evidence
+
+`CLAUDE_CODE_NEXT.md` item 3 assumes the price-band/offer-count criteria should be HARD gates and that B0BQ3WJ12K-type leads sitting in the queue are a leak to close. Checked before acting: `scoring.oa_hard_reject()` (read directly, unchanged) hard-rejects on exactly 5 conditions — Amazon Buy Box, Amazon BB rotation, avoided brand, IP-cliff, no price — and NEVER on price band or offer count; both have always been soft/scored checks, by design (`_band_score()`'s graceful-decay pattern, mirroring `deal-analyzer.tsx`'s own `SOFT_KEYS` set). Re-scored B0BQ3WJ12K's real historical numbers with today's code (pure Python, zero Keepa tokens spent) to confirm the new price-band adjustment actually fires: `price-out-of-band: -6.7 ("$190.97 is outside the $8-$60 target band, 84% of a full band-width out")`, `offers: passed=False (57 vs [3,25])` — both correctly flagged, verdict still `review` (never `pass`, exactly as it was BEFORE this session's fix too — confirmed against the original live payload). **Conclusion: this is not a leak.** The system was never designed to auto-approve out-of-band items; it flags them and routes to human review, which is what "review" verdict means. What changed this session (Phase 1) is that the human doing that review can now SEE the real $190.97/57-offers numbers (previously hidden behind an unlabeled bare profit figure) — which is the actual fix for "how did an obviously-bad candidate get this far," not a missing hard gate. Converting price/offers to hard rejects now would reverse a deliberate, deal-exam-calibrated design decision from Session 64 (a flat hard reject regressed 2 real golden test cases) without new evidence that decision was wrong. Did NOT make this change — flagging the disagreement here rather than either silently complying or silently doing nothing.
+
+#### 4. Auto-accept revert gap — investigated, correctly left open
+
+Confirmed the gap is real but requires a schema change to fix properly: reverting a lead's `buy_cost`/`source_store` after a late human rejection needs the lead to remember WHICH `deal_matches` row sourced it (no such column exists on `leads` today). Matches this project's own established "migrations need explicit review, never rushed" convention — did not add a column speculatively in the same breath as fixing an unrelated item. Left as a documented, still-open follow-up (already noted in `matcher.py`'s own docstring from Session 64); genuinely dormant today (nothing reaches auto-accept with the current placeholder `ANTHROPIC_API_KEY` and zero live UPC data), so no urgency was lost by deferring again. **Planned, not implemented.**
+
+#### 5. Dispatcher — already installed, too soon to verify
+
+Checked Windows Task Scheduler directly: `FBA Keepa Collector Dispatch` already exists (`State: Ready`), alongside `FBA Deal Watch` and `FBA Scout Daily` — installed earlier in Session 63/64's work, before this `CLAUDE_CODE_NEXT.md` was written (its "if Mehmet approves, install" framing is stale). `DISPATCHER_APPROVAL_NOTE.md`'s own suggested verification ("two full days with no >90-min gaps") can't honestly be reported yet — it was installed today. Did not fabricate a verification result. The Action-B backtest pre-screen (skip a history-token spend on ASINs already in `backtest_rows` or too-new for a horizon row) was NOT attempted this session — real scope, deserves its own dedicated pass with `fba-ml-data-engineer`, not squeezed in here.
+
+#### 6. Low-priority items — triaged, not touched
+
+`match_chunks`'s anon-EXECUTE grant: left alone — revoking it without first confirming whether the control-center's Ask feature actually depends on anon-role access (client-side vs. server-side-with-service-key) risks silently breaking live retrieval; needs investigation, not a reflexive revoke. `vector` extension in `public` schema: cosmetic per Cowork's own framing, skipped — moving it has real blast radius (every `::vector` reference) for zero functional benefit. CRLF/line-ending churn: not this session's changes; continued the existing practice of never staging OneDrive's line-ending noise rather than adding a special-purpose normalization commit.
+
+#### Files changed
+
+New: `scout/db/migrations/016_predictions_rls.sql`, `CLAUDE_CODE_NEXT.md` (Cowork's directive, committed for the record — same pattern as `KEEPA_THROUGHPUT_PLAN.md`/`DISPATCHER_APPROVAL_NOTE.md`/`SOURCING_AND_QUEUE_PLAN.md` earlier this project). No application code changed this session — this was verification, one live smoke test, and one piece of schema-hygiene documentation.
+
+#### Limitations / honest status
+
+- The matcher's live smoke test was inconclusive on match quality (all-discard, token-starved 3-deal sample) — a real, larger dry-run (once the Keepa bank refills and isn't competing with the hourly collector) is still needed before trusting the matcher's live precision.
+- Item 3's disagreement is recorded here but not yet seen/confirmed by Mehmet — flagging it in this session's chat response too, since it reverses an assumption in Cowork's own directive.
+- Item 4 (revert-on-late-rejection) needs a schema decision (a new `leads` column) before it can be built — not scheduled.
+- Item 5's Action-B pre-screen and the 2-day dispatcher gap-verification are both still outstanding, blocked on time passing (dispatcher) or a dedicated session (Action-B).
+
+#### Exact next safe step
+
+Let the Keepa bank refill naturally (don't compete with the hourly collector for tokens), then re-run `python -m deals.matcher --dry-run --limit 10` and actually read a handful of the scored candidates by hand for false positives — the 3-deal smoke test proved the code path runs cleanly end-to-end but was too small/token-starved to say anything about real match quality. In parallel, get Mehmet's read on the Item 3 finding (soft-gate-by-design vs. hard-gate expectation) before any scoring architecture change is made in response to it.
+
 ### 2026-07-13 — Claude Code Session 64: label-redefinition fix, price-band gate, the sourcing/review-queue plan Phases 1-2 (honest queue UI + the deal-to-ASIN matcher, "Prompt D2" — never built until now)
 
 #### Request and constraints

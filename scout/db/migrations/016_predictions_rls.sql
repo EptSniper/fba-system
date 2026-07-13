@@ -1,0 +1,18 @@
+-- 016: enable RLS on predictions (Session 64 follow-up, Cowork review + live fix, 2026-07-13).
+--
+-- Bug: migration 006 (predictions.sql) created the table but never included the
+-- `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` line every other migration in this project has
+-- (001-005, 007-015 all do). That's the root cause, not an oversight at apply time: the table
+-- sat fully exposed to the anon/authenticated roles (readable AND writable via the publishable
+-- key) from the moment it was applied until this was caught by a live `get_advisors` security
+-- scan (2026-07-13, 652 rows at the time).
+--
+-- ALREADY APPLIED LIVE by Cowork (confirmed independently by Claude Code via a fresh
+-- get_advisors(security) call: `predictions` no longer appears in the critical rls_disabled
+-- finding, and now shows the same "rls_enabled_no_policy" INFO-level entry every sibling
+-- business table shows — i.e. RLS on, no policy, service-role-only via SUPABASE_SERVICE_KEY,
+-- exactly matching leads/decisions/outcomes/deals/deal_matches/etc.). This file exists so the
+-- tracked schema matches production and the next person reading migrations/ doesn't have to
+-- rediscover that predictions was ever an outlier.
+ALTER TABLE predictions ENABLE ROW LEVEL SECURITY;
+-- No anon/public policy — service_role only, matching every other business table in this project.

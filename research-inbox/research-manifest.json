@@ -1,5 +1,5 @@
 {
-  "updated": "2026-07-12",
+  "updated": "2026-07-13",
   "purpose": "Index + dedup list for the daily research pipeline. The scheduled task appends to items[] and must skip any url/videoId already present here or any transcript already in learning-hub/transcripts/.",
   "dailyCap": 10,
   "topics": {
@@ -911,6 +911,69 @@
       "topic": "build_the_system",
       "status": "fetch-pending",
       "note": "arXiv blocked by sandbox fetch-provenance rule. Multi-agent synthesis RAG - on-thread with the agentic-RAG design line for scout/knowledge-rag (SoK 2603.07379, Doctor-RAG 2604.00865). Snippet only; re-fetch + distill in Claude Code."
+    },
+    {
+      "date": "2026-07-13",
+      "type": "text",
+      "title": "Amazon FBA Tax Planning 2026: Multi-State Nexus + the Playbook Most Sellers Miss (Eightx)",
+      "url_or_videoId": "https://eightx.co/blog/amazon-fba-tax-planning",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged",
+      "note": "Fetched + distilled. [practitioner] CFO playbook. FBA inventory = physical sales-tax nexus in every state a unit is stored (no min threshold, retroactive, register before inventory arrives). Marketplace facilitator (45 states) covers only facilitated marketplace sales tax - NOT non-marketplace/Shopify sales, local/city taxes, income tax (CA $800 LLC fee), property tax on inventory (Jan-1 assessment lever), or zero-dollar returns. LLC->S-Corp at ~$50-100K net profit (~$9K/yr SE-tax saving, Form 2553 by Mar 15). Break out settlement reports for deductions. Fills the under-represented finances bucket."
+    },
+    {
+      "date": "2026-07-13",
+      "type": "text",
+      "title": "Amazon FBA Sales Tax Nexus Explained: The Part Amazon Handles, and the Part It Doesn't (The FBA Guys)",
+      "url_or_videoId": "https://thefbaguys.com/blog/amazon-fba-sales-tax-nexus-explained",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged",
+      "note": "Fetched + distilled. [practitioner], n=8,416-valuation DB. Separate 'Amazon collected on the order' from 'have we checked registration/filing/income/franchise/documentation obligations' - facilitator is one mechanism not a tax department. Factual first pass = 3 exports (marketplace tax collected, revenue by ship-to state Amazon+non-Amazon, non-Amazon revenue by state); don't over-register (creates zero-return filing calendar). Tax-returns-present submissions averaged 2.67x vs 2.10x valuation multiple. Complements the Eightx nexus piece from a valuation/documentation angle."
+    },
+    {
+      "date": "2026-07-13",
+      "type": "text",
+      "title": "Amazon FBA Bookkeeping 2026: A2X vs Link My Books (The Deposit Trap Solved) (The Hustle Tax)",
+      "url_or_videoId": "https://thehustletax.com/amazon-fba-bookkeeping-software-comparison/",
+      "topic": "fba_oa_mastery",
+      "status": "ingested-staged",
+      "note": "Fetched + distilled. [practitioner]. The 'Deposit Trap' (Seller Central Sales != bank deposit; cash-basis hides margin) -> use accrual via a connector tool. A2X (summary journal entries, per-channel pricing, GAAP purists) vs Link My Books (cheaper all-channel, auto-COGS, DIY) vs Webgility (order-level + inventory sync, enterprise). All support per-SKU cost price -> auto-COGS. Flags DD+7 (funds held 7d after delivery, ~Mar 12 2026) - cross-source claim, exact date to verify vs Amazon. Adds bookkeeping-tooling coverage to the finances bucket."
+    },
+    {
+      "date": "2026-07-13",
+      "type": "text",
+      "title": "Amazon FBA Tax Guide: From 1099-K to Sales Tax Nexus (Robert E. Clark, CPA)",
+      "url_or_videoId": "https://robertclark-cpa.com/amazon-fba-tax-guide-from-1099-k-to-sales-tax-nexus/",
+      "topic": "fba_oa_mastery",
+      "status": "fetch-failed",
+      "note": "WebFetch returned a JS-required redirect shell ('Javascript is required') - no article body. CPA-authored 1099-K + nexus guide; the 2026 1099-K threshold reportedly reverted to $20,000 / 200 txns. Re-fetch from Claude Code/Chrome. The nexus half is already well covered by the two staged 2026-07-13 tax pieces (Eightx, The FBA Guys)."
+    },
+    {
+      "date": "2026-07-13",
+      "type": "text",
+      "title": "Ask Only When Needed: Proactive Retrieval from Memory and Skills for Experience-Driven Lifelong Agents (arXiv 2604.20572)",
+      "url_or_videoId": "https://arxiv.org/abs/2604.20572",
+      "topic": "build_the_system",
+      "status": "fetch-pending",
+      "note": "arXiv /abs/ + PDF blocked by sandbox fetch-provenance rule (same failure mode as 2605.12061 etc). Proactive/on-demand retrieval from BOTH memory and skills - directly on-thread with skills-as-knowledge design and 'don't retrieve when the answer is already gated/known'. Snippet only; re-fetch + distill in Claude Code before staging insights."
+    },
+    {
+      "date": "2026-07-13",
+      "type": "text",
+      "title": "MemR3: Memory Retrieval via Reflective Reasoning for LLM Agents (arXiv 2512.20237)",
+      "url_or_videoId": "https://arxiv.org/abs/2512.20237",
+      "topic": "build_the_system",
+      "status": "fetch-pending",
+      "note": "arXiv blocked by sandbox fetch-provenance rule. Reflective-reasoning memory retrieval - relevant to how Ask/scout pulls from the corpus + ai-brain. Snippet only; re-fetch + distill in Claude Code."
+    },
+    {
+      "date": "2026-07-13",
+      "type": "text",
+      "title": "Did You Check the Right Pocket? Cost-Sensitive Store Routing for Memory-Augmented Agents (arXiv 2603.15658)",
+      "url_or_videoId": "https://arxiv.org/abs/2603.15658",
+      "topic": "build_the_system",
+      "status": "fetch-pending",
+      "note": "arXiv blocked by sandbox fetch-provenance rule. Cheap routing of a query to the right memory store - on-thread with the memory-admission line (AtomMem 2606.19847, Adaptive Admission 2603.04549). Snippet only; re-fetch + distill in Claude Code."
     }
   ]
 }

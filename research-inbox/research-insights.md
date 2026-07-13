@@ -650,6 +650,50 @@ per the project's source-of-truth order. Cite the source URL.
   reimbursement finding, 07-10). **OA use:** fold the fee add-on into Max-Cost math and drop ASINs whose buffer
   falls under ~20% post-January-fee + April-fuel-surcharge. (sellerlabs.com/blog/amazon-fba-fee-increase-2026)
 
+### 2026-07-13 (daily run)
+- **[practitioner]** *Amazon FBA Tax Planning 2026: Multi-State Nexus* (Eightx, CFO-authored). FBA inventory
+  creates **physical sales-tax nexus in every state Amazon stores a unit** — no minimum threshold, you don't
+  pick the warehouse, and nexus can be assessed retroactively; **register before inventory arrives**. What
+  marketplace-facilitator collection (now in all **45** sales-tax states; 5 have none — AK, DE, MT, NH, OR)
+  does **NOT** cover: **non-marketplace sales** (Shopify/site/wholesale — you collect yourself in nexus
+  states), **local/city taxes** (AZ/CA/CO can need separate filings), **income tax** (apportioned by sales
+  factor — CA most aggressive, $800/yr LLC fee for any FBA presence), **property tax on inventory** (assessed
+  often on **Jan 1** — inventory timing is a legit lever), and **zero-dollar returns** still required.
+  Entity: **LLC→S-Corp election at ~$50K–$100K net profit** saves ~$9K/yr in SE tax (pay reasonable salary
+  40–60% of profit, rest as distribution); **file Form 2553 by Mar 15** for retroactive election. Deduction
+  fix with highest value = **break out Amazon settlement reports** (referral/FBA/storage/ads separately, not
+  one "sales" line) — a $200K seller typically has $50–70K deductible beyond COGS. Run the **Inventory Event
+  Detail report** to see which states hold your stock. **OA relevance:** even a tiny operation gets nexus the
+  moment FBA stores a unit out-of-state; landed-cost bookkeeping + the Jan-1 property-tax timing point matter
+  before scaling. (eightx.co/blog/amazon-fba-tax-planning)
+- **[practitioner]** *Amazon FBA Sales Tax Nexus Explained* (The FBA Guys, n=8,416-valuation DB). Core mental
+  model: **separate "Amazon collected on the order" from "have we checked registration / filing / income-tax /
+  franchise-tax / documentation obligations in that state"** — adjacent but different files. Marketplace
+  facilitator = **one mechanism, not a tax department**: it says who collected on a facilitated sale, not
+  whether your registration file is complete or a non-Amazon sale escaped the bucket. Recommended first pass
+  is **factual, not fear-driven**: three exports — (1) Amazon marketplace tax collected, (2) revenue by
+  ship-to state (Amazon + non-Amazon), (3) non-Amazon revenue by state — then flag where non-marketplace
+  sales may cross economic thresholds, review FBA-inventory physical presence, check existing registrations
+  (**registering "everywhere to be safe" creates a filing calendar, incl. zero returns, that outlives the
+  anxiety**), and consult a CPA/SALT specialist before registering. Data point: submissions with tax returns
+  averaged a **2.67x** valuation multiple vs **2.10x** without — a documentation/financial-maturity signal,
+  not a pure sales-tax finding. **OA relevance:** keep a traceable, boring tax file (what Amazon collected,
+  what you filed, what's open) rather than a confident "Amazon handles it." (thefbaguys.com/blog/amazon-fba-sales-tax-nexus-explained)
+- **[practitioner]** *Amazon FBA Bookkeeping 2026: A2X vs Link My Books* (The Hustle Tax). The **"Deposit
+  Trap"**: Seller Central "Sales" ≠ bank deposit — Amazon nets dozens of fees (ads/refunds/storage/reserves)
+  before payout, so **cash-basis books hide true margin** (e.g. ad spend deducted from payout makes a losing
+  SKU look healthy). Fix = **accrual accounting** (record the sale when it happens), which is infeasible
+  manually at volume → use a connector tool that posts clean journal entries to QuickBooks/Xero. Tool read:
+  **A2X** = accountant gold-standard, summary journal entries, per-channel pricing (pricey multi-channel),
+  no order-level detail; **Link My Books** = cheaper (all channels included), guided DIY setup, auto-COGS,
+  best for small/mid multi-channel; **Webgility** = order-level + inventory sync across channels, enterprise,
+  overkill for pure FBA. All three let you upload **per-SKU cost price so COGS posts automatically** — without
+  it you never know true monthly profit. Also flags the **"DD+7" policy (funds held 7 days after delivery,
+  from ~Mar 12 2026)** as a cash-flow shock that cash-basis books distort across month boundaries — corroborated
+  across sources but treat the exact date as a to-verify practitioner claim, not confirmed Amazon policy.
+  **OA relevance:** per-unit landed cost as COGS + accrual = the only way the scout's ROI ties to reality.
+  (thehustletax.com/amazon-fba-bookkeeping-software-comparison)
+
 ## Building the system (AI, RAG, dashboard, control-center)
 
 ### 2026-06-30
@@ -995,3 +1039,18 @@ per the project's source-of-truth order. Cite the source URL.
   stacking, SAS Sheets export); worked examples add no new mechanic and would worsen the corpus's
   existing Jellycat/storefront-stalking concentration. See `research-manifest.json` for the
   `skipped-thin` records.
+
+### 2026-07-13 (daily run — build-the-system, fetch-pending)
+- **[fetch-pending — NOT yet distilled]** Three new arXiv papers on the self-learning-RAG / agent-memory
+  thread were surfaced this run but **arXiv `/abs/` + PDF remain blocked by the sandbox fetch-provenance
+  rule** (same failure mode as 2604.07595, 2605.12061, 2606.19847 etc.), so only titles/snippets are known —
+  **no insights are staged from them** (per the honesty rule, abstracts are not distilled without reading).
+  Re-fetch + distill in Claude Code before staging: (1) **Ask Only When Needed: Proactive Retrieval from
+  Memory and Skills for Experience-Driven Lifelong Agents** (arXiv 2604.20572) — proactive/on-demand retrieval
+  from *both* memory and skills; directly on-thread with our skills-as-knowledge design and the "don't retrieve
+  when the answer is already gated/known" idea. (2) **MemR³: Memory Retrieval via Reflective Reasoning for LLM
+  Agents** (arXiv 2512.20237) — reflective-reasoning memory retrieval; relevant to how Ask/scout pulls from
+  the corpus + ai-brain. (3) **Did You Check the Right Pocket? Cost-Sensitive Store Routing for
+  Memory-Augmented Agents** (arXiv 2603.15658) — routing a query to the right memory store cheaply; on-thread
+  with the memory-admission line (AtomMem 2606.19847, Adaptive Admission 2603.04549). See
+  `research-manifest.json` for the `fetch-pending` records.

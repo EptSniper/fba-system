@@ -5,6 +5,23 @@ ingested, transcripts processed, and anything skipped (already known). No secret
 
 <!-- The scheduled task appends entries below this line, newest first. -->
 
+## 2026-07-13 (daily run)
+- **7 new items** (under cap, quality-first; pipeline already caught up). **3 text sources** fetched +
+  distilled → `research-insights.md`, staged in `corpus-staging.jsonl` (**79 → 82**), all in the
+  under-represented **finances** bucket: Eightx **multi-state tax/nexus** ([practitioner] — FBA inventory =
+  physical nexus everywhere a unit is stored; facilitator covers only marketplace sales tax; LLC→S-Corp at
+  ~$50–100K net, Form 2553 by Mar 15), The FBA Guys **nexus documentation** ([practitioner], n=8,416 — split
+  "Amazon collected" from "obligations checked"; 2.67x vs 2.10x multiple with tax returns), The Hustle Tax
+  **A2X vs Link My Books "Deposit Trap"** ([practitioner] — accrual via connector tool, per-SKU auto-COGS,
+  DD+7 funds-hold from ~Mar 12 2026 flagged for verification).
+- **4 fetch-pending/failed** for Claude Code re-fetch: Robert Clark CPA **1099-K + nexus** (JS shell) + arXiv
+  **2604.20572** (Ask Only When Needed — proactive memory/skill retrieval), **2512.20237** (MemR³ reflective
+  memory retrieval), **2603.15658** (cost-sensitive memory store routing) — all blocked by the sandbox
+  provenance rule, recorded snippet-only, NOT distilled.
+- **0 YouTube queued, 0 transcripts to ingest** — every queue item is `done`, `transcripts/` is empty (29 in
+  `processed/`). Skipped a near-duplicate sourcing-101 re-upload (`rJvyH94ydDc`) and already-covered fee/tool
+  blogs to protect corpus balance. Manifest 105 → **112** items; handoff refreshed.
+
 ## 2026-07-12 (daily run)
 - **10 new items** (at cap). **4 text sources** fetched + distilled → `research-insights.md`, staged in
   `corpus-staging.jsonl` (74 → 78 lines): Digital Applied **fees mid-2026 mythbust** ([policy] — only real

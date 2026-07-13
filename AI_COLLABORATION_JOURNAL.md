@@ -115,7 +115,187 @@ No drift was silently fixed: this session established shared understanding and a
 
 ## Session log
 
-### 2026-07-13 — Claude Code Session 63: found and fixed the Keepa plan's deploy gap (5 unpushed commits), ML-crew safety review, fixed a live-hang blocker before it could fire
+### 2026-07-13 — Claude Code Session 64: label-redefinition fix, price-band gate, the sourcing/review-queue plan Phases 1-2 (honest queue UI + the deal-to-ASIN matcher, "Prompt D2" — never built until now)
+
+#### Request and constraints
+
+Continuing Session 63 in the same sitting. Cowork delivered a `LEAKAGE_AUDIT_2026-07-13.md` flagging two things
+(a near-constant `would_have_profited` label and a claimed dealfeed price-band filter bug); Mehmet then said
+**"I give full permission for everything for this and the future of this work. Work non-stop. Add it to
+whatever you were doing"** — a standing authorization for this body of work, not a one-off approval. Immediately
+after, Cowork delivered `SOURCING_AND_QUEUE_PLAN.md` + `CLAUDE_CODE_SOURCING_DIRECTIVE.md`: the scout invents a
+buy cost as a flat 50% assumption, a real retail-deal pipeline exists but was never bridged to an ASIN, the
+Review Queue mislabels prices and leaks gates, and the ML corpus's ~91% positive rate is an artifact of both.
+Constraints restated throughout: no auto-buy/no money movement; `scoring.rankingChampion` stays human-only;
+hard gates stay outside ML; every `ai-brain.json`/migration change through the proper skill; journal at the end.
+
+#### Evidence inspected
+
+Read `LEAKAGE_AUDIT_2026-07-13.md`, `SOURCING_AND_QUEUE_PLAN.md`, `CLAUDE_CODE_SOURCING_DIRECTIVE.md`,
+`DEAL_FINDER_BUILD_PLAN.md` (the original Prompt D1-D4 design), `learning-hub/ai-system/deal-sourcing-system.md`.
+Read `scout/backtest.py`, `scout/shadow_outcomes.py`, `scout/scoring.py`, `scout/config.py` in full. Read
+`control-center/components/review-queue.tsx`, `control-center/lib/queue-server.ts`,
+`control-center/lib/supabase-server.ts`, `control-center/app/api/ops/decide/route.ts`,
+`control-center/app/api/ops/queue/route.ts`, `control-center/middleware.ts`. Read `scout/deals/{collect,
+normalize,run_watch,registry,brain_config}.py`, `scout/db.py`, `scout/keepa_client.py`, `scout/analyst.py`,
+`scout/spapi.py` (via a dedicated Explore agent plus direct reads). Queried the live Supabase project
+(`cakbzcvtqhdtxfjuxstd`) directly via the Supabase MCP tools: `list_migrations`, `list_tables` (verbose,
+confirming every `deals`/`deal_matches`/`leads` column), and a live SQL `count(*)`/`count(upc)`/`count(sku)`
+query against `deals` (9,798 rows, **0 with a UPC or SKU**) — this single query decided the matcher's whole
+design (see below). Ran 6 live, single-variable Keepa API calls to independently test the leakage audit's
+claimed price-band filter bug (see "Correction" below). Checked `scout/.env` key lengths (never printed
+values) to confirm `ANTHROPIC_API_KEY`/`SP_API_LWA_*` are still placeholders (9 chars) while `KEEPA_KEY` is real
+(64 chars) and `BESTBUY_API_KEY` is empty — this is why the matcher's UPC and LLM paths are built but dormant.
+
+#### 1. Label-redefinition fix (backtest.py, shadow_outcomes.py)
+
+`would_have_profited = est_profit > 0` counted merely breaking even as "profitable" against a `landed_cost`
+fixed at 50% of price — live-measured ~91% positive. Fixed both `label_at()` and `compute_label()` to mirror
+the REAL live buy gate: `profit >= CRITERIA_OA['min_profit_per_unit'] (3.0) AND roi >= min_roi (0.30, or 0.25
+for grocery)`. Only windows built going forward are affected — the existing ~9,449 `backtest_rows` keep their
+old label until a deliberate backfill runs (not attempted). Added `roi`/`roi_now` to the label dicts but
+stripped `roi_now` before the `shadow_outcomes` DB write (that table has no such column — migration 009
+predates this fix; verified by reading `db.complete_shadow_checkpoint()` before this could silently break the
+whole checkpoint write). 6 new tests. **Tested**, not yet backfilled onto historical rows.
+
+#### 2. Missing $8-60 price-band gate (scoring.py)
+
+`_score_oa_impl()`/`oa_hard_reject()`/`risk_flags_oa()` never referenced `CRITERIA_OA['price_min'/'max']` at
+all despite `ai-brain.json` documenting it as one of 7 pass gates — matching an earlier full-crew sweep's
+independent finding. Added as a SOFT, graduated scored adjustment (mirrors `_band_score()`'s existing
+graceful-decay pattern and `deal-analyzer.tsx`'s own already-soft design) — never a hard reject. Calibrated
+`magnitude=-8, span_mult=3` against `deal-exam`'s 56 golden cases (an initial flat -10 regressed 2 real
+narrator-endorsed cases). `ai-brain.json` gained `scoring.adjustments.priceOutOfBand: -8`. **Tested** (deal-exam
+56/56 still 100%), applied to `ai-brain.json` under Mehmet's approval via the brain-proposals flow.
+
+#### Correction to LEAKAGE_AUDIT_2026-07-13.md's Evidence #1
+
+The audit claimed the dealfeed's $8-60 secondary-axis filter was actively broken (citing persistent "0 asins"
+entries in `dealfeed_yield_stats.json`). Did not accept this at face value — ran 6 live, careful,
+single-variable Keepa test calls (currentRange alone; the exact flagged "dry" combo with/without category; the
+auto-widened rank+price-only shape). **Every test returned 100% in-band results** — the filter mechanism works
+correctly right now. Concluded the persisted stats are stale/historical, not evidence of a current bug, and
+explicitly did NOT implement a fix for a problem live testing disproved. No code changed for this item.
+
+#### 3. Sourcing plan Phase 1 — honest, labeled Review Queue
+
+`QueueCard` (`review-queue.tsx`) rendered only a bare, unlabeled `profit` number, ROI, BSR, and a summary —
+reading as if it were the price. Rebuilt to show labeled Sell/Buy/Profit/ROI/BSR/Sales-per-month/Offers/
+Amazon-on-listing, an "ESTIMATED — no source yet" badge when `buyCost` is null (true for every lead today —
+Phase 2 addresses why), a `view on Amazon` `dp/{asin}` link, and a "seen Xd ago" timestamp.
+`queue-server.ts`/`QueueLeadItem` extended to thread `offerCount`/`amazonPresent` through (both were already
+fetched server-side via `select=*`, just not exposed to the UI). The Approve/Reject reason picker moved from a
+`fixed inset-x-0 bottom-0` bar (could land off-screen, reading as "the button did nothing" — exactly the
+sourcing plan's Finding D) to an inline panel directly under the toolbar; added a manual refresh button and a
+60s background poll against the previously-unused `/api/ops/queue` route. Confirmed the `/api/ops/decide` write
+path itself was already sound (validates input, honest 502 on a Supabase-write failure) — the bug was UX
+(2-step interaction, easy to miss), not the write logic. `BASIC_AUTH_*`-missing-503 in `middleware.ts` is
+intentional deployed-security design gated on `process.env.VERCEL`, not a bug affecting local dev — verified,
+not "fixed." **Tested**: `npm run typecheck` clean; Playwright screenshots of `localhost:3000/queue` confirm
+the card layout and the inline reason picker (pressing "A") both render correctly; did NOT submit a real
+decision (Approve/Reject writes a real record — not a case for a synthetic test).
+
+#### 4. Sourcing plan Phase 2.2/2.3 — the deal-to-ASIN matcher (Prompt D2, never built before this)
+
+Migration 003 (`deals`/`deal_matches`) turned out to already be **applied live** (confirmed via Supabase MCP —
+`deals` has 9,798 rows from the nightly Top-100 deal watch; its own header comment still said "NOT YET APPLIED,"
+now corrected). `deal_matches` had 0 rows and no `db.py` write function existed for it — the matcher itself
+(`scout/deals/matcher.py`) had never been written; `run_watch.py`'s own digest footer said so explicitly.
+
+Built it: normalize (reused D1's existing `extract_attributes()` unchanged) → UPC candidates (new
+`keepa_client.upc_lookup()`, token-guarded) or title candidates (new `keepa_client.search_by_term()`) →
+attribute-agreement + string-similarity scoring → optional Claude Haiku pairwise verification → composite
+confidence per `ai-brain.json`'s existing `dealFinder.confidenceBands` → route (auto/review/discard) →
+`db.upsert_deal_match()` (new; app-level idempotent — migration 003 has no unique constraint on `deal_matches`).
+`apply_verified_matches()` backfills an EXISTING gate-checked lead's `buy_cost`/`source_store`/`source_url`/
+`profit`/`roi` on a verified match, reusing `scoring.estimate_oa_profit_roi()`'s real fee math via an explicit
+`cogs_fraction` override — never duplicating fee logic. **Deliberately does not create new leads** — deal-first
+lead creation without running the hard eligibility/compliance/AVOID-brand gates first is Prompt D3 scope,
+explicitly deferred rather than rushed.
+
+**Two disclosed simplifications, not silent gaps**, forced by what's actually live today: (1) a live SQL query
+showed 0 of 9,798 collected deals carry a UPC (every active source — Slickdeals RSS/aggregate/clearance-JSON-LD
+— is UPC-less; only the not-yet-keyed Best Buy connector could populate one), so the UPC path is real,
+token-guarded code that is currently dormant, not exercised against a live response. (2) `ANTHROPIC_API_KEY` in
+`scout/.env` is a 9-character placeholder, so the LLM verification step degrades honestly (one log line, no
+fabricated verdict) — matching the project's existing `analyst.py`/`spapi.py` pattern for an absent key. Given
+neither the UPC nor LLM anchor is currently reachable, `composite_confidence()` caps every algorithmic-only
+(title, no LLM) match below `confidenceBands.autoAccept` — every match this module can currently produce lands
+in the human review band or is discarded, never auto-accepted. No live `sentence-transformers`/embedding
+dependency was added to scout (a real, disclosed downgrade from the Build Plan's cosine-ranking step — adding a
+torch dependency to scout's tiny-footprint environment wasn't justified without live data to test it against).
+
+Seeded `scout/deals/fixtures/gold_matches.jsonl` (8 SYNTHETIC hand-authored pairs, explicitly labeled as such —
+not the real 30-pair hand-verified set the Build Plan itself frames as Mehmet's task) + `goldset.py`'s
+precision/recall reporter. **This harness immediately earned its keep**: the first scoring pass had precision
+0.5 — string similarity on pack/size-STRIPPED titles was structurally blind to exactly the mismatch it needed
+to catch (a Crayola 2-pack vs. a 24-count box; an 18oz vs. 30oz Suave bottle). Fixed with a "known-mismatch
+veto" — a confirmed brand/pack/size disagreement now hard-caps confidence below the review floor regardless of
+string similarity — raising precision to 0.8/8 (recall 1.0). Report is explicit that n=8 is a smoke test, not a
+real accuracy measurement (`trustworthy: false` below the Build Plan's own 30-pair target).
+
+Ran an independent 4-angle code-review pass (correctness/removed-behavior/cross-file, reuse/simplification/
+efficiency, altitude/conventions) before shipping. Fixed two real findings: an unclamped `discountStack`
+(cashback+giftcard %) could sum past 100% and drive `buy_cost` negative, inflating profit while ROI silently
+went `None` — clamped to `[0, 0.95]` with a regression test. `discount_stack()`'s retailer lookup was
+exact-string, not case-insensitive, against hand-typed brain keys — fixed, with a regression test. Also
+threaded one Keepa client through a batch `run()` instead of reconstructing it per candidate (each construction
+does a token-status network call), and softened a docstring that overclaimed "never auto-accepted" as an
+absolute rather than a property of the current brain config + absent live UPC/LLM data. Remaining lower-severity
+findings (duplicate UPC/title candidate helper structure, a shared `_patch()` helper db.py could factor out,
+`_llm_configured()` duplicating `analyst.configured()`'s shape) were left as documented, not fixed — cleanup,
+not correctness, and this session was already large.
+
+`ai-brain.json`'s `dealFinder.status` rewritten to the real state (brain-proposals.md entry, applied under
+Mehmet's standing authorization). Committed as `1db8e24` and **pushed** to `origin/master` immediately (Session
+63's own finding: unpushed commits have silently failed to deploy at least 3 times in this project's history).
+
+**Tested**: 1071 scout+scout_pro+knowledge-rag+scripts tests green (98 new — 31 matcher, 21 db.py, 11
+keepa_client, plus 2 review-driven regression tests), deal-exam 56/56 still 100%. **NOT tested live** — never
+run against real Keepa/Supabase data (no scheduled job calls `matcher.py` yet), so `deal_matches` is still
+empty in production and no lead has had its cost backfilled yet.
+
+#### Files changed
+
+New: `scout/deals/matcher.py`, `scout/deals/goldset.py`, `scout/deals/fixtures/gold_matches.jsonl`,
+`scout/tests/test_deals_matcher.py`, `scout/tests/test_keepa_client_deal_matching.py`.
+Modified: `scout/backtest.py`, `scout/shadow_outcomes.py`, `scout/scoring.py`, `scout/config.py`, `scout/db.py`,
+`scout/keepa_client.py`, `scout/deals/brain_config.py`, `scout/db/migrations/003_deals_and_matches.sql`
+(comment only), `scout/tests/test_backtest.py`, `scout/tests/test_shadow_outcomes.py`,
+`scout/tests/test_scoring.py`, `scout/tests/test_deals_db.py`, `control-center/components/review-queue.tsx`,
+`control-center/lib/queue-server.ts`, `learning-hub/data/ai-brain.json` (+ `control-center/hub-data/` sync),
+`learning-hub/tracking/brain-proposals.md`. Commits: `5326fa7` (price-band gate + label fix, prior to this
+entry), `d9bb8b4` (Review Queue UI), `1db8e24` (deal matcher) — all pushed.
+
+#### Limitations / honest status
+
+- Phase 2 (the matcher) is implemented and unit-tested, **not yet live-run**. Not wired into `run_daily.py` or
+  any scheduled job. `deal_matches` is empty in production until someone runs `python -m deals.matcher` (or it
+  gets scheduled) against real Supabase/Keepa credentials.
+- Phase 3 (retying ML labels to real costs) is explicitly gated by the sourcing plan itself on "after Phase 2
+  produces real-cost rows" — since zero real-cost rows exist yet (the matcher hasn't run live), Phase 3 has
+  nothing to act on. Correctly left undone this session rather than built against data that doesn't exist.
+- Prompt D3 (wiring deal-first candidates through the scout's normal gates into new leads) remains unbuilt,
+  by design — building it in a rush risked a real gate-bypass bug.
+- A real 30-pair hand-verified gold set does not exist — `fixtures/gold_matches.jsonl` is a small synthetic
+  seed for exercising the scoring code, not a measured accuracy number.
+- **`public.predictions` still has RLS disabled** (652 rows, exposed to the anon key) — re-confirmed live via
+  `get_advisors` this session. Not auto-fixed: Supabase's own tool guidance is explicit ("do not auto-apply the
+  remediation SQL... present it to the user and let them decide") even under the standing "full permission"
+  grant, since enabling RLS with no policy blocks ALL access and the right policy is a real choice, not a
+  mechanical one. Flagged to Mehmet in this session's chat; remediation SQL is
+  `ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;` (then a service-role-only policy matching every
+  sibling table, or an explicit "no policy" if the empty-of-anon-traffic pattern is intended) — awaiting his call.
+
+#### Exact next safe step
+
+Run `python -m deals.matcher --dry-run --limit 20` locally against real Supabase/Keepa credentials and read the
+output honestly (counts by route, any errors) before ever running it for real — this is the first live
+exercise of the entire matcher path, including the UPC/title Keepa calls and the Discord notify. If it looks
+sane, run it for real on a small `--limit`, then check the control-center's `/queue` page for the new
+`deal_match` cards and manually review a few. Only after a human has approved at least one real match should
+`apply_verified_matches()` run for real (it already runs in the matcher's own `__main__` by default — consider
+splitting that so a first live pass doesn't silently backfill a lead's cost before anyone has looked).
 
 #### Request
 
